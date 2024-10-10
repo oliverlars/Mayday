@@ -9,13 +9,8 @@ int main() {
     Arena.Start = MemoryReserve(GigaBytes(64));
 
     u8* SomeMemory = ArenaPush(&Arena, 6);
-    SomeMemory[0] = 'H';
-    SomeMemory[1] = 'E';
-    SomeMemory[2] = 'L';
-    SomeMemory[3] = 'L';
-    SomeMemory[4] = 'O';
-    SomeMemory[5] = 0;
-    printf(SomeMemory);
+    str8 String = Str8PushF(&Arena, "Hello World");
+    printf("%.*s", Str8ToPrintfArgs(String));
 
     return 0;
 }

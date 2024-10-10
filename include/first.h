@@ -26,6 +26,8 @@ typedef unsigned long long b64;
 #define MegaBytes(X) (1024ll*KiloBytes(1))
 #define GigaBytes(X) (1024ll*MegaBytes(1))
 
+#define Str8ToPrintfArgs(String) (int)String.Size, String.Bytes
+
 typedef struct memory_arena {
     u8* Start;
     s64 Committed;
@@ -49,7 +51,7 @@ u64 GetPageSize() {
     return SystemInfo.dwPageSize;
 }
 
-u8* ArenaPush(memory_arena* Arena, s64 Bytes) {
+u8* ArenaPush(memory_arena *Arena, s64 Bytes) {
     if(Arena->At + Bytes > Arena->Committed) {
         u64 BytesNeeded = (Arena->At + Bytes - Arena->Committed);
         u64 BytesToCommit = (BytesNeeded + GetPageSize() - 1)/GetPageSize();
@@ -60,4 +62,25 @@ u8* ArenaPush(memory_arena* Arena, s64 Bytes) {
     Arena->At += Bytes;
     
     return Memory;
+}
+
+
+str8 Str8PushFV(memory_arena *Arena, char *Format, va_list InputArgList){
+  va_list ArgList;
+  va_copy(ArgList, InputArgList);
+  u32 BytesNeeded = vsnprintf(0, 0, Format, InputArgList) + 1;
+  str8 Result = {0};
+  Result.Bytes = ArenaPush(Arena, BytesNeeded);
+  Result.Size = vsnprintf(Result.Bytes, BytesNeeded, Format, ArgList);
+  Result.Bytes[Result.Size] = 0;
+  va_end(ArgList);
+  return Result;
+}
+
+str8 Str8PushF(memory_arena *Arena, char *Format, ...){
+  va_list args;
+  va_start(args, Format);
+  str8 Result = Str8PushFV(Arena, Format, args);
+  va_end(args);
+  return Result;
 }

@@ -1,0 +1,1 @@
+cl /nologo /O2 first.c /link /OUT:first.exe

@@ -4,20 +4,22 @@
 
 #include <stdio.h>
 
-typedef signed char        s8;
-typedef signed short       s16;
-typedef signed int         s32;
-typedef signed long long   s64;
-typedef unsigned char      u8;
-typedef unsigned short     u16;
-typedef unsigned int       u32;
-typedef unsigned long long u64;
-typedef float              f32;
-typedef double             f64;
-typedef unsigned char      b8;
-typedef unsigned char      b16;
-typedef unsigned int       b32;
-typedef unsigned long long b64;
+#include <stdint.h>
+
+typedef int8_t    s8;
+typedef int16_t   s16;
+typedef int32_t   s32;
+typedef int64_t   s64;
+typedef uint8_t   u8;
+typedef uint16_t  u16;
+typedef uint32_t  u32;
+typedef uint64_t  u64;
+typedef float     f32;
+typedef double    f64;
+typedef uint8_t   b8;
+typedef uint16_t  b16;
+typedef uint32_t  b32;
+typedef uint64_t  b64;
 
 #define MemoryAllocate(NumberOfBytes) (u8*)VirtualAlloc((void*)0, NumberOfBytes, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE)
 #define MemoryCommit(Address, NumberOfBytes) VirtualAlloc((void*)(Address), NumberOfBytes, MEM_COMMIT, PAGE_READWRITE)
@@ -67,6 +69,7 @@ typedef enum compiler
 {
     COMPILER_MSVC,
     COMPILER_CLANG,
+    COMPILER_COUNT,
 }
 compiler;
 
@@ -75,6 +78,7 @@ typedef enum output_type
     OUTPUT_EXECUTABLE,
     OUTPUT_STATIC_LIBRARY,
     OUTPUT_DYNAMIC_LIBRARY,
+    OUTPUT_COUNT,
 }
 output_type;
 
@@ -130,24 +134,24 @@ u8* ArenaPushZero(memory_arena *Arena, s64 Bytes)
 
 str8 Str8PushFV(memory_arena *Arena, char *Format, va_list InputArgList)
 {
-  va_list ArgList;
-  va_copy(ArgList, InputArgList);
-  u32 BytesNeeded = vsnprintf(0, 0, Format, InputArgList) + 1;
-  str8 Result = {0};
-  Result.Bytes = ArenaPush(Arena, BytesNeeded);
-  Result.Size = vsnprintf((char*)Result.Bytes, BytesNeeded, Format, ArgList);
-  Result.Bytes[Result.Size] = 0;
-  va_end(ArgList);
-  return Result;
+    va_list ArgList;
+    va_copy(ArgList, InputArgList);
+    u32 BytesNeeded = vsnprintf(0, 0, Format, InputArgList) + 1;
+    str8 Result = {0};
+    Result.Bytes = ArenaPush(Arena, BytesNeeded);
+    Result.Size = vsnprintf((char*)Result.Bytes, BytesNeeded, Format, ArgList);
+    Result.Bytes[Result.Size] = 0;
+    va_end(ArgList);
+    return Result;
 }
 
 str8 Str8PushF(memory_arena *Arena, char *Format, ...)
 {
-  va_list args;
-  va_start(args, Format);
-  str8 Result = Str8PushFV(Arena, Format, args);
-  va_end(args);
-  return Result;
+    va_list args;
+    va_start(args, Format);
+    str8 Result = Str8PushFV(Arena, Format, args);
+    va_end(args);
+    return Result;
 }
 
 void Str8ListAppend(memory_arena *Arena, str8_list *List, str8 String)
@@ -242,9 +246,25 @@ void Str8ListPopFirst(str8_list *List) {
 
 void CompileFromBuildOptions(build_options Options)
 {
-    STARTUPINFO StartupInfo;
-    PROCESS_INFORMATION ProcessInfo;
+    STARTUPINFO StartupInfo = {0};
+    PROCESS_INFORMATION ProcessInfo = {0};
+
+    SECURITY_ATTRIBUTES SecurityAttributes;
+    SecurityAttributes.nLength = sizeof(SECURITY_ATTRIBUTES);
+    SecurityAttributes.bInheritHandle = 1;
+    SecurityAttributes.lpSecurityDescriptor = 0;
+
+    HANDLE StdInHandle = 0;
+    HANDLE StdOutHandle = 0;
+
+    CreatePipe(&StdOutHandle, &StdInHandle, &SecurityAttributes, 0);
+
+    StartupInfo.cb = sizeof(STARTUPINFO);
+    StartupInfo.hStdError = StdOutHandle;
+    StartupInfo.hStdOutput = StdOutHandle;
+    StartupInfo.hStdInput = StdInHandle;
+    StartupInfo.dwFlags |= STARTF_USESTDHANDLES;
 
     str8 Compilers[2] = {Str8Lit("cl.exe"), Str8Lit("clang.exe")};
-    CreateProcessA(Compilers[Options.Compiler].Bytes, "src/mayday.c /link /OUT:mayday.exe", 0, 0, 0, 0, 0, 0, &StartupInfo, &ProcessInfo);
+    CreateProcessA(Compilers[Options.Compiler].Bytes, "src/mayday.c /link /OUT:mayday.exe", 0, 0, 1, 0, 0, 0, &StartupInfo, &ProcessInfo);
 }

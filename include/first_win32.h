@@ -5,6 +5,7 @@
 #include <stdio.h>
 
 #include <stdint.h>
+#include <stdlib.h>
 
 typedef int8_t    s8;
 typedef int16_t   s16;
@@ -89,8 +90,12 @@ typedef struct build_options
     compiler Compiler;
     output_type OutputType;
     str8 OutputName;
+    str8 OutputPath;
     str8_list IncludePaths;
     str8_list SourceFiles;
+    
+    b32 Optimise;
+    b32 GenerateDebugInfo;
 }
 build_options;
 
@@ -104,10 +109,10 @@ u64 GetPageSize()
 
 u8* ArenaPush(memory_arena *Arena, s64 Bytes)
 {
-    if(Arena->At + Bytes > Arena->Committed)
+    if(Arena->At + Bytes >= Arena->Committed)
     {
-        u64 BytesNeeded = (Arena->At + Bytes - Arena->Committed);
-        u64 BytesToCommit = (BytesNeeded + GetPageSize() - 1)/GetPageSize();
+        s64 BytesNeeded = (Arena->At + Bytes - Arena->Committed);
+        u64 BytesToCommit = BytesNeeded + GetPageSize() - (BytesNeeded % GetPageSize());
         MemoryCommit(Arena->Start + Arena->Committed, BytesToCommit);
         Arena->Committed += BytesToCommit;
     }
@@ -119,16 +124,7 @@ u8* ArenaPush(memory_arena *Arena, s64 Bytes)
 
 u8* ArenaPushZero(memory_arena *Arena, s64 Bytes)
 {
-    if(Arena->At + Bytes > Arena->Committed)
-    {
-        u64 BytesNeeded = (Arena->At + Bytes - Arena->Committed);
-        u64 BytesToCommit = (BytesNeeded + GetPageSize() - 1)/GetPageSize();
-        MemoryCommit(Arena->Start + Arena->Committed, BytesToCommit);
-        Arena->Committed += BytesToCommit;
-    }
-    u8* Memory = Arena->Start + Arena->At;
-    Arena->At += Bytes;
-    
+    u8* Memory = ArenaPush(Arena, Bytes);
     ZeroMemory(Memory, Bytes);
     return Memory;
 }
@@ -265,7 +261,7 @@ str8 Str8ListJoin(memory_arena* Arena, str8_list *List)
     return Result;
 }
 
-void CompileFromBuildOptions(build_options Options)
+void CompileFromBuildOptions(memory_arena* Arena, build_options Options)
 {
     STARTUPINFO StartupInfo = {0};
     PROCESS_INFORMATION ProcessInfo = {0};
@@ -275,17 +271,53 @@ void CompileFromBuildOptions(build_options Options)
     SecurityAttributes.bInheritHandle = 1;
     SecurityAttributes.lpSecurityDescriptor = 0;
 
-    HANDLE StdInHandle = 0;
-    HANDLE StdOutHandle = 0;
+    HANDLE StdOutHandleRead = 0;
+    HANDLE StdOutHandleWrite = 0;
 
-    CreatePipe(&StdOutHandle, &StdInHandle, &SecurityAttributes, 0);
+    if(CreatePipe(&StdOutHandleRead, &StdOutHandleWrite, &SecurityAttributes, 0) == 0)
+    {
+        printf("Failed to create stdout pipe");
+    }
+    SetHandleInformation( StdOutHandleRead, HANDLE_FLAG_INHERIT, 0);
 
     StartupInfo.cb = sizeof(STARTUPINFO);
-    StartupInfo.hStdError = StdOutHandle;
-    StartupInfo.hStdOutput = StdOutHandle;
-    StartupInfo.hStdInput = StdInHandle;
+    StartupInfo.hStdError = StdOutHandleWrite;
+    StartupInfo.hStdOutput = StdOutHandleWrite;
     StartupInfo.dwFlags |= STARTF_USESTDHANDLES;
 
-    str8 Compilers[2] = {Str8Lit("cl.exe"), Str8Lit("clang.exe")};
-    CreateProcessA(Compilers[Options.Compiler].Bytes, "src/mayday.c /link /OUT:mayday.exe", 0, 0, 1, 0, 0, 0, &StartupInfo, &ProcessInfo);
+
+    str8 Compilers[COMPILER_COUNT] = {Str8Lit("cl.exe"), Str8Lit("clang.exe")};
+    str8 Command = Str8PushF(Arena, "%.*s /EHsc src\\mayday.c /link /OUT:mayday.exe", Str8ToPrintfArgs(Compilers[Options.Compiler]));
+    if(CreateProcessA(0, Command.Bytes, 0, 0, 1, 0, 0, 0, &StartupInfo, &ProcessInfo))
+    {
+        WaitForSingleObject(ProcessInfo.hProcess, INFINITE);
+        CloseHandle(ProcessInfo.hProcess);
+        CloseHandle(ProcessInfo.hThread);
+        CloseHandle(StdOutHandleWrite);
+    }
+    else
+    {
+        printf("Failed to launch compiler... if using cl.exe try using the x64 command prompt\n");
+        return;
+    }
+
+
+    DWORD NumberOfBytesRead = 0;
+    str8_list StdOutList = {0};
+    for (;;)
+    {
+        u8* BackingMemory = ArenaPushZero(Arena, 4096);
+        BOOL Success = ReadFile(StdOutHandleRead, BackingMemory, 4096, &NumberOfBytesRead, NULL);
+        if (!Success || NumberOfBytesRead == 0)
+        {
+            break;
+        }
+        str8 String = {.Bytes = BackingMemory, .Size = NumberOfBytesRead };
+        Str8ListAppend(Arena, &StdOutList, String);
+    }
+
+   str8 OutputString = Str8ListJoin(Arena, &StdOutList);
+   printf("%.*s", Str8ToPrintfArgs(OutputString));
+
+   CloseHandle(StdOutHandleRead);
 }

@@ -30,6 +30,14 @@ int main() {
     }
 
     printf("\n");
+
+    for(str8_list_node *Node = List.Last; Node != 0; Node = Node->Previous)
+    {
+        printf("%.*s", Str8ToPrintfArgs(Node->String));
+    }
+
+    printf("\n");
+
     Str8ListPopN(&List, 1);
 
     for(str8_list_node *Node = List.First; Node != 0; Node = Node->Next)
@@ -63,7 +71,7 @@ int main() {
         .SourceFiles = SourceFiles
     };
 
-    CompileFromBuildOptions(Options);
+    CompileFromBuildOptions(&Arena, Options);
 
     return 0;
 }

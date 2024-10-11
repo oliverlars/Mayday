@@ -95,9 +95,13 @@ output_type;
 typedef struct build_options
 {
     compiler Compiler;
+
     output_type OutputType;
     str8 OutputName;
     str8 OutputPath;
+
+    str8 WorkingDirectory;
+
     str8_list IncludePaths;
     str8_list SourceFiles;
     
@@ -157,6 +161,19 @@ str8 Str8PushF(memory_arena *Arena, char *Format, ...)
     str8 Result = Str8PushFV(Arena, Format, args);
     va_end(args);
     return Result;
+}
+
+b32 Str8Equal(str8 A, str8 B)
+{
+    if(A.Size != B.Size) return 0;
+    for(u64 Index = 0; Index < A.Size; Index++)
+    {
+        if(A.Bytes[Index] != B.Bytes[Index])
+        {
+            return 0;
+        }
+    }
+    return 1;
 }
 
 void Str8ListAppend(memory_arena *Arena, str8_list *List, str8 String)
@@ -300,6 +317,106 @@ str8 Str8ListJoin(memory_arena* Arena, str8_list *List)
     str8 Result = { .Bytes = Bytes, .Size = BytesToAllocate };
 
     return Result;
+}
+
+#define FNV_64_PRIME ((u64)0x100000001b3ULL)
+u64 FNVHash64(str8 String)
+{
+    u8 *Start = String.Bytes;
+    u8 *End = Start + String.Size;
+
+    u64 Result = (u64)0xcbf29ce484222325ULL;
+
+    for(u8 Index = 0; Index < String.Size; Index++)
+    {
+
+        Result *= FNV_64_PRIME;
+        Result ^= (u64)String.Bytes[Index];
+    }
+
+    return Result;
+}
+
+b32 Advance(str8 File, u64 *At)
+{
+    if(*At < File.Size)
+    {
+        *At += 1;
+        return 1;
+    }
+    return 0;
+}
+
+b32 AdvanceN(str8 File, u64 *At, u64 N)
+{
+    if(*At + N < File.Size)
+    {
+        *At += N;
+        return 1;
+    }
+    return 0;
+}
+
+void GobbleWhitespace(str8 File, u64 *At)
+{
+    while(*At < File.Size)
+    {
+        u64 Byte = File.Bytes[*At];
+        switch(Byte)
+        {
+            case ' ':
+            case '\r':
+            case '\n':
+            {
+                Advance(File, At);
+            } break;
+            default: {
+                return;
+            } break;
+        }
+    }
+}
+
+void FindAllIncludesInFile(memory_arena *Arena, str8 File, str8_list *Includes)
+{
+    // Support unicode...
+    u64 At = 0;
+    while(At < File.Size)
+    {
+        u8 Byte = File.Bytes[At];
+        if(Byte == '#')
+        {
+            Advance(File, &At);
+            str8 Token = {0};
+            Token.Bytes = File.Bytes + At;
+            str8 IncludeToken = Str8("include");
+            Token.Size = IncludeToken.Size;
+            if(At + Token.Size < File.Size)
+            {
+                if(Str8Equal(Token, IncludeToken))
+                {
+                    AdvanceN(File, &At, Token.Size);
+                    GobbleWhitespace(File, &At);
+                    if(File.Bytes[At] == '"')
+                    {
+                        if(Advance(File, &At))
+                        {
+                            str8 IncludePath = {0};
+                            IncludePath.Bytes = File.Bytes + At;
+                            while(Advance(File, &At) && File.Bytes[At] != '"');
+                            IncludePath.Size = File.Bytes + At - IncludePath.Bytes;
+                            Str8ListAppend(Arena, Includes, IncludePath);
+                        }
+                    }
+                }
+            }
+            else
+            {
+                return;
+            }
+        }
+        At++;
+    }
 }
 
 void CompileFromBuildOptions(memory_arena* Arena, build_options Options)

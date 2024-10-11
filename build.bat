@@ -1,1 +1,1 @@
-cl /nologo /O1 /Zi first.c /link Kernel32.lib /OUT:first.exe 
+cl /nologo /Od /Zi first.c /link Kernel32.lib /OUT:first.exe 

@@ -1,6 +1,7 @@
 #include "first_win32.h"
 
-int main() {
+int main()
+{
 
     memory_arena Arena = {0};
     Arena.Start = MemoryReserve(GigaBytes(64));
@@ -17,6 +18,13 @@ int main() {
         .SourceFiles = SourceFiles,
         .IncludePaths = IncludePaths,
     };
+
+
+    str8 TestFile = Str8("#include \"ABC.h\" \n\n #include \"DEF.h\"");
+    str8_list ListOfIncludes = {0};
+    FindAllIncludesInFile(&Arena, TestFile, &ListOfIncludes);
+
+    printf("\n\nList of includes: %.*s\n\n", Str8ToPrintfArgs(Str8ListJoin(&Arena, &ListOfIncludes)));
 
     CompileFromBuildOptions(&Arena, Options);
 

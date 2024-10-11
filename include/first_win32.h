@@ -25,6 +25,8 @@ typedef uint64_t  b64;
 #define MemoryCommit(Address, NumberOfBytes) VirtualAlloc((void*)(Address), NumberOfBytes, MEM_COMMIT, PAGE_READWRITE)
 #define MemoryReserve(NumberOfBytes) (u8*)VirtualAlloc((void*)0, NumberOfBytes, MEM_RESERVE, PAGE_READWRITE)
 
+#define MemoryCopy(Destination, Source, NumberOfBytes) memcpy(Destination, Source, NumberOfBytes)
+
 #define KiloBytes(X) (1024ll*X)
 #define MegaBytes(X) (1024ll*KiloBytes(1))
 #define GigaBytes(X) (1024ll*MegaBytes(1))
@@ -242,6 +244,25 @@ void Str8ListPopFirst(str8_list *List) {
             List->First = List->First->Next;
         }
     }
+}
+
+str8 Str8ListJoin(memory_arena* Arena, str8_list *List)
+{
+    u64 BytesToAllocate = 0;
+    for(str8_list_node *Node = List->First; Node != 0; Node = Node->Next)
+    {
+        BytesToAllocate += Node->String.Size;
+    }
+    u8* Bytes = ArenaPush(Arena, BytesToAllocate);
+    u64 At = 0;
+    for(str8_list_node *Node = List->First; Node != 0; Node = Node->Next)
+    {
+        MemoryCopy(Bytes + At, Node->String.Bytes, Node->String.Size);
+        At += Node->String.Size;
+    }
+    str8 Result = { .Bytes = Bytes, .Size = BytesToAllocate };
+
+    return Result;
 }
 
 void CompileFromBuildOptions(build_options Options)

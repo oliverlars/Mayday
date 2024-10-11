@@ -18,30 +18,38 @@ int main() {
     Str8ListAppend(&Arena, &List, Str8Lit("Hello"));
     Str8ListAppend(&Arena, &List, Str8Lit(", "));
     Str8ListAppend(&Arena, &List, Str8Lit("World"));
+
+    str8 JoinedList = Str8ListJoin(&Arena, &List);
     printf("\n");
 
-    for(str8_list_node *Node = List.First; Node != 0; Node = Node->Next) {
+    printf("Joined List: %.*s\n", Str8ToPrintfArgs(JoinedList));
+
+    for(str8_list_node *Node = List.First; Node != 0; Node = Node->Next)
+    {
         printf("%.*s", Str8ToPrintfArgs(Node->String));
     }
 
     printf("\n");
     Str8ListPopN(&List, 1);
 
-    for(str8_list_node *Node = List.First; Node != 0; Node = Node->Next) {
+    for(str8_list_node *Node = List.First; Node != 0; Node = Node->Next)
+    {
         printf("%.*s", Str8ToPrintfArgs(Node->String));
     }
 
     printf("\n");
     Str8ListPopN(&List, 1);
 
-    for(str8_list_node *Node = List.First; Node != 0; Node = Node->Next) {
+    for(str8_list_node *Node = List.First; Node != 0; Node = Node->Next)
+    {
         printf("%.*s", Str8ToPrintfArgs(Node->String));
     }
 
     printf("\n");
     Str8ListPopN(&List, 0);
 
-    for(str8_list_node *Node = List.First; Node != 0; Node = Node->Next) {
+    for(str8_list_node *Node = List.First; Node != 0; Node = Node->Next)
+    {
         printf("%.*s", Str8ToPrintfArgs(Node->String));
     }
 

@@ -183,3 +183,33 @@ void Str8ListPopN(str8_list *List, u64 N)
         }
     }
 }
+
+void Str8ListPopLast(str8_list *List) {
+    if(List->Last)
+    {
+        if(List->First == List->Last)
+        {
+            List->First = 0;
+            List->Last = 0;
+        }
+        else
+        {
+            List->Last = List->Last->Previous;
+        }
+    }
+}
+
+void Str8ListPopFirst(str8_list *List) {
+    if(List->First)
+    {
+        if(List->First == List->Last)
+        {
+            List->First = 0;
+            List->Last = 0;
+        }
+        else
+        {
+            List->First = List->First->Next;
+        }
+    }
+}

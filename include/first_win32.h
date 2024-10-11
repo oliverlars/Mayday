@@ -124,7 +124,6 @@ str8 Str8PushF(memory_arena *Arena, char *Format, ...)
   return Result;
 }
 
-
 void Str8ListAppend(memory_arena *Arena, str8_list *List, str8 String)
 {
     str8_list_node *Node = ArenaPushTypeZero(Arena, str8_list_node);
@@ -139,5 +138,48 @@ void Str8ListAppend(memory_arena *Arena, str8_list *List, str8 String)
         List->Last->Next = Node;
         Node->Previous = List->Last;
         List->Last = Node;
+    }
+}
+
+void Str8ListPrepend(memory_arena *Arena, str8_list *List, str8 String)
+{
+    str8_list_node *Node = ArenaPushTypeZero(Arena, str8_list_node);
+    Node->String = Str8PushF(Arena, "%.*s", Str8ToPrintfArgs(String));
+    if(List->First == 0)
+    {
+        List->First = Node;
+        List->Last = List->First;
+    }
+    else
+    {
+        List->First->Previous = Node;
+        Node->Next = List->First;
+        List->First = Node;
+    }
+}
+
+void Str8ListPopN(str8_list *List, u64 N)
+{
+    str8_list_node *Node = List->First;
+    for(int Index = 0; Index < N; Index++, Node = Node->Next);
+    if(Node != 0)
+    {
+        if(Node->Previous != 0)
+        {
+            Node->Previous->Next = Node->Next;
+        }
+        else
+        {
+            List->First = List->First->Next;
+        }
+
+        if(Node->Next != 0)
+        {
+            Node->Next->Previous = Node->Previous;
+        }
+        else
+        {
+            List->Last = List->Last->Previous;
+        }
     }
 }

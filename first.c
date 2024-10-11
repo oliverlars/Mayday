@@ -16,10 +16,34 @@ int main() {
     str8_list List = {0};
 
     Str8ListAppend(&Arena, &List, Str8Lit("Hello"));
+    Str8ListAppend(&Arena, &List, Str8Lit(", "));
     Str8ListAppend(&Arena, &List, Str8Lit("World"));
     printf("\n");
-    printf("%.*s\n", Str8ToPrintfArgs(List.Last->Previous->String));
-    printf("%.*s\n", Str8ToPrintfArgs(List.First->Next->String));
+
+    for(str8_list_node *Node = List.First; Node != 0; Node = Node->Next) {
+        printf("%.*s", Str8ToPrintfArgs(Node->String));
+    }
+
+    printf("\n");
+    Str8ListPopN(&List, 1);
+
+    for(str8_list_node *Node = List.First; Node != 0; Node = Node->Next) {
+        printf("%.*s", Str8ToPrintfArgs(Node->String));
+    }
+
+    printf("\n");
+    Str8ListPopN(&List, 1);
+
+    for(str8_list_node *Node = List.First; Node != 0; Node = Node->Next) {
+        printf("%.*s", Str8ToPrintfArgs(Node->String));
+    }
+
+    printf("\n");
+    Str8ListPopN(&List, 0);
+
+    for(str8_list_node *Node = List.First; Node != 0; Node = Node->Next) {
+        printf("%.*s", Str8ToPrintfArgs(Node->String));
+    }
 
     return 0;
 }

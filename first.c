@@ -21,8 +21,10 @@ int main()
 
 
     str8 TestFile = Str8("#include \"ABC.h\" \n\n #include \"DEF.h\"");
+    str8 TestFile2 = LoadEntireFileIntoMemory(&Arena, Str8("first.c"));
+    printf("%.*s\n\n", Str8ToPrintfArgs(TestFile2));
     str8_list ListOfIncludes = {0};
-    FindAllIncludesInFile(&Arena, TestFile, &ListOfIncludes);
+    FindAllIncludesInFile(&Arena, TestFile2, &ListOfIncludes);
 
     printf("\n\nList of includes: %.*s\n\n", Str8ToPrintfArgs(Str8ListJoin(&Arena, &ListOfIncludes)));
 

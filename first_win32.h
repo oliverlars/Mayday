@@ -163,6 +163,19 @@ str8 Str8PushF(memory_arena *Arena, char *Format, ...)
     return Result;
 }
 
+char* CStrFromStr8(memory_arena *Arena, str8 String)
+{
+    s32 NullTerminated = 0;
+    if(String.Bytes[String.Size] == 0)
+    {
+        NullTerminated = 1;
+    }
+   
+    char* Result = (char*)ArenaPushZero(Arena, String.Size + NullTerminated);
+    MemoryCopy(Result, String.Bytes, String.Size);
+    return Result;
+}
+
 b32 Str8Equal(str8 A, str8 B)
 {
     if(A.Size != B.Size) return 0;
@@ -300,7 +313,7 @@ void Str8ListPopFirst(str8_list *List) {
     }
 }
 
-str8 Str8ListJoin(memory_arena* Arena, str8_list *List)
+str8 Str8ListJoin(memory_arena *Arena, str8_list *List)
 {
     u64 BytesToAllocate = 0;
     for(str8_list_node *Node = List->First; Node != 0; Node = Node->Next)
@@ -315,6 +328,39 @@ str8 Str8ListJoin(memory_arena* Arena, str8_list *List)
         At += Node->String.Size;
     }
     str8 Result = { .Bytes = Bytes, .Size = BytesToAllocate };
+
+    return Result;
+}
+
+str8 LoadEntireFileIntoMemory(memory_arena *Arena, str8 Filename)
+{
+    HANDLE FileHandle = CreateFileA(CStrFromStr8(Arena, Filename),
+                    GENERIC_READ,
+                    FILE_SHARE_READ,
+                    0,
+                    OPEN_EXISTING,
+                    FILE_ATTRIBUTE_NORMAL,
+                    0);
+
+    if (FileHandle == INVALID_HANDLE_VALUE) 
+    {
+        printf("File not found");
+        return (str8){0};
+    }
+
+    LARGE_INTEGER FileSize;
+    DWORD BytesRead;
+    GetFileSizeEx(FileHandle, &FileSize);
+
+    u8* BackingMemory = ArenaPush(Arena, (u64)FileSize.QuadPart+1);
+    BackingMemory[FileSize.QuadPart] = 0;
+
+    str8 Result = {0};
+    Result.Bytes = BackingMemory;
+    Result.Size = FileSize.QuadPart;
+
+    OVERLAPPED Overlapped = {0};
+    ReadFile(FileHandle, BackingMemory, FileSize.QuadPart, &BytesRead, &Overlapped);
 
     return Result;
 }
@@ -386,7 +432,7 @@ void FindAllIncludesInFile(memory_arena *Arena, str8 File, str8_list *Includes)
         u8 Byte = File.Bytes[At];
         if(Byte == '#')
         {
-            Advance(File, &At);
+            if(Advance(File, &At) == 0) return;
             str8 Token = {0};
             Token.Bytes = File.Bytes + At;
             str8 IncludeToken = Str8("include");
@@ -409,10 +455,6 @@ void FindAllIncludesInFile(memory_arena *Arena, str8 File, str8_list *Includes)
                         }
                     }
                 }
-            }
-            else
-            {
-                return;
             }
         }
         At++;

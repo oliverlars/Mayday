@@ -1,5 +1,6 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include <processthreadsapi.h>
 
 #include <stdio.h>
 
@@ -61,6 +62,31 @@ typedef struct str8_list
     str8_list_node *Last;
 }
 str8_list;
+
+typedef enum compiler
+{
+    COMPILER_MSVC,
+    COMPILER_CLANG,
+}
+compiler;
+
+typedef enum output_type
+{
+    OUTPUT_EXECUTABLE,
+    OUTPUT_STATIC_LIBRARY,
+    OUTPUT_DYNAMIC_LIBRARY,
+}
+output_type;
+
+typedef struct build_options
+{
+    compiler Compiler;
+    output_type OutputType;
+    str8 OutputName;
+    str8_list IncludePaths;
+    str8_list SourceFiles;
+}
+build_options;
 
 u64 GetPageSize()
 {
@@ -212,4 +238,13 @@ void Str8ListPopFirst(str8_list *List) {
             List->First = List->First->Next;
         }
     }
+}
+
+void CompileFromBuildOptions(build_options Options)
+{
+    STARTUPINFO StartupInfo;
+    PROCESS_INFORMATION ProcessInfo;
+
+    str8 Compilers[2] = {Str8Lit("cl.exe"), Str8Lit("clang.exe")};
+    CreateProcessA(Compilers[Options.Compiler].Bytes, "src/mayday.c /link /OUT:mayday.exe", 0, 0, 0, 0, 0, 0, &StartupInfo, &ProcessInfo);
 }

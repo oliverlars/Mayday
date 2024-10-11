@@ -45,5 +45,17 @@ int main() {
         printf("%.*s", Str8ToPrintfArgs(Node->String));
     }
 
+
+    str8_list SourceFiles = {0};
+    Str8ListAppend(&Arena, &SourceFiles, Str8Lit("src/mayday.c"));
+    build_options Options = {
+        .Compiler = COMPILER_MSVC,
+        .OutputName = Str8Lit("Mayday"),
+        .OutputType = OUTPUT_EXECUTABLE,
+        .SourceFiles = SourceFiles
+    };
+
+    CompileFromBuildOptions(Options);
+
     return 0;
 }

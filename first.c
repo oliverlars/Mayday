@@ -1,74 +1,21 @@
-#include "include/first_win32.h"
-
-
-
+#include "first_win32.h"
 
 int main() {
 
     memory_arena Arena = {0};
     Arena.Start = MemoryReserve(GigaBytes(64));
 
-    u8* SomeMemory = ArenaPush(&Arena, 6);
-    str8 String = Str8PushF(&Arena, "Hello World");
-    printf("%.*s", Str8ToPrintfArgs(String));
-
-
-    str8_list List = {0};
-
-    Str8ListAppend(&Arena, &List, Str8Lit("Hello"));
-    Str8ListAppend(&Arena, &List, Str8Lit(", "));
-    Str8ListAppend(&Arena, &List, Str8Lit("World"));
-
-    str8 JoinedList = Str8ListJoin(&Arena, &List);
-    printf("\n");
-
-    printf("Joined List: %.*s\n", Str8ToPrintfArgs(JoinedList));
-
-    for(str8_list_node *Node = List.First; Node != 0; Node = Node->Next)
-    {
-        printf("%.*s", Str8ToPrintfArgs(Node->String));
-    }
-
-    printf("\n");
-
-    for(str8_list_node *Node = List.Last; Node != 0; Node = Node->Previous)
-    {
-        printf("%.*s", Str8ToPrintfArgs(Node->String));
-    }
-
-    printf("\n");
-
-    Str8ListPopN(&List, 1);
-
-    for(str8_list_node *Node = List.First; Node != 0; Node = Node->Next)
-    {
-        printf("%.*s", Str8ToPrintfArgs(Node->String));
-    }
-
-    printf("\n");
-    Str8ListPopN(&List, 1);
-
-    for(str8_list_node *Node = List.First; Node != 0; Node = Node->Next)
-    {
-        printf("%.*s", Str8ToPrintfArgs(Node->String));
-    }
-
-    printf("\n");
-    Str8ListPopN(&List, 0);
-
-    for(str8_list_node *Node = List.First; Node != 0; Node = Node->Next)
-    {
-        printf("%.*s", Str8ToPrintfArgs(Node->String));
-    }
-
-
     str8_list SourceFiles = {0};
-    Str8ListAppend(&Arena, &SourceFiles, Str8Lit("src/mayday.c"));
+    Str8ListAppend(&Arena, &SourceFiles, Str8("src/mayday.c"));
+
+    str8_list IncludePaths = {0};
+    Str8ListAppend(&Arena, &IncludePaths, Str8("include/"));
     build_options Options = {
         .Compiler = COMPILER_MSVC,
-        .OutputName = Str8Lit("Mayday"),
+        .OutputName = Str8("Mayday"),
         .OutputType = OUTPUT_EXECUTABLE,
-        .SourceFiles = SourceFiles
+        .SourceFiles = SourceFiles,
+        .IncludePaths = IncludePaths,
     };
 
     CompileFromBuildOptions(&Arena, Options);

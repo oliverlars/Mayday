@@ -27,32 +27,53 @@ typedef unsigned long long b64;
 #define GigaBytes(X) (1024ll*MegaBytes(1))
 
 #define Str8ToPrintfArgs(String) (int)String.Size, String.Bytes
+#define Str8Lit(String) (str8){strlen(String), String}
 
-typedef struct memory_arena {
-    u8* Start;
+#define ArenaPushType(Arena, Type) (Type*)ArenaPush(Arena, sizeof(Type))
+#define ArenaPushTypeZero(Arena, Type) (Type*)ArenaPushZero(Arena, sizeof(Type))
+
+typedef struct memory_arena
+{
+    u8 *Start;
     s64 Committed;
     s64 At;
-} memory_arena;
+}
+memory_arena;
 
-typedef struct str8 {
+typedef struct str8
+{
     s64 Size;
-    u8* Bytes;
-} str8;
+    u8 *Bytes;
+}
+str8;
 
-typedef struct str8_list {
-    str8* First;
-    str8* Last;
-} str8_list;
+typedef struct str8_list_node
+{
+    struct str8_list_node *Next;
+    struct str8_list_node *Previous;
+    str8 String;
+}
+str8_list_node;
 
-u64 GetPageSize() {
+typedef struct str8_list
+{
+    str8_list_node *First;
+    str8_list_node *Last;
+}
+str8_list;
+
+u64 GetPageSize()
+{
     SYSTEM_INFO SystemInfo;
     GetSystemInfo(&SystemInfo);
 
     return SystemInfo.dwPageSize;
 }
 
-u8* ArenaPush(memory_arena *Arena, s64 Bytes) {
-    if(Arena->At + Bytes > Arena->Committed) {
+u8* ArenaPush(memory_arena *Arena, s64 Bytes)
+{
+    if(Arena->At + Bytes > Arena->Committed)
+    {
         u64 BytesNeeded = (Arena->At + Bytes - Arena->Committed);
         u64 BytesToCommit = (BytesNeeded + GetPageSize() - 1)/GetPageSize();
         MemoryCommit(Arena->Start + Arena->Committed, BytesToCommit);
@@ -64,23 +85,59 @@ u8* ArenaPush(memory_arena *Arena, s64 Bytes) {
     return Memory;
 }
 
+u8* ArenaPushZero(memory_arena *Arena, s64 Bytes)
+{
+    if(Arena->At + Bytes > Arena->Committed)
+    {
+        u64 BytesNeeded = (Arena->At + Bytes - Arena->Committed);
+        u64 BytesToCommit = (BytesNeeded + GetPageSize() - 1)/GetPageSize();
+        MemoryCommit(Arena->Start + Arena->Committed, BytesToCommit);
+        Arena->Committed += BytesToCommit;
+    }
+    u8* Memory = Arena->Start + Arena->At;
+    Arena->At += Bytes;
+    
+    ZeroMemory(Memory, Bytes);
+    return Memory;
+}
 
-str8 Str8PushFV(memory_arena *Arena, char *Format, va_list InputArgList){
+
+str8 Str8PushFV(memory_arena *Arena, char *Format, va_list InputArgList)
+{
   va_list ArgList;
   va_copy(ArgList, InputArgList);
   u32 BytesNeeded = vsnprintf(0, 0, Format, InputArgList) + 1;
   str8 Result = {0};
   Result.Bytes = ArenaPush(Arena, BytesNeeded);
-  Result.Size = vsnprintf(Result.Bytes, BytesNeeded, Format, ArgList);
+  Result.Size = vsnprintf((char*)Result.Bytes, BytesNeeded, Format, ArgList);
   Result.Bytes[Result.Size] = 0;
   va_end(ArgList);
   return Result;
 }
 
-str8 Str8PushF(memory_arena *Arena, char *Format, ...){
+str8 Str8PushF(memory_arena *Arena, char *Format, ...)
+{
   va_list args;
   va_start(args, Format);
   str8 Result = Str8PushFV(Arena, Format, args);
   va_end(args);
   return Result;
+}
+
+
+void Str8ListAppend(memory_arena *Arena, str8_list *List, str8 String)
+{
+    str8_list_node *Node = ArenaPushTypeZero(Arena, str8_list_node);
+    Node->String = Str8PushF(Arena, "%.*s", Str8ToPrintfArgs(String));
+    if(List->First == 0)
+    {
+        List->First = Node;
+        List->Last = List->First;
+    }
+    else
+    {
+        List->Last->Next = Node;
+        Node->Previous = List->Last;
+        List->Last = Node;
+    }
 }

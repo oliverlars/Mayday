@@ -365,24 +365,6 @@ str8 LoadEntireFileIntoMemory(memory_arena *Arena, str8 Filename)
     return Result;
 }
 
-void DumpHashedDataToFile(u8* Bytes, u64 BytesToWrite)
-{
-    HANDLE FileHandle = CreateFileA(
-                "cache.dat",
-                GENERIC_WRITE,
-                FILE_SHARE_READ,
-                0,
-                CREATE_NEW,
-                FILE_ATTRIBUTE_NORMAL,
-                0
-            );
-
-    DWORD BytesWritten;
-
-    OVERLAPPED Overlapped = {0};
-    WriteFile(FileHandle, Bytes, BytesToWrite, &BytesWritten, &Overlapped);
-}
-
 str8 GetExecutableDirectory(memory_arena *Arena)
 {
     DWORD NumberOfBytes = GetCurrentDirectoryA(0, 0);
@@ -632,13 +614,34 @@ void CompileFromBuildOptions(memory_arena* Arena, build_options Options)
     }
 
     printf("Compiling...\n");
+    str8_list HashedFilenames = {0};
     for(str8_list_node *Node = Options.SourceFiles.First; Node != 0; Node = Node->Next)
     {
+        str8_list IncludeChainFiles = {0};
+        str8_list IncludeChainFilenames = {0};
+        FindAllIncludesInFile(Arena, Node->String, Options.IncludePaths, &IncludeChainFiles, &IncludeChainFilenames);
+        u64 Hash = FNV_HASH_START;
+        FNVHash64(&Hash, Node->String);
+        for(str8_list_node *File = IncludeChainFiles.First; File != 0; File = File->Next)
+        {
+            FNVHash64(&Hash, File->String);
+        }
+
+        str8 HashedFilename = Str8PushF(Arena, "%llu.o", Hash);
+        Str8ListAppend(Arena, &HashedFilenames, HashedFilename);
+
+        DWORD FileAttributes = GetFileAttributesA((LPCSTR)CStrFromStr8(Arena, Str8PushF(Arena, "build/%.*s", Str8ToPrintfArgs(HashedFilename))));
+        if(FileAttributes != INVALID_FILE_ATTRIBUTES && !(FileAttributes & FILE_ATTRIBUTE_DIRECTORY))
+        {
+            continue;
+        }
+
         str8 CompileCommand = Str8PushF(
                         Arena, 
-                        "%.*s /c /nologo /Fo%s %.*s /EHsc %.*s",
+                        "%.*s /c /nologo /Fo%s%.*s %.*s /EHsc %.*s",
                         Str8ToPrintfArgs(Compilers[Options.Compiler]),
                         "build/",
+                        Str8ToPrintfArgs(HashedFilename),
                         Str8ToPrintfArgs(Str8ListJoin(Arena, &Options.IncludePaths)),
                         Str8ToPrintfArgs(Node->String)
                     );
@@ -684,13 +687,10 @@ void CompileFromBuildOptions(memory_arena* Arena, build_options Options)
 
     str8_list ObjectFiles = {0};
 
-    for(str8_list_node *Node = Options.SourceFiles.First; Node != 0; Node = Node->Next)
+    for(str8_list_node *Node = HashedFilenames.First; Node != 0; Node = Node->Next)
     {
-        str8 ObjectFile = Str8FromLastForwardSlash(Arena, Str8UpToFirstFullstop(Arena, Node->String));
-        
-        Str8ListAppend(Arena, &ObjectFiles, Str8PushF(Arena, "build/%.*s.obj ", Str8ToPrintfArgs(ObjectFile)));
+        Str8ListAppend(Arena, &ObjectFiles, Str8PushF(Arena, "build/%.*s ", Str8ToPrintfArgs(Node->String)));
     }
-
 
     str8 LinkCommand = Str8PushF(
                 Arena, 

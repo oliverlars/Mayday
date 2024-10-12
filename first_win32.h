@@ -439,17 +439,17 @@ void GobbleWhitespace(str8 File, u64 *At)
 
 str8 Str8UpToLastForwardSlash(str8 Path)
 {
-    u64 SizeToShrinkBy = Path.Size - 1;
+    u64 SizeUptoLastForwardSlash = Path.Size - 1;
     b32 FoundSlash = 0;
-    for(; SizeToShrinkBy >= 0; SizeToShrinkBy--)
+    for(; SizeUptoLastForwardSlash >= 0; SizeUptoLastForwardSlash--)
     {
-        if(Path.Bytes[SizeToShrinkBy] == '/')
+        if(Path.Bytes[SizeUptoLastForwardSlash] == '/')
         {
             FoundSlash = 1;
             break;
         }
     }
-    Path.Size = SizeToShrinkBy;
+    Path.Size = SizeUptoLastForwardSlash;
     return Path;
 }
 

@@ -355,6 +355,8 @@ str8 LoadEntireFileIntoMemory(memory_arena *Arena, str8 Filename)
     OVERLAPPED Overlapped = {0};
     ReadFile(FileHandle, BackingMemory, FileSize.QuadPart, &BytesRead, &Overlapped);
 
+    CloseHandle(FileHandle);
+
     return Result;
 }
 
@@ -466,6 +468,29 @@ str8 Str8FromLastForwardSlash(memory_arena *Arena, str8 InputPath)
         Path.Size = SizeFromLastForwardSlash;
         Path.Bytes = ArenaPush(Arena, SizeFromLastForwardSlash);
         MemoryCopy(Path.Bytes, InputPath.Bytes + SizeUptoLastForwardSlash + 1, SizeFromLastForwardSlash);
+    }
+    return Path;
+}
+
+str8 Str8FromLastFullstop(memory_arena *Arena, str8 InputPath)
+{
+    u64 SizeUptoLastFullstop = InputPath.Size - 1;
+    b32 FoundSlash = 0;
+    for(; SizeUptoLastFullstop >= 0; SizeUptoLastFullstop--)
+    {
+        if(InputPath.Bytes[SizeUptoLastFullstop] == '.')
+        {
+            FoundSlash = 1;
+            break;
+        }
+    }
+    str8 Path = {0};
+    u64 SizeFromLastFullstop = InputPath.Size - SizeUptoLastFullstop -1;
+    if(FoundSlash && SizeFromLastFullstop >= 0)
+    {
+        Path.Size = SizeFromLastFullstop;
+        Path.Bytes = ArenaPush(Arena, SizeFromLastFullstop);
+        MemoryCopy(Path.Bytes, InputPath.Bytes + SizeUptoLastFullstop + 1, SizeFromLastFullstop);
     }
     return Path;
 }
@@ -607,6 +632,8 @@ void CompileFromBuildOptions(memory_arena* Arena, build_options Options)
             continue;
         }
 
+        printf("Rebuilding TU: %.*s\n", Str8ToPrintfArgs(Node->String));
+
         str8 CompileCommand = Str8PushF(
                         Arena, 
                         "%.*s /c /nologo /Fo%s%.*s %.*s /EHsc %.*s",
@@ -616,7 +643,6 @@ void CompileFromBuildOptions(memory_arena* Arena, build_options Options)
                         Str8ToPrintfArgs(Str8ListJoin(Arena, &Options.IncludePaths)),
                         Str8ToPrintfArgs(Node->String)
                     );
-        printf("Compile command: %.*s\n", Str8ToPrintfArgs(CompileCommand));
 
         DWORD ExitCode;
         if(CreateProcessA(0, CompileCommand.Bytes, 0, 0, 1, 0, 0, 0, &StartupInfo, &ProcessInfo))
@@ -661,6 +687,32 @@ void CompileFromBuildOptions(memory_arena* Arena, build_options Options)
     for(str8_list_node *Node = HashedFilenames.First; Node != 0; Node = Node->Next)
     {
         Str8ListAppend(Arena, &ObjectFiles, Str8PushF(Arena, "build/%.*s ", Str8ToPrintfArgs(Node->String)));
+    }
+
+
+    WIN32_FIND_DATA FindData = {0};
+    HANDLE FindHandle = FindFirstFile("build/*.o", &FindData);
+
+    for(;FindNextFile(FindHandle, &FindData) != 0;)
+    {
+        if(FindData.dwFileAttributes != INVALID_FILE_ATTRIBUTES && !(FindData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
+        {
+            str8 FoundFilename = Str8PushF(Arena, "%s", FindData.cFileName);
+            b32 FoundMatch = 0;
+            for(str8_list_node *Node = HashedFilenames.First; Node != 0; Node = Node->Next)
+            {
+                if(Str8Equal(Node->String, FoundFilename))
+                {
+                    printf("%.*s\n", Str8ToPrintfArgs(FoundFilename));
+                    FoundMatch = 1;
+                    break;
+                }
+            }
+            if(FoundMatch == 0)
+            {
+                DeleteFile(Str8PushF(Arena, "build/%s", FindData.cFileName).Bytes);
+            }
+        }
     }
 
     str8 LinkCommand = Str8PushF(

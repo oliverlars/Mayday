@@ -477,28 +477,6 @@ str8 Str8FromLastForwardSlash(memory_arena *Arena, str8 InputPath)
     return Path;
 }
 
-str8 Str8UpToFirstFullstop(memory_arena *Arena, str8 InputPath)
-{
-    u64 SizeUpToFirstFullstop = 0;
-    b32 FoundFullstop = 0;
-    for(; SizeUpToFirstFullstop < InputPath.Size; SizeUpToFirstFullstop++)
-    {
-        if(InputPath.Bytes[SizeUpToFirstFullstop] == '.')
-        {
-            FoundFullstop = 1;
-            break;
-        }
-    }
-    str8 Path = {0};
-    if(FoundFullstop)
-    {
-        Path.Size = SizeUpToFirstFullstop;
-        Path.Bytes = ArenaPush(Arena, SizeUpToFirstFullstop);
-        MemoryCopy(Path.Bytes, InputPath.Bytes, SizeUpToFirstFullstop);
-    }
-    return Path;
-}
-
 void FindAllIncludesInFile(memory_arena *Arena, str8 Filename, str8_list IncludePaths, str8_list *IncludeChainFilenames, str8_list *IncludeChainFiles)
 {
     // Support unicode...

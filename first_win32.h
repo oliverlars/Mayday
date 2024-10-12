@@ -499,9 +499,13 @@ str8 Str8UpToFirstFullstop(memory_arena *Arena, str8 InputPath)
     return Path;
 }
 
-void FindAllIncludesInFile(memory_arena *Arena, str8 CurrentFile, str8_list IncludePaths, str8_list *IncludeChainFilenames, str8_list *IncludeChainFiles)
+void FindAllIncludesInFile(memory_arena *Arena, str8 Filename, str8_list IncludePaths, str8_list *IncludeChainFilenames, str8_list *IncludeChainFiles)
 {
     // Support unicode...
+
+    str8 CurrentFile = LoadEntireFileIntoMemory(Arena, Filename);
+    Str8ListAppend(Arena, IncludeChainFiles, CurrentFile);
+
     for(u64 At = 0; At < CurrentFile.Size; At++)
     {
         u8 Byte = CurrentFile.Bytes[At];
@@ -533,10 +537,8 @@ void FindAllIncludesInFile(memory_arena *Arena, str8 CurrentFile, str8_list Incl
                             if(FileAttributes != INVALID_FILE_ATTRIBUTES && !(FileAttributes & FILE_ATTRIBUTE_DIRECTORY))
                             {
                                 FoundFile = 1;
-                                str8 NextFileToVisit = LoadEntireFileIntoMemory(Arena, IncludePath);
-                                Str8ListAppend(Arena, IncludeChainFiles, NextFileToVisit);
                                 Str8ListAppend(Arena, IncludeChainFilenames, IncludePath);
-                                FindAllIncludesInFile(Arena, NextFileToVisit, IncludePaths, IncludeChainFilenames, IncludeChainFiles);
+                                FindAllIncludesInFile(Arena, IncludePath, IncludePaths, IncludeChainFilenames, IncludeChainFiles);
                             }
                             else
                             {
@@ -548,15 +550,12 @@ void FindAllIncludesInFile(memory_arena *Arena, str8 CurrentFile, str8_list Incl
                                         Str8ToPrintfArgs(Str8UpToLastForwardSlash(Arena, Node->String)),
                                         Str8ToPrintfArgs(IncludePath)
                                     );
-                                    printf("\nFully qualified path: %s\n", CStrFromStr8(Arena, FullPath));
                                     DWORD FileAttributes = GetFileAttributesA((LPCSTR)CStrFromStr8(Arena, FullPath));
                                     if(FileAttributes != INVALID_FILE_ATTRIBUTES && !(FileAttributes & FILE_ATTRIBUTE_DIRECTORY))
                                     {
                                         FoundFile = 1;
-                                        str8 NextFileToVisit = LoadEntireFileIntoMemory(Arena, FullPath);
-                                        Str8ListAppend(Arena, IncludeChainFiles, NextFileToVisit);
                                         Str8ListAppend(Arena, IncludeChainFilenames, FullPath);
-                                        FindAllIncludesInFile(Arena, NextFileToVisit, IncludePaths, IncludeChainFilenames, IncludeChainFiles);
+                                        FindAllIncludesInFile(Arena, FullPath, IncludePaths, IncludeChainFilenames, IncludeChainFiles);
                                         break;
                                     }
                                 }
@@ -619,7 +618,8 @@ void CompileFromBuildOptions(memory_arena* Arena, build_options Options)
     {
         str8_list IncludeChainFiles = {0};
         str8_list IncludeChainFilenames = {0};
-        FindAllIncludesInFile(Arena, Node->String, Options.IncludePaths, &IncludeChainFiles, &IncludeChainFilenames);
+        
+        FindAllIncludesInFile(Arena, Node->String, Options.IncludePaths, &IncludeChainFilenames, &IncludeChainFiles);
         u64 Hash = FNV_HASH_START;
         FNVHash64(&Hash, Node->String);
         for(str8_list_node *File = IncludeChainFiles.First; File != 0; File = File->Next)

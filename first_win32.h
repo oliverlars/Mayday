@@ -68,13 +68,6 @@ typedef struct str8_list
 }
 str8_list;
 
-typedef struct profiler
-{
-    u64 Start;
-    u64 End;
-}
-profiler;
-
 typedef enum compiler
 {
     COMPILER_MSVC,

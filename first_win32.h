@@ -7,6 +7,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include "binglebanglebongle.h"
+
 typedef int8_t    s8;
 typedef int16_t   s16;
 typedef int32_t   s32;
@@ -365,6 +367,20 @@ str8 LoadEntireFileIntoMemory(memory_arena *Arena, str8 Filename)
     return Result;
 }
 
+str8 GetExecutableDirectory(memory_arena *Arena)
+{
+    DWORD NumberOfBytes = GetCurrentDirectoryA(0, 0);
+    u8* BackingMemory = ArenaPushZero(Arena, NumberOfBytes);
+
+    GetCurrentDirectoryA(NumberOfBytes, (LPSTR)BackingMemory);
+
+    str8 Result = {0};
+    Result.Size = NumberOfBytes;
+    Result.Bytes = BackingMemory;
+
+    return Result;
+}
+
 #define FNV_64_PRIME ((u64)0x100000001b3ULL)
 u64 FNVHash64(str8 String)
 {
@@ -423,35 +439,90 @@ void GobbleWhitespace(str8 File, u64 *At)
     }
 }
 
-void FindAllIncludesInFile(memory_arena *Arena, str8 File, str8_list *Includes)
+str8 Str8UpToLastForwardSlash(str8 Path)
+{
+    u64 SizeToShrinkBy = Path.Size - 1;
+    b32 FoundSlash = 0;
+    for(; SizeToShrinkBy >= 0; SizeToShrinkBy--)
+    {
+        if(Path.Bytes[SizeToShrinkBy] == '/')
+        {
+            FoundSlash = 1;
+            break;
+        }
+    }
+    Path.Size = SizeToShrinkBy;
+    return Path;
+}
+
+void FindAllIncludesInFile(memory_arena *Arena, str8 CurrentFile, str8_list IncludePaths, str8_list *IncludeChainFilenames, str8_list *IncludeChainFiles)
 {
     // Support unicode...
     u64 At = 0;
-    while(At < File.Size)
+    while(At < CurrentFile.Size)
     {
-        u8 Byte = File.Bytes[At];
+        u8 Byte = CurrentFile.Bytes[At];
         if(Byte == '#')
         {
-            if(Advance(File, &At) == 0) return;
+            if(Advance(CurrentFile, &At) == 0) return;
             str8 Token = {0};
-            Token.Bytes = File.Bytes + At;
+            Token.Bytes = CurrentFile.Bytes + At;
             str8 IncludeToken = Str8("include");
             Token.Size = IncludeToken.Size;
-            if(At + Token.Size < File.Size)
+            if(At + Token.Size < CurrentFile.Size)
             {
                 if(Str8Equal(Token, IncludeToken))
                 {
-                    AdvanceN(File, &At, Token.Size);
-                    GobbleWhitespace(File, &At);
-                    if(File.Bytes[At] == '"')
+                    AdvanceN(CurrentFile, &At, Token.Size);
+                    GobbleWhitespace(CurrentFile, &At);
+                    if(CurrentFile.Bytes[At] == '"')
                     {
-                        if(Advance(File, &At))
+                        if(Advance(CurrentFile, &At))
                         {
                             str8 IncludePath = {0};
-                            IncludePath.Bytes = File.Bytes + At;
-                            while(Advance(File, &At) && File.Bytes[At] != '"');
-                            IncludePath.Size = File.Bytes + At - IncludePath.Bytes;
-                            Str8ListAppend(Arena, Includes, IncludePath);
+                            IncludePath.Bytes = CurrentFile.Bytes + At;
+                            while(Advance(CurrentFile, &At) && CurrentFile.Bytes[At] != '"');
+                            IncludePath.Size = CurrentFile.Bytes + At - IncludePath.Bytes;
+                            
+                            b32 FoundFile = 0;
+
+                            DWORD FileAttributes = GetFileAttributesA((LPCSTR)CStrFromStr8(Arena, IncludePath));
+                            if(FileAttributes != INVALID_FILE_ATTRIBUTES && !(FileAttributes & FILE_ATTRIBUTE_DIRECTORY))
+                            {
+                                FoundFile = 1;
+                                str8 NextFileToVisit = LoadEntireFileIntoMemory(Arena, IncludePath);
+                                Str8ListAppend(Arena, IncludeChainFiles, NextFileToVisit);
+                                Str8ListAppend(Arena, IncludeChainFilenames, IncludePath);
+                                FindAllIncludesInFile(Arena, NextFileToVisit, IncludePaths, IncludeChainFilenames, IncludeChainFiles);
+                            }
+                            else
+                            {
+                                for(str8_list_node *Node = IncludePaths.First; Node != 0; Node = Node->Next)
+                                {
+                                    str8 FullPath = Str8PushF(
+                                        Arena, 
+                                        "%.*s/%.*s", 
+                                        Str8ToPrintfArgs(Str8UpToLastForwardSlash(Node->String)),
+                                        Str8ToPrintfArgs(IncludePath)
+                                    );
+                                    printf("\nFully qualified path: %s\n", CStrFromStr8(Arena, FullPath));
+                                    DWORD FileAttributes = GetFileAttributesA((LPCSTR)CStrFromStr8(Arena, FullPath));
+                                    if(FileAttributes != INVALID_FILE_ATTRIBUTES && !(FileAttributes & FILE_ATTRIBUTE_DIRECTORY))
+                                    {
+                                        FoundFile = 1;
+                                        str8 NextFileToVisit = LoadEntireFileIntoMemory(Arena, FullPath);
+                                        Str8ListAppend(Arena, IncludeChainFiles, NextFileToVisit);
+                                        Str8ListAppend(Arena, IncludeChainFilenames, FullPath);
+                                        FindAllIncludesInFile(Arena, NextFileToVisit, IncludePaths, IncludeChainFilenames, IncludeChainFiles);
+                                        break;
+                                    }
+                                }
+                            }
+
+                            if(FoundFile == 0)
+                            {
+                                printf("\nUnable to find include path...\n");
+                            }
                         }
                     }
                 }

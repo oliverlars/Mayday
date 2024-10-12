@@ -17,16 +17,21 @@ int main()
         .OutputType = OUTPUT_EXECUTABLE,
         .SourceFiles = SourceFiles,
         .IncludePaths = IncludePaths,
+        .WorkingDirectory = GetExecutableDirectory(&Arena),
     };
 
 
     str8 TestFile = Str8("#include \"ABC.h\" \n\n #include \"DEF.h\"");
     str8 TestFile2 = LoadEntireFileIntoMemory(&Arena, Str8("first.c"));
-    printf("%.*s\n\n", Str8ToPrintfArgs(TestFile2));
-    str8_list ListOfIncludes = {0};
-    FindAllIncludesInFile(&Arena, TestFile2, &ListOfIncludes);
+    //printf("%.*s\n\n", Str8ToPrintfArgs(TestFile2));
 
-    printf("\n\nList of includes: %.*s\n\n", Str8ToPrintfArgs(Str8ListJoin(&Arena, &ListOfIncludes)));
+    str8_list IncludeChainFiles = {0};
+    Str8ListAppend(&Arena, &IncludeChainFiles, TestFile2);
+    str8_list IncludeChainFilenames = {0};
+    Str8ListAppend(&Arena, &IncludeChainFilenames, Str8("first.c"));
+    FindAllIncludesInFile(&Arena, TestFile2, Options.IncludePaths, &IncludeChainFilenames, &IncludeChainFiles);
+
+    printf("\nList of includes: %.*s\n\n", Str8ToPrintfArgs(Str8ListJoin(&Arena, &IncludeChainFilenames)));
 
     CompileFromBuildOptions(&Arena, Options);
 

@@ -112,7 +112,7 @@ build_options;
 
 u64 GetPageSize()
 {
-    SYSTEM_INFO SystemInfo;
+    SYSTEM_INFO SystemInfo = {0};
     GetSystemInfo(&SystemInfo);
 
     return SystemInfo.dwPageSize;
@@ -365,6 +365,24 @@ str8 LoadEntireFileIntoMemory(memory_arena *Arena, str8 Filename)
     return Result;
 }
 
+void DumpHashedDataToFile(u8* Bytes, u64 BytesToWrite)
+{
+    HANDLE FileHandle = CreateFileA(
+                "cache.dat",
+                GENERIC_WRITE,
+                FILE_SHARE_READ,
+                0,
+                CREATE_NEW,
+                FILE_ATTRIBUTE_NORMAL,
+                0
+            );
+
+    DWORD BytesWritten;
+
+    OVERLAPPED Overlapped = {0};
+    WriteFile(FileHandle, Bytes, BytesToWrite, &BytesWritten, &Overlapped);
+}
+
 str8 GetExecutableDirectory(memory_arena *Arena)
 {
     DWORD NumberOfBytes = GetCurrentDirectoryA(0, 0);
@@ -380,21 +398,16 @@ str8 GetExecutableDirectory(memory_arena *Arena)
 }
 
 #define FNV_64_PRIME ((u64)0x100000001b3ULL)
-u64 FNVHash64(str8 String)
+#define FNV_HASH_START ((u64)0xcbf29ce484222325ULL)
+void FNVHash64(u64 *Hash, str8 String)
 {
-    u8 *Start = String.Bytes;
-    u8 *End = Start + String.Size;
-
-    u64 Result = (u64)0xcbf29ce484222325ULL;
-
-    for(u8 Index = 0; Index < String.Size; Index++)
+    for(u64 Index = 0; Index < String.Size; Index++)
     {
 
-        Result *= FNV_64_PRIME;
-        Result ^= (u64)String.Bytes[Index];
+        *Hash *= FNV_64_PRIME;
+        *Hash ^= (u64)String.Bytes[Index];
     }
 
-    return Result;
 }
 
 b32 Advance(str8 File, u64 *At)
@@ -437,19 +450,70 @@ void GobbleWhitespace(str8 File, u64 *At)
     }
 }
 
-str8 Str8UpToLastForwardSlash(str8 Path)
+str8 Str8UpToLastForwardSlash(memory_arena *Arena, str8 InputPath)
 {
-    u64 SizeUptoLastForwardSlash = Path.Size - 1;
+    u64 SizeUptoLastForwardSlash = InputPath.Size - 1;
     b32 FoundSlash = 0;
     for(; SizeUptoLastForwardSlash >= 0; SizeUptoLastForwardSlash--)
     {
-        if(Path.Bytes[SizeUptoLastForwardSlash] == '/')
+        if(InputPath.Bytes[SizeUptoLastForwardSlash] == '/')
         {
             FoundSlash = 1;
             break;
         }
     }
-    Path.Size = SizeUptoLastForwardSlash;
+    str8 Path = {0};
+    if(FoundSlash)
+    {
+        Path.Size = SizeUptoLastForwardSlash;
+        Path.Bytes = ArenaPush(Arena, SizeUptoLastForwardSlash);
+        MemoryCopy(Path.Bytes, InputPath.Bytes, SizeUptoLastForwardSlash);
+    }
+    return Path;
+}
+
+str8 Str8FromLastForwardSlash(memory_arena *Arena, str8 InputPath)
+{
+    u64 SizeUptoLastForwardSlash = InputPath.Size - 1;
+    b32 FoundSlash = 0;
+    for(; SizeUptoLastForwardSlash >= 0; SizeUptoLastForwardSlash--)
+    {
+        if(InputPath.Bytes[SizeUptoLastForwardSlash] == '/')
+        {
+            FoundSlash = 1;
+            break;
+        }
+    }
+    str8 Path = {0};
+    u64 SizeFromLastForwardSlash = InputPath.Size - SizeUptoLastForwardSlash -1;
+    if(FoundSlash && SizeFromLastForwardSlash >= 0)
+    {
+        Path.Size = SizeFromLastForwardSlash;
+        Path.Bytes = ArenaPush(Arena, SizeFromLastForwardSlash);
+        MemoryCopy(Path.Bytes, InputPath.Bytes + SizeUptoLastForwardSlash + 1, SizeFromLastForwardSlash);
+    }
+    return Path;
+}
+
+str8 Str8UpToFirstFullstop(memory_arena *Arena, str8 InputPath)
+{
+    u64 SizeUpToFirstFullstop = 0;
+    b32 FoundFullstop = 0;
+    for(; SizeUpToFirstFullstop < InputPath.Size; SizeUpToFirstFullstop++)
+    {
+        if(InputPath.Bytes[SizeUpToFirstFullstop] == '.')
+        {
+            FoundFullstop = 1;
+            break;
+        }
+    }
+    str8 Path = {0};
+    if(FoundFullstop)
+    {
+        Path.Size = SizeUpToFirstFullstop;
+        Path.Bytes = ArenaPush(Arena, SizeUpToFirstFullstop);
+        MemoryCopy(Path.Bytes, InputPath.Bytes, SizeUpToFirstFullstop);
+    }
     return Path;
 }
 
@@ -499,7 +563,7 @@ void FindAllIncludesInFile(memory_arena *Arena, str8 CurrentFile, str8_list Incl
                                     str8 FullPath = Str8PushF(
                                         Arena, 
                                         "%.*s/%.*s", 
-                                        Str8ToPrintfArgs(Str8UpToLastForwardSlash(Node->String)),
+                                        Str8ToPrintfArgs(Str8UpToLastForwardSlash(Arena, Node->String)),
                                         Str8ToPrintfArgs(IncludePath)
                                     );
                                     printf("\nFully qualified path: %s\n", CStrFromStr8(Arena, FullPath));
@@ -527,6 +591,8 @@ void FindAllIncludesInFile(memory_arena *Arena, str8 CurrentFile, str8_list Incl
         }
     }
 }
+
+
 
 void CompileFromBuildOptions(memory_arena* Arena, build_options Options)
 {
@@ -564,19 +630,79 @@ void CompileFromBuildOptions(memory_arena* Arena, build_options Options)
         Str8ListInsertAfter(Arena, &Options.IncludePaths, Node, Str8(" "));
         Node = Node->Next;
     }
-    str8 Command = Str8PushF(
-                        Arena, 
-                        "%.*s /nologo /EHsc src\\mayday.c %.*s /link /OUT:%.*s%.*s",
-                        Str8ToPrintfArgs(Compilers[Options.Compiler]),
-                        Str8ToPrintfArgs(Str8ListJoin(Arena, &Options.IncludePaths)),
-                        Str8ToPrintfArgs(Options.OutputName),
-                        Str8ToPrintfArgs(Extensions[Options.OutputType])
-                    );
-    printf("Command: %.*s\n", Str8ToPrintfArgs(Command));
+
     printf("Compiling...\n");
+    for(str8_list_node *Node = Options.SourceFiles.First; Node != 0; Node = Node->Next)
+    {
+        str8 CompileCommand = Str8PushF(
+                        Arena, 
+                        "%.*s /c /nologo /Fo%s %.*s /EHsc %.*s",
+                        Str8ToPrintfArgs(Compilers[Options.Compiler]),
+                        "build/",
+                        Str8ToPrintfArgs(Str8ListJoin(Arena, &Options.IncludePaths)),
+                        Str8ToPrintfArgs(Node->String)
+                    );
+        printf("Compile command: %.*s\n", Str8ToPrintfArgs(CompileCommand));
+
+        DWORD ExitCode;
+        if(CreateProcessA(0, CompileCommand.Bytes, 0, 0, 1, 0, 0, 0, &StartupInfo, &ProcessInfo))
+        {
+            WaitForSingleObject(ProcessInfo.hProcess, INFINITE);
+
+            GetExitCodeProcess(ProcessInfo.hProcess, &ExitCode);
+            CloseHandle(ProcessInfo.hProcess);
+            CloseHandle(ProcessInfo.hThread);
+            CloseHandle(StdOutHandleWrite);
+        }
+        else
+        {
+            printf("Failed to launch compiler... if using cl.exe try using the x64 command prompt\n");
+            return;
+        }
+
+        if(ExitCode)
+        {
+            printf("\nFailed to Compile\n\n");
+            DWORD NumberOfBytesRead = 0;
+            str8_list StdOutList = {0};
+            for (;;)
+            {
+                u8* BackingMemory = ArenaPushZero(Arena, 4096);
+                BOOL Success = ReadFile(StdOutHandleRead, BackingMemory, 4096, &NumberOfBytesRead, NULL);
+                if (!Success || NumberOfBytesRead == 0)
+                {
+                    break;
+                }
+                str8 String = {.Bytes = BackingMemory, .Size = NumberOfBytesRead };
+                Str8ListAppend(Arena, &StdOutList, String);
+            }
+            str8 OutputString = Str8ListJoin(Arena, &StdOutList);
+            printf("%.*s", Str8ToPrintfArgs(OutputString));
+            return;
+        }
+    }
+
+    str8_list ObjectFiles = {0};
+
+    for(str8_list_node *Node = Options.SourceFiles.First; Node != 0; Node = Node->Next)
+    {
+        str8 ObjectFile = Str8FromLastForwardSlash(Arena, Str8UpToFirstFullstop(Arena, Node->String));
+        
+        Str8ListAppend(Arena, &ObjectFiles, Str8PushF(Arena, "build/%.*s.obj ", Str8ToPrintfArgs(ObjectFile)));
+    }
+
+
+    str8 LinkCommand = Str8PushF(
+                Arena, 
+                "%.*s /nologo /Fe%s %.*s /EHsc",
+                Str8ToPrintfArgs(Compilers[Options.Compiler]),
+                "build/mayday.exe",
+                Str8ToPrintfArgs(Str8ListJoin(Arena, &ObjectFiles))
+            );
+    printf("Link Command: %.*s\n", Str8ToPrintfArgs(LinkCommand));
 
     DWORD ExitCode;
-    if(CreateProcessA(0, Command.Bytes, 0, 0, 1, 0, 0, 0, &StartupInfo, &ProcessInfo))
+    if(CreateProcessA(0, LinkCommand.Bytes, 0, 0, 1, 0, 0, 0, &StartupInfo, &ProcessInfo))
     {
         WaitForSingleObject(ProcessInfo.hProcess, INFINITE);
 
@@ -587,20 +713,13 @@ void CompileFromBuildOptions(memory_arena* Arena, build_options Options)
     }
     else
     {
-        printf("Failed to launch compiler... if using cl.exe try using the x64 command prompt\n");
+        printf("Failed to launch linker... if using cl.exe try using the x64 command prompt\n");
         return;
     }
 
-    LARGE_INTEGER End = {0};
-    LARGE_INTEGER Frequency = {0};
-    QueryPerformanceCounter(&End);
-    QueryPerformanceFrequency(&Frequency);
-
-    f64 BuildTimeInMilliseconds = (f64)(1000.0*(End.QuadPart - Start.QuadPart) / Frequency.QuadPart);
-
     if(ExitCode)
     {
-        printf("\nFailed to Compile\n\n");
+        printf("\nFailed to Link\n\n");
         DWORD NumberOfBytesRead = 0;
         str8_list StdOutList = {0};
         for (;;)
@@ -616,12 +735,19 @@ void CompileFromBuildOptions(memory_arena* Arena, build_options Options)
         }
         str8 OutputString = Str8ListJoin(Arena, &StdOutList);
         printf("%.*s", Str8ToPrintfArgs(OutputString));
+        return;
     }
-    else
-    {
-        printf("Finished Compiling\n\n");
-        printf("Build took %0.2fms\n", BuildTimeInMilliseconds);
-    }
+
+
+    LARGE_INTEGER End = {0};
+    LARGE_INTEGER Frequency = {0};
+    QueryPerformanceCounter(&End);
+    QueryPerformanceFrequency(&Frequency);
+
+    f64 BuildTimeInMilliseconds = (f64)(1000.0*(End.QuadPart - Start.QuadPart) / Frequency.QuadPart);
+
+    printf("Finished Compiling\n\n");
+    printf("Build took %0.2fms\n", BuildTimeInMilliseconds);
 
    CloseHandle(StdOutHandleRead);
 }

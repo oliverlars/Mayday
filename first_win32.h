@@ -7,8 +7,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include "binglebanglebongle.h"
-
 typedef int8_t    s8;
 typedef int16_t   s16;
 typedef int32_t   s32;
@@ -458,8 +456,7 @@ str8 Str8UpToLastForwardSlash(str8 Path)
 void FindAllIncludesInFile(memory_arena *Arena, str8 CurrentFile, str8_list IncludePaths, str8_list *IncludeChainFilenames, str8_list *IncludeChainFiles)
 {
     // Support unicode...
-    u64 At = 0;
-    while(At < CurrentFile.Size)
+    for(u64 At = 0; At < CurrentFile.Size; At++)
     {
         u8 Byte = CurrentFile.Bytes[At];
         if(Byte == '#')
@@ -528,7 +525,6 @@ void FindAllIncludesInFile(memory_arena *Arena, str8 CurrentFile, str8_list Incl
                 }
             }
         }
-        At++;
     }
 }
 

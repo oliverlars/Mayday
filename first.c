@@ -15,11 +15,12 @@ int main()
     Str8ListAppend(&Arena, &IncludePaths, Str8("include/"));
     build_options Options = {
         .Compiler = COMPILER_MSVC,
-        .OutputName = Str8("Mayday"),
+        .OutputName = Str8("mayday.exe"),
         .OutputType = OUTPUT_EXECUTABLE,
         .SourceFiles = SourceFiles,
         .IncludePaths = IncludePaths,
         .WorkingDirectory = GetExecutableDirectory(&Arena),
+        .OutputPath = Str8("build/")
     };
 
     CompileFromBuildOptions(&Arena, Options);

@@ -686,14 +686,17 @@ void CompileFromBuildOptions(memory_arena* Arena, build_options Options)
 
     for(str8_list_node *Node = HashedFilenames.First; Node != 0; Node = Node->Next)
     {
-        Str8ListAppend(Arena, &ObjectFiles, Str8PushF(Arena, "build/%.*s ", Str8ToPrintfArgs(Node->String)));
+        Str8ListAppend(Arena, &ObjectFiles, Str8PushF(Arena, "%.*s%.*s ", Str8ToPrintfArgs(Options.OutputPath), Str8ToPrintfArgs(Node->String)));
     }
 
 
     WIN32_FIND_DATA FindData = {0};
-    HANDLE FindHandle = FindFirstFile("build/*.o", &FindData);
+    str8 ObjectFilesInBuildDirectory = Str8PushF(Arena, "%.*s*.o", Str8ToPrintfArgs(Options.OutputPath));
+    printf("%s\n", ObjectFilesInBuildDirectory.Bytes);
+    HANDLE FindHandle = FindFirstFile(ObjectFilesInBuildDirectory.Bytes, &FindData);
 
-    for(;FindNextFile(FindHandle, &FindData) != 0;)
+    b32 NextFile = FindHandle != INVALID_HANDLE_VALUE;
+    for(;NextFile != 0; NextFile = FindNextFile(FindHandle, &FindData))
     {
         if(FindData.dwFileAttributes != INVALID_FILE_ATTRIBUTES && !(FindData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
         {
@@ -710,16 +713,19 @@ void CompileFromBuildOptions(memory_arena* Arena, build_options Options)
             }
             if(FoundMatch == 0)
             {
-                DeleteFile(Str8PushF(Arena, "build/%s", FindData.cFileName).Bytes);
+                str8 S = Str8PushF(Arena, "%.*s%s", Str8ToPrintfArgs(Options.OutputPath), FindData.cFileName);
+                printf("ooga booga %s", S.Bytes);
+                DeleteFile(S.Bytes);
             }
         }
     }
 
     str8 LinkCommand = Str8PushF(
                 Arena, 
-                "%.*s /nologo /Fe%s %.*s /EHsc",
+                "%.*s /nologo /Fe%.*s%.*s %.*s /EHsc",
                 Str8ToPrintfArgs(Compilers[Options.Compiler]),
-                "build/mayday.exe",
+                Str8ToPrintfArgs(Options.OutputPath),
+                Str8ToPrintfArgs(Options.OutputName),
                 Str8ToPrintfArgs(Str8ListJoin(Arena, &ObjectFiles))
             );
     printf("Link Command: %.*s\n", Str8ToPrintfArgs(LinkCommand));

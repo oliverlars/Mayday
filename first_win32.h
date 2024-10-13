@@ -22,7 +22,6 @@ typedef uint16_t  b16;
 typedef uint32_t  b32;
 typedef uint64_t  b64;
 
-#define MemoryAllocate(NumberOfBytes) (u8*)VirtualAlloc((void*)0, NumberOfBytes, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE)
 #define MemoryCommit(Address, NumberOfBytes) VirtualAlloc((void*)(Address), NumberOfBytes, MEM_COMMIT, PAGE_READWRITE)
 #define MemoryReserve(NumberOfBytes) (u8*)VirtualAlloc((void*)0, NumberOfBytes, MEM_RESERVE, PAGE_READWRITE)
 
@@ -251,62 +250,6 @@ void Str8ListInsertAfter(memory_arena *Arena, str8_list *List, str8_list_node* N
     else
     {
         Str8ListAppend(Arena, List, String);
-    }
-}
-
-void Str8ListPopN(str8_list *List, u64 N)
-{
-    str8_list_node *Node = List->First;
-    for(int Index = 0; Index < N; Index++, Node = Node->Next);
-    if(Node != Null)
-    {
-        if(Node->Previous != Null)
-        {
-            Node->Previous->Next = Node->Next;
-        }
-        else
-        {
-            List->First = List->First->Next;
-        }
-
-        if(Node->Next != Null)
-        {
-            Node->Next->Previous = Node->Previous;
-        }
-        else
-        {
-            List->Last = List->Last->Previous;
-        }
-    }
-}
-
-void Str8ListPopLast(str8_list *List) {
-    if(List->Last != Null)
-    {
-        if(List->First == List->Last)
-        {
-            List->First = Null;
-            List->Last = Null;
-        }
-        else
-        {
-            List->Last = List->Last->Previous;
-        }
-    }
-}
-
-void Str8ListPopFirst(str8_list *List) {
-    if(List->First != Null)
-    {
-        if(List->First == List->Last)
-        {
-            List->First = Null;
-            List->Last = Null;
-        }
-        else
-        {
-            List->First = List->First->Next;
-        }
     }
 }
 

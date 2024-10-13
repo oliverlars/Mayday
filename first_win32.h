@@ -38,6 +38,10 @@ typedef uint64_t  b64;
 #define ArenaPushType(Arena, Type) (Type*)ArenaPush(Arena, sizeof(Type))
 #define ArenaPushTypeZero(Arena, Type) (Type*)ArenaPushZero(Arena, sizeof(Type))
 
+#define False 0
+#define True (!False)
+#define Null (void*)0
+
 typedef struct memory_arena
 {
     u8 *Start;
@@ -159,7 +163,7 @@ str8 Str8PushF(memory_arena *Arena, char *Format, ...)
 char* CStrFromStr8(memory_arena *Arena, str8 String)
 {
     s32 NullTerminated = 0;
-    if(String.Bytes[String.Size] == 0)
+    if(String.Bytes[String.Size] == '\0')
     {
         NullTerminated = 1;
     }
@@ -171,22 +175,22 @@ char* CStrFromStr8(memory_arena *Arena, str8 String)
 
 b32 Str8Equal(str8 A, str8 B)
 {
-    if(A.Size != B.Size) return 0;
+    if(A.Size != B.Size) return False;
     for(u64 Index = 0; Index < A.Size; Index++)
     {
         if(A.Bytes[Index] != B.Bytes[Index])
         {
-            return 0;
+            return False;
         }
     }
-    return 1;
+    return True;
 }
 
 void Str8ListAppend(memory_arena *Arena, str8_list *List, str8 String)
 {
     str8_list_node *Node = ArenaPushTypeZero(Arena, str8_list_node);
     Node->String = Str8PushF(Arena, "%.*s", Str8ToPrintfArgs(String));
-    if(List->First == 0)
+    if(List->First == Null)
     {
         List->First = Node;
         List->Last = List->First;
@@ -203,7 +207,7 @@ void Str8ListPrepend(memory_arena *Arena, str8_list *List, str8 String)
 {
     str8_list_node *Node = ArenaPushTypeZero(Arena, str8_list_node);
     Node->String = Str8PushF(Arena, "%.*s", Str8ToPrintfArgs(String));
-    if(List->First == 0)
+    if(List->First == Null)
     {
         List->First = Node;
         List->Last = List->First;
@@ -218,7 +222,7 @@ void Str8ListPrepend(memory_arena *Arena, str8_list *List, str8 String)
 
 void Str8ListInsertBefore(memory_arena *Arena, str8_list *List, str8_list_node* Node, str8 String)
 {
-    if(Node->Previous)
+    if(Node->Previous != Null)
     {
         str8_list_node *Insert = ArenaPushTypeZero(Arena, str8_list_node);
         Insert->String = Str8PushF(Arena, "%.*s", Str8ToPrintfArgs(String));
@@ -235,7 +239,7 @@ void Str8ListInsertBefore(memory_arena *Arena, str8_list *List, str8_list_node* 
 
 void Str8ListInsertAfter(memory_arena *Arena, str8_list *List, str8_list_node* Node, str8 String)
 {
-    if(Node->Next)
+    if(Node->Next != Null)
     {
         str8_list_node *Insert = ArenaPushTypeZero(Arena, str8_list_node);
         Insert->String = Str8PushF(Arena, "%.*s", Str8ToPrintfArgs(String));
@@ -254,9 +258,9 @@ void Str8ListPopN(str8_list *List, u64 N)
 {
     str8_list_node *Node = List->First;
     for(int Index = 0; Index < N; Index++, Node = Node->Next);
-    if(Node != 0)
+    if(Node != Null)
     {
-        if(Node->Previous != 0)
+        if(Node->Previous != Null)
         {
             Node->Previous->Next = Node->Next;
         }
@@ -265,7 +269,7 @@ void Str8ListPopN(str8_list *List, u64 N)
             List->First = List->First->Next;
         }
 
-        if(Node->Next != 0)
+        if(Node->Next != Null)
         {
             Node->Next->Previous = Node->Previous;
         }
@@ -277,12 +281,12 @@ void Str8ListPopN(str8_list *List, u64 N)
 }
 
 void Str8ListPopLast(str8_list *List) {
-    if(List->Last)
+    if(List->Last != Null)
     {
         if(List->First == List->Last)
         {
-            List->First = 0;
-            List->Last = 0;
+            List->First = Null;
+            List->Last = Null;
         }
         else
         {
@@ -292,12 +296,12 @@ void Str8ListPopLast(str8_list *List) {
 }
 
 void Str8ListPopFirst(str8_list *List) {
-    if(List->First)
+    if(List->First != Null)
     {
         if(List->First == List->Last)
         {
-            List->First = 0;
-            List->Last = 0;
+            List->First = Null;
+            List->Last = Null;
         }
         else
         {
@@ -309,13 +313,13 @@ void Str8ListPopFirst(str8_list *List) {
 str8 Str8ListJoin(memory_arena *Arena, str8_list *List)
 {
     u64 BytesToAllocate = 0;
-    for(str8_list_node *Node = List->First; Node != 0; Node = Node->Next)
+    for(str8_list_node *Node = List->First; Node != Null; Node = Node->Next)
     {
         BytesToAllocate += Node->String.Size;
     }
     u8* Bytes = ArenaPush(Arena, BytesToAllocate);
     u64 At = 0;
-    for(str8_list_node *Node = List->First; Node != 0; Node = Node->Next)
+    for(str8_list_node *Node = List->First; Node != Null; Node = Node->Next)
     {
         MemoryCopy(Bytes + At, Node->String.Bytes, Node->String.Size);
         At += Node->String.Size;
@@ -323,6 +327,16 @@ str8 Str8ListJoin(memory_arena *Arena, str8_list *List)
     str8 Result = { .Bytes = Bytes, .Size = BytesToAllocate };
 
     return Result;
+}
+
+b32 NextInStr8List(str8_list_node **Node)
+{
+    if(*Node != Null)
+    {
+        *Node = (*Node)->Next;
+        return True;
+    }
+    return False;
 }
 
 str8 LoadEntireFileIntoMemory(memory_arena *Arena, str8 Filename)
@@ -392,9 +406,9 @@ b32 Advance(str8 File, u64 *At)
     if(*At < File.Size)
     {
         *At += 1;
-        return 1;
+        return True;
     }
-    return 0;
+    return False;
 }
 
 b32 AdvanceN(str8 File, u64 *At, u64 N)
@@ -402,9 +416,9 @@ b32 AdvanceN(str8 File, u64 *At, u64 N)
     if(*At + N < File.Size)
     {
         *At += N;
-        return 1;
+        return True;
     }
-    return 0;
+    return False;
 }
 
 void GobbleWhitespace(str8 File, u64 *At)
@@ -430,12 +444,12 @@ void GobbleWhitespace(str8 File, u64 *At)
 str8 Str8UpToLastForwardSlash(memory_arena *Arena, str8 InputPath)
 {
     s64 SizeUptoLastForwardSlash = InputPath.Size - 1;
-    b32 FoundSlash = 0;
+    b32 FoundSlash = False;
     for(; SizeUptoLastForwardSlash >= 0; SizeUptoLastForwardSlash--)
     {
         if(InputPath.Bytes[SizeUptoLastForwardSlash] == '/')
         {
-            FoundSlash = 1;
+            FoundSlash = True;
             break;
         }
     }
@@ -452,12 +466,12 @@ str8 Str8UpToLastForwardSlash(memory_arena *Arena, str8 InputPath)
 str8 Str8FromLastForwardSlash(memory_arena *Arena, str8 InputPath)
 {
     s64 SizeUptoLastForwardSlash = InputPath.Size - 1;
-    b32 FoundSlash = 0;
+    b32 FoundSlash = False;
     for(; SizeUptoLastForwardSlash >= 0; SizeUptoLastForwardSlash--)
     {
         if(InputPath.Bytes[SizeUptoLastForwardSlash] == '/')
         {
-            FoundSlash = 1;
+            FoundSlash = True;
             break;
         }
     }
@@ -475,12 +489,12 @@ str8 Str8FromLastForwardSlash(memory_arena *Arena, str8 InputPath)
 str8 Str8FromLastFullstop(memory_arena *Arena, str8 InputPath)
 {
     s64 SizeUptoLastFullstop = InputPath.Size - 1;
-    b32 FoundSlash = 0;
+    b32 FoundSlash = False;
     for(; SizeUptoLastFullstop >= 0; SizeUptoLastFullstop--)
     {
         if(InputPath.Bytes[SizeUptoLastFullstop] == '.')
         {
-            FoundSlash = 1;
+            FoundSlash = True;
             break;
         }
     }
@@ -507,7 +521,7 @@ void FindAllIncludesInFile(memory_arena *Arena, str8 Filename, str8_list Include
         u8 Byte = CurrentFile.Bytes[At];
         if(Byte == '#')
         {
-            if(Advance(CurrentFile, &At) == 0) return;
+            if(Advance(CurrentFile, &At) == False) return;
             str8 Token = {0};
             Token.Bytes = CurrentFile.Bytes + At;
             str8 IncludeToken = Str8("include");
@@ -530,12 +544,12 @@ void FindAllIncludesInFile(memory_arena *Arena, str8 Filename, str8_list Include
                             str8 SourceDir = Str8UpToLastForwardSlash(Arena, Filename);
                             str8 SourceDirPlusIncludePath = Str8PushF(Arena, "%.*s/%.*s", Str8ToPrintfArgs(SourceDir), Str8ToPrintfArgs(IncludePath));
 
-                            b32 FoundFile = 0;
+                            b32 FoundFile = False;
 
                             DWORD FileAttributes = GetFileAttributesA((LPCSTR)CStrFromStr8(Arena, SourceDirPlusIncludePath));
                             if(FileAttributes != INVALID_FILE_ATTRIBUTES && !(FileAttributes & FILE_ATTRIBUTE_DIRECTORY))
                             {
-                                FoundFile = 1;
+                                FoundFile = True;
                                 FindAllIncludesInFile(Arena, SourceDirPlusIncludePath, IncludePaths, IncludeChainFiles);
                             }
                             else
@@ -551,14 +565,14 @@ void FindAllIncludesInFile(memory_arena *Arena, str8 Filename, str8_list Include
                                     DWORD FileAttributes = GetFileAttributesA((LPCSTR)CStrFromStr8(Arena, FullPath));
                                     if(FileAttributes != INVALID_FILE_ATTRIBUTES && !(FileAttributes & FILE_ATTRIBUTE_DIRECTORY))
                                     {
-                                        FoundFile = 1;
+                                        FoundFile = True;
                                         FindAllIncludesInFile(Arena, FullPath, IncludePaths, IncludeChainFiles);
                                         break;
                                     }
                                 }
                             }
 
-                            if(FoundFile == 0)
+                            if(FoundFile == False)
                             {
                                 printf("\nUnable to find include path...\n");
                                 return;
@@ -580,13 +594,13 @@ void CompileFromBuildOptions(memory_arena* Arena, build_options Options)
 
     SECURITY_ATTRIBUTES SecurityAttributes;
     SecurityAttributes.nLength = sizeof(SECURITY_ATTRIBUTES);
-    SecurityAttributes.bInheritHandle = 1;
+    SecurityAttributes.bInheritHandle = True;
     SecurityAttributes.lpSecurityDescriptor = 0;
 
     HANDLE StdOutHandleRead = 0;
     HANDLE StdOutHandleWrite = 0;
 
-    if(CreatePipe(&StdOutHandleRead, &StdOutHandleWrite, &SecurityAttributes, 0) == 0)
+    if(CreatePipe(&StdOutHandleRead, &StdOutHandleWrite, &SecurityAttributes, 0) == False)
     {
         printf("Failed to create stdout pipe");
     }
@@ -700,16 +714,16 @@ void CompileFromBuildOptions(memory_arena* Arena, build_options Options)
         if(FindData.dwFileAttributes != INVALID_FILE_ATTRIBUTES && !(FindData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
         {
             str8 FoundFilename = Str8PushF(Arena, "%s", FindData.cFileName);
-            b32 FoundMatch = 0;
+            b32 FoundMatch = False;
             for(str8_list_node *Node = HashedFilenames.First; Node != 0; Node = Node->Next)
             {
                 if(Str8Equal(Node->String, FoundFilename))
                 {
-                    FoundMatch = 1;
+                    FoundMatch = True;
                     break;
                 }
             }
-            if(FoundMatch == 0)
+            if(FoundMatch == False)
             {
                 str8 S = Str8PushF(Arena, "%.*s%s", Str8ToPrintfArgs(Options.OutputPath), FindData.cFileName);
                 DeleteFile(S.Bytes);

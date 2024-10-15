@@ -1,26 +1,44 @@
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#include <intrin.h>
+typedef char               s8;
+typedef short              s16;
+typedef int                s32;
+typedef long long          s64;
+typedef unsigned char      u8;
+typedef unsigned short     u16;
+typedef unsigned int       u32;
+typedef unsigned long long u64;
+typedef float              f32;
+typedef double             f64;
+typedef unsigned char      b8;
+typedef unsigned short     b16;
+typedef unsigned int       b32;
+typedef unsigned long long b64;
 
-#include <stdio.h>
+typedef unsigned long long size_t;
+typedef long long DWORD;
+typedef int WORD;
+typedef void* LPVOID;
+typedef DWORD* DWORD_PTR;
 
-#include <stdint.h>
-#include <stdlib.h>
+void VirtualAlloc(void* lpAddress, size_t dwSize, u64 flAllocationType, u64 flProtect);
 
-typedef int8_t    s8;
-typedef int16_t   s16;
-typedef int32_t   s32;
-typedef int64_t   s64;
-typedef uint8_t   u8;
-typedef uint16_t  u16;
-typedef uint32_t  u32;
-typedef uint64_t  u64;
-typedef float     f32;
-typedef double    f64;
-typedef uint8_t   b8;
-typedef uint16_t  b16;
-typedef uint32_t  b32;
-typedef uint64_t  b64;
+typedef struct _SYSTEM_INFO {
+  union {
+    DWORD dwOemId;
+    struct {
+      WORD wProcessorArchitecture;
+      WORD wReserved;
+    } DUMMYSTRUCTNAME;
+  } DUMMYUNIONNAME;
+  DWORD     dwPageSize;
+  LPVOID    lpMinimumApplicationAddress;
+  LPVOID    lpMaximumApplicationAddress;
+  DWORD_PTR dwActiveProcessorMask;
+  DWORD     dwNumberOfProcessors;
+  DWORD     dwProcessorType;
+  DWORD     dwAllocationGranularity;
+  WORD      wProcessorLevel;
+  WORD      wProcessorRevision;
+} SYSTEM_INFO, *LPSYSTEM_INFO;
 
 #define MemoryCommit(Address, NumberOfBytes) VirtualAlloc((void*)(Address), NumberOfBytes, MEM_COMMIT, PAGE_READWRITE)
 #define MemoryReserve(NumberOfBytes) (u8*)VirtualAlloc((void*)0, NumberOfBytes, MEM_RESERVE, PAGE_READWRITE)

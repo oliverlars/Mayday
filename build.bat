@@ -1,1 +1,0 @@
-cl /nologo /O2 /Iinclude/ first.c /link Kernel32.lib /OUT:first.exe 

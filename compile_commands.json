@@ -1,0 +1,17 @@
+[
+    {
+        "directory": "/Users/olivercruickshank/Mayday",
+        "command": "clang  -c source/mayday.c -g -O0 -obuild/source/mayday.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "file": "source/mayday.c"
+    },
+    {
+        "directory": "/Users/olivercruickshank/Mayday",
+        "command": "clang  -c source/sokol/sokol_os.c -g -O0 -obuild/source/sokol/sokol_os.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "file": "source/sokol/sokol_os.c"
+    },
+    {
+        "directory": "/Users/olivercruickshank/Mayday",
+        "command": "clang -ObjC -fobjc-arc -c external/sokol_app.m -g -O0 -obuild/external/sokol_app.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "file": "external/sokol_app.m"
+    }
+]

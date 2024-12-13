@@ -6,17 +6,32 @@
     },
     {
         "directory": "/Users/olivercruickshank/Mayday",
+        "command": "clang  -c source/strings.c -g -O0 -obuild/source/strings.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "file": "source/strings.c"
+    },
+    {
+        "directory": "/Users/olivercruickshank/Mayday",
         "command": "clang  -c source/mayday.c -g -O0 -obuild/source/mayday.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/mayday.c"
     },
     {
         "directory": "/Users/olivercruickshank/Mayday",
-        "command": "clang  -c source/sokol/sokol_os.c -g -O0 -obuild/source/sokol/sokol_os.o -Iinclude/ -Iexternal/ -Iembed/  ",
-        "file": "source/sokol/sokol_os.c"
+        "command": "clang  -c source/darwin/memory.c -g -O0 -obuild/source/darwin/memory.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "file": "source/darwin/memory.c"
+    },
+    {
+        "directory": "/Users/olivercruickshank/Mayday",
+        "command": "clang  -c source/sokol/os.c -g -O0 -obuild/source/sokol/os.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "file": "source/sokol/os.c"
     },
     {
         "directory": "/Users/olivercruickshank/Mayday",
         "command": "clang -ObjC -fobjc-arc -c external/sokol_app.m -g -O0 -obuild/external/sokol_app.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "external/sokol_app.m"
+    },
+    {
+        "directory": "/Users/olivercruickshank/Mayday",
+        "command": "clang  -c external/custom_stb_sprintf.c -g -O0 -obuild/external/custom_stb_sprintf.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "file": "external/custom_stb_sprintf.c"
     }
 ]

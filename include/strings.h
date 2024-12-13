@@ -42,7 +42,6 @@ str8_list;
 
 #define StringStyle(String, Style) Style String S_RESET
 
-#define Str8ToPrintfArgs(String) (int)String.Size, String.Bytes
 #define Str8(String) (str8){strlen(String), (u8*)String}
 
 str8 Str8PushFV(memory_arena *Arena, char *Format, va_list InputArgList);

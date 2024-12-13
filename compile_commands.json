@@ -36,6 +36,11 @@
     },
     {
         "directory": "/Users/olivercruickshank/Mayday",
+        "command": "clang  -c external/stb_truetype.c -g -O0 -obuild/external/stb_truetype.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "file": "external/stb_truetype.c"
+    },
+    {
+        "directory": "/Users/olivercruickshank/Mayday",
         "command": "clang  -c external/custom_stb_sprintf.c -g -O0 -obuild/external/custom_stb_sprintf.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "external/custom_stb_sprintf.c"
     }

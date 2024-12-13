@@ -17,27 +17,37 @@ id<MTLTexture> DepthTexture;
 
 id<MTLTexture> MakeDepthTexture(CGSize Size)
 {
-	MTLTextureDescriptor *desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatDepth32Float width:Size.width height:Size.height mipmapped:NO];
+	MTLTextureDescriptor *desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatDepth32Float 
+	                                                   width:Size.width
+	                                                   height:Size.height mipmapped:NO];
 	desc.usage = MTLTextureUsageRenderTarget;
 	desc.storageMode = MTLStorageModePrivate;
 
-	return [Device newTextureWithDescriptor:desc];
+	id<MTLTexture> Result = [Device newTextureWithDescriptor:desc];
+	assert(Result != nil);
+	return Result;
 }
 
 id<MTLTexture> ResizeDepthTexture(CGSize Size)
 {
-	if(Size.width != [DepthTexture width] || Size.height != [DepthTexture height])
+	assert(Size.width == 1280);
+	assert(Size.height == 720);
+	if(Size.width != [DepthTexture width] || Size.height != [DepthTexture height] || DepthTexture == nil)
 	{
 		DepthTexture = nil;
 
 		DepthTexture = MakeDepthTexture(Size);
+	}
+	else
+	{
+		assert(DepthTexture != nil);
 	}
 	return DepthTexture;
 }
 
 void R_Init()
 {
-	id<MTLDevice> Device = (__bridge id<MTLDevice>)sapp_metal_get_device();
+	Device = (__bridge id<MTLDevice>)sapp_metal_get_device();
 
 	CommandQueue = [Device newCommandQueue];
 
@@ -77,6 +87,7 @@ void R_Update()
 
 	id<MTLRenderCommandEncoder> Encoder = [CommandBuffer renderCommandEncoderWithDescriptor:PassDesc];
 	[Encoder setRenderPipelineState:PipelineState];
+	[Encoder setDepthStencilState:DepthStencilState];
 	[Encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:3];
 	[Encoder endEncoding];
 

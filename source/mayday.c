@@ -21,7 +21,6 @@ void OS_Update(void *Data)
 void OS_Initialise(void *Data)
 {
 	mayday *Application = Data;
-	Application->Window.Handle = OS_GetWindowHandle();
 	R_Init();
 }
 

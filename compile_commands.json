@@ -21,6 +21,11 @@
     },
     {
         "directory": "/Users/olivercruickshank/Mayday",
+        "command": "clang -ObjC -fobjc-arc -c source/darwin/render.m -g -O0 -obuild/source/darwin/render.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "file": "source/darwin/render.m"
+    },
+    {
+        "directory": "/Users/olivercruickshank/Mayday",
         "command": "clang  -c source/sokol/os.c -g -O0 -obuild/source/sokol/os.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/sokol/os.c"
     },

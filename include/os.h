@@ -14,8 +14,11 @@ typedef struct os_window
 os_window;
 
 os_window OS_MakeWindow(str8 Name, int Width, int Height);
-void OS_Run(os_window Window);
+void OS_Run(os_window Window, void *Data);
 
-void OS_Update();
+void OS_Update(void *Data);
 
-void OS_Initialise();
+void OS_Initialise(void *Data);
+
+
+os_handle OS_GetWindowHandle();

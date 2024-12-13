@@ -97,7 +97,7 @@ Entry(InputWaveInfo)
             Str8ListAppend(&Shared->Arena, &ExtraLinkFlags, Str8("-framework Cocoa -framework MetalKit -framework QuartzCore -framework Metal"));
         }
 
-        EmbedFile(&Arena, Str8("test.c"), Str8("embed/source.h"), Str8("SourceFile"));
+        EmbedFile(&Arena, Str8("shaders/triangle.metal"), Str8("embed/shaders.h"), Str8("TriangleShader"));
 
         BuildOptions = (build_options){
             .Compiler = Compiler,

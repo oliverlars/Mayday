@@ -2,20 +2,35 @@
 #include "os.h"
 #include "strings.h"
 
+#include "render.h"
 
-void OS_Update()
+typedef struct mayday
 {
+	os_window Window;
+}
+mayday;
 
+
+void OS_Update(void *Data)
+{
+	mayday *Application = Data;
+
+	MetalUpdate();
 }
 
-void OS_Initialise()
+void OS_Initialise(void *Data)
 {
-
+	mayday *Application = Data;
+	Application->Window.Handle = OS_GetWindowHandle();
+	MetalInit();
 }
 
 int main()
 {
-	os_window Window = OS_MakeWindow(Str8("Mayday"), 1280, 720);
+	mayday Application = {0};
 
-	OS_Run(Window);
+	Application.Window = OS_MakeWindow(Str8("Mayday"), 1280, 720);
+
+
+	OS_Run(Application.Window, &Application);
 }

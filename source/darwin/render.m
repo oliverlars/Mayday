@@ -10,7 +10,7 @@
 id<MTLCommandQueue> CommandQueue;
 id<MTLRenderPipelineState> PipelineState;
 
-void MetalInit()
+void R_Init()
 {
 	id<MTLDevice> Device = (__bridge id<MTLDevice>)sapp_metal_get_device();
 
@@ -30,7 +30,7 @@ void MetalInit()
 	PipelineState = [Device newRenderPipelineStateWithDescriptor:PipelineDesc error:&Error];
 }
 
-void MetalUpdate()
+void R_Update()
 {
 	id<CAMetalDrawable> Drawable = (__bridge id<CAMetalDrawable>)sapp_metal_get_current_drawable();
 	MTLRenderPassDescriptor* PassDesc = [MTLRenderPassDescriptor renderPassDescriptor];

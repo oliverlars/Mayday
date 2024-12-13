@@ -16,5 +16,5 @@ typedef struct r_options
 }
 r_options;
 
-void MetalInit();
-void MetalUpdate();
+void R_Init();
+void R_Update();

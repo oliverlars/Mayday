@@ -15,14 +15,14 @@ void OS_Update(void *Data)
 {
 	mayday *Application = Data;
 
-	MetalUpdate();
+	R_Update();
 }
 
 void OS_Initialise(void *Data)
 {
 	mayday *Application = Data;
 	Application->Window.Handle = OS_GetWindowHandle();
-	MetalInit();
+	R_Init();
 }
 
 int main()

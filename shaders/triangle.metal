@@ -8,13 +8,24 @@ struct vertex_output
 	float4 Colour;
 };
 
-vertex vertex_output VertexMain(uint VertexID [[vertex_id]])
+struct vertex_input
 {
-	float2 Position[3] = { float2(0,1), float2(-1,-1), float2(1,-1) };
-	float4 Colours[3] = {float4(1, 0, 0, 1), float4(0, 1, 0, 1), float4(0, 0, 1, 1)};
+	float4 Position;
+	float4 Colour;
+};
+
+struct uniforms
+{
+	float4x4 RotationMatrix;
+};
+
+vertex vertex_output VertexMain(device vertex_input *Vertices [[buffer(0)]],
+	                            constant uniforms &Uniforms [[buffer(1)]],
+	                            uint VertexID [[vertex_id]])
+{
 	vertex_output Output;
-	Output.Position = float4(Position[VertexID], 0, 1);
-	Output.Colour = Colours[VertexID];
+	Output.Position = Uniforms.RotationMatrix * Vertices[VertexID].Position;
+	Output.Colour = Vertices[VertexID].Colour;
 	return Output;
 }
 

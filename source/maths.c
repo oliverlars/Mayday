@@ -1,5 +1,6 @@
 #include "maths.h"
 
+#include <math.h>
 
 /*
 
@@ -526,6 +527,20 @@ m44f MulM44FM44F(m44f A, m44f B)
 	return Result;
 }
 
+m44f M44FromZAngle(f32 Angle)
+{
+	m44f Result = {0};
+	Result.E[2][2] = 1;
+	Result.E[3][3] = 1;
+
+	Result.E[0][0] = cos(Angle);
+	Result.E[0][1] = -sin(Angle);
+	Result.E[1][0] = sin(Angle);
+	Result.E[1][1] = cos(Angle);
+
+	return Result;
+}
+
 m44d MulM44DV4D(m44d A, v4d B)
 {
 	m44d Result;
@@ -555,7 +570,7 @@ m44d MulM44DV4D(m44d A, v4d B)
 
 m44d MulM44DM44D(m44d A, m44d B)
 {
- m44d Result;
+	m44d Result;
 	Result.E[0][0] = A.E[0][0]*B.E[0][0] + A.E[0][1]*B.E[1][0] + A.E[0][2]*B.E[2][0] + A.E[0][3]*B.E[3][0];
 	Result.E[0][1] = A.E[0][0]*B.E[0][1] + A.E[0][1]*B.E[1][1] + A.E[0][2]*B.E[2][1] + A.E[0][3]*B.E[3][1];
 	Result.E[0][2] = A.E[0][0]*B.E[0][2] + A.E[0][1]*B.E[1][2] + A.E[0][2]*B.E[2][2] + A.E[0][3]*B.E[3][2];

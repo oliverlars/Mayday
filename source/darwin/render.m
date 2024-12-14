@@ -1,9 +1,12 @@
+#include "log.h"
 #include <CoreGraphics/CoreGraphics.h>
 #import <Metal/Metal.h>
 #import <QuartzCore/QuartzCore.h>
 
 #include "sokol_app.h"
 #include "os.h"
+
+#include "render.h"
 
 #include "shaders.h"
 
@@ -15,20 +18,20 @@ id<MTLDepthStencilState> DepthStencilState;
 id<MTLTexture> DepthTexture;
 
 
-id<MTLTexture> MakeDepthTexture(CGSize Size)
+id<MTLTexture> MakeDepthTexture(r_context *RenderContext, CGSize Size)
 {
-	MTLTextureDescriptor *desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatDepth32Float 
+	MTLTextureDescriptor *Desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatDepth32Float 
 	                                                   width:Size.width
 	                                                   height:Size.height mipmapped:NO];
-	desc.usage = MTLTextureUsageRenderTarget;
-	desc.storageMode = MTLStorageModePrivate;
+	Desc.usage = MTLTextureUsageRenderTarget;
+	Desc.storageMode = MTLStorageModePrivate;
 
-	id<MTLTexture> Result = [Device newTextureWithDescriptor:desc];
+	id<MTLTexture> Result = [Device newTextureWithDescriptor:Desc];
 	assert(Result != nil);
 	return Result;
 }
 
-id<MTLTexture> ResizeDepthTexture(CGSize Size)
+id<MTLTexture> ResizeDepthTexture(r_context *RenderContext, CGSize Size)
 {
 	assert(Size.width == 1280);
 	assert(Size.height == 720);
@@ -36,16 +39,14 @@ id<MTLTexture> ResizeDepthTexture(CGSize Size)
 	{
 		DepthTexture = nil;
 
-		DepthTexture = MakeDepthTexture(Size);
-	}
-	else
-	{
-		assert(DepthTexture != nil);
+		DepthTexture = MakeDepthTexture(RenderContext, Size);
+
+		LogInfo(&RenderContext->Logger, "DepthTexture resized");
 	}
 	return DepthTexture;
 }
 
-void R_Init()
+void R_Init(r_context *RenderContext)
 {
 	Device = (__bridge id<MTLDevice>)sapp_metal_get_device();
 
@@ -71,7 +72,7 @@ void R_Init()
 	PipelineState = [Device newRenderPipelineStateWithDescriptor:PipelineDesc error:&Error];
 }
 
-void R_Update()
+void R_Update(r_context *RenderContext)
 {
 	id<CAMetalDrawable> Drawable = (__bridge id<CAMetalDrawable>)sapp_metal_get_current_drawable();
 	MTLRenderPassDescriptor* PassDesc = [MTLRenderPassDescriptor renderPassDescriptor];
@@ -79,7 +80,7 @@ void R_Update()
 	PassDesc.colorAttachments[0].loadAction = MTLLoadActionClear;
 	PassDesc.colorAttachments[0].clearColor = MTLClearColorMake(0,0,0,1);
 
-	PassDesc.depthAttachment.texture = ResizeDepthTexture(CGSizeMake(Drawable.texture.width, Drawable.texture.height));
+	PassDesc.depthAttachment.texture = ResizeDepthTexture(RenderContext, CGSizeMake(Drawable.texture.width, Drawable.texture.height));
 	PassDesc.depthAttachment.loadAction = MTLLoadActionClear;
 	PassDesc.depthAttachment.clearDepth = 1.0;
 

@@ -6,6 +6,8 @@
 
 #include "memory.h"
 
+static _Thread_local memory_arena G_ScratchArena;
+
 typedef struct str8
 {
     s64 Size;
@@ -50,6 +52,8 @@ str8 Str8PushF(memory_arena *Arena, char *Format, ...);
 
 char* CStrFromStr8(memory_arena *Arena, str8 String);
 
+str8 Str8Copy(memory_arena *Arena, str8 String);
+
 b32 Str8Equal(str8 A, str8 B);
 
 void Str8ListAppend(memory_arena *Arena, str8_list *List, str8 String);
@@ -63,3 +67,7 @@ void Str8ListInsertAfter(memory_arena *Arena, str8_list *List, str8_list_node* N
 str8 Str8ListJoin(memory_arena *Arena, str8_list *List);
 
 b32 NextInStr8List(str8_list_node **Node);
+
+
+void Print(char *Format, ...);
+void PrintLn(char *Format, ...);

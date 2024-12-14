@@ -1,6 +1,12 @@
 #include "maths.h"
 
 
+/*
+
+V2
+
+*/
+
 v2f AddV2F(v2f A, v2f B)
 {
 	v2f Result = A;
@@ -128,6 +134,11 @@ v2l DivV2L(v2l A, v2l B)
 	Result.Y /= B.Y;
 	return Result;
 }
+
+v2f V2FromF32(f32 X) { return (v2f){ X, X }; }
+v2d V2FromF64(f64 X) { return (v2d){ X, X }; }
+v2i V2FromS32(s32 X) { return (v2i){ X, X }; }
+v2l V2FromS64(s64 X) { return (v2l){ X, X }; }
 
 
 /*
@@ -280,6 +291,10 @@ v3l DivV3L(v3l A, v3l B)
 	return Result;
 }
 
+v3f V3FromF32(f32 X) { return (v3f){ X, X, X }; }
+v3d V3FromF64(f64 X) { return (v3d){ X, X, X }; }
+v3i V3FromS32(s32 X) { return (v3i){ X, X, X }; }
+v3l V3FromS64(s64 X) { return (v3l){ X, X, X }; }
 
 /*
 
@@ -446,6 +461,11 @@ v4l DivV4L(v4l A, v4l B)
 	Result.W /= B.W;
 	return Result;
 }
+
+v4f V4FromF32(f32 X) { return (v4f){ X, X, X, X }; }
+v4d V4FromF64(f64 X) { return (v4d){ X, X, X, X }; }
+v4i V4FromS32(s32 X) { return (v4i){ X, X, X, X }; }
+v4l V4FromS64(s64 X) { return (v4l){ X, X, X, X }; }
 
 /*
 

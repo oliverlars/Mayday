@@ -6,22 +6,22 @@
 
 typedef struct logger_info
 {
-    str8 FunctionName;
-    u64 LineNumber;
-    str8 FileName;
+	str8 FunctionName;
+	u64 LineNumber;
+	str8 FileName;
 
-    struct logger_info *Previous;
+	struct logger_info *Previous;
 }
 logger_info;
 
 typedef struct logger
 {
-    b32 Silent;
-    memory_arena *Arena;
-    str8_list *Messages;
-    int Level;
+	b32 Silent;
+	memory_arena *Arena;
+	str8_list *Messages;
+	int Level;
 
-    logger_info *Info;
+	logger_info *Info;
 }
 logger;
 

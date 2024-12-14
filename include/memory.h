@@ -6,9 +6,9 @@
 
 typedef struct memory_arena
 {
-    u8 *Start;
-    s64 Committed;
-    s64 At;
+	u8 *Start;
+	s64 Committed;
+	s64 At;
 }
 memory_arena;
 

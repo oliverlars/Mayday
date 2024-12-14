@@ -152,7 +152,7 @@ v3f AddV3F(v3f A, v3f B)
 {
 	v3f Result = A;
 	Result.X += B.X;
-	Result.Y += B.X;
+	Result.Y += B.Y;
 	Result.Z += B.Z;
 	return Result;
 }
@@ -161,7 +161,7 @@ v3f SubV3F(v3f A, v3f B)
 {
 	v3f Result = A;
 	Result.X -= B.X;
-	Result.Y -= B.X;
+	Result.Y -= B.Y;
 	Result.Z -= B.Z;
 	return Result;
 }
@@ -170,7 +170,7 @@ v3f MulV3F(v3f A, v3f B)
 {
 	v3f Result = A;
 	Result.X *= B.X;
-	Result.Y *= B.X;
+	Result.Y *= B.Y;
 	Result.Z *= B.Z;
 	return Result;
 }
@@ -179,9 +179,34 @@ v3f DivV3F(v3f A, v3f B)
 {
 	v3f Result = A;
 	Result.X /= B.X;
-	Result.Y /= B.X;
+	Result.Y /= B.Y;
 	Result.Z /= B.Z;
 	return Result;
+}
+
+f32 LengthV3F(v3f V)
+{
+	return sqrtf(DotV3F(V, V));
+}
+
+v3f NormalizeV3F(v3f V)
+{
+	f32 L = LengthV3F(V);
+	return DivV3F(V, v3f(L, L, L));
+}
+
+v3f CrossV3F(v3f A, v3f B)
+{
+	v3f Result = {0};
+	Result.X = A.Y * B.Z - A.Z * B.Y;
+	Result.Y = A.Z * B.X - A.X * B.Z;
+	Result.Z = A.X * B.Y - A.Y * B.X;
+	return Result;
+}
+
+f32 DotV3F(v3f A, v3f B)
+{
+	return A.X*B.X + A.Y*B.Y + A.Z*B.Z;
 }
 
 v3d AddV3D(v3d A, v3d B)
@@ -474,6 +499,11 @@ M44
 
 */
 
+m44f M44F_IDENTITY = (m44f){1, 0, 0, 0,
+					   0, 1, 0, 0,
+					   0, 0, 1, 0,
+					   0, 0, 0, 1};
+
 m44f MulM44FV4F(m44f A, v4f B)
 {
 	m44f Result;
@@ -503,7 +533,7 @@ m44f MulM44FV4F(m44f A, v4f B)
 
 m44f MulM44FM44F(m44f A, m44f B)
 {
- m44f Result;
+	m44f Result;
 	Result.E[0][0] = A.E[0][0]*B.E[0][0] + A.E[0][1]*B.E[1][0] + A.E[0][2]*B.E[2][0] + A.E[0][3]*B.E[3][0];
 	Result.E[0][1] = A.E[0][0]*B.E[0][1] + A.E[0][1]*B.E[1][1] + A.E[0][2]*B.E[2][1] + A.E[0][3]*B.E[3][1];
 	Result.E[0][2] = A.E[0][0]*B.E[0][2] + A.E[0][1]*B.E[1][2] + A.E[0][2]*B.E[2][2] + A.E[0][3]*B.E[3][2];
@@ -527,16 +557,109 @@ m44f MulM44FM44F(m44f A, m44f B)
 	return Result;
 }
 
+m44f M44FTranspose(m44f M)
+{
+	m44f Result = (m44f)
+	{
+		M.E[0][0], M.E[1][0], M.E[2][0], M.E[3][0],
+		M.E[0][1], M.E[1][1], M.E[2][1], M.E[3][1],
+		M.E[0][2], M.E[1][2], M.E[2][2], M.E[3][2],
+		M.E[0][3], M.E[1][3], M.E[2][3], M.E[3][3]
+	};
+	return Result;
+}
+
+m44f M44FromXAngle(f32 Angle)
+{
+	m44f Result = M44F_IDENTITY;
+
+	Result.E[1][1] = cos(Angle);
+	Result.E[1][2] = -sin(Angle);
+	Result.E[2][1] = sin(Angle);
+	Result.E[2][2] = cos(Angle);
+
+	return Result;
+}
+
+m44f M44FromYAngle(f32 Angle)
+{
+	m44f Result = M44F_IDENTITY;
+
+	Result.E[0][0] = cos(Angle);
+	Result.E[0][2] = -sin(Angle);
+	Result.E[2][0] = sin(Angle);
+	Result.E[2][2] = cos(Angle);
+
+	return Result;
+}
+
 m44f M44FromZAngle(f32 Angle)
 {
-	m44f Result = {0};
-	Result.E[2][2] = 1;
-	Result.E[3][3] = 1;
+	m44f Result = M44F_IDENTITY;
 
 	Result.E[0][0] = cos(Angle);
 	Result.E[0][1] = -sin(Angle);
 	Result.E[1][0] = sin(Angle);
 	Result.E[1][1] = cos(Angle);
+
+	return Result;
+}
+
+m44f M44FPerspective(f32 Aspect, f32 FOV, f32 Near, f32 Far)
+{
+	m44f Result = M44F_IDENTITY;
+	Result.E[0][0] = 1.0f/(Aspect*tanf(FOV/2.0f));
+	Result.E[1][1] = 1.0f/(tanf(FOV/2.0f));
+	Result.E[2][2] = -(Far + Near)/(Far - Near);
+	Result.E[3][2] = - 2.0f * (Far * Near) / (Far - Near);
+	Result.E[2][3] = - 1.0f;	
+
+	return Result;
+}
+
+m44f M44FLookAt(v3f From, v3f To, v3f ArbitraryUp)
+{
+	v3f Forward = NormalizeV3F(SubV3F(From, To));
+	v3f Right = NormalizeV3F(CrossV3F(ArbitraryUp, Forward));
+	v3f Up = CrossV3F(Forward, Right);
+
+
+	v3f Translation = (v3f)
+	{
+		DotV3F(Right, From),
+		DotV3F(Up, From),
+		DotV3F(Forward, From),
+
+	};
+	m44f Result = (m44f)
+	{
+		Right.X, Up.X, Forward.X, 0,
+		Right.Y, Up.Y, Forward.Y, 0,
+		Right.Z, Up.Z, Forward.Z, 0,
+		-Translation.X, -Translation.Y, -Translation.Z, 1,
+	};
+
+	return (Result);
+}
+
+m44f M44FTranslate(v3f Translate)
+{
+	m44f Result = M44F_IDENTITY;
+
+	Result.E[3][0] = Translate.X;
+	Result.E[3][1] = Translate.Y;
+	Result.E[3][2] = Translate.Z;
+
+	return Result;
+}
+
+m44f M44FScale(v3f Scale)
+{
+	m44f Result = M44F_IDENTITY;
+
+	Result.E[0][0] = Scale.X;
+	Result.E[1][1] = Scale.Y;
+	Result.E[2][2] = Scale.Z;
 
 	return Result;
 }

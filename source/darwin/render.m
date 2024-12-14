@@ -1,17 +1,15 @@
-#include "log.h"
 #include <CoreGraphics/CoreGraphics.h>
-#import <Metal/Metal.h>
+#include <Metal/Metal.h>
 #include <ModelIO/ModelIO.h>
-#import <QuartzCore/QuartzCore.h>
+#include <QuartzCore/QuartzCore.h>
 
 #include "sokol_app.h"
+
 #include "os.h"
-
 #include "maths.h"
-
 #include "render.h"
-
 #include "shaders.h"
+#include "log.h"
 
 
 id<MTLCommandQueue> CommandQueue;
@@ -30,10 +28,12 @@ typedef struct vertex
 
 typedef struct uniforms
 {
-	m44f RotationMatrix;
+	m44f PerspectiveMatrix;
+	m44f ViewMatrix;
+	m44f ModelMatrix;
 } uniforms;
 
-vertex Vertices[3];
+vertex Vertices[36];
 
 uniforms Uniforms;
 
@@ -44,7 +44,7 @@ id<MTLTexture> MakeDepthTexture(r_context *RenderContext, CGSize Size)
 	                                                   width:Size.width
 	                                                   height:Size.height mipmapped:NO];
 	Desc.usage = MTLTextureUsageRenderTarget;
-	Desc.storageMode = MTLStorageModePrivate;
+	Desc.storageMode = MTLStorageModeMemoryless;
 
 	id<MTLTexture> Result = [Device newTextureWithDescriptor:Desc];
 	assert(Result != nil);
@@ -66,29 +66,15 @@ id<MTLTexture> ResizeDepthTexture(r_context *RenderContext, CGSize Size)
 
 void R_Init(r_context *RenderContext)
 {
+	// Single face
+	Vertices[0] =  (vertex){{-1,  1,  1, 1}, {1,0,0,1}};
+	Vertices[1] =  (vertex){{ 1, -1,  1, 1}, {1,0,0,1}};
+	Vertices[2] =  (vertex){{-1, -1,  1, 1}, {1,0,0,1}};
 
-	Vertices[0] = (vertex)
-	{
-		v4f(0, 1, 0, 1),
-		v4f(1, 0, 0, 1)
-	};
+	Vertices[3] =  (vertex){{-1,  1,  1, 1}, {1,0,0,1}};
+	Vertices[4] =  (vertex){{ 1,  1,  1, 1}, {1,0,0,1}};
+	Vertices[5] =  (vertex){{ 1, -1,  1, 1}, {1,0,0,1}};
 
-	Vertices[1] = (vertex)
-	{
-		v4f(-1, -1, 0, 1),
-		v4f(0, 1, 0, 1)
-	};
-
-	Vertices[2] = (vertex)
-	{
-		v4f(1, -1, 0, 1),
-		v4f(0, 0, 1, 1)
-	};
-
-	Uniforms.RotationMatrix.E[0][0] = 1;
-	Uniforms.RotationMatrix.E[1][1] = 1;
-	Uniforms.RotationMatrix.E[2][2] = 1;
-	Uniforms.RotationMatrix.E[3][3] = 1;
 
 	Device = (__bridge id<MTLDevice>)sapp_metal_get_device();
 
@@ -96,10 +82,10 @@ void R_Init(r_context *RenderContext)
 
 	VertexBuffer = [Device newBufferWithBytes:Vertices
 	                length:sizeof(Vertices)
-	                options:MTLResourceOptionCPUCacheModeDefault];
+	                options:MTLResourceStorageModePrivate];
 
 	UniformBuffer = [Device newBufferWithLength:sizeof(Uniforms)
-	                 options:MTLResourceOptionCPUCacheModeDefault];
+	                 options:MTLResourceStorageModePrivate];
 
 	NSError* Error = nil;
 	NSString* Source = [NSString stringWithUTF8String:(char*)TriangleShader];
@@ -137,16 +123,24 @@ void R_Update(r_context *RenderContext)
 
 	id<MTLCommandBuffer> CommandBuffer = [CommandQueue commandBuffer];
 
-	Uniforms.RotationMatrix = M44FromZAngle(Angle);
-	Angle += 0.1;
+
+	Uniforms.ModelMatrix = M44FromYAngle(Angle);
+	Angle += 0.01;
+	Uniforms.ModelMatrix = MulM44FM44F(Uniforms.ModelMatrix, M44FTranslate(v3f(0, 2 * sinf(Angle), 0)));
+	
+	Uniforms.PerspectiveMatrix = M44FPerspective((f32)Drawable.texture.width/(f32)Drawable.texture.height, 30.0, 0.1, 10000.0);
+	Uniforms.ViewMatrix = M44FLookAt(v3f(0, 0, 10), v3f(0, 0, 0), v3f(0, 1, 0));
+
 	MemoryCopy(UniformBuffer.contents, &Uniforms, sizeof(Uniforms));
 
 	id<MTLRenderCommandEncoder> Encoder = [CommandBuffer renderCommandEncoderWithDescriptor:PassDesc];
 	[Encoder setRenderPipelineState:PipelineState];
+	[Encoder setFrontFacingWinding:MTLWindingClockwise];
+	[Encoder setCullMode:(MTLCullModeNone)];
 	[Encoder setVertexBuffer:VertexBuffer offset:0 atIndex:0];
 	[Encoder setVertexBuffer:UniformBuffer offset:0 atIndex:1];
 	[Encoder setDepthStencilState:DepthStencilState];
-	[Encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:3];
+	[Encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:6];
 	[Encoder endEncoding];
 
 	[CommandBuffer presentDrawable:Drawable];

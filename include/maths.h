@@ -53,6 +53,10 @@ v3f AddV3F(v3f A, v3f B);
 v3f SubV3F(v3f A, v3f B);
 v3f MulV3F(v3f A, v3f B);
 v3f DivV3F(v3f A, v3f B);
+f32 LengthV3F(v3f V);
+v3f NormalizeV3F(v3f V);
+v3f CrossV3F(v3f A, v3f B);
+f32 DotV3F(v3f A, v3f B);
 
 typedef struct v3d { f64 X; f64 Y; f32 Z; } v3d;
 #define v3d(...) (v3d){ __VA_ARGS__ }
@@ -60,6 +64,10 @@ v3d AddV3D(v3d A, v3d B);
 v3d SubV3D(v3d A, v3d B);
 v3d MulV3D(v3d A, v3d B);
 v3d DivV3D(v3d A, v3d B);
+f64 LengthV3D(v3d V);
+v3d NormalizeV3D(v3d V);
+v3d CrossV3D(v3d A, v3d B);
+f32 DotV3D(v3d A, v3d B);
 
 typedef struct v3i { s32 X; s32 Y; f32 Z; } v3i;
 #define v3i(...) (v3i){ __VA_ARGS__ }
@@ -94,6 +102,8 @@ v4f AddV4F(v4f A, v4f B);
 v4f SubV4F(v4f A, v4f B);
 v4f MulV4F(v4f A, v4f B);
 v4f DivV4F(v4f A, v4f B);
+f64 LengthV4F(v4f V);
+v4f NormalizeV4F(v4f V);
 
 typedef struct v4d { f64 X; f64 Y; f32 Z; f32 W; } v4d;
 #define v4d(...) (v4d){ __VA_ARGS__ }
@@ -101,6 +111,8 @@ v4d AddV4D(v4d A, v4d B);
 v4d SubV4D(v4d A, v4d B);
 v4d MulV4D(v4d A, v4d B);
 v4d DivV4D(v4d A, v4d B);
+f64 LengthV4D(v4d V);
+v4d NormalizeV4D(v4d V);
 
 typedef struct v4i { s32 X; s32 Y; f32 Z; f32 W; } v4i;
 #define v4i(...) (v3i){ __VA_ARGS__ }
@@ -132,7 +144,19 @@ typedef struct m44f { f32 E[4][4]; } m44f;
 m44f MulM44FV3F(m44f A, v3f B);
 m44f MulM44FM44F(m44f A, m44f B);
 
+m44f M44FTranspose(m44f M);
+
+m44f M44FromXAngle(f32 Angle);
+m44f M44FromYAngle(f32 Angle);
 m44f M44FromZAngle(f32 Angle);
+
+m44f M44FPerspective(f32 Aspect, f32 FOV, f32 Near, f32 Far);
+m44f M44FLookAt(v3f At, v3f Position, v3f Up);
+
+m44f M44FTranslate(v3f Translate);
+m44f M44FScale(v3f Scale);
+
+extern m44f M44F_IDENTITY;
 
 typedef union m44d { f64 E[4][4]; } m44d;
 m44d MulM44DV3D(m44d A, v3d B);

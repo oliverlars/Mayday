@@ -1,4 +1,5 @@
 
+#include "log.h"
 #include "memory.h"
 #include "misc.h"
 #include "os.h"
@@ -28,18 +29,14 @@ void OS_Initialise(void *Data)
 	R_Init(&Application->RenderContext);
 }
 
-#include <stdio.h>
-
 int main()
 {
 	memory_arena Arena = {0};
 	Arena.Start = MemoryReserve(GigaBytes(64));
-	//mayday Application = {0};
-	//Application.RenderContext.Logger.Arena = &Arena;
-	//Application.Window = OS_MakeWindow(Str8("Mayday"), 1280, 720);
 
-	str8 Test = Str8PushF(&Arena, "?v3f \n", (v3f){1, 2, 3});
-	PrintLn("?S", Test);
+	mayday Application = {0};
+	Application.RenderContext.Logger.Arena = &Arena;
+	Application.Window = OS_MakeWindow(Str8("Mayday"), 1280, 720);
 
-	//OS_Run(Application.Window, &Application);
+	OS_Run(Application.Window, &Application);
 }

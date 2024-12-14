@@ -1,11 +1,12 @@
 #include <stdarg.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <assert.h>
 
 #include "strings.h"
 #include "memory.h"
 
 #include "maths.h"
+
 
 
 str8 Str8PushFV(memory_arena *Arena, char *Format, va_list InputArgList)
@@ -14,10 +15,15 @@ str8 Str8PushFV(memory_arena *Arena, char *Format, va_list InputArgList)
 	va_copy(ArgList, InputArgList);
 	str8_list Builder = {0};
 	char *Iter = Format;
+	char *Start = Format;
+
 	while(Iter && Iter[0])
 	{
-		if(Iter++[0] == '?')
+		if(Iter[0] && *Iter++ == '?')
 		{
+			str8 UpTo = {Iter - Start - 1, Start};
+			Str8ListAppend(Arena, &Builder, UpTo);
+
 			if(0) {}
 			else if(Str8Equal((str8){3, Iter}, Str8("v3f")))
 			{
@@ -25,9 +31,11 @@ str8 Str8PushFV(memory_arena *Arena, char *Format, va_list InputArgList)
 				int BytesNeeded = snprintf(0, 0, "[%f, %f, %f]", V.X, V.Y, V.Z) + 1;
 				str8 Value = {0};
 				Value.Bytes = ArenaPush(Arena, BytesNeeded);
-				Value.Size = BytesNeeded;
-				snprintf((char*)Value.Bytes, BytesNeeded, "[%f, %f, %f]", V.X, V.Y, V.Z);
+				Value.Size = snprintf((char*)Value.Bytes, BytesNeeded, "[%f, %f, %f]", V.X, V.Y, V.Z);
 				Str8ListAppend(Arena, &Builder, Value);
+
+				Iter += 3;
+				Start = Iter;
 			}
 			else if(Str8Equal((str8){1, Iter}, Str8("S")))
 			{
@@ -35,9 +43,11 @@ str8 Str8PushFV(memory_arena *Arena, char *Format, va_list InputArgList)
 				int BytesNeeded = snprintf(0, 0, "%.*s", (int)S.Size, S.Bytes) + 1;
 				str8 Value = {0};
 				Value.Bytes = ArenaPush(Arena, BytesNeeded);
-				Value.Size = BytesNeeded;
-				snprintf((char*)Value.Bytes, BytesNeeded, "%.*s", (int)S.Size, S.Bytes);
+				Value.Size = snprintf((char*)Value.Bytes, BytesNeeded, "%.*s", (int)S.Size, S.Bytes);
 				Str8ListAppend(Arena, &Builder, Value);
+
+				Iter += 1;
+				Start = Iter;
 			}
 			else if(Str8Equal((str8){4, Iter}, Str8("cstr")))
 			{
@@ -47,7 +57,9 @@ str8 Str8PushFV(memory_arena *Arena, char *Format, va_list InputArgList)
 				Value.Bytes = ArenaPush(Arena, BytesNeeded);
 				Value.Size = snprintf((char*)Value.Bytes, BytesNeeded, "%s", S);
 				Str8ListAppend(Arena, &Builder, Value);
+
 				Iter += 4;
+				Start = Iter;
 			}
 			else if(Str8Equal((str8){2, Iter}, Str8("s8")))
 			{
@@ -57,6 +69,9 @@ str8 Str8PushFV(memory_arena *Arena, char *Format, va_list InputArgList)
 				Value.Bytes = ArenaPush(Arena, BytesNeeded);
 				Value.Size = snprintf((char*)Value.Bytes, BytesNeeded, "%hhd", S8);
 				Str8ListAppend(Arena, &Builder, Value);
+
+				Iter += 2;
+				Start = Iter;
 			}
 			else if(Str8Equal((str8){3, Iter}, Str8("s16")))
 			{
@@ -66,6 +81,9 @@ str8 Str8PushFV(memory_arena *Arena, char *Format, va_list InputArgList)
 				Value.Bytes = ArenaPush(Arena, BytesNeeded);
 				Value.Size = snprintf((char*)Value.Bytes, BytesNeeded, "%hd", S16);
 				Str8ListAppend(Arena, &Builder, Value);
+				
+				Iter += 3;
+				Start = Iter;
 			}
 			else if(Str8Equal((str8){3, Iter}, Str8("s32")))
 			{
@@ -75,6 +93,9 @@ str8 Str8PushFV(memory_arena *Arena, char *Format, va_list InputArgList)
 				Value.Bytes = ArenaPush(Arena, BytesNeeded);
 				Value.Size = snprintf((char*)Value.Bytes, BytesNeeded, "%d", S32);
 				Str8ListAppend(Arena, &Builder, Value);
+
+				Iter += 3;
+				Start = Iter;
 			}
 			else if(Str8Equal((str8){3, Iter}, Str8("s64")))
 			{
@@ -84,6 +105,9 @@ str8 Str8PushFV(memory_arena *Arena, char *Format, va_list InputArgList)
 				Value.Bytes = ArenaPush(Arena, BytesNeeded);
 				Value.Size = snprintf((char*)Value.Bytes, BytesNeeded, "%lld", S64);
 				Str8ListAppend(Arena, &Builder, Value);
+
+				Iter += 3;
+				Start = Iter;
 			}
 			else if(Str8Equal((str8){2, Iter}, Str8("u8")))
 			{
@@ -93,6 +117,9 @@ str8 Str8PushFV(memory_arena *Arena, char *Format, va_list InputArgList)
 				Value.Bytes = ArenaPush(Arena, BytesNeeded);
 				Value.Size = snprintf((char*)Value.Bytes, BytesNeeded, "%hhu", U8);
 				Str8ListAppend(Arena, &Builder, Value);
+
+				Iter += 2;
+				Start = Iter;
 			}
 			else if(Str8Equal((str8){3, Iter}, Str8("u16")))
 			{
@@ -102,6 +129,9 @@ str8 Str8PushFV(memory_arena *Arena, char *Format, va_list InputArgList)
 				Value.Bytes = ArenaPush(Arena, BytesNeeded);
 				Value.Size = snprintf((char*)Value.Bytes, BytesNeeded, "%hu", U16);
 				Str8ListAppend(Arena, &Builder, Value);
+
+				Iter += 3;
+				Start = Iter;
 			}
 			else if(Str8Equal((str8){3, Iter}, Str8("u32")))
 			{
@@ -111,6 +141,9 @@ str8 Str8PushFV(memory_arena *Arena, char *Format, va_list InputArgList)
 				Value.Bytes = ArenaPush(Arena, BytesNeeded);
 				Value.Size = snprintf((char*)Value.Bytes, BytesNeeded, "%u", U32);
 				Str8ListAppend(Arena, &Builder, Value);
+
+				Iter += 3;
+				Start = Iter;
 			}
 			else if(Str8Equal((str8){3, Iter}, Str8("u64")))
 			{
@@ -120,6 +153,9 @@ str8 Str8PushFV(memory_arena *Arena, char *Format, va_list InputArgList)
 				Value.Bytes = ArenaPush(Arena, BytesNeeded);
 				Value.Size = snprintf((char*)Value.Bytes, BytesNeeded, "%llu", U64);
 				Str8ListAppend(Arena, &Builder, Value);
+
+				Iter += 3;
+				Start = Iter;
 			}
 			else if(Str8Equal((str8){3, Iter}, Str8("f32")))
 			{
@@ -129,6 +165,9 @@ str8 Str8PushFV(memory_arena *Arena, char *Format, va_list InputArgList)
 				Value.Bytes = ArenaPush(Arena, BytesNeeded);
 				Value.Size = snprintf((char*)Value.Bytes, BytesNeeded, "%f", F32);
 				Str8ListAppend(Arena, &Builder, Value);
+
+				Iter += 3;
+				Start = Iter;
 			}
 			else if(Str8Equal((str8){3, Iter}, Str8("f64")))
 			{
@@ -138,12 +177,20 @@ str8 Str8PushFV(memory_arena *Arena, char *Format, va_list InputArgList)
 				Value.Bytes = ArenaPush(Arena, BytesNeeded);
 				Value.Size = snprintf((char*)Value.Bytes, BytesNeeded, "%f", F64);
 				Str8ListAppend(Arena, &Builder, Value);
+
+				Iter += 3;
+				Start = Iter;
 			}
 		}
 	}
 	va_end(ArgList);
+	
+	
+	str8 UpTo = {Iter - Start, Start};
+	Str8ListAppend(Arena, &Builder, UpTo);
 
-	return Str8ListJoin(Arena, &Builder);
+	str8 Result = Str8ListJoin(Arena, &Builder);
+	return Result;
 }
 
 str8 Str8PushF(memory_arena *Arena, char *Format, ...)
@@ -192,6 +239,7 @@ b32 Str8Equal(str8 A, str8 B)
 
 void Str8ListAppend(memory_arena *Arena, str8_list *List, str8 String)
 {
+	if(String.Size <= 0 ) return;
 	str8_list_node *Node = ArenaPushTypeZero(Arena, str8_list_node);
 	Node->String = Str8Copy(Arena, String);
 	if(List->First == Null)
@@ -290,13 +338,17 @@ b32 NextInStr8List(str8_list_node **Node)
 
 void Print(char *Format, ...)
 {
-	va_list args;
-	va_start(args, Format);
+	va_list Args;
+	va_start(Args, Format);
 	u64 At = G_ScratchArena.At;
-	str8 Result = Str8PushFV(&G_ScratchArena, Format, args);
-	G_ScratchArena.At = At;
-	va_end(args);
+	str8 Result = Str8PushFV(&G_ScratchArena, Format, Args);
+	va_end(Args);
 	printf("%.*s", (int)Result.Size, Result.Bytes);
+	// for (u64 I = 0; I < Result.Size; I++)
+	// {
+	// 	printf("%02X ", (unsigned char)Result.Bytes[I]);
+	// }
+	G_ScratchArena.At = At;
 }
 
 void PrintLn(char *Format, ...)
@@ -305,7 +357,7 @@ void PrintLn(char *Format, ...)
 	va_start(args, Format);
 	u64 At = G_ScratchArena.At;
 	str8 Result = Str8PushFV(&G_ScratchArena, Format, args);
-	G_ScratchArena.At = At;
 	va_end(args);
 	printf("%.*s\n", (int)Result.Size, Result.Bytes);
+	G_ScratchArena.At = At;
 }

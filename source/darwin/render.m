@@ -158,6 +158,7 @@ void R_Update(r_context *RenderContext)
 
 
 	Uniforms.ModelMatrix = M44FromXAngle(Angle);
+	Uniforms.ModelMatrix = MulM44FM44F(Uniforms.ModelMatrix, M44FromYAngle(Angle*2.0));
 	Angle += 0.01;
 	Uniforms.ModelMatrix = MulM44FM44F(Uniforms.ModelMatrix, M44FTranslate(v3f(0, 2 * sinf(Angle), 0)));
 	

@@ -14,7 +14,7 @@ void LogInfoF(logger *Logger, char *FileName, char *FunctionName, u64 LineNumber
 	str8_list List = {0};
 	Str8ListAppend(Logger->Arena, &List, Str8PushF(Logger->Arena, "[" StringStyle("INFO", S_BOLD) "] "));
 
-	Str8ListAppend(Logger->Arena, &List, Str8PushF(Logger->Arena, StringStyle("?cstr ", S_BLUE) "() at ", FunctionName));
+	Str8ListAppend(Logger->Arena, &List, Str8PushF(Logger->Arena, StringStyle("?cstr", S_BLUE) "() at ", FunctionName));
 	Str8ListAppend(Logger->Arena, &List, Str8PushF(Logger->Arena, StringStyle("?cstr", S_GREEN) ":", FileName));
 	Str8ListAppend(Logger->Arena, &List, Str8PushF(Logger->Arena, StringStyle("?u64 ", S_YELLOW), LineNumber));
 

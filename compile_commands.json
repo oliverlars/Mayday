@@ -16,6 +16,11 @@
     },
     {
         "directory": "/Users/olivercruickshank/Mayday",
+        "command": "clang  -c source/draw.c -g -O0 -obuild/source/draw.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "file": "source/draw.c"
+    },
+    {
+        "directory": "/Users/olivercruickshank/Mayday",
         "command": "clang  -c source/mayday.c -g -O0 -obuild/source/mayday.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/mayday.c"
     },

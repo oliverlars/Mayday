@@ -1,10 +1,13 @@
 
+#include "draw.h"
 #include "log.h"
 #include "memory.h"
 #include "misc.h"
 #include "os.h"
 #include "strings.h"
 
+#include "draw.h"
+#include "berkeley_mono_font.h"
 #include "maths.h"
 #include "render.h"
 
@@ -33,6 +36,13 @@ int main()
 {
 	memory_arena Arena = {0};
 	Arena.Start = MemoryReserve(GigaBytes(64));
+
+	d_context D_Context = {0};
+	D_Context.Arena = &Arena;
+	D_Context.Logger.Arena = &Arena;
+
+	d_font Font = D_LoadFontFromTTF(&D_Context, G_BerkeleyMonoRegular);
+	d_atlas_glyph *Glyph = D_GlyphFromCodePoint(&D_Context, Font, 10, 'G');
 
 	mayday Application = {0};
 	Application.RenderContext.Logger.Arena = &Arena;

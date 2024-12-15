@@ -19,7 +19,7 @@ Entry(InputWaveInfo)
 		compiler Compiler = COMPILER_PLATFORM_DEFAULT;
 		for(s64 ArgIndex = 1; ArgIndex < Shared->ArgCount; ArgIndex++)
 		{
-			str8 Arg = Str8PushF(&Arena, "%cstr", Shared->Args[ArgIndex]);
+			str8 Arg = Str8PushF(&Arena, "%s", Shared->Args[ArgIndex]);
 			if(0) {}
 			else if(Str8Equal(Arg, Str8("release"))) { OptimisedBuild = True; }
 			else if(Str8Equal(Arg, Str8("rebuild"))) { Rebuild = True; }
@@ -97,7 +97,13 @@ Entry(InputWaveInfo)
 			Str8ListAppend(&Shared->Arena, &ExtraLinkFlags, Str8("-framework Cocoa -framework MetalKit -framework QuartzCore -framework Metal"));
 		}
 
-		EmbedFile(&Arena, Str8("shaders/triangle.metal"), Str8("embed/shaders.h"), Str8("TriangleShader"));
+		EmbedFile(&Arena, Str8("fonts/BerkeleyMono-Regular.otf"),
+						  Str8("embed/berkeley_mono_font.h"),
+						  Str8("G_BerkeleyMonoRegular"));
+
+		EmbedFile(&Arena, Str8("shaders/triangle.metal"),
+						  Str8("embed/shaders.h"),
+						  Str8("G_TriangleShader"));
 
 		BuildOptions = (build_options){
 			.Compiler = Compiler,

@@ -140,7 +140,7 @@ void R_Init(r_context *RenderContext)
 				   length:sizeof(Indices) options:MTLResourceStorageModePrivate];
 
 	NSError* Error = nil;
-	NSString* Source = [NSString stringWithUTF8String:(char*)TriangleShader];
+	NSString* Source = [NSString stringWithUTF8String:(char*)G_TriangleShader];
 	id<MTLLibrary> Library = [Device newLibraryWithSource:Source options:nil error:&Error];
 	id<MTLFunction> VertexFunction = [Library newFunctionWithName:@"VertexMain"];
 	id<MTLFunction> FragmentFunction = [Library newFunctionWithName:@"FragmentMain"];

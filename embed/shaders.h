@@ -1,4 +1,4 @@
-static unsigned char TriangleShader[] =
+static unsigned char G_TriangleShader[] =
 {
     0x23, 0x69, 0x6e, 0x63,
     0x6c, 0x75, 0x64, 0x65,

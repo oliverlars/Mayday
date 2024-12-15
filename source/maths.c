@@ -1,6 +1,25 @@
 #include "maths.h"
+#include "strings.h"
 
 #include <math.h>
+
+
+u64 M_FNVHashString(u64 Hash, str8 String)
+{
+	for (s64 Index = 0; Index < String.Size; Index++)
+	{
+
+		Hash *= M_FNV_64_PRIME;
+		Hash ^= (u64)String.Bytes[Index];
+	}
+	return Hash;
+}
+
+u64 M_FNVHashBytes(u64 Hash, u8 *Bytes, int ByteCount)
+{
+	str8 BytesAsString = (str8){ByteCount, Bytes};
+	return M_FNVHashString(Hash, BytesAsString);
+}
 
 /*
 

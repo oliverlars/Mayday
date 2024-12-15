@@ -1436,6 +1436,7 @@ void FindAllIncludesInFile(memory_arena *Arena, str8 Filename, str8_list Include
                             str8 SourceDir = Str8UpToLastCharacter(Arena, Filename, '/');
                             str8 SourceDirPlusIncludePath = Str8PushF(Arena, "%.*s/%.*s", Str8ToPrintfArgs(SourceDir), Str8ToPrintfArgs(IncludePath));
                             b32 FoundFile = False;
+                            str8_list AttemptedIncludes = {0};
                             if (FileExists(Arena, SourceDirPlusIncludePath))
                             {
                                 FoundFile = True;
@@ -1457,12 +1458,21 @@ void FindAllIncludesInFile(memory_arena *Arena, str8 Filename, str8_list Include
                                         FindAllIncludesInFile(Arena, FullPath, IncludePaths, IncludeChainFiles);
                                         break;
                                     }
+                                    else
+                                    {
+                                        Str8ListAppend(Arena, &AttemptedIncludes, FullPath);
+                                    }
                                 }
                             }
 
                             if (FoundFile == False)
                             {
                                 printf("\nUnable to find include path...\n");
+                                for (str8_list_node *Node = AttemptedIncludes.First; Node != 0; Node = Node->Next)
+                                {
+                                    printf("%.*s | ", Str8ToPrintfArgs(Node->String));
+                                }
+                                printf("End\n");
                                 return;
                             }
                         }
@@ -1482,7 +1492,7 @@ void EmbedFile(memory_arena *Arena, str8 SourcePath, str8 DestinationPath, str8 
 
     for(s64 At = 0; At < File.Size;)
     {
-        s8* Byte = File.Bytes + At;
+        u8* Byte = (u8*)(File.Bytes + At);
         if(At + 16 <= File.Size)
         {
             str8 Elements = Str8PushF(Arena, 

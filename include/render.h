@@ -1,3 +1,4 @@
+#pragma once
 #include "memory.h"
 #include "log.h"
 #include "maths.h"
@@ -5,11 +6,12 @@
 typedef enum r_vertex_format
 {
 	R_VF_POSITION = 1 << 0,
-	R_FV_COLOUR   = 1 << 1,
-	R_FV_NORMAL   = 1 << 2,
-	R_FV_UV       = 1 << 3,
+	R_VF_COLOUR   = 1 << 1,
+	R_VF_NORMAL   = 1 << 2,
+	R_VF_UV       = 1 << 3,
 }
 r_vertex_format;
+
 typedef struct r_vertex
 {
 	v4f Position;
@@ -50,10 +52,10 @@ r_command;
 typedef struct r_context
 {
 	memory_arena *Arena;
-	r_command *Commands;
-	int MaxCommands;
-
 	logger Logger;
+
+	r_command *CommandsStart;
+	r_command *CommandsEnd;
 }
 r_context;
 
@@ -64,3 +66,5 @@ r_options;
 
 void R_Init(r_context *RenderContext);
 void R_Update(r_context *RenderContext);
+
+void R_PushCommand(r_context *R_Context, r_command Command);

@@ -2,6 +2,13 @@
 
 #include "misc.h"
 
+#include "strings.h"
+
+#define M_FNV_64_PRIME ((u64)0x100000001b3ULL)
+#define M_FNV_HASH_START ((u64)0xcbf29ce484222325ULL)
+u64 M_FNVHashString(u64 Hash, str8 String);
+u64 M_FNVHashBytes(u64 Hash, u8 *Bytes, s32 ByteCount);
+
 /*
 
 V2
@@ -114,7 +121,7 @@ v4d DivV4D(v4d A, v4d B);
 f64 LengthV4D(v4d V);
 v4d NormalizeV4D(v4d V);
 
-typedef struct v4i { s32 X; s32 Y; f32 Z; f32 W; } v4i;
+typedef struct v4i { s32 X; s32 Y; s32 Z; s32 W; } v4i;
 #define v4i(...) (v3i){ __VA_ARGS__ }
 v4i AddV4I(v4i A, v4i B);
 v4i SubV4I(v4i A, v4i B);

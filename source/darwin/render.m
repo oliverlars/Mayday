@@ -66,14 +66,47 @@ id<MTLTexture> ResizeDepthTexture(r_context *RenderContext, CGSize Size)
 
 void R_Init(r_context *RenderContext)
 {
-	// Single face
-	Vertices[0] =  (vertex){{-1,  1,  1, 1}, {1,0,0,1}};
-	Vertices[1] =  (vertex){{ 1, -1,  1, 1}, {1,0,0,1}};
-	Vertices[2] =  (vertex){{-1, -1,  1, 1}, {1,0,0,1}};
+	Vertices[0] =  (vertex){{-1, -1,  1, 1}, {1,0,0,1}};
+	Vertices[1] =  (vertex){{ 1,  1,  1, 1}, {1,0,0,1}};
+	Vertices[2] =  (vertex){{-1,  1,  1, 1}, {1,0,0,1}};
+	Vertices[3] =  (vertex){{-1, -1,  1, 1}, {1,0,0,1}};
+	Vertices[4] =  (vertex){{ 1, -1,  1, 1}, {1,0,0,1}};
+	Vertices[5] =  (vertex){{ 1,  1,  1, 1}, {1,0,0,1}};
 
-	Vertices[3] =  (vertex){{-1,  1,  1, 1}, {1,0,0,1}};
-	Vertices[4] =  (vertex){{ 1,  1,  1, 1}, {1,0,0,1}};
-	Vertices[5] =  (vertex){{ 1, -1,  1, 1}, {1,0,0,1}};
+	Vertices[6] =  (vertex){{-1, -1, -1, 1}, {0,1,0,1}};
+	Vertices[7] =  (vertex){{-1,  1, -1, 1}, {0,1,0,1}};
+	Vertices[8] =  (vertex){{ 1,  1, -1, 1}, {0,1,0,1}};
+	Vertices[9] =  (vertex){{-1, -1, -1, 1}, {0,1,0,1}};
+	Vertices[10] = (vertex){{ 1,  1, -1, 1}, {0,1,0,1}};
+	Vertices[11] = (vertex){{ 1, -1, -1, 1}, {0,1,0,1}};
+
+	Vertices[12] = (vertex){{-1,  1,  1, 1}, {0,0,1,1}};
+	Vertices[13] = (vertex){{ 1,  1, -1, 1}, {0,0,1,1}};
+	Vertices[14] = (vertex){{-1,  1, -1, 1}, {0,0,1,1}};
+	Vertices[15] = (vertex){{-1,  1,  1, 1}, {0,0,1,1}};
+	Vertices[16] = (vertex){{ 1,  1,  1, 1}, {0,0,1,1}};
+	Vertices[17] = (vertex){{ 1,  1, -1, 1}, {0,0,1,1}};
+
+	Vertices[18] = (vertex){{-1, -1, -1, 1}, {1,1,0,1}};
+	Vertices[19] = (vertex){{ 1, -1,  1, 1}, {1,1,0,1}};
+	Vertices[20] = (vertex){{-1, -1,  1, 1}, {1,1,0,1}};
+	Vertices[21] = (vertex){{-1, -1, -1, 1}, {1,1,0,1}};
+	Vertices[22] = (vertex){{ 1, -1, -1, 1}, {1,1,0,1}};
+	Vertices[23] = (vertex){{ 1, -1,  1, 1}, {1,1,0,1}};
+
+	Vertices[24] = (vertex){{-1, -1, -1, 1}, {0,1,1,1}};
+	Vertices[25] = (vertex){{-1,  1,  1, 1}, {0,1,1,1}};
+	Vertices[26] = (vertex){{-1,  1, -1, 1}, {0,1,1,1}};
+	Vertices[27] = (vertex){{-1, -1, -1, 1}, {0,1,1,1}};
+	Vertices[28] = (vertex){{-1, -1,  1, 1}, {0,1,1,1}};
+	Vertices[29] = (vertex){{-1,  1,  1, 1}, {0,1,1,1}};
+
+	Vertices[30] = (vertex){{ 1, -1, -1, 1}, {1,0,1,1}};
+	Vertices[31] = (vertex){{ 1,  1, -1, 1}, {1,0,1,1}};
+	Vertices[32] = (vertex){{ 1,  1,  1, 1}, {1,0,1,1}};
+	Vertices[33] = (vertex){{ 1, -1, -1, 1}, {1,0,1,1}};
+	Vertices[34] = (vertex){{ 1,  1,  1, 1}, {1,0,1,1}};
+	Vertices[35] = (vertex){{ 1, -1,  1, 1}, {1,0,1,1}};
 
 
 	Device = (__bridge id<MTLDevice>)sapp_metal_get_device();
@@ -124,7 +157,7 @@ void R_Update(r_context *RenderContext)
 	id<MTLCommandBuffer> CommandBuffer = [CommandQueue commandBuffer];
 
 
-	Uniforms.ModelMatrix = M44FromYAngle(Angle);
+	Uniforms.ModelMatrix = M44FromXAngle(Angle);
 	Angle += 0.01;
 	Uniforms.ModelMatrix = MulM44FM44F(Uniforms.ModelMatrix, M44FTranslate(v3f(0, 2 * sinf(Angle), 0)));
 	
@@ -140,7 +173,7 @@ void R_Update(r_context *RenderContext)
 	[Encoder setVertexBuffer:VertexBuffer offset:0 atIndex:0];
 	[Encoder setVertexBuffer:UniformBuffer offset:0 atIndex:1];
 	[Encoder setDepthStencilState:DepthStencilState];
-	[Encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:6];
+	[Encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:36];
 	[Encoder endEncoding];
 
 	[CommandBuffer presentDrawable:Drawable];

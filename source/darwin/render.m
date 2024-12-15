@@ -11,14 +11,14 @@
 #include "shaders.h"
 #include "log.h"
 
-
-id<MTLCommandQueue> CommandQueue;
-id<MTLDevice> Device;
+id<MTLCommandQueue>        CommandQueue;
+id<MTLDevice>              Device;
 id<MTLRenderPipelineState> PipelineState;
-id<MTLDepthStencilState> DepthStencilState;
-id<MTLTexture> DepthTexture;
-id<MTLBuffer> VertexBuffer;
-id<MTLBuffer> UniformBuffer;
+id<MTLDepthStencilState>   DepthStencilState;
+id<MTLTexture>             DepthTexture;
+id<MTLBuffer>              VertexBuffer;
+id<MTLBuffer>              IndexBuffer;
+id<MTLBuffer>              UniformBuffer;
 
 typedef struct vertex
 {
@@ -33,7 +33,8 @@ typedef struct uniforms
 	m44f ModelMatrix;
 } uniforms;
 
-vertex Vertices[36];
+vertex Vertices[8];
+s32 Indices[36];
 
 uniforms Uniforms;
 
@@ -66,59 +67,77 @@ id<MTLTexture> ResizeDepthTexture(r_context *RenderContext, CGSize Size)
 
 void R_Init(r_context *RenderContext)
 {
-	Vertices[0] =  (vertex){{-1, -1,  1, 1}, {1,0,0,1}};
-	Vertices[1] =  (vertex){{ 1,  1,  1, 1}, {1,0,0,1}};
-	Vertices[2] =  (vertex){{-1,  1,  1, 1}, {1,0,0,1}};
-	Vertices[3] =  (vertex){{-1, -1,  1, 1}, {1,0,0,1}};
-	Vertices[4] =  (vertex){{ 1, -1,  1, 1}, {1,0,0,1}};
-	Vertices[5] =  (vertex){{ 1,  1,  1, 1}, {1,0,0,1}};
+	Vertices[0] =  (vertex){{ 1,  1,  1, 1}, {1.0, 0.0, 0.0, 1.0}};
+	Vertices[1] =  (vertex){{ 1, -1,  1, 1}, {1.0, 0.0, 0.0, 1.0}};
+	Vertices[2] =  (vertex){{-1, -1,  1, 1}, {1.0, 0.0, 0.0, 1.0}};
+	Vertices[3] =  (vertex){{-1,  1,  1, 1}, {1.0, 0.0, 0.0, 1.0}};
 
-	Vertices[6] =  (vertex){{-1, -1, -1, 1}, {0,1,0,1}};
-	Vertices[7] =  (vertex){{-1,  1, -1, 1}, {0,1,0,1}};
-	Vertices[8] =  (vertex){{ 1,  1, -1, 1}, {0,1,0,1}};
-	Vertices[9] =  (vertex){{-1, -1, -1, 1}, {0,1,0,1}};
-	Vertices[10] = (vertex){{ 1,  1, -1, 1}, {0,1,0,1}};
-	Vertices[11] = (vertex){{ 1, -1, -1, 1}, {0,1,0,1}};
+	Vertices[4] =  (vertex){{ 1,  1, -1, 1}, {0.0, 1.0, 0.0, 1.0}};
+	Vertices[5] =  (vertex){{ 1, -1, -1, 1}, {0.0, 1.0, 0.0, 1.0}};
+	Vertices[6] =  (vertex){{-1, -1, -1, 1}, {0.0, 1.0, 0.0, 1.0}};
+	Vertices[7] =  (vertex){{-1,  1, -1, 1}, {0.0, 1.0, 0.0, 1.0}};
 
-	Vertices[12] = (vertex){{-1,  1,  1, 1}, {0,0,1,1}};
-	Vertices[13] = (vertex){{ 1,  1, -1, 1}, {0,0,1,1}};
-	Vertices[14] = (vertex){{-1,  1, -1, 1}, {0,0,1,1}};
-	Vertices[15] = (vertex){{-1,  1,  1, 1}, {0,0,1,1}};
-	Vertices[16] = (vertex){{ 1,  1,  1, 1}, {0,0,1,1}};
-	Vertices[17] = (vertex){{ 1,  1, -1, 1}, {0,0,1,1}};
+	Indices[0] = 0;
+	Indices[1] = 1;
+	Indices[2] = 2;
 
-	Vertices[18] = (vertex){{-1, -1, -1, 1}, {1,1,0,1}};
-	Vertices[19] = (vertex){{ 1, -1,  1, 1}, {1,1,0,1}};
-	Vertices[20] = (vertex){{-1, -1,  1, 1}, {1,1,0,1}};
-	Vertices[21] = (vertex){{-1, -1, -1, 1}, {1,1,0,1}};
-	Vertices[22] = (vertex){{ 1, -1, -1, 1}, {1,1,0,1}};
-	Vertices[23] = (vertex){{ 1, -1,  1, 1}, {1,1,0,1}};
+	Indices[3] = 0;
+	Indices[4] = 2;
+	Indices[5] = 3;
 
-	Vertices[24] = (vertex){{-1, -1, -1, 1}, {0,1,1,1}};
-	Vertices[25] = (vertex){{-1,  1,  1, 1}, {0,1,1,1}};
-	Vertices[26] = (vertex){{-1,  1, -1, 1}, {0,1,1,1}};
-	Vertices[27] = (vertex){{-1, -1, -1, 1}, {0,1,1,1}};
-	Vertices[28] = (vertex){{-1, -1,  1, 1}, {0,1,1,1}};
-	Vertices[29] = (vertex){{-1,  1,  1, 1}, {0,1,1,1}};
+	Indices[6] = 4;
+	Indices[7] = 6;
+	Indices[8] = 5;
 
-	Vertices[30] = (vertex){{ 1, -1, -1, 1}, {1,0,1,1}};
-	Vertices[31] = (vertex){{ 1,  1, -1, 1}, {1,0,1,1}};
-	Vertices[32] = (vertex){{ 1,  1,  1, 1}, {1,0,1,1}};
-	Vertices[33] = (vertex){{ 1, -1, -1, 1}, {1,0,1,1}};
-	Vertices[34] = (vertex){{ 1,  1,  1, 1}, {1,0,1,1}};
-	Vertices[35] = (vertex){{ 1, -1,  1, 1}, {1,0,1,1}};
+	Indices[9] = 4;
+	Indices[10] = 7;
+	Indices[11] = 6;
 
+	Indices[12] = 0;
+	Indices[13] = 4;
+	Indices[14] = 5;
+
+	Indices[15] = 0;
+	Indices[16] = 5;
+	Indices[17] = 1;
+
+	Indices[18] = 2;
+	Indices[19] = 6;
+	Indices[20] = 7;
+
+	Indices[21] = 2;
+	Indices[22] = 7;
+	Indices[23] = 3;
+
+	Indices[24] = 0;
+	Indices[25] = 3;
+	Indices[26] = 7;
+
+	Indices[27] = 0;
+	Indices[28] = 7;
+	Indices[29] = 4;
+
+	Indices[30] = 1;
+	Indices[31] = 5;
+	Indices[32] = 6;
+
+	Indices[33] = 1;
+	Indices[34] = 6;
+	Indices[35] = 2;
 
 	Device = (__bridge id<MTLDevice>)sapp_metal_get_device();
 
 	CommandQueue = [Device newCommandQueue];
 
 	VertexBuffer = [Device newBufferWithBytes:Vertices
-	                length:sizeof(Vertices)
-	                options:MTLResourceStorageModePrivate];
+					length:sizeof(Vertices)
+					options:MTLResourceStorageModePrivate];
 
 	UniformBuffer = [Device newBufferWithLength:sizeof(Uniforms)
-	                 options:MTLResourceStorageModePrivate];
+					 options:MTLResourceStorageModePrivate];
+
+	IndexBuffer = [Device newBufferWithBytes:Indices
+				   length:sizeof(Indices) options:MTLResourceStorageModePrivate];
 
 	NSError* Error = nil;
 	NSString* Source = [NSString stringWithUTF8String:(char*)TriangleShader];
@@ -156,13 +175,11 @@ void R_Update(r_context *RenderContext)
 
 	id<MTLCommandBuffer> CommandBuffer = [CommandQueue commandBuffer];
 
-
 	Uniforms.ModelMatrix = M44FromXAngle(Angle);
-	Uniforms.ModelMatrix = MulM44FM44F(Uniforms.ModelMatrix, M44FromYAngle(Angle*2.0));
 	Angle += 0.01;
 	Uniforms.ModelMatrix = MulM44FM44F(Uniforms.ModelMatrix, M44FTranslate(v3f(0, 2 * sinf(Angle), 0)));
 	
-	Uniforms.PerspectiveMatrix = M44FPerspective((f32)Drawable.texture.width/(f32)Drawable.texture.height, 30.0, 0.1, 10000.0);
+	Uniforms.PerspectiveMatrix = M44FPerspective((f32)Drawable.texture.width/(f32)Drawable.texture.height, 100.0, 0.1, 10000.0);
 	Uniforms.ViewMatrix = M44FLookAt(v3f(0, 0, 10), v3f(0, 0, 0), v3f(0, 1, 0));
 
 	MemoryCopy(UniformBuffer.contents, &Uniforms, sizeof(Uniforms));
@@ -174,7 +191,10 @@ void R_Update(r_context *RenderContext)
 	[Encoder setVertexBuffer:VertexBuffer offset:0 atIndex:0];
 	[Encoder setVertexBuffer:UniformBuffer offset:0 atIndex:1];
 	[Encoder setDepthStencilState:DepthStencilState];
-	[Encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:36];
+	[Encoder drawIndexedPrimitives:MTLPrimitiveTypeTriangle indexCount:36
+															indexType:MTLIndexTypeUInt32
+															indexBuffer:IndexBuffer
+															indexBufferOffset:0];
 	[Encoder endEncoding];
 
 	[CommandBuffer presentDrawable:Drawable];

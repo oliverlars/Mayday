@@ -16,9 +16,11 @@ id<MTLDevice>              Device;
 id<MTLRenderPipelineState> PipelineState;
 id<MTLDepthStencilState>   DepthStencilState;
 id<MTLTexture>             DepthTexture;
+id<MTLTexture>             FontAtlasTexture;
 id<MTLBuffer>              VertexBuffer;
 id<MTLBuffer>              IndexBuffer;
 id<MTLBuffer>              UniformBuffer;
+id<MTLSamplerState>        SamplerState;
 
 typedef struct vertex
 {
@@ -38,12 +40,25 @@ s32 Indices[36];
 
 uniforms Uniforms;
 
+// Dumb hack
+void R_TextureFromBytes(r_context *R_Context, u8 *Bytes, s32 Width, s32 Height)
+{
+	MTLTextureDescriptor *TextureDescriptor = [MTLTextureDescriptor
+											   texture2DDescriptorWithPixelFormat:MTLPixelFormatR8Unorm
+											   width:Width
+											   height:Height
+											   mipmapped:NO];
+	TextureDescriptor.usage = MTLTextureUsageShaderRead | MTLTextureUsageShaderWrite;
+	FontAtlasTexture = [Device newTextureWithDescriptor:TextureDescriptor];
+	MTLRegion region = MTLRegionMake2D(0, 0, Width, Height);
+	[FontAtlasTexture replaceRegion:region mipmapLevel:0 withBytes:Bytes bytesPerRow:Width];
+}
 
 id<MTLTexture> MakeDepthTexture(r_context *R_Context, CGSize Size)
 {
 	MTLTextureDescriptor *Desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatDepth32Float 
-	                                                   width:Size.width
-	                                                   height:Size.height mipmapped:NO];
+													   width:Size.width
+													   height:Size.height mipmapped:NO];
 	Desc.usage = MTLTextureUsageRenderTarget;
 	Desc.storageMode = MTLStorageModeMemoryless;
 
@@ -131,13 +146,13 @@ void R_Init(r_context *R_Context)
 
 	VertexBuffer = [Device newBufferWithBytes:Vertices
 					length:sizeof(Vertices)
-					options:MTLResourceStorageModePrivate];
+					options:MTLResourceStorageModeShared];
 
 	UniformBuffer = [Device newBufferWithLength:sizeof(Uniforms)
-					 options:MTLResourceStorageModePrivate];
+					 options:MTLResourceStorageModeShared];
 
 	IndexBuffer = [Device newBufferWithBytes:Indices
-				   length:sizeof(Indices) options:MTLResourceStorageModePrivate];
+				   length:sizeof(Indices) options:MTLResourceStorageModeShared];
 
 	NSError* Error = nil;
 	NSString* Source = [NSString stringWithUTF8String:(char*)G_TriangleShader];
@@ -157,6 +172,8 @@ void R_Init(r_context *R_Context)
 	DepthStencilState = [Device newDepthStencilStateWithDescriptor:DepthStencilDescriptor];
 
 	PipelineState = [Device newRenderPipelineStateWithDescriptor:PipelineDesc error:&Error];
+
+
 }
 
 f32 Angle = 0.0;
@@ -191,6 +208,7 @@ void R_Update(r_context *R_Context)
 	[Encoder setVertexBuffer:VertexBuffer offset:0 atIndex:0];
 	[Encoder setVertexBuffer:UniformBuffer offset:0 atIndex:1];
 	[Encoder setDepthStencilState:DepthStencilState];
+	[Encoder setFragmentTexture:FontAtlasTexture atIndex:0];
 	[Encoder drawIndexedPrimitives:MTLPrimitiveTypeTriangle indexCount:36
 															indexType:MTLIndexTypeUInt32
 															indexBuffer:IndexBuffer

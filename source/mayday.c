@@ -8,7 +8,6 @@
 
 #include "draw.h"
 #include "berkeley_mono_font.h"
-#include "maths.h"
 #include "render.h"
 
 typedef struct mayday
@@ -16,6 +15,8 @@ typedef struct mayday
 	os_window Window;
 	r_context R_Context;
 	d_context D_Context;
+
+	d_font Font;
 }
 mayday;
 
@@ -23,6 +24,16 @@ mayday;
 void OS_Update(void *Data)
 {
 	mayday *Application = Data;
+
+	d_atlas_glyph *Glyph = D_GlyphFromCodePoint(&Application->D_Context, Application->Font, 250, 'G');
+	Glyph = D_GlyphFromCodePoint(&Application->D_Context, Application->Font, 250, 'G');
+	Glyph = D_GlyphFromCodePoint(&Application->D_Context, Application->Font, 250, 'H');
+
+
+	D_GlyphsToAtlas(&Application->D_Context);
+	D_GlyphsToAtlas(&Application->D_Context);
+
+	R_TextureFromBytes(&Application->R_Context, Application->D_Context.FontAtlas, D_FONT_ATLAS_SIZE, D_FONT_ATLAS_SIZE);
 
 	R_Update(&Application->R_Context);
 }
@@ -51,13 +62,7 @@ int main()
 
 	Application.Window = OS_MakeWindow(Str8("Mayday"), 1280, 720);
 
-	d_font Font = D_LoadFontFromTTF(&Application.D_Context, G_BerkeleyMonoRegular);
-	d_atlas_glyph *Glyph = D_GlyphFromCodePoint(&Application.D_Context, Font, 10, 'G');
-	Glyph = D_GlyphFromCodePoint(&Application.D_Context, Font, 10, 'G');
-	Glyph = D_GlyphFromCodePoint(&Application.D_Context, Font, 10, 'H');
-
-	D_GlyphsToAtlas(&Application.D_Context);
-	D_GlyphsToAtlas(&Application.D_Context);
+	Application.Font = D_LoadFontFromTTF(&Application.D_Context, G_BerkeleyMonoRegular);
 
 	OS_Run(Application.Window, &Application);
 }

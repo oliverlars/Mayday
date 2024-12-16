@@ -67,4 +67,6 @@ r_options;
 void R_Init(r_context *R_Context);
 void R_Update(r_context *R_Context);
 
+void R_TextureFromBytes(r_context *R_Context, u8 *Bytes, s32 Width, s32 Height);
+
 void R_PushCommand(r_context *R_Context, r_command Command);

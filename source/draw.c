@@ -10,7 +10,7 @@ d_font D_LoadFontFromTTF(d_context *D_Context, u8 *Data)
 	int Status = stbtt_InitFont(&Font.Info, Data, 0);
 	if(!Status)
 	{
-		LogError(&D_Context->Logger, "Internal font file is invalid");
+		LogError(D_Context->Logger, "Internal font file is invalid");
 	}
 	return Font;
 }
@@ -22,11 +22,13 @@ d_atlas_glyph *D_GlyphFromCodePoint(d_context *D_Context, d_font Font, s32 Scale
 	Hash = M_FNVHashBytes(Hash, (u8*)&CodePoint, sizeof(u32));
 
 	d_atlas_glyph *Glyph = D_Context->GlyphTable + (Hash % D_GLYPH_TABLE_SIZE);
+	for(;Glyph->NextInHashSlot != Null && Glyph->Hash == Hash; Glyph = Glyph->NextInHashSlot);
 	d_atlas_glyph *ResultGlyph = Glyph;
 	if(Glyph->Hash != 0 && Glyph->Hash != Hash)
 	{
+		LogInfo(D_Context->Logger, "Glyph collision occured");
 		d_atlas_glyph *NextGlyph = ArenaPushTypeZero(D_Context->Arena, d_atlas_glyph);
-		Glyph->HashNext = NextGlyph;
+		Glyph->NextInHashSlot = NextGlyph;
 		NextGlyph->Hash = Hash;
 		NextGlyph->CodePoint = CodePoint;
 		stbtt_GetCodepointBitmapBox(&Font.Info,
@@ -38,7 +40,7 @@ d_atlas_glyph *D_GlyphFromCodePoint(d_context *D_Context, d_font Font, s32 Scale
 	}
 	else if(Glyph->Hash == 0)
 	{
-		LogInfo(&D_Context->Logger, "Empty glyph hash slot is now filled");
+		LogInfo(D_Context->Logger, "Empty glyph hash slot is now filled");
 		Glyph->Hash = Hash;
 		Glyph->CodePoint = CodePoint;
 		stbtt_GetCodepointBitmapBox(&Font.Info,
@@ -46,6 +48,10 @@ d_atlas_glyph *D_GlyphFromCodePoint(d_context *D_Context, d_font Font, s32 Scale
 									Scale, Scale,
 									&Glyph->Box.X, &Glyph->Box.Y,
 									&Glyph->Box.Z, &Glyph->Box.W);
+	}
+	else
+	{
+		LogInfo(D_Context->Logger, "Glyph already in table");
 	}
 	return ResultGlyph;
 }

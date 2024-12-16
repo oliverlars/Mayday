@@ -52,7 +52,7 @@ r_command;
 typedef struct r_context
 {
 	memory_arena *Arena;
-	logger Logger;
+	logger *Logger;
 
 	r_command *CommandsStart;
 	r_command *CommandsEnd;
@@ -64,7 +64,7 @@ typedef struct r_options
 }
 r_options;
 
-void R_Init(r_context *RenderContext);
-void R_Update(r_context *RenderContext);
+void R_Init(r_context *R_Context);
+void R_Update(r_context *R_Context);
 
 void R_PushCommand(r_context *R_Context, r_command Command);

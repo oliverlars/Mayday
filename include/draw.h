@@ -13,16 +13,21 @@ typedef struct d_atlas_glyph
 	u8 *Data;
 	v4i Box;
 	u32 CodePoint;
-	struct d_atlas_glyph *HashNext;
+	struct d_atlas_glyph *NextInHashSlot;
+	struct d_atlas_glyph *NextMoreRecentlyUsed;
+	struct d_atlas_glyph *NextLessRecentlyUsed;
 } d_atlas_glyph;
 
-#define D_GLYPH_TABLE_SIZE (4096)
+#define D_GLYPH_TABLE_SIZE (1)
 
 typedef struct d_context
 {
 	memory_arena *Arena;
-	logger Logger;
+	logger *Logger;
 	d_atlas_glyph GlyphTable[D_GLYPH_TABLE_SIZE];
+
+	d_atlas_glyph *LeastToMostRecentlyUsedGlyphs;
+	d_atlas_glyph *MostToLeastRecentlyUsedGlyphs;
 
 	u8 *FontAtlas;
 	s32 AtlasSize;
@@ -32,6 +37,10 @@ d_atlas_glyph *D_GlyphFromCodePoint(d_context *D_Context,
 									d_font Font,
 									s32 Scale,
 									u32 CodePoint);
+
+void D_EvictGlyphFromTable(d_context *D_Context, d_atlas_glyph *Glyph);
+
+void GlyphsToAtlas(d_context *D_Context);
 
 d_font D_LoadFontFromFile(d_context *D_Context, str8 FileName);
 d_font D_LoadFontFromTTF(d_context *D_Context, u8 *Data);

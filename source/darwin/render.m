@@ -39,7 +39,7 @@ s32 Indices[36];
 uniforms Uniforms;
 
 
-id<MTLTexture> MakeDepthTexture(r_context *RenderContext, CGSize Size)
+id<MTLTexture> MakeDepthTexture(r_context *R_Context, CGSize Size)
 {
 	MTLTextureDescriptor *Desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatDepth32Float 
 	                                                   width:Size.width
@@ -52,20 +52,20 @@ id<MTLTexture> MakeDepthTexture(r_context *RenderContext, CGSize Size)
 	return Result;
 }
 
-id<MTLTexture> ResizeDepthTexture(r_context *RenderContext, CGSize Size)
+id<MTLTexture> ResizeDepthTexture(r_context *R_Context, CGSize Size)
 {
 	if(Size.width != [DepthTexture width] || Size.height != [DepthTexture height] || DepthTexture == nil)
 	{
 		DepthTexture = nil;
 
-		DepthTexture = MakeDepthTexture(RenderContext, Size);
+		DepthTexture = MakeDepthTexture(R_Context, Size);
 
-		LogInfo(&RenderContext->Logger, "DepthTexture resized");
+		LogInfo(R_Context->Logger, "DepthTexture resized");
 	}
 	return DepthTexture;
 }
 
-void R_Init(r_context *RenderContext)
+void R_Init(r_context *R_Context)
 {
 	Vertices[0] =  (vertex){{ 1,  1,  1, 1}, {1.0, 0.0, 0.0, 1.0}};
 	Vertices[1] =  (vertex){{ 1, -1,  1, 1}, {1.0, 0.0, 0.0, 1.0}};
@@ -161,7 +161,7 @@ void R_Init(r_context *RenderContext)
 
 f32 Angle = 0.0;
 
-void R_Update(r_context *RenderContext)
+void R_Update(r_context *R_Context)
 {
 	id<CAMetalDrawable> Drawable = (__bridge id<CAMetalDrawable>)sapp_metal_get_current_drawable();
 	MTLRenderPassDescriptor* PassDesc = [MTLRenderPassDescriptor renderPassDescriptor];
@@ -169,7 +169,7 @@ void R_Update(r_context *RenderContext)
 	PassDesc.colorAttachments[0].loadAction = MTLLoadActionClear;
 	PassDesc.colorAttachments[0].clearColor = MTLClearColorMake(0,0,0,1);
 
-	PassDesc.depthAttachment.texture = ResizeDepthTexture(RenderContext, CGSizeMake(Drawable.texture.width, Drawable.texture.height));
+	PassDesc.depthAttachment.texture = ResizeDepthTexture(R_Context, CGSizeMake(Drawable.texture.width, Drawable.texture.height));
 	PassDesc.depthAttachment.loadAction = MTLLoadActionClear;
 	PassDesc.depthAttachment.clearDepth = 1.0;
 

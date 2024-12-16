@@ -14,7 +14,8 @@
 typedef struct mayday
 {
 	os_window Window;
-	r_context RenderContext;
+	r_context R_Context;
+	d_context D_Context;
 }
 mayday;
 
@@ -23,13 +24,13 @@ void OS_Update(void *Data)
 {
 	mayday *Application = Data;
 
-	R_Update(&Application->RenderContext);
+	R_Update(&Application->R_Context);
 }
 
 void OS_Initialise(void *Data)
 {
 	mayday *Application = Data;
-	R_Init(&Application->RenderContext);
+	R_Init(&Application->R_Context);
 }
 
 int main()
@@ -37,16 +38,23 @@ int main()
 	memory_arena Arena = {0};
 	Arena.Start = MemoryReserve(GigaBytes(64));
 
-	d_context D_Context = {0};
-	D_Context.Arena = &Arena;
-	D_Context.Logger.Arena = &Arena;
-
-	d_font Font = D_LoadFontFromTTF(&D_Context, G_BerkeleyMonoRegular);
-	d_atlas_glyph *Glyph = D_GlyphFromCodePoint(&D_Context, Font, 10, 'G');
+	logger Logger = {0};
+	Logger.Arena = &Arena;
 
 	mayday Application = {0};
-	Application.RenderContext.Logger.Arena = &Arena;
+	
+	Application.R_Context.Arena = &Arena;
+	Application.R_Context.Logger = &Logger;
+
+	Application.D_Context.Arena = &Arena;
+	Application.D_Context.Logger = &Logger;
+
 	Application.Window = OS_MakeWindow(Str8("Mayday"), 1280, 720);
+
+	d_font Font = D_LoadFontFromTTF(&Application.D_Context, G_BerkeleyMonoRegular);
+	d_atlas_glyph *Glyph = D_GlyphFromCodePoint(&Application.D_Context, Font, 10, 'G');
+    Glyph = D_GlyphFromCodePoint(&Application.D_Context, Font, 10, 'G');
+    Glyph = D_GlyphFromCodePoint(&Application.D_Context, Font, 10, 'H');
 
 	OS_Run(Application.Window, &Application);
 }

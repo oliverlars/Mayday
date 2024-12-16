@@ -26,3 +26,6 @@ typedef uint64_t  b64;
 #define False 0
 #define True (!False)
 #define Null (void*)0
+
+#define Min(a, b) ((a) < (b) ? (a) : (b))
+#define Max(a, b) ((a) > (b) ? (a) : (b))

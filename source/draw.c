@@ -2,6 +2,7 @@
 #include "maths.h"
 #include "memory.h"
 #include "render.h"
+#include "strings.h"
 #include "draw.h"
 
 d_font D_LoadFontFromTTF(d_context *D_Context, u8 *Data)
@@ -31,6 +32,37 @@ void D_GlyphsToAtlas(d_context *D_Context)
 	{
 		LogInfo(D_Context->Logger, "Atlas will be updated");
 		D_Context->HashOfNewestGlyph = HashOfNewestGlyph;
+
+		int TotalY = D_FONT_ATLAS_SIZE;
+		int Y = 0;
+		int X = 0;
+		int TallestYOnThisRow = 0;
+		for(d_atlas_glyph *Glyph = D_Context->NewestGlyph;
+			Glyph != Null;
+			Glyph = Glyph->PreviousInLRU)
+		{
+			int Width = Glyph->Box.Z - Glyph->Box.X;
+			int Height = Glyph->Box.W - Glyph->Box.Y;
+			TallestYOnThisRow = Max(TallestYOnThisRow, Height);
+
+			if(X + Width > D_FONT_ATLAS_SIZE)
+			{
+				Y += TallestYOnThisRow;
+				X = 0;
+				TallestYOnThisRow = 0;
+			}
+			if(Y + Height > D_FONT_ATLAS_SIZE)
+			{
+				// No more atlas space left, this is where we could just
+				// allocate a bigger texture . For now we'll just evict
+				// the remaining glyphs. Since we are iterating
+				// newest to oldest, the current glyph is the 
+				// oldest invalid glyph, so we pop all glyphs
+				// from this glyph onwards.
+				D_Context->OldestGlyph = Glyph->NextInLRU;
+				D_Context->OldestGlyph->PreviousInLRU = Null;
+			}
+		}
 	}
 }
 

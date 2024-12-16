@@ -21,6 +21,8 @@ typedef struct d_atlas_glyph
 
 #define D_GLYPH_TABLE_SIZE (1)
 
+#define D_FONT_ATLAS_SIZE (4096)
+
 typedef struct d_context
 {
 	memory_arena *Arena;

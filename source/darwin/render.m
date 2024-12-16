@@ -22,12 +22,6 @@ id<MTLBuffer>              IndexBuffer;
 id<MTLBuffer>              UniformBuffer;
 id<MTLSamplerState>        SamplerState;
 
-typedef struct vertex
-{
-	v4f Position;
-	v4f Colour;
-} vertex;
-
 typedef struct uniforms
 {
 	m44f PerspectiveMatrix;
@@ -35,10 +29,19 @@ typedef struct uniforms
 	m44f ModelMatrix;
 } uniforms;
 
-vertex Vertices[8];
-s32 Indices[36];
-
 uniforms Uniforms;
+
+typedef struct gpu_vertex
+{
+	v4f Position;
+	v4f UV;
+}
+gpu_vertex;
+
+void R_PushCommand(r_context *R_Context, r_command Command)
+{
+	R_Context->TempCommand = Command;
+}
 
 // Dumb hack
 void R_TextureFromBytes(r_context *R_Context, u8 *Bytes, s32 Width, s32 Height)
@@ -82,77 +85,16 @@ id<MTLTexture> ResizeDepthTexture(r_context *R_Context, CGSize Size)
 
 void R_Init(r_context *R_Context)
 {
-	Vertices[0] =  (vertex){{ 1,  1,  1, 1}, {1.0, 0.0, 0.0, 1.0}};
-	Vertices[1] =  (vertex){{ 1, -1,  1, 1}, {1.0, 0.0, 0.0, 1.0}};
-	Vertices[2] =  (vertex){{-1, -1,  1, 1}, {1.0, 0.0, 0.0, 1.0}};
-	Vertices[3] =  (vertex){{-1,  1,  1, 1}, {1.0, 0.0, 0.0, 1.0}};
-
-	Vertices[4] =  (vertex){{ 1,  1, -1, 1}, {0.0, 1.0, 0.0, 1.0}};
-	Vertices[5] =  (vertex){{ 1, -1, -1, 1}, {0.0, 1.0, 0.0, 1.0}};
-	Vertices[6] =  (vertex){{-1, -1, -1, 1}, {0.0, 1.0, 0.0, 1.0}};
-	Vertices[7] =  (vertex){{-1,  1, -1, 1}, {0.0, 1.0, 0.0, 1.0}};
-
-	Indices[0] = 0;
-	Indices[1] = 1;
-	Indices[2] = 2;
-
-	Indices[3] = 0;
-	Indices[4] = 2;
-	Indices[5] = 3;
-
-	Indices[6] = 4;
-	Indices[7] = 6;
-	Indices[8] = 5;
-
-	Indices[9] = 4;
-	Indices[10] = 7;
-	Indices[11] = 6;
-
-	Indices[12] = 0;
-	Indices[13] = 4;
-	Indices[14] = 5;
-
-	Indices[15] = 0;
-	Indices[16] = 5;
-	Indices[17] = 1;
-
-	Indices[18] = 2;
-	Indices[19] = 6;
-	Indices[20] = 7;
-
-	Indices[21] = 2;
-	Indices[22] = 7;
-	Indices[23] = 3;
-
-	Indices[24] = 0;
-	Indices[25] = 3;
-	Indices[26] = 7;
-
-	Indices[27] = 0;
-	Indices[28] = 7;
-	Indices[29] = 4;
-
-	Indices[30] = 1;
-	Indices[31] = 5;
-	Indices[32] = 6;
-
-	Indices[33] = 1;
-	Indices[34] = 6;
-	Indices[35] = 2;
 
 	Device = (__bridge id<MTLDevice>)sapp_metal_get_device();
 
 	CommandQueue = [Device newCommandQueue];
 
-	VertexBuffer = [Device newBufferWithBytes:Vertices
-					length:sizeof(Vertices)
+	VertexBuffer = [Device newBufferWithLength:4096*sizeof(gpu_vertex)
 					options:MTLResourceStorageModeShared];
 
 	UniformBuffer = [Device newBufferWithLength:sizeof(Uniforms)
 					 options:MTLResourceStorageModeShared];
-
-	IndexBuffer = [Device newBufferWithBytes:Indices
-				   length:sizeof(Indices) options:MTLResourceStorageModeShared];
 
 	NSError* Error = nil;
 	NSString* Source = [NSString stringWithUTF8String:(char*)G_TriangleShader];
@@ -160,18 +102,42 @@ void R_Init(r_context *R_Context)
 	id<MTLFunction> VertexFunction = [Library newFunctionWithName:@"VertexMain"];
 	id<MTLFunction> FragmentFunction = [Library newFunctionWithName:@"FragmentMain"];
 
-	MTLRenderPipelineDescriptor* PipelineDesc = [[MTLRenderPipelineDescriptor alloc] init];
-	PipelineDesc.vertexFunction = VertexFunction;
-	PipelineDesc.fragmentFunction = FragmentFunction;
-	PipelineDesc.colorAttachments[0].pixelFormat = MTLPixelFormatBGRA8Unorm;
-	PipelineDesc.depthAttachmentPixelFormat = MTLPixelFormatDepth32Float;
+	MTLRenderPipelineDescriptor* PipelineDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
+	PipelineDescriptor.vertexFunction = VertexFunction;
+	PipelineDescriptor.fragmentFunction = FragmentFunction;
+	PipelineDescriptor.colorAttachments[0].pixelFormat = MTLPixelFormatBGRA8Unorm;
+	PipelineDescriptor.depthAttachmentPixelFormat = MTLPixelFormatDepth32Float;
+
+
+	MTLVertexDescriptor *VertexDescriptor = [[MTLVertexDescriptor alloc] init];
+	VertexDescriptor.attributes[0].format = MTLVertexFormatFloat4;
+	VertexDescriptor.attributes[0].offset = 0;
+	VertexDescriptor.attributes[0].bufferIndex = 0;
+	VertexDescriptor.attributes[1].format = MTLVertexFormatFloat2;
+	VertexDescriptor.attributes[1].offset = 16;  // Offset of uv
+	VertexDescriptor.attributes[1].bufferIndex = 0;
+	VertexDescriptor.layouts[0].stride = sizeof(gpu_vertex); 
+
+	PipelineDescriptor.vertexDescriptor = VertexDescriptor;
+
+	MTLSamplerDescriptor *SamplerDescriptor = [[MTLSamplerDescriptor alloc] init];
+	SamplerDescriptor.minFilter = MTLSamplerMinMagFilterLinear;
+	SamplerDescriptor.magFilter = MTLSamplerMinMagFilterLinear;
+	SamplerDescriptor.sAddressMode = MTLSamplerAddressModeClampToEdge;
+	SamplerDescriptor.tAddressMode = MTLSamplerAddressModeClampToEdge;
+	SamplerDescriptor.rAddressMode = MTLSamplerAddressModeClampToEdge;
+	SamplerDescriptor.mipFilter = MTLSamplerMipFilterLinear;
+	SamplerDescriptor.lodMinClamp = 0.0;
+	SamplerDescriptor.lodMaxClamp = FLT_MAX;
+	SamplerDescriptor.normalizedCoordinates = YES;
+	SamplerState = [Device newSamplerStateWithDescriptor:SamplerDescriptor];
 
 	MTLDepthStencilDescriptor *DepthStencilDescriptor = [MTLDepthStencilDescriptor new];
 	DepthStencilDescriptor.depthCompareFunction = MTLCompareFunctionLess;
 	DepthStencilDescriptor.depthWriteEnabled = YES;
 	DepthStencilState = [Device newDepthStencilStateWithDescriptor:DepthStencilDescriptor];
 
-	PipelineState = [Device newRenderPipelineStateWithDescriptor:PipelineDesc error:&Error];
+	PipelineState = [Device newRenderPipelineStateWithDescriptor:PipelineDescriptor error:&Error];
 
 
 }
@@ -201,6 +167,18 @@ void R_Update(r_context *R_Context)
 
 	MemoryCopy(UniformBuffer.contents, &Uniforms, sizeof(Uniforms));
 
+
+	gpu_vertex GPuVertex[4096] = {0};
+	for(int V = 0; V < R_Context->TempCommand.VerticesCount; V++)
+	{
+		v4f P = R_Context->TempCommand.Vertices[V].Position;
+		v2f UV = R_Context->TempCommand.Vertices[V].UV;
+		GPuVertex[V].Position = P;
+		GPuVertex[V].UV = v4f(UV.X, UV.Y, 0, 0);
+	}
+
+	MemoryCopy(VertexBuffer.contents, GPuVertex, sizeof(gpu_vertex)*R_Context->TempCommand.VerticesCount);
+
 	id<MTLRenderCommandEncoder> Encoder = [CommandBuffer renderCommandEncoderWithDescriptor:PassDesc];
 	[Encoder setRenderPipelineState:PipelineState];
 	[Encoder setFrontFacingWinding:MTLWindingClockwise];
@@ -209,10 +187,13 @@ void R_Update(r_context *R_Context)
 	[Encoder setVertexBuffer:UniformBuffer offset:0 atIndex:1];
 	[Encoder setDepthStencilState:DepthStencilState];
 	[Encoder setFragmentTexture:FontAtlasTexture atIndex:0];
-	[Encoder drawIndexedPrimitives:MTLPrimitiveTypeTriangle indexCount:36
-															indexType:MTLIndexTypeUInt32
-															indexBuffer:IndexBuffer
-															indexBufferOffset:0];
+	[Encoder setFragmentSamplerState:SamplerState atIndex:0];
+	// [Encoder drawIndexedPrimitives:MTLPrimitiveTypeTriangle indexCount:36
+	// 														indexType:MTLIndexTypeUInt32
+	// 														indexBuffer:IndexBuffer
+	// 														indexBufferOffset:0];
+	[Encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:R_Context->TempCommand.VerticesCount];
+			 
 	[Encoder endEncoding];
 
 	[CommandBuffer presentDrawable:Drawable];

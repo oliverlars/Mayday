@@ -5,6 +5,8 @@
 #include "strings.h"
 #include "draw.h"
 
+#include <assert.h>
+
 d_font D_LoadFontFromTTF(d_context *D_Context, u8 *Data)
 {
 	d_font Font = {0};
@@ -69,6 +71,7 @@ void D_GlyphsToAtlas(d_context *D_Context)
 			}
 			else
 			{
+				Glyph->AtlasPosition = v2f(AtlasX, AtlasY);
 				u8 *Row = D_Context->FontAtlas + AtlasX + AtlasY * D_FONT_ATLAS_SIZE;
 				for(int Y = 0; Y < Height; Y++)
 				{
@@ -118,10 +121,6 @@ d_atlas_glyph *D_GlyphFromCodePoint(d_context *D_Context, d_font Font, s32 Heigh
 	for(;Glyph->NextInHashSlot != Null && Glyph->Hash != Hash; Glyph = Glyph->NextInHashSlot);
 	d_atlas_glyph *ResultGlyph = Glyph;
 
-	int Ascent;
-	int Descent;
-	int LineGap;
-	stbtt_GetFontVMetrics(&Font.Info, &Ascent, &Descent, &LineGap);
 	float Scale = stbtt_ScaleForPixelHeight(&Font.Info, HeightInPixels);
 	
 	if(Glyph->Hash != 0 && Glyph->Hash != Hash)
@@ -129,6 +128,11 @@ d_atlas_glyph *D_GlyphFromCodePoint(d_context *D_Context, d_font Font, s32 Heigh
 		LogInfo(D_Context->Logger, "Glyph collision occured");
 		d_atlas_glyph *NextGlyph = ArenaPushTypeZero(D_Context->Arena, d_atlas_glyph);
 		Glyph->NextInHashSlot = NextGlyph;
+
+		int AdvanceX;
+		int LeftSideBearing;
+		stbtt_GetCodepointHMetrics(&Font.Info, CodePoint, &AdvanceX, &LeftSideBearing);
+		Glyph->AdvanceX = AdvanceX;
 		NextGlyph->Hash = Hash;
 		NextGlyph->CodePoint = CodePoint;
 
@@ -152,6 +156,12 @@ d_atlas_glyph *D_GlyphFromCodePoint(d_context *D_Context, d_font Font, s32 Heigh
 	else if(Glyph->Hash == 0)
 	{
 		LogInfo(D_Context->Logger, "Empty glyph hash slot is now filled");
+
+		int AdvanceX;
+		int LeftSideBearing;
+		stbtt_GetCodepointHMetrics(&Font.Info, CodePoint, &AdvanceX, &LeftSideBearing);
+
+		Glyph->AdvanceX = AdvanceX;
 		Glyph->Hash = Hash;
 		Glyph->CodePoint = CodePoint;
 		PushGlyphOntoLRU(D_Context, Glyph);
@@ -177,27 +187,79 @@ d_atlas_glyph *D_GlyphFromCodePoint(d_context *D_Context, d_font Font, s32 Heigh
 	return ResultGlyph;
 }
 
-void D_DrawStr8(r_context *R_Context, d_font Font, int LineHeight, str8 String)
+void D_DrawGlyph(r_context *R_Context, d_atlas_glyph *Glyph)
 {
-	f32 Scale = stbtt_ScaleForPixelHeight(&Font.Info, LineHeight);
 
-	int Ascent;
-	int Descent;
-	int LineGap;
-	stbtt_GetFontVMetrics(&Font.Info, &Ascent, &Descent, &LineGap);
+}
 
+void D_DrawStr8(r_context *R_Context,
+				d_context *D_Context,
+				memory_arena *Arena,
+				v2f Position,
+				d_font Font,
+				f32 HeightInPixels,
+				str8 String)
+{
+	f32 Scale = stbtt_ScaleForPixelHeight(&Font.Info, HeightInPixels);
+	int TotalTriangleCount = String.Size*6;
+	r_command Command = {0};
+	Command.Vertices = (r_vertex*)ArenaPush(Arena, TotalTriangleCount*sizeof(r_vertex));
+	Command.VerticesCount = TotalTriangleCount;
+	Command.VerticesFormat = R_VF_POSITION | R_VF_UV;
+
+
+
+	r_vertex *R_Vertices = Command.Vertices;
 	for(int I = 0; I < String.Size; I++)
 	{
-		int AdvanceX;
-		int LeftSideBearing;
-		stbtt_GetCodepointHMetrics(&Font.Info, String.Bytes[I], &AdvanceX, &LeftSideBearing);
 
-		v4i Box;
-		stbtt_GetCodepointBitmapBox(&Font.Info, String.Bytes[I], Scale, Scale, &Box.X, &Box.Y, &Box.Z, &Box.W);
-		int Y = Ascent + Box.W;
+		// TODO(Oliver): Needs to actually iterate utf-8
+		u32 CodePoint = String.Bytes[I];
+		d_atlas_glyph *Glyph  = D_GlyphFromCodePoint(D_Context, Font, HeightInPixels, CodePoint);
 
+		f32 GlyphWidth = (f32)(Glyph->Box.Z - Glyph->Box.X);
+		f32 GlyphHeight = (f32)(Glyph->Box.W - Glyph->Box.Y);
+		//LogInfo(D_Context->Logger, "?f32 ?f32", GlyphWidth, GlyphHeight);
+
+		v2f Vertices[6] = 
+		{
+			v2f(Position.X, Position.Y),
+			v2f(Position.X + GlyphWidth, Position.Y),
+			v2f(Position.X + GlyphWidth, Position.Y + GlyphHeight),
+
+			v2f(Position.X, Position.Y),
+			v2f(Position.X, Position.Y + GlyphHeight),
+			v2f(Position.X + GlyphWidth, Position.Y + GlyphHeight),
+		};
+
+		v2f UVs[6] = 
+		{
+			v2f(Glyph->AtlasPosition.X, Glyph->AtlasPosition.Y),
+			v2f(Glyph->AtlasPosition.X + GlyphWidth, Glyph->AtlasPosition.Y),
+			v2f(Glyph->AtlasPosition.X + GlyphWidth, Glyph->AtlasPosition.Y + GlyphHeight),
+
+			v2f(Glyph->AtlasPosition.X, Glyph->AtlasPosition.Y),
+			v2f(Glyph->AtlasPosition.X, Glyph->AtlasPosition.Y + GlyphHeight),
+			v2f(Glyph->AtlasPosition.X + GlyphWidth, Glyph->AtlasPosition.Y + GlyphHeight),
+		};
+
+		for(int V = 0; V < 6; V++)
+		{
+			r_vertex Vertex = {
+				.Position = v4f(Vertices[V].X, Vertices[V].Y, 0, 1),
+				.UV = DivV2F(UVs[V], V2FromF32((f32)D_FONT_ATLAS_SIZE)),
+			};
+			Vertex.Position.X /= 1280.0f;
+			Vertex.Position.Y /= 720.0f;
+			Vertex.Position.X = (Vertex.Position.X)*2.0 - 1.0f;
+			Vertex.Position.Y = (Vertex.Position.Y)*2.0 - 1.0f;
+			*R_Vertices++ = Vertex;
+		}
+
+		Position.X += Glyph->AdvanceX * Scale;
 		//int byteOffset = x + roundf(lsb * scale) + (y * b_w);
 		//stbtt_MakeCodepointBitmap(&info, bitmap + byteOffset, c_x2 - c_x1, c_y2 - c_y1, b_w, scale, scale, word[i]);
-
 	}
+
+	R_PushCommand(R_Context, Command);
 }

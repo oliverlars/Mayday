@@ -12,6 +12,8 @@
 
 typedef struct mayday
 {
+	memory_arena *FrameArena;
+	memory_arena *PermanentArena;
 	os_window Window;
 	r_context R_Context;
 	d_context D_Context;
@@ -25,17 +27,16 @@ void OS_Update(void *Data)
 {
 	mayday *Application = Data;
 
-	d_atlas_glyph *Glyph = D_GlyphFromCodePoint(&Application->D_Context, Application->Font, 250, 'G');
-	Glyph = D_GlyphFromCodePoint(&Application->D_Context, Application->Font, 250, 'G');
-	Glyph = D_GlyphFromCodePoint(&Application->D_Context, Application->Font, 250, 'H');
+	D_DrawStr8(&Application->R_Context, &Application->D_Context,
+			   Application->FrameArena, v2f(50, 50), Application->Font, 50, Str8("Hello, World"));
 
-
-	D_GlyphsToAtlas(&Application->D_Context);
 	D_GlyphsToAtlas(&Application->D_Context);
 
 	R_TextureFromBytes(&Application->R_Context, Application->D_Context.FontAtlas, D_FONT_ATLAS_SIZE, D_FONT_ATLAS_SIZE);
 
 	R_Update(&Application->R_Context);
+
+	Application->FrameArena->At = 0;
 }
 
 void OS_Initialise(void *Data)
@@ -47,13 +48,17 @@ void OS_Initialise(void *Data)
 int main()
 {
 	memory_arena Arena = {0};
-	Arena.Start = MemoryReserve(GigaBytes(64));
+	memory_arena FrameArena = {0};
 
 	logger Logger = {0};
+	Logger.Silent = True;
 	Logger.Arena = &Arena;
 
 	mayday Application = {0};
 	
+	Application.PermanentArena = &Arena;
+	Application.FrameArena = &FrameArena;
+
 	Application.R_Context.Arena = &Arena;
 	Application.R_Context.Logger = &Logger;
 

@@ -38,7 +38,8 @@ typedef struct r_texture
 typedef struct r_command
 {
 	r_vertex *Vertices;
-	int VertexCount;
+	int VerticesCount;
+	r_vertex_format VerticesFormat;
 
 	s32 *Indices;
 	int IndexCount;
@@ -56,6 +57,8 @@ typedef struct r_context
 
 	r_command *CommandsStart;
 	r_command *CommandsEnd;
+
+	r_command TempCommand;
 }
 r_context;
 

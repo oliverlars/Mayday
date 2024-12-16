@@ -37,6 +37,18 @@ str8 Str8PushFV(memory_arena *Arena, char *Format, va_list InputArgList)
 				Iter += 3;
 				Start = Iter;
 			}
+			else if(Str8Equal((str8){3, Iter}, Str8("v4f")))
+			{
+				v4f V = va_arg(ArgList, v4f);
+				int BytesNeeded = snprintf(0, 0, "[%f, %f, %f, %f]", V.X, V.Y, V.Z, V.W) + 1;
+				str8 Value = {0};
+				Value.Bytes = ArenaPush(Arena, BytesNeeded);
+				Value.Size = snprintf((char*)Value.Bytes, BytesNeeded, "[%f, %f, %f, %f]", V.X, V.Y, V.Z, V.W);
+				Str8ListAppend(Arena, &Builder, Value);
+
+				Iter += 3;
+				Start = Iter;
+			}
 			else if(Str8Equal((str8){1, Iter}, Str8("S")))
 			{
 				str8 S = va_arg(ArgList, str8);

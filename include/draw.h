@@ -35,7 +35,6 @@ typedef struct d_context
 	u64 HashOfNewestGlyph;
 
 	u8 *FontAtlas;
-	s32 AtlasSize;
 } d_context;
 
 d_atlas_glyph *D_GlyphFromCodePoint(d_context *D_Context,

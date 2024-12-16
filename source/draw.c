@@ -24,6 +24,11 @@ void D_GlyphsToAtlas(d_context *D_Context)
 		return;
 	}
 
+	if(!D_Context->FontAtlas)
+	{
+		D_Context->FontAtlas = ArenaPushZero(D_Context->Arena, D_FONT_ATLAS_SIZE*D_FONT_ATLAS_SIZE);
+	}
+
 	u64 HashOfNewestGlyph = M_FNVHashBytes(M_FNV_HASH_START,
 												(u8*)D_Context->NewestGlyph,
 												sizeof(d_atlas_glyph));
@@ -51,7 +56,7 @@ void D_GlyphsToAtlas(d_context *D_Context)
 				X = 0;
 				TallestYOnThisRow = 0;
 			}
-			if(Y + Height > D_FONT_ATLAS_SIZE)
+			else if(Y + Height > D_FONT_ATLAS_SIZE)
 			{
 				// No more atlas space left, this is where we could just
 				// allocate a bigger texture . For now we'll just evict
@@ -61,6 +66,12 @@ void D_GlyphsToAtlas(d_context *D_Context)
 				// from this glyph onwards.
 				D_Context->OldestGlyph = Glyph->NextInLRU;
 				D_Context->OldestGlyph->PreviousInLRU = Null;
+			}
+			else
+			{
+				MemoryCopy(D_Context->FontAtlas + X + Y*D_FONT_ATLAS_SIZE,
+						   Glyph->Data,
+						   Width*Height);
 			}
 		}
 	}
@@ -120,8 +131,8 @@ d_atlas_glyph *D_GlyphFromCodePoint(d_context *D_Context, d_font Font, s32 Heigh
 									Scale, Scale,
 									&NextGlyph->Box.X, &NextGlyph->Box.Y,
 									&NextGlyph->Box.Z, &NextGlyph->Box.W);
-		int GlyphSizeInBytes = sizeof(u8)*(Glyph->Box.Z - Glyph->Box.X)*(Glyph->Box.W - Glyph->Box.Y);
-		Glyph->Data = ArenaPushZero(D_Context->Arena, GlyphSizeInBytes);
+		int GlyphSizeInBytes = (Glyph->Box.Z - Glyph->Box.X)*(Glyph->Box.W - Glyph->Box.Y);
+		NextGlyph->Data = ArenaPushZero(D_Context->Arena, GlyphSizeInBytes);
 		stbtt_MakeCodepointBitmap(&Font.Info,
 								  Glyph->Data,
 								  Glyph->Box.Z - Glyph->Box.X,
@@ -142,7 +153,7 @@ d_atlas_glyph *D_GlyphFromCodePoint(d_context *D_Context, d_font Font, s32 Heigh
 									Scale, Scale,
 									&Glyph->Box.X, &Glyph->Box.Y,
 									&Glyph->Box.Z, &Glyph->Box.W);
-		int GlyphSizeInBytes = sizeof(u8)*(Glyph->Box.Z - Glyph->Box.X)*(Glyph->Box.W - Glyph->Box.Y);
+		int GlyphSizeInBytes = (Glyph->Box.Z - Glyph->Box.X)*(Glyph->Box.W - Glyph->Box.Y);
 		Glyph->Data = ArenaPushZero(D_Context->Arena, GlyphSizeInBytes);
 		stbtt_MakeCodepointBitmap(&Font.Info,
 								  Glyph->Data,

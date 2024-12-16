@@ -122,13 +122,13 @@ f64 LengthV4D(v4d V);
 v4d NormalizeV4D(v4d V);
 
 typedef struct v4i { s32 X; s32 Y; s32 Z; s32 W; } v4i;
-#define v4i(...) (v3i){ __VA_ARGS__ }
+#define v4i(...) (v4i){ __VA_ARGS__ }
 v4i AddV4I(v4i A, v4i B);
 v4i SubV4I(v4i A, v4i B);
 v4i MulV4I(v4i A, v4i B);
 v4i DivV4I(v4i A, v4i B);
 
-typedef struct v4l { s64 X; s64 Y; f32 Z; f32 W; } v4l;
+typedef struct v4l { s64 X; s64 Y; s64 Z; s64 W; } v4l;
 #define v4l(...) (v4l){ __VA_ARGS__ }
 v4l AddV4L(v4l A, v4l B);
 v4l SubV4L(v4l A, v4l B);

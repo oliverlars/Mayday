@@ -53,8 +53,11 @@ int main()
 
 	d_font Font = D_LoadFontFromTTF(&Application.D_Context, G_BerkeleyMonoRegular);
 	d_atlas_glyph *Glyph = D_GlyphFromCodePoint(&Application.D_Context, Font, 10, 'G');
-    Glyph = D_GlyphFromCodePoint(&Application.D_Context, Font, 10, 'G');
-    Glyph = D_GlyphFromCodePoint(&Application.D_Context, Font, 10, 'H');
+	Glyph = D_GlyphFromCodePoint(&Application.D_Context, Font, 10, 'G');
+	Glyph = D_GlyphFromCodePoint(&Application.D_Context, Font, 10, 'H');
+
+	D_GlyphsToAtlas(&Application.D_Context);
+	D_GlyphsToAtlas(&Application.D_Context);
 
 	OS_Run(Application.Window, &Application);
 }

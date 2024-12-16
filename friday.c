@@ -97,7 +97,7 @@ Entry(InputWaveInfo)
 			Str8ListAppend(&Shared->Arena, &ExtraLinkFlags, Str8("-framework Cocoa -framework MetalKit -framework QuartzCore -framework Metal"));
 		}
 
-		EmbedFile(&Arena, Str8("fonts/BerkeleyMono-Regular.otf"),
+		EmbedFile(&Arena, Str8("fonts/BerkeleyMono-Regular.ttf"),
 						  Str8("embed/berkeley_mono_font.h"),
 						  Str8("G_BerkeleyMonoRegular"));
 

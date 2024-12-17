@@ -106,6 +106,11 @@ void R_Init(r_context *R_Context)
 	PipelineDescriptor.vertexFunction = VertexFunction;
 	PipelineDescriptor.fragmentFunction = FragmentFunction;
 	PipelineDescriptor.colorAttachments[0].pixelFormat = MTLPixelFormatBGRA8Unorm;
+	PipelineDescriptor.colorAttachments[0].blendingEnabled = true;
+	PipelineDescriptor.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactorSourceAlpha;
+	PipelineDescriptor.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
+	PipelineDescriptor.colorAttachments[0].sourceAlphaBlendFactor = MTLBlendFactorSourceAlpha;
+	PipelineDescriptor.colorAttachments[0].destinationAlphaBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
 	PipelineDescriptor.depthAttachmentPixelFormat = MTLPixelFormatDepth32Float;
 
 
@@ -150,7 +155,7 @@ void R_Update(r_context *R_Context)
 	MTLRenderPassDescriptor* PassDesc = [MTLRenderPassDescriptor renderPassDescriptor];
 	PassDesc.colorAttachments[0].texture = Drawable.texture;
 	PassDesc.colorAttachments[0].loadAction = MTLLoadActionClear;
-	PassDesc.colorAttachments[0].clearColor = MTLClearColorMake(0,0,0,1);
+	PassDesc.colorAttachments[0].clearColor = MTLClearColorMake(0.05,0.05,0.05,1);
 
 	PassDesc.depthAttachment.texture = ResizeDepthTexture(R_Context, CGSizeMake(Drawable.texture.width, Drawable.texture.height));
 	PassDesc.depthAttachment.loadAction = MTLLoadActionClear;

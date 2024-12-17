@@ -226,7 +226,6 @@ void D_DrawStr8(r_context *R_Context,
 	Command.VerticesCount = TotalTriangleCount;
 	Command.VerticesFormat = R_VF_POSITION | R_VF_UV;
 
-
 	f32 StartX = Position.X;
 	r_vertex *R_Vertices = Command.Vertices;
 	for(int I = 0; I < String.Size; I++)
@@ -255,7 +254,6 @@ void D_DrawStr8(r_context *R_Context,
 
 		f32 GlyphBitmapWidth = roundf((f32)(Glyph->BitmapBox.Z - Glyph->BitmapBox.X));
 		f32 GlyphBitmapHeight = roundf((f32)(Glyph->BitmapBox.W - Glyph->BitmapBox.Y));
-		//LogInfo(D_Context->Logger, "?f32 ?f32", GlyphWidth, GlyphHeight);
 
 		v2f Vertices[6] = 
 		{
@@ -289,13 +287,9 @@ void D_DrawStr8(r_context *R_Context,
 				.Position = v4f(Vertices[V].X, Vertices[V].Y, 0, 1),
 				.UV = DivV2F(UVs[V], V2FromF32((f32)D_FONT_ATLAS_SIZE)),
 			};
-			//Vertex.Position.Y += Glyph->Box.Y;
-			//Vertex.Position.X += (f32)(Glyph->Box.X);
-			Vertex.Position.Y += (f32)(Glyph->Box.Y*Scale);
-			Vertex.Position.X += (f32)(Glyph->Box.X*Scale);
-			Vertex.Position.Y = roundf(Vertex.Position.Y);
-			Vertex.Position.X = roundf(Vertex.Position.X);
-			//Vertex.Position.X *= Scale;
+
+			Vertex.Position.Y += (Glyph->Box.Y*Scale);
+			Vertex.Position.X += (Glyph->Box.X*Scale);
 			Vertex.Position.X /= 1280.0f;
 			Vertex.Position.Y /= 720.0f;
 			Vertex.Position.X = (Vertex.Position.X)*2.0 - 1.0f;

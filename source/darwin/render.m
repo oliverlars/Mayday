@@ -4,6 +4,7 @@
 #include <QuartzCore/QuartzCore.h>
 
 #include "memory.h"
+#include "misc.h"
 #include "sokol_app.h"
 
 #include "os.h"
@@ -25,7 +26,7 @@ id<MTLSamplerState>        SamplerState;
 
 typedef struct uniforms
 {
-	m44f PerspectiveMatrix;
+	m44f ProjectionMatrix;
 	m44f ViewMatrix;
 	m44f ModelMatrix;
 } uniforms;
@@ -40,9 +41,20 @@ typedef struct gpu_vertex
 }
 gpu_vertex;
 
-void R_PushCommand(r_context *R_Context, r_command Command)
+void R_PushCommand(r_context *R_Context, memory_arena *Arena, r_command Command)
 {
-	R_Context->TempCommand = Command;
+	r_command *NextCommand = (r_command*)ArenaPushZero(Arena, sizeof(r_command));
+	NextCommand[0] = Command;
+	if(!R_Context->CommandsLast)
+	{
+		R_Context->CommandsFirst = NextCommand;
+		R_Context->CommandsLast = NextCommand;
+	}
+	else
+	{
+		R_Context->CommandsLast->Next = NextCommand;
+		R_Context->CommandsLast = NextCommand;
+	}
 }
 
 // Dumb hack
@@ -92,7 +104,7 @@ void R_Init(r_context *R_Context)
 
 	CommandQueue = [Device newCommandQueue];
 
-	VertexBuffer = [Device newBufferWithLength:4096*sizeof(gpu_vertex)
+	VertexBuffer = [Device newBufferWithLength:MegaBytes(16)*sizeof(gpu_vertex)
 					options:MTLResourceStorageModeShared];
 
 	UniformBuffer = [Device newBufferWithLength:sizeof(Uniforms)
@@ -136,7 +148,7 @@ void R_Init(r_context *R_Context)
 	SamplerDescriptor.sAddressMode = MTLSamplerAddressModeClampToEdge;
 	SamplerDescriptor.tAddressMode = MTLSamplerAddressModeClampToEdge;
 	SamplerDescriptor.rAddressMode = MTLSamplerAddressModeClampToEdge;
-	SamplerDescriptor.mipFilter = MTLSamplerMipFilterLinear;
+	SamplerDescriptor.mipFilter = MTLSamplerMipFilterNearest;
 	SamplerDescriptor.lodMinClamp = 0.0;
 	SamplerDescriptor.lodMaxClamp = FLT_MAX;
 	SamplerDescriptor.normalizedCoordinates = YES;
@@ -172,24 +184,33 @@ void R_Update(r_context *R_Context)
 	Angle += 0.01;
 	Uniforms.ModelMatrix = MulM44FM44F(Uniforms.ModelMatrix, M44FTranslate(v3f(0, 2 * sinf(Angle), 0)));
 	
-	Uniforms.PerspectiveMatrix = M44FPerspective((f32)Drawable.texture.width/(f32)Drawable.texture.height, 100.0, 0.1, 10000.0);
+	//Uniforms.PerspectiveMatrix = M44FPerspective((f32)Drawable.texture.width/(f32)Drawable.texture.height, 100.0, 0.1, 10000.0);
+	Uniforms.ProjectionMatrix = M44FOrthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0);
 	Uniforms.ViewMatrix = M44FLookAt(v3f(0, 0, 10), v3f(0, 0, 0), v3f(0, 1, 0));
 
 	MemoryCopy(UniformBuffer.contents, &Uniforms, sizeof(Uniforms));
 
-	// TODO(Oliver): sMake this a proper construct
+	// TODO(Oliver): Make this a proper construct
 	u64 ArenaResetTo = R_Context->Arena->At;
 
-	gpu_vertex *GPUVertices = (gpu_vertex*)ArenaPush(R_Context->Arena, sizeof(gpu_vertex)*R_Context->TempCommand.VerticesCount);
-	for(int V = 0; V < R_Context->TempCommand.VerticesCount; V++)
+	int TotalVertices = 0;
+	for(r_command *Command = R_Context->CommandsFirst; Command != Null; Command = Command->Next)
 	{
-		v4f P = R_Context->TempCommand.Vertices[V].Position;
-		v2f UV = R_Context->TempCommand.Vertices[V].UV;
-		GPUVertices[V].Position = P;
-		GPUVertices[V].Colour = v4f(0, 1, 0, 1);
-		GPUVertices[V].UV = v4f(UV.X, UV.Y, 0, 0);
+		gpu_vertex *GPUVertices = (gpu_vertex*)ArenaPush(R_Context->Arena,
+														 sizeof(gpu_vertex)*Command->VerticesCount);
+		for(int V = 0; V < Command->VerticesCount; V++)
+		{
+			v4f P = Command->Vertices[V].Position;
+			v2f UV = Command->Vertices[V].UV;
+			v4f Colour = Command->Vertices[V].Colour;
+			GPUVertices[V].Position = P;
+			GPUVertices[V].Colour = Colour;
+			GPUVertices[V].UV = v4f(UV.X, UV.Y, 0, 0);
+		}
+		MemoryCopy(VertexBuffer.contents + TotalVertices*sizeof(gpu_vertex),
+				   GPUVertices, sizeof(gpu_vertex)*Command->VerticesCount);
+		TotalVertices += Command->VerticesCount;
 	}
-	MemoryCopy(VertexBuffer.contents, GPUVertices, sizeof(gpu_vertex)*R_Context->TempCommand.VerticesCount);
 
 	R_Context->Arena->At = ArenaResetTo;
 
@@ -206,10 +227,13 @@ void R_Update(r_context *R_Context)
 	// 														indexType:MTLIndexTypeUInt32
 	// 														indexBuffer:IndexBuffer
 	// 														indexBufferOffset:0];
-	[Encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:R_Context->TempCommand.VerticesCount];
+	[Encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:TotalVertices];
 			 
 	[Encoder endEncoding];
 
 	[CommandBuffer presentDrawable:Drawable];
 	[CommandBuffer commit];
+
+	R_Context->CommandsFirst = Null;
+	R_Context->CommandsLast = Null;
 }

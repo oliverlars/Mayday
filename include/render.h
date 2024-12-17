@@ -46,6 +46,8 @@ typedef struct r_command
 
 	r_texture Texture;
 
+	m44f Transform;
+
 	struct r_command *Next;
 }
 r_command;
@@ -55,8 +57,8 @@ typedef struct r_context
 	memory_arena *Arena;
 	logger *Logger;
 
-	r_command *CommandsStart;
-	r_command *CommandsEnd;
+	r_command *CommandsFirst;
+	r_command *CommandsLast;
 
 	r_command TempCommand;
 }
@@ -72,4 +74,4 @@ void R_Update(r_context *R_Context);
 
 void R_TextureFromBytes(r_context *R_Context, u8 *Bytes, s32 Width, s32 Height);
 
-void R_PushCommand(r_context *R_Context, r_command Command);
+void R_PushCommand(r_context *R_Context, memory_arena *Arena, r_command Command);

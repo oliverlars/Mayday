@@ -59,7 +59,8 @@ void D_DrawGlyph(r_context *R_Context, d_atlas_glyph *Glyph);
 void D_DrawStr8(r_context *R_Context,
 				d_context *D_Context,
 				memory_arena *Arena,
-				v2f Position,
 				d_font Font,
+				v2f Position,
+				v4f Colour,
 				f32 HeightInPixels,
 				str8 String);

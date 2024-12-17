@@ -158,6 +158,7 @@ m44f M44FromYAngle(f32 Angle);
 m44f M44FromZAngle(f32 Angle);
 
 m44f M44FPerspective(f32 Aspect, f32 FOV, f32 Near, f32 Far);
+m44f M44FOrthographic(f32 Left, f32 Right, f32 Top, f32 Bottom, f32 Near, f32 Far);
 m44f M44FLookAt(v3f At, v3f Position, v3f Up);
 
 m44f M44FTranslate(v3f Translate);

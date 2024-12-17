@@ -636,6 +636,21 @@ m44f M44FPerspective(f32 Aspect, f32 FOV, f32 Near, f32 Far)
 	return Result;
 }
 
+m44f M44FOrthographic(f32 Left, f32 Right,
+					  f32 Top,  f32 Bottom,
+					  f32 Near, f32 Far)
+{
+	m44f Result = M44F_IDENTITY;
+	Result.E[0][0] =  2.0/(Right - Left);
+	Result.E[1][1] =  2.0/(Top - Bottom);
+	Result.E[2][2] = -2.0/(Far - Near);
+	Result.E[3][0] = -(Right + Left)/(Right - Left);
+	Result.E[3][1] = -(Top + Bottom)/(Top - Bottom);
+	Result.E[3][2] = -(Far + Near)/(Far - Near);
+
+	return Result;
+}
+
 m44f M44FLookAt(v3f From, v3f To, v3f ArbitraryUp)
 {
 	v3f Forward = NormalizeV3F(SubV3F(From, To));

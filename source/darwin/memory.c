@@ -54,3 +54,8 @@ u8 *ArenaPushZero(memory_arena *Arena, s64 Bytes)
 	MemoryZero(Memory, Bytes);
 	return Memory;
 }
+
+void ArenaReset(memory_arena *Arena)
+{
+	Arena->At = 0;
+}

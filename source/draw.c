@@ -214,8 +214,9 @@ void D_DrawGlyph(r_context *R_Context, d_atlas_glyph *Glyph)
 void D_DrawStr8(r_context *R_Context,
 				d_context *D_Context,
 				memory_arena *Arena,
-				v2f Position,
 				d_font Font,
+				v2f Position,
+				v4f Colour,
 				f32 HeightInPixels,
 				str8 String)
 {
@@ -249,11 +250,11 @@ void D_DrawStr8(r_context *R_Context,
 
 		d_atlas_glyph *Glyph  = D_GlyphFromCodePoint(D_Context, Font, HeightInPixels, CodePoint);
 
-		f32 GlyphWidth = roundf((f32)(Glyph->Box.Z - Glyph->Box.X)*Scale);
-		f32 GlyphHeight = roundf((f32)(Glyph->Box.W - Glyph->Box.Y)*Scale);
+		f32 GlyphWidth = ((f32)(Glyph->Box.Z - Glyph->Box.X)*Scale);
+		f32 GlyphHeight = ((f32)(Glyph->Box.W - Glyph->Box.Y)*Scale);
 
-		f32 GlyphBitmapWidth = roundf((f32)(Glyph->BitmapBox.Z - Glyph->BitmapBox.X));
-		f32 GlyphBitmapHeight = roundf((f32)(Glyph->BitmapBox.W - Glyph->BitmapBox.Y));
+		f32 GlyphBitmapWidth = ((f32)(Glyph->BitmapBox.Z - Glyph->BitmapBox.X));
+		f32 GlyphBitmapHeight = ((f32)(Glyph->BitmapBox.W - Glyph->BitmapBox.Y));
 
 		v2f Vertices[6] = 
 		{
@@ -278,29 +279,22 @@ void D_DrawStr8(r_context *R_Context,
 			v2f(Glyph->AtlasPosition.X + GlyphBitmapWidth, Glyph->AtlasPosition.Y)
 		};
 
-		//v4i DrawBox = {0};
-		//stbtt_GetCodepointBox(&Font.Info, Glyph->CodePoint, &DrawBox.X, &DrawBox.Y, &DrawBox.Z, &DrawBox.W);
-
 		for(int V = 0; V < 6; V++)
 		{
 			r_vertex Vertex = {
 				.Position = v4f(Vertices[V].X, Vertices[V].Y, 0, 1),
 				.UV = DivV2F(UVs[V], V2FromF32((f32)D_FONT_ATLAS_SIZE)),
+				.Colour = Colour,
 			};
 
 			Vertex.Position.Y += (Glyph->Box.Y*Scale);
 			Vertex.Position.X += (Glyph->Box.X*Scale);
-			Vertex.Position.X /= 1280.0f;
-			Vertex.Position.Y /= 720.0f;
-			Vertex.Position.X = (Vertex.Position.X)*2.0 - 1.0f;
-			Vertex.Position.Y = (Vertex.Position.Y)*2.0 - 1.0f;
-			*R_Vertices++ = Vertex;
+
+			if(CodePoint != ' ') *R_Vertices++ = Vertex;
 		}
 
 		Position.X += Glyph->AdvanceX * Scale * TabMultiplier;
-		//int byteOffset = x + roundf(lsb * scale) + (y * b_w);
-		//stbtt_MakeCodepointBitmap(&info, bitmap + byteOffset, c_x2 - c_x1, c_y2 - c_y1, b_w, scale, scale, word[i]);
 	}
 
-	R_PushCommand(R_Context, Command);
+	R_PushCommand(R_Context, Arena, Command);
 }

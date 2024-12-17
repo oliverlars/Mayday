@@ -24,12 +24,21 @@ mayday;
 
 #include "shaders.h"
 
+#include "sokol_app.h"
+
 void OS_Update(void *Data)
 {
 	mayday *Application = Data;
 
 	D_DrawStr8(&Application->R_Context, &Application->D_Context,
-			   Application->FrameArena, v2f(50, 700), Application->Font, 20, (str8){sizeof(G_TriangleShader), G_TriangleShader});
+			   Application->FrameArena, Application->Font,
+			   v2f(50, sapp_heightf() - 100), v4f(1, 0, 0, 1),
+			   30, (str8){sizeof(G_TriangleShader), G_TriangleShader});
+
+	D_DrawStr8(&Application->R_Context, &Application->D_Context,
+			   Application->FrameArena, Application->Font,
+			   v2f(100, 100), v4f(0, 1, 0, 1),
+			   100, Str8("COOL GREEN TEXT!!!"));
 
 	D_GlyphsToAtlas(&Application->D_Context);
 
@@ -38,6 +47,12 @@ void OS_Update(void *Data)
 	R_Update(&Application->R_Context);
 
 	Application->FrameArena->At = 0;
+
+	Application->Window.Width = sapp_width();
+	Application->Window.Height = sapp_height();
+
+
+	ArenaReset(Application->FrameArena);
 }
 
 void OS_Initialise(void *Data)
@@ -66,7 +81,7 @@ int main()
 	Application.D_Context.Arena = &Arena;
 	Application.D_Context.Logger = &Logger;
 
-	Application.Window = OS_MakeWindow(Str8("Mayday"), 1280, 720);
+	Application.Window = OS_MakeWindow(Str8("Mayday"), 3024, 1964);
 
 
 	Application.Font = D_LoadFontFromTTF(&Application.D_Context, G_BerkeleyMonoRegular);

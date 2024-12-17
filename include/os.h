@@ -6,7 +6,6 @@ typedef struct os_window
 {
 	int Width;
 	int Height;
-	
 
 	os_handle Handle;
 	str8 Title;
@@ -22,3 +21,5 @@ void OS_Initialise(void *Data);
 
 
 os_handle OS_GetWindowHandle();
+int OS_WindowWidth(os_window *Window);
+int OS_WindowHeight(os_window *Window);

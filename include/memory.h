@@ -22,3 +22,6 @@ void MemoryZero(void *Destination, s64 NumberOfBytes);
 
 u8* ArenaPush(memory_arena *Arena, s64 Bytes);
 u8* ArenaPushZero(memory_arena *Arena, s64 Bytes);
+
+
+void ArenaReset(memory_arena *Arena);

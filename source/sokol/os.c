@@ -37,4 +37,11 @@ os_handle OS_GetWindowHandle()
 	return (os_handle)sapp_macos_get_window();
 }
 
-
+int OS_WindowWidth(os_window *Window)
+{
+	return sapp_width();
+}
+int OS_WindowHeight(os_window *Window)
+{
+	return sapp_height();
+}

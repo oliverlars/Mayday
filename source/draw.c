@@ -5,7 +5,7 @@
 #include "strings.h"
 #include "draw.h"
 
-#include <assert.h>
+#include <math.h>
 
 d_font D_LoadFontFromTTF(d_context *D_Context, u8 *Data)
 {
@@ -18,8 +18,8 @@ d_font D_LoadFontFromTTF(d_context *D_Context, u8 *Data)
 	}
 	else
 	{
-		Font.Info = Info;
 		stbtt_GetFontVMetrics(&Info, &Font.Ascent, &Font.Descent, &Font.LineGap);
+		Font.Info = Info;
 	}
 	return Font;
 }
@@ -227,19 +227,34 @@ void D_DrawStr8(r_context *R_Context,
 	Command.VerticesFormat = R_VF_POSITION | R_VF_UV;
 
 
-
+	f32 StartX = Position.X;
 	r_vertex *R_Vertices = Command.Vertices;
 	for(int I = 0; I < String.Size; I++)
 	{
 		// TODO(Oliver): Needs to actually iterate utf-8
 		u32 CodePoint = String.Bytes[I];
+
+		if(CodePoint == '\n')
+		{
+			Position.Y -= (Font.Ascent - Font.Descent + Font.LineGap)*Scale;
+			Position.X = StartX;
+			continue;
+		}
+
+		f32 TabMultiplier = 1.0f;
+		if(CodePoint == '\t')
+		{
+			CodePoint = ' ';
+			TabMultiplier *= 4.0;
+		}
+
 		d_atlas_glyph *Glyph  = D_GlyphFromCodePoint(D_Context, Font, HeightInPixels, CodePoint);
 
-		f32 GlyphWidth = (f32)(Glyph->Box.Z - Glyph->Box.X)*Scale;
-		f32 GlyphHeight = (f32)(Glyph->Box.W - Glyph->Box.Y)*Scale;
+		f32 GlyphWidth = roundf((f32)(Glyph->Box.Z - Glyph->Box.X)*Scale);
+		f32 GlyphHeight = roundf((f32)(Glyph->Box.W - Glyph->Box.Y)*Scale);
 
-		f32 GlyphBitmapWidth = (f32)(Glyph->BitmapBox.Z - Glyph->BitmapBox.X);
-		f32 GlyphBitmapHeight = (f32)(Glyph->BitmapBox.W - Glyph->BitmapBox.Y);
+		f32 GlyphBitmapWidth = roundf((f32)(Glyph->BitmapBox.Z - Glyph->BitmapBox.X));
+		f32 GlyphBitmapHeight = roundf((f32)(Glyph->BitmapBox.W - Glyph->BitmapBox.Y));
 		//LogInfo(D_Context->Logger, "?f32 ?f32", GlyphWidth, GlyphHeight);
 
 		v2f Vertices[6] = 
@@ -278,6 +293,8 @@ void D_DrawStr8(r_context *R_Context,
 			//Vertex.Position.X += (f32)(Glyph->Box.X);
 			Vertex.Position.Y += (f32)(Glyph->Box.Y*Scale);
 			Vertex.Position.X += (f32)(Glyph->Box.X*Scale);
+			Vertex.Position.Y = roundf(Vertex.Position.Y);
+			Vertex.Position.X = roundf(Vertex.Position.X);
 			//Vertex.Position.X *= Scale;
 			Vertex.Position.X /= 1280.0f;
 			Vertex.Position.Y /= 720.0f;
@@ -286,7 +303,7 @@ void D_DrawStr8(r_context *R_Context,
 			*R_Vertices++ = Vertex;
 		}
 
-		Position.X += Glyph->AdvanceX * Scale;
+		Position.X += Glyph->AdvanceX * Scale * TabMultiplier;
 		//int byteOffset = x + roundf(lsb * scale) + (y * b_w);
 		//stbtt_MakeCodepointBitmap(&info, bitmap + byteOffset, c_x2 - c_x1, c_y2 - c_y1, b_w, scale, scale, word[i]);
 	}

@@ -27,6 +27,7 @@ void OS_Run(os_window Window, void *Data)
 		.width = Window.Width,
 		.height = Window.Height,
 		.user_data = Data,
+		.high_dpi = true,
 	};
 	sapp_run(&SAPPDesc);
 }

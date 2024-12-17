@@ -3,6 +3,7 @@
 #include <ModelIO/ModelIO.h>
 #include <QuartzCore/QuartzCore.h>
 
+#include "memory.h"
 #include "sokol_app.h"
 
 #include "os.h"
@@ -176,18 +177,21 @@ void R_Update(r_context *R_Context)
 
 	MemoryCopy(UniformBuffer.contents, &Uniforms, sizeof(Uniforms));
 
+	// TODO(Oliver): sMake this a proper construct
+	u64 ArenaResetTo = R_Context->Arena->At;
 
-	gpu_vertex GPuVertex[4096] = {0};
+	gpu_vertex *GPUVertices = (gpu_vertex*)ArenaPush(R_Context->Arena, sizeof(gpu_vertex)*R_Context->TempCommand.VerticesCount);
 	for(int V = 0; V < R_Context->TempCommand.VerticesCount; V++)
 	{
 		v4f P = R_Context->TempCommand.Vertices[V].Position;
 		v2f UV = R_Context->TempCommand.Vertices[V].UV;
-		GPuVertex[V].Position = P;
-		GPuVertex[V].Colour = v4f(0, 1, 0, 1);
-		GPuVertex[V].UV = v4f(UV.X, UV.Y, 0, 0);
+		GPUVertices[V].Position = P;
+		GPUVertices[V].Colour = v4f(0, 1, 0, 1);
+		GPUVertices[V].UV = v4f(UV.X, UV.Y, 0, 0);
 	}
+	MemoryCopy(VertexBuffer.contents, GPUVertices, sizeof(gpu_vertex)*R_Context->TempCommand.VerticesCount);
 
-	MemoryCopy(VertexBuffer.contents, GPuVertex, sizeof(gpu_vertex)*R_Context->TempCommand.VerticesCount);
+	R_Context->Arena->At = ArenaResetTo;
 
 	id<MTLRenderCommandEncoder> Encoder = [CommandBuffer renderCommandEncoderWithDescriptor:PassDesc];
 	[Encoder setRenderPipelineState:PipelineState];

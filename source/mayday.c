@@ -29,7 +29,7 @@ void OS_Update(void *Data)
 	mayday *Application = Data;
 
 	D_DrawStr8(&Application->R_Context, &Application->D_Context,
-			   Application->FrameArena, v2f(50, 700), Application->Font, 20, (str8){sizeof(G_TriangleShader)-300, G_TriangleShader});
+			   Application->FrameArena, v2f(50, 700), Application->Font, 20, (str8){sizeof(G_TriangleShader), G_TriangleShader});
 
 	D_GlyphsToAtlas(&Application->D_Context);
 
@@ -65,7 +65,7 @@ int main()
 
 	Application.D_Context.Arena = &Arena;
 	Application.D_Context.Logger = &Logger;
-	
+
 	Application.Window = OS_MakeWindow(Str8("Mayday"), 1280, 720);
 
 

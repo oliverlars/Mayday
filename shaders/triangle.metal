@@ -12,8 +12,8 @@ struct vertex_output
 struct vertex_input
 {
 	float4 Position [[attribute(0)]];
-	float4 Colour [[attribute(1)]];
-	float4 UV [[attribute(2)]];
+	float4 Colour   [[attribute(1)]];
+	float4 UV       [[attribute(2)]];
 };
 
 struct uniforms

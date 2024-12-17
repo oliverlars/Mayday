@@ -34,6 +34,7 @@ uniforms Uniforms;
 typedef struct gpu_vertex
 {
 	v4f Position;
+	v4f Colour;
 	v4f UV;
 }
 gpu_vertex;
@@ -118,9 +119,12 @@ void R_Init(r_context *R_Context)
 	VertexDescriptor.attributes[0].format = MTLVertexFormatFloat4;
 	VertexDescriptor.attributes[0].offset = 0;
 	VertexDescriptor.attributes[0].bufferIndex = 0;
-	VertexDescriptor.attributes[1].format = MTLVertexFormatFloat2;
-	VertexDescriptor.attributes[1].offset = sizeof(v4f);  // Offset of uv
+	VertexDescriptor.attributes[1].format = MTLVertexFormatFloat4;
+	VertexDescriptor.attributes[1].offset = sizeof(v4f);
 	VertexDescriptor.attributes[1].bufferIndex = 0;
+	VertexDescriptor.attributes[2].format = MTLVertexFormatFloat4;
+	VertexDescriptor.attributes[2].offset = 2*sizeof(v4f);
+	VertexDescriptor.attributes[2].bufferIndex = 0;
 	VertexDescriptor.layouts[0].stride = sizeof(gpu_vertex); 
 
 	PipelineDescriptor.vertexDescriptor = VertexDescriptor;
@@ -179,6 +183,7 @@ void R_Update(r_context *R_Context)
 		v4f P = R_Context->TempCommand.Vertices[V].Position;
 		v2f UV = R_Context->TempCommand.Vertices[V].UV;
 		GPuVertex[V].Position = P;
+		GPuVertex[V].Colour = v4f(0, 1, 0, 1);
 		GPuVertex[V].UV = v4f(UV.X, UV.Y, 0, 0);
 	}
 

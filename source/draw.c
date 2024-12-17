@@ -10,10 +10,16 @@
 d_font D_LoadFontFromTTF(d_context *D_Context, u8 *Data)
 {
 	d_font Font = {0};
-	int Status = stbtt_InitFont(&Font.Info, Data, 0);
+	stbtt_fontinfo Info = {0};
+	int Status = stbtt_InitFont(&Info, Data, 0);
 	if(!Status)
 	{
 		LogError(D_Context->Logger, "Internal font file is invalid");
+	}
+	else
+	{
+		Font.Info = Info;
+		stbtt_GetFontVMetrics(&Info, &Font.Ascent, &Font.Descent, &Font.LineGap);
 	}
 	return Font;
 }
@@ -44,21 +50,23 @@ void D_GlyphsToAtlas(d_context *D_Context)
 		int AtlasY = 0;
 		int AtlasX = 0;
 		int TallestYOnThisRow = 0;
+
+		int Padding = 8;
 		for(d_atlas_glyph *Glyph = D_Context->NewestGlyph;
 			Glyph != Null;
 			Glyph = Glyph->PreviousInLRU)
 		{
-			int Width = Glyph->Box.Z - Glyph->Box.X;
-			int Height = Glyph->Box.W - Glyph->Box.Y;
-			TallestYOnThisRow = Max(TallestYOnThisRow, Height);
+			int Width = Glyph->BitmapBox.Z - Glyph->BitmapBox.X;
+			int Height = Glyph->BitmapBox.W - Glyph->BitmapBox.Y;
+			TallestYOnThisRow = Max(TallestYOnThisRow, Height + Padding);
 
-			if(AtlasX + Width > D_FONT_ATLAS_SIZE)
+			if(AtlasX + Width + Padding > D_FONT_ATLAS_SIZE)
 			{
 				AtlasY += TallestYOnThisRow;
 				AtlasX = 0;
 				TallestYOnThisRow = 0;
 			}
-			else if(AtlasY + Height > D_FONT_ATLAS_SIZE)
+			else if(AtlasY + Height + Padding > D_FONT_ATLAS_SIZE)
 			{
 				// No more atlas space left, this is where we could just
 				// allocate a bigger texture . For now we'll just evict
@@ -68,6 +76,7 @@ void D_GlyphsToAtlas(d_context *D_Context)
 				// from this glyph onwards.
 				D_Context->OldestGlyph = Glyph->NextInLRU;
 				D_Context->OldestGlyph->PreviousInLRU = Null;
+				LogInfo(D_Context->Logger, "Evicted Glyphs");
 			}
 			else
 			{
@@ -82,7 +91,7 @@ void D_GlyphsToAtlas(d_context *D_Context)
 					Row += D_FONT_ATLAS_SIZE;
 				}
 			}
-			AtlasX += Width;
+			AtlasX += Width + Padding;
 		}
 	}
 }
@@ -135,22 +144,27 @@ d_atlas_glyph *D_GlyphFromCodePoint(d_context *D_Context, d_font Font, s32 Heigh
 		Glyph->AdvanceX = AdvanceX;
 		NextGlyph->Hash = Hash;
 		NextGlyph->CodePoint = CodePoint;
+		stbtt_GetCodepointBox(&Font.Info, CodePoint, &NextGlyph->Box.X, &NextGlyph->Box.Y, &NextGlyph->Box.Z, &NextGlyph->Box.W);
 
 		PushGlyphOntoLRU(D_Context, NextGlyph);
+
+		v4i BitmapBox = {0};
 		stbtt_GetCodepointBitmapBox(&Font.Info,
 									CodePoint,
 									Scale, Scale,
-									&NextGlyph->Box.X, &NextGlyph->Box.Y,
-									&NextGlyph->Box.Z, &NextGlyph->Box.W);
-		int GlyphSizeInBytes = (NextGlyph->Box.Z - NextGlyph->Box.X)*(NextGlyph->Box.W - NextGlyph->Box.Y);
+									&BitmapBox.X, &BitmapBox.Y,
+									&BitmapBox.Z, &BitmapBox.W);
+		
+		int GlyphSizeInBytes = (BitmapBox.Z - BitmapBox.X)*(BitmapBox.W - BitmapBox.Y);
 		NextGlyph->Data = ArenaPushZero(D_Context->Arena, GlyphSizeInBytes);
 		stbtt_MakeCodepointBitmap(&Font.Info,
 								  NextGlyph->Data,
-								  NextGlyph->Box.Z - NextGlyph->Box.X,
-								  NextGlyph->Box.W - NextGlyph->Box.Y,
-								  Glyph->Box.Z - Glyph->Box.X,
+								  BitmapBox.Z - BitmapBox.X,
+								  BitmapBox.W - BitmapBox.Y,
+								  BitmapBox.Z - BitmapBox.X,
 								  Scale, Scale,
 								  NextGlyph->CodePoint);
+		NextGlyph->BitmapBox = BitmapBox;
 		ResultGlyph = NextGlyph;
 	}
 	else if(Glyph->Hash == 0)
@@ -160,25 +174,30 @@ d_atlas_glyph *D_GlyphFromCodePoint(d_context *D_Context, d_font Font, s32 Heigh
 		int AdvanceX;
 		int LeftSideBearing;
 		stbtt_GetCodepointHMetrics(&Font.Info, CodePoint, &AdvanceX, &LeftSideBearing);
-
+		
 		Glyph->AdvanceX = AdvanceX;
 		Glyph->Hash = Hash;
 		Glyph->CodePoint = CodePoint;
+		stbtt_GetCodepointBox(&Font.Info, Glyph->CodePoint, &Glyph->Box.X, &Glyph->Box.Y, &Glyph->Box.Z, &Glyph->Box.W);
 		PushGlyphOntoLRU(D_Context, Glyph);
+
+
+		v4i BitmapBox = {0};
 		stbtt_GetCodepointBitmapBox(&Font.Info,
 									CodePoint,
 									Scale, Scale,
-									&Glyph->Box.X, &Glyph->Box.Y,
-									&Glyph->Box.Z, &Glyph->Box.W);
-		int GlyphSizeInBytes = (Glyph->Box.Z - Glyph->Box.X)*(Glyph->Box.W - Glyph->Box.Y);
+									&BitmapBox.X, &BitmapBox.Y,
+									&BitmapBox.Z, &BitmapBox.W);
+		int GlyphSizeInBytes = (BitmapBox.Z - BitmapBox.X)*(BitmapBox.W - BitmapBox.Y);
 		Glyph->Data = ArenaPushZero(D_Context->Arena, GlyphSizeInBytes);
 		stbtt_MakeCodepointBitmap(&Font.Info,
 								  Glyph->Data,
-								  Glyph->Box.Z - Glyph->Box.X,
-								  Glyph->Box.W - Glyph->Box.Y,
-								  Glyph->Box.Z - Glyph->Box.X,
+								  BitmapBox.Z - BitmapBox.X,
+								  BitmapBox.W - BitmapBox.Y,
+								  BitmapBox.Z - BitmapBox.X,
 								  Scale, Scale,
 								  Glyph->CodePoint);
+		Glyph->BitmapBox = BitmapBox;
 	}
 	else
 	{
@@ -212,13 +231,15 @@ void D_DrawStr8(r_context *R_Context,
 	r_vertex *R_Vertices = Command.Vertices;
 	for(int I = 0; I < String.Size; I++)
 	{
-
 		// TODO(Oliver): Needs to actually iterate utf-8
 		u32 CodePoint = String.Bytes[I];
 		d_atlas_glyph *Glyph  = D_GlyphFromCodePoint(D_Context, Font, HeightInPixels, CodePoint);
 
-		f32 GlyphWidth = (f32)(Glyph->Box.Z - Glyph->Box.X);
-		f32 GlyphHeight = (f32)(Glyph->Box.W - Glyph->Box.Y);
+		f32 GlyphWidth = (f32)(Glyph->Box.Z - Glyph->Box.X)*Scale;
+		f32 GlyphHeight = (f32)(Glyph->Box.W - Glyph->Box.Y)*Scale;
+
+		f32 GlyphBitmapWidth = (f32)(Glyph->BitmapBox.Z - Glyph->BitmapBox.X);
+		f32 GlyphBitmapHeight = (f32)(Glyph->BitmapBox.W - Glyph->BitmapBox.Y);
 		//LogInfo(D_Context->Logger, "?f32 ?f32", GlyphWidth, GlyphHeight);
 
 		v2f Vertices[6] = 
@@ -234,14 +255,18 @@ void D_DrawStr8(r_context *R_Context,
 
 		v2f UVs[6] = 
 		{
-			v2f(Glyph->AtlasPosition.X, Glyph->AtlasPosition.Y),
-			v2f(Glyph->AtlasPosition.X + GlyphWidth, Glyph->AtlasPosition.Y),
-			v2f(Glyph->AtlasPosition.X + GlyphWidth, Glyph->AtlasPosition.Y + GlyphHeight),
+			
+			v2f(Glyph->AtlasPosition.X, Glyph->AtlasPosition.Y + GlyphBitmapHeight),
+			v2f(Glyph->AtlasPosition.X + GlyphBitmapWidth, Glyph->AtlasPosition.Y + GlyphBitmapHeight),
+			v2f(Glyph->AtlasPosition.X + GlyphBitmapWidth, Glyph->AtlasPosition.Y),
 
+			v2f(Glyph->AtlasPosition.X, Glyph->AtlasPosition.Y + GlyphBitmapHeight),
 			v2f(Glyph->AtlasPosition.X, Glyph->AtlasPosition.Y),
-			v2f(Glyph->AtlasPosition.X, Glyph->AtlasPosition.Y + GlyphHeight),
-			v2f(Glyph->AtlasPosition.X + GlyphWidth, Glyph->AtlasPosition.Y + GlyphHeight),
+			v2f(Glyph->AtlasPosition.X + GlyphBitmapWidth, Glyph->AtlasPosition.Y)
 		};
+
+		//v4i DrawBox = {0};
+		//stbtt_GetCodepointBox(&Font.Info, Glyph->CodePoint, &DrawBox.X, &DrawBox.Y, &DrawBox.Z, &DrawBox.W);
 
 		for(int V = 0; V < 6; V++)
 		{
@@ -249,6 +274,11 @@ void D_DrawStr8(r_context *R_Context,
 				.Position = v4f(Vertices[V].X, Vertices[V].Y, 0, 1),
 				.UV = DivV2F(UVs[V], V2FromF32((f32)D_FONT_ATLAS_SIZE)),
 			};
+			//Vertex.Position.Y += Glyph->Box.Y;
+			//Vertex.Position.X += (f32)(Glyph->Box.X);
+			Vertex.Position.Y += (f32)(Glyph->Box.Y*Scale);
+			Vertex.Position.X += (f32)(Glyph->Box.X*Scale);
+			//Vertex.Position.X *= Scale;
 			Vertex.Position.X /= 1280.0f;
 			Vertex.Position.Y /= 720.0f;
 			Vertex.Position.X = (Vertex.Position.X)*2.0 - 1.0f;

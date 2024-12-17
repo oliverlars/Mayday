@@ -22,13 +22,14 @@ typedef struct mayday
 }
 mayday;
 
+#include "shaders.h"
 
 void OS_Update(void *Data)
 {
 	mayday *Application = Data;
 
 	D_DrawStr8(&Application->R_Context, &Application->D_Context,
-			   Application->FrameArena, v2f(50, 50), Application->Font, 50, Str8("Hello, World"));
+			   Application->FrameArena, v2f(50, 300), Application->Font, 60, (str8){200, G_TriangleShader});
 
 	D_GlyphsToAtlas(&Application->D_Context);
 
@@ -66,6 +67,7 @@ int main()
 	Application.D_Context.Logger = &Logger;
 
 	Application.Window = OS_MakeWindow(Str8("Mayday"), 1280, 720);
+
 
 	Application.Font = D_LoadFontFromTTF(&Application.D_Context, G_BerkeleyMonoRegular);
 

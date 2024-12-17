@@ -114,7 +114,7 @@ void R_Init(r_context *R_Context)
 	VertexDescriptor.attributes[0].offset = 0;
 	VertexDescriptor.attributes[0].bufferIndex = 0;
 	VertexDescriptor.attributes[1].format = MTLVertexFormatFloat2;
-	VertexDescriptor.attributes[1].offset = 16;  // Offset of uv
+	VertexDescriptor.attributes[1].offset = sizeof(v4f);  // Offset of uv
 	VertexDescriptor.attributes[1].bufferIndex = 0;
 	VertexDescriptor.layouts[0].stride = sizeof(gpu_vertex); 
 

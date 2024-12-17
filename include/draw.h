@@ -5,6 +5,9 @@
 typedef struct d_font
 {
 	stbtt_fontinfo Info;
+	int Ascent;
+	int Descent;
+	int LineGap;
 } d_font;
 
 typedef struct d_atlas_glyph
@@ -13,6 +16,7 @@ typedef struct d_atlas_glyph
 	u8 *Data;
 	v2f AtlasPosition;
 	v4i Box;
+	v4i BitmapBox;
 	u32 CodePoint;
 	f32 AdvanceX;
 	struct d_atlas_glyph *NextInHashSlot;

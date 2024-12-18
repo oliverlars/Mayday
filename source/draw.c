@@ -206,9 +206,40 @@ d_atlas_glyph *D_GlyphFromCodePoint(d_context *D_Context, d_font Font, s32 Heigh
 	return ResultGlyph;
 }
 
-void D_DrawGlyph(r_context *R_Context, d_atlas_glyph *Glyph)
+void D_DrawQuad(r_context *R_Context, d_context *D_Context,
+				memory_arena *Arena, v2f Position,
+				f32 Width, f32 Height,
+				v4f Colour)
 {
+	r_command Command = {0};
+	Command.Vertices = (r_vertex*)ArenaPush(Arena, 6*sizeof(r_vertex));
+	Command.VerticesCount = 6;
+	Command.VerticesFormat = R_VF_POSITION | R_VF_UV;
 
+	r_vertex *R_Vertices = Command.Vertices;
+	
+	v2f Vertices[6] = 
+	{
+		v2f(Position.X, Position.Y),
+		v2f(Position.X + Width, Position.Y),
+		v2f(Position.X + Width, Position.Y + Height),
+
+		v2f(Position.X, Position.Y),
+		v2f(Position.X, Position.Y + Height),
+		v2f(Position.X + Width, Position.Y + Height),
+	};
+
+	for(int V = 0; V < 6; V++)
+	{
+		r_vertex Vertex = {
+			.Position = v4f(Vertices[V].X, Vertices[V].Y, 0, 1),
+			.Colour = Colour,
+		};
+
+		*R_Vertices++ = Vertex;
+	}
+
+	R_PushCommand(R_Context, Arena, Command);
 }
 
 void D_DrawStr8(r_context *R_Context,

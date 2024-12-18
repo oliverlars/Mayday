@@ -190,6 +190,65 @@ metal_shader R_GlyphShader(r_context *R_Context)
 	return Shader;
 }
 
+metal_shader R_TriangleShader(r_context *R_Context)
+{
+	metal_context *Metal = R_Context->Backend;
+	metal_shader Shader = {0};
+
+	NSError* Error = nil;
+	NSString* Source = [[NSString alloc] initWithBytes:(const void*)G_TriangleShader
+											length:sizeof(G_TriangleShader)
+											encoding:NSUTF8StringEncoding];
+	Shader.Library                    = [Metal->Device newLibraryWithSource:Source options:nil error:&Error];
+	id<MTLFunction> VertexFunction    = [Shader.Library newFunctionWithName:@"VertexMain"];
+	id<MTLFunction> FragmentFunction  = [Shader.Library newFunctionWithName:@"FragmentMain"];
+
+	NSLog(@"Failed to create library: %@", Error);
+
+	MTLRenderPipelineDescriptor* PipelineDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
+	PipelineDescriptor.vertexFunction = VertexFunction;
+	PipelineDescriptor.fragmentFunction = FragmentFunction;
+	PipelineDescriptor.colorAttachments[0].pixelFormat = MTLPixelFormatBGRA8Unorm;
+	PipelineDescriptor.colorAttachments[0].blendingEnabled = true;
+	PipelineDescriptor.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactorSourceAlpha;
+	PipelineDescriptor.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
+	PipelineDescriptor.colorAttachments[0].sourceAlphaBlendFactor = MTLBlendFactorSourceAlpha;
+	PipelineDescriptor.colorAttachments[0].destinationAlphaBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
+	PipelineDescriptor.depthAttachmentPixelFormat = MTLPixelFormatDepth32Float;
+
+
+	MTLVertexDescriptor *VertexDescriptor = [[MTLVertexDescriptor alloc] init];
+	VertexDescriptor.attributes[0].format = MTLVertexFormatFloat4;
+	VertexDescriptor.attributes[0].offset = 0;
+	VertexDescriptor.attributes[0].bufferIndex = 0;
+	VertexDescriptor.attributes[1].format = MTLVertexFormatFloat4;
+	VertexDescriptor.attributes[1].offset = sizeof(v4f);
+	VertexDescriptor.attributes[1].bufferIndex = 0;
+	VertexDescriptor.layouts[0].stride = sizeof(gpu_vertex); 
+
+	PipelineDescriptor.vertexDescriptor = VertexDescriptor;
+
+	MTLSamplerDescriptor *SamplerDescriptor = [[MTLSamplerDescriptor alloc] init];
+	SamplerDescriptor.minFilter = MTLSamplerMinMagFilterLinear;
+	SamplerDescriptor.magFilter = MTLSamplerMinMagFilterLinear;
+	SamplerDescriptor.sAddressMode = MTLSamplerAddressModeClampToEdge;
+	SamplerDescriptor.tAddressMode = MTLSamplerAddressModeClampToEdge;
+	SamplerDescriptor.rAddressMode = MTLSamplerAddressModeClampToEdge;
+	SamplerDescriptor.mipFilter = MTLSamplerMipFilterNearest;
+	SamplerDescriptor.lodMinClamp = 0.0;
+	SamplerDescriptor.lodMaxClamp = FLT_MAX;
+	SamplerDescriptor.normalizedCoordinates = YES;
+	Metal->SamplerState = [Metal->Device newSamplerStateWithDescriptor:SamplerDescriptor];
+
+	MTLDepthStencilDescriptor *DepthStencilDescriptor = [MTLDepthStencilDescriptor new];
+	DepthStencilDescriptor.depthCompareFunction = MTLCompareFunctionLess;
+	DepthStencilDescriptor.depthWriteEnabled = YES;
+	Metal->DepthStencilState = [Metal->Device newDepthStencilStateWithDescriptor:DepthStencilDescriptor];
+
+	Shader.PipelineState = [Metal->Device newRenderPipelineStateWithDescriptor:PipelineDescriptor error:&Error];
+	return Shader;
+}
+
 void R_Init(r_context *R_Context)
 {
 	metal_context* Metal = ArenaPushTypeZero(R_Context->Arena, metal_context);
@@ -208,11 +267,41 @@ void R_Init(r_context *R_Context)
 
 	Metal->BloomShader = R_BloomShader(R_Context);
 	Metal->GlyphShader = R_GlyphShader(R_Context);
+	Metal->TriangleShader = R_TriangleShader(R_Context);
 
 }
 
 f32 Angle = 0.0;
 
+
+void R_RenderTriangles(r_context *R_Context, id<MTLCommandBuffer> CommandBuffer, int VertexCount)
+{
+	metal_context *Metal = R_Context->Backend;
+
+	MTLRenderPassDescriptor* PassDesc = [MTLRenderPassDescriptor renderPassDescriptor];
+	PassDesc.colorAttachments[0].texture = Metal->BaseFrameBuffer;
+	PassDesc.colorAttachments[0].loadAction = MTLLoadActionClear;
+	PassDesc.colorAttachments[0].clearColor = MTLClearColorMake(0.0,0.0,0.0,1);
+
+	PassDesc.depthAttachment.texture = ResizeDepthTexture(R_Context, CGSizeMake(Metal->Drawable.texture.width, Metal->Drawable.texture.height));
+	PassDesc.depthAttachment.loadAction = MTLLoadActionClear;
+	PassDesc.depthAttachment.clearDepth = 1.0;
+
+
+	id<MTLRenderCommandEncoder> Encoder = [CommandBuffer renderCommandEncoderWithDescriptor:PassDesc];
+	[Encoder setRenderPipelineState:Metal->TriangleShader.PipelineState];
+	[Encoder setFrontFacingWinding:MTLWindingClockwise];
+	[Encoder setCullMode:(MTLCullModeNone)];
+	[Encoder setVertexBuffer:Metal->VertexBuffer offset:0 atIndex:0];
+	[Encoder setVertexBuffer:Metal->UniformBuffer offset:0 atIndex:1];
+	[Encoder setDepthStencilState:Metal->DepthStencilState];
+	[Encoder setFragmentTexture:Metal->FontAtlasTexture atIndex:0];
+	[Encoder setFragmentSamplerState:Metal->SamplerState atIndex:0];
+	[Encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:VertexCount];
+
+
+	[Encoder endEncoding];
+}
 
 void R_RenderGlyphs(r_context *R_Context, id<MTLCommandBuffer> CommandBuffer, int VertexCount)
 {
@@ -277,7 +366,7 @@ void R_Update(r_context *R_Context)
 {
 	metal_context *Metal = R_Context->Backend;
 	Metal->Drawable = (__bridge id<CAMetalDrawable>)sapp_metal_get_current_drawable();
-	
+
 	CAMetalLayer *MetalLayer = (CAMetalLayer *)Metal->Drawable.layer;
 	MetalLayer.framebufferOnly = NO;
 
@@ -323,20 +412,54 @@ void R_Update(r_context *R_Context)
 	int TotalVertices = 0;
 	for(r_command *Command = R_Context->CommandsFirst; Command != Null; Command = Command->Next)
 	{
-		gpu_vertex *GPUVertices = (gpu_vertex*)ArenaPush(R_Context->Arena,
-														 sizeof(gpu_vertex)*Command->VerticesCount);
-		for(int V = 0; V < Command->VerticesCount; V++)
-		{
-			v4f P = Command->Vertices[V].Position;
-			v2f UV = Command->Vertices[V].UV;
-			v4f Colour = Command->Vertices[V].Colour;
-			GPUVertices[V].Position = P;
-			GPUVertices[V].Colour = Colour;
-			GPUVertices[V].UV = v4f(UV.X, UV.Y, 0, 0);
+
+		if(0){}
+		else if(Command->Type == R_COMMAND_GLYPH)
+		{	
+			gpu_vertex *GPUVertices = (gpu_vertex*)ArenaPush(R_Context->Arena,
+															 sizeof(gpu_vertex)*Command->VerticesCount);
+			for(int V = 0; V < Command->VerticesCount; V++)
+			{
+				v4f P = Command->Vertices[V].Position;
+				v2f UV = Command->Vertices[V].UV;
+				v4f Colour = Command->Vertices[V].Colour;
+				GPUVertices[V].Position = P;
+				GPUVertices[V].Colour = Colour;
+				GPUVertices[V].UV = v4f(UV.X, UV.Y, 0, 0);
+			}
+			MemoryCopy(Metal->VertexBuffer.contents + TotalVertices*sizeof(gpu_vertex),
+					GPUVertices, sizeof(gpu_vertex)*Command->VerticesCount);
+			TotalVertices += Command->VerticesCount;
 		}
-		MemoryCopy(Metal->VertexBuffer.contents + TotalVertices*sizeof(gpu_vertex),
-				   GPUVertices, sizeof(gpu_vertex)*Command->VerticesCount);
-		TotalVertices += Command->VerticesCount;
+		else if(Command->Type == R_COMMAND_TRIANGLE)
+		{
+			gpu_vertex *GPUVertices = (gpu_vertex*)ArenaPush(R_Context->Arena,
+															 sizeof(gpu_vertex)*Command->VerticesCount);
+			for(int V = 0; V < Command->VerticesCount; V++)
+			{
+				v4f P = Command->Vertices[V].Position;
+				v2f UV = Command->Vertices[V].UV;
+				v4f Colour = Command->Vertices[V].Colour;
+				GPUVertices[V].Position = P;
+				GPUVertices[V].Colour = Colour;
+				GPUVertices[V].UV = v4f(UV.X, UV.Y, 0, 0);
+			}
+			MemoryCopy(Metal->VertexBuffer.contents + TotalVertices*sizeof(gpu_vertex),
+					GPUVertices, sizeof(gpu_vertex)*Command->VerticesCount);
+			TotalVertices += Command->VerticesCount;
+		}
+
+		if(Command->Next && Command->Next->Type != Command->Type)
+		{
+			if(Command->Type == R_COMMAND_GLYPH)
+			{
+				R_RenderGlyphs(R_Context, CommandBuffer, Command->VerticesCount);
+			}
+			else if(Command->Type == R_COMMAND_TRIANGLE)
+			{
+				R_RenderTriangles(R_Context, CommandBuffer, Command->VerticesCount);
+			}
+		}
 	}
 
 	R_Context->Arena->At = ArenaResetTo;

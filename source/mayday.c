@@ -36,6 +36,10 @@ void OS_Update(void *Data)
 			   v2f(50,  (f32)WindowHeight - 100), v4f(1, 0.5, 0, 1),
 			   50, (str8){sizeof(G_TriangleShader), G_TriangleShader});
 
+	D_DrawQuad(&Application->R_Context, &Application->D_Context,
+			   Application->FrameArena,
+			   v2f(2000, 600), 200, 200, v4f(1, 0, 0, 1));
+
 	D_GlyphsToAtlas(&Application->D_Context);
 
 	R_TextureFromBytes(&Application->R_Context, Application->D_Context.FontAtlas, D_FONT_ATLAS_SIZE, D_FONT_ATLAS_SIZE);

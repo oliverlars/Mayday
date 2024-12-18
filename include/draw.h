@@ -64,3 +64,8 @@ void D_DrawStr8(r_context *R_Context,
 				v4f Colour,
 				f32 HeightInPixels,
 				str8 String);
+				
+void D_DrawQuad(r_context *R_Context, d_context *D_Context,
+				memory_arena *Arena, v2f Position,
+				f32 Width, f32 Height,
+				v4f Colour);

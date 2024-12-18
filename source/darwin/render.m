@@ -234,7 +234,7 @@ void R_Update(r_context *R_Context)
 	MTLRenderPassDescriptor* PassDesc = [MTLRenderPassDescriptor renderPassDescriptor];
 	PassDesc.colorAttachments[0].texture = Metal->BaseFrameBuffer;
 	PassDesc.colorAttachments[0].loadAction = MTLLoadActionClear;
-	PassDesc.colorAttachments[0].clearColor = MTLClearColorMake(0.05,0.05,0.05,1);
+	PassDesc.colorAttachments[0].clearColor = MTLClearColorMake(0.0,0.0,0.0,1);
 
 	PassDesc.depthAttachment.texture = ResizeDepthTexture(R_Context, CGSizeMake(Drawable.texture.width, Drawable.texture.height));
 	PassDesc.depthAttachment.loadAction = MTLLoadActionClear;
@@ -294,12 +294,28 @@ void R_Update(r_context *R_Context)
 
 	[Encoder endEncoding];
 
-	MPSImageGaussianBlur *GaussianBlur = [[MPSImageGaussianBlur alloc] initWithDevice:Metal->Device sigma:20];
+	MPSImageGaussianBlur *GaussianBlur = [[MPSImageGaussianBlur alloc] initWithDevice:Metal->Device sigma:10];
 
 	[GaussianBlur encodeToCommandBuffer:CommandBuffer
 				  sourceTexture:Metal->BaseFrameBuffer
 				  destinationTexture:Metal->BlurredFrameBuffer];
 
+	
+	PassDesc.colorAttachments[0].texture = Drawable.texture;
+	Encoder = [CommandBuffer renderCommandEncoderWithDescriptor:PassDesc];
+	[Encoder setRenderPipelineState:Metal->BloomPipelineState];
+	[Encoder setFrontFacingWinding:MTLWindingClockwise];
+	[Encoder setCullMode:(MTLCullModeNone)];
+	[Encoder setFragmentTexture:Metal->BaseFrameBuffer atIndex:0];
+	[Encoder setFragmentTexture:Metal->BlurredFrameBuffer atIndex:1];
+	[Encoder setFragmentSamplerState:Metal->BloomSamplerState atIndex:0];
+	// [Encoder drawIndexedPrimitives:MTLPrimitiveTypeTriangle indexCount:36
+	// 														indexType:MTLIndexTypeUInt32
+	// 														indexBuffer:IndexBuffer
+	// 														indexBufferOffset:0];
+	[Encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:6];	
+
+	[Encoder endEncoding];
 
 	[CommandBuffer presentDrawable:Drawable];
 	[CommandBuffer commit];

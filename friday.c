@@ -101,9 +101,15 @@ Entry(InputWaveInfo)
 						  Str8("embed/berkeley_mono_font.h"),
 						  Str8("G_BerkeleyMonoRegular"));
 
-		EmbedFile(&Arena, Str8("shaders/triangle.metal"),
-						  Str8("embed/shaders.h"),
-						  Str8("G_TriangleShader"));
+		str8_list Shaders = {0};
+		Str8ListAppend(&Arena, &Shaders, Str8("shaders/triangle.metal"));
+		Str8ListAppend(&Arena, &Shaders, Str8("shaders/bloom.metal"));
+
+		str8_list ShaderVariableNames = {0};
+		Str8ListAppend(&Arena, &ShaderVariableNames, Str8("G_TriangleShader"));
+		Str8ListAppend(&Arena, &ShaderVariableNames, Str8("G_BloomShader"));
+
+		EmbedFiles(&Arena, Shaders, Str8("embed/shaders.h"), ShaderVariableNames);
 
 		BuildOptions = (build_options){
 			.Compiler = Compiler,

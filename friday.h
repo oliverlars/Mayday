@@ -1483,57 +1483,78 @@ void FindAllIncludesInFile(memory_arena *Arena, str8 Filename, str8_list Include
     }
 }
 
-void EmbedFile(memory_arena *Arena, str8 SourcePath, str8 DestinationPath, str8 Name)
+void EmbedFiles(memory_arena *Arena, str8_list SourcePaths, str8 DestinationPath, str8_list Names)
 {
-    str8 File = LoadEntireFileIntoMemory(Arena, SourcePath);
-
-    str8_list Embed = {0};
-    Str8ListAppend(Arena, &Embed, Str8PushF(Arena, "static unsigned char %.*s[] =\n{\n", Str8ToPrintfArgs(Name)));
-
-    for(s64 At = 0; At < File.Size;)
-    {
-        u8* Byte = (u8*)(File.Bytes + At);
-        if(At + 16 <= File.Size)
-        {
-            str8 Elements = Str8PushF(Arena, 
-                "    0x%02x, 0x%02x, 0x%02x, 0x%02x,\n" 
-                "    0x%02x, 0x%02x, 0x%02x, 0x%02x,\n"
-                "    0x%02x, 0x%02x, 0x%02x, 0x%02x,\n"
-                "    0x%02x, 0x%02x, 0x%02x, 0x%02x,\n",
-                Byte[0], Byte[1], Byte[2], Byte[3],
-                Byte[4], Byte[5], Byte[6], Byte[7],
-                Byte[8], Byte[9], Byte[10], Byte[11],
-                Byte[12], Byte[13], Byte[14], Byte[15]
-            );
-            Str8ListAppend(Arena, &Embed, Elements);
-            At += 16;
-        }
-        else
-        {
-            str8 Element = {0};
-            if(At % 4 == 0)
-            {
-                Element = Str8PushF(Arena, "    0x%02x,", Byte[0]);
-            }
-            else
-            {
-                if((At % 4) % 3 == 0)
-                {
-                    Element = Str8PushF(Arena, "0x%02x,\n", Byte[0]);
-                }
-                else
-                {
-                    Element = Str8PushF(Arena, "0x%02x, ", Byte[0]);
-                }
-            }
-            Str8ListAppend(Arena, &Embed, Element);
-            At += 1;
-        }
-    }
-    Str8ListAppend(Arena, &Embed, Str8("\n};\n"));
+	str8_list Embed = {0};
+	str8_list_node *Name = Names.First;
+	for(str8_list_node *SourcePath = SourcePaths.First;
+		SourcePath != Null;
+		SourcePath = SourcePath->Next)
+	{
+		if(!Name)
+		{
+			printf("ERROR: Number of names do not match number files.\n\n");
+			return;
+		}
+		str8 File = LoadEntireFileIntoMemory(Arena, SourcePath->String);
+		Str8ListAppend(Arena, &Embed, Str8PushF(Arena, "static unsigned char %.*s[] =\n{\n", Str8ToPrintfArgs(Name->String)));
+		Name = Name->Next;
+		for(s64 At = 0; At < File.Size;)
+		{
+			u8* Byte = (u8*)(File.Bytes + At);
+			if(At + 16 <= File.Size)
+			{
+				str8 Elements = Str8PushF(Arena, 
+					"    0x%02x, 0x%02x, 0x%02x, 0x%02x,\n" 
+					"    0x%02x, 0x%02x, 0x%02x, 0x%02x,\n"
+					"    0x%02x, 0x%02x, 0x%02x, 0x%02x,\n"
+					"    0x%02x, 0x%02x, 0x%02x, 0x%02x,\n",
+					Byte[0], Byte[1], Byte[2], Byte[3],
+					Byte[4], Byte[5], Byte[6], Byte[7],
+					Byte[8], Byte[9], Byte[10], Byte[11],
+					Byte[12], Byte[13], Byte[14], Byte[15]
+				);
+				Str8ListAppend(Arena, &Embed, Elements);
+				At += 16;
+			}
+			else
+			{
+				str8 Element = {0};
+				if(At % 4 == 0)
+				{
+					Element = Str8PushF(Arena, "    0x%02x,", Byte[0]);
+				}
+				else
+				{
+					if((At % 4) % 3 == 0)
+					{
+						Element = Str8PushF(Arena, "0x%02x,\n", Byte[0]);
+					}
+					else
+					{
+						Element = Str8PushF(Arena, "0x%02x, ", Byte[0]);
+					}
+				}
+				Str8ListAppend(Arena, &Embed, Element);
+				At += 1;
+			}
+		}
+		Str8ListAppend(Arena, &Embed, Str8("\n};\n\n"));
+	}
 
     str8 JoinedEmbed = Str8ListJoin(Arena, Embed);
     WriteStringToDisk(Arena, DestinationPath, JoinedEmbed);
+}
+
+void EmbedFile(memory_arena *Arena, str8 SourcePath, str8 DestinationPath, str8 Name)
+{
+	str8_list SourcePaths = {0};
+	Str8ListAppend(Arena, &SourcePaths, SourcePath);
+
+	str8_list Names = {0};
+	Str8ListAppend(Arena, &Names, Name);
+
+	EmbedFiles(Arena, SourcePaths, DestinationPath, Names);
 }
 
 u64 HashSourceFileAndIncludes(memory_arena *Arena, str8 SourceFilename, str8_list IncludePaths, b32 Optimise, compiler Compiler)

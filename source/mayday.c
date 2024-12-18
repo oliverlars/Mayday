@@ -64,7 +64,7 @@ int main()
 	memory_arena FrameArena = {0};
 
 	logger Logger = {0};
-	Logger.Silent = True;
+	//Logger.Silent = True;
 	Logger.Arena = &Arena;
 
 	mayday Application = {0};
@@ -79,7 +79,6 @@ int main()
 	Application.D_Context.Logger = &Logger;
 
 	Application.Window = OS_MakeWindow(Str8("Mayday"), 3024, 1964);
-
 
 	Application.Font = D_LoadFontFromTTF(&Application.D_Context, G_BerkeleyMonoRegular);
 

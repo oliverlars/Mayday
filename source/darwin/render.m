@@ -4,6 +4,8 @@
 #include <QuartzCore/QuartzCore.h>
 #include <MetalPerformanceShaders/MetalPerformanceShaders.h>
 
+#include <assert.h>
+
 #include "memory.h"
 #include "misc.h"
 #include "sokol_app.h"
@@ -107,56 +109,91 @@ void R_Init(r_context *R_Context)
 	Metal->UniformBuffer = [Metal->Device newBufferWithLength:sizeof(Uniforms)
 					 options:MTLResourceStorageModeShared];
 
-	NSError* Error = nil;
-	NSString* Source = [NSString stringWithUTF8String:(char*)G_TriangleShader];
-	id<MTLLibrary> Library = [Metal->Device newLibraryWithSource:Source options:nil error:&Error];
-	id<MTLFunction> VertexFunction = [Library newFunctionWithName:@"VertexMain"];
-	id<MTLFunction> FragmentFunction = [Library newFunctionWithName:@"FragmentMain"];
+	{
+		NSError* Error = nil;
+		NSString* Source = [[NSString alloc] initWithBytes:(const void*)G_TriangleShader
+											 length:sizeof(G_TriangleShader)
+											 encoding:NSUTF8StringEncoding];
+		id<MTLLibrary> TriangleLibrary = [Metal->Device newLibraryWithSource:Source options:nil error:&Error];
+		id<MTLFunction> VertexFunction = [TriangleLibrary newFunctionWithName:@"VertexMain"];
+		id<MTLFunction> FragmentFunction = [TriangleLibrary newFunctionWithName:@"FragmentMain"];
 
-	MTLRenderPipelineDescriptor* PipelineDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
-	PipelineDescriptor.vertexFunction = VertexFunction;
-	PipelineDescriptor.fragmentFunction = FragmentFunction;
-	PipelineDescriptor.colorAttachments[0].pixelFormat = MTLPixelFormatBGRA8Unorm;
-	PipelineDescriptor.colorAttachments[0].blendingEnabled = true;
-	PipelineDescriptor.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactorSourceAlpha;
-	PipelineDescriptor.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
-	PipelineDescriptor.colorAttachments[0].sourceAlphaBlendFactor = MTLBlendFactorSourceAlpha;
-	PipelineDescriptor.colorAttachments[0].destinationAlphaBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
-	PipelineDescriptor.depthAttachmentPixelFormat = MTLPixelFormatDepth32Float;
+		NSLog(@"Failed to create library: %@", Error);
+
+		MTLRenderPipelineDescriptor* PipelineDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
+		PipelineDescriptor.vertexFunction = VertexFunction;
+		PipelineDescriptor.fragmentFunction = FragmentFunction;
+		PipelineDescriptor.colorAttachments[0].pixelFormat = MTLPixelFormatBGRA8Unorm;
+		PipelineDescriptor.colorAttachments[0].blendingEnabled = true;
+		PipelineDescriptor.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactorSourceAlpha;
+		PipelineDescriptor.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
+		PipelineDescriptor.colorAttachments[0].sourceAlphaBlendFactor = MTLBlendFactorSourceAlpha;
+		PipelineDescriptor.colorAttachments[0].destinationAlphaBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
+		PipelineDescriptor.depthAttachmentPixelFormat = MTLPixelFormatDepth32Float;
 
 
-	MTLVertexDescriptor *VertexDescriptor = [[MTLVertexDescriptor alloc] init];
-	VertexDescriptor.attributes[0].format = MTLVertexFormatFloat4;
-	VertexDescriptor.attributes[0].offset = 0;
-	VertexDescriptor.attributes[0].bufferIndex = 0;
-	VertexDescriptor.attributes[1].format = MTLVertexFormatFloat4;
-	VertexDescriptor.attributes[1].offset = sizeof(v4f);
-	VertexDescriptor.attributes[1].bufferIndex = 0;
-	VertexDescriptor.attributes[2].format = MTLVertexFormatFloat4;
-	VertexDescriptor.attributes[2].offset = 2*sizeof(v4f);
-	VertexDescriptor.attributes[2].bufferIndex = 0;
-	VertexDescriptor.layouts[0].stride = sizeof(gpu_vertex); 
+		MTLVertexDescriptor *VertexDescriptor = [[MTLVertexDescriptor alloc] init];
+		VertexDescriptor.attributes[0].format = MTLVertexFormatFloat4;
+		VertexDescriptor.attributes[0].offset = 0;
+		VertexDescriptor.attributes[0].bufferIndex = 0;
+		VertexDescriptor.attributes[1].format = MTLVertexFormatFloat4;
+		VertexDescriptor.attributes[1].offset = sizeof(v4f);
+		VertexDescriptor.attributes[1].bufferIndex = 0;
+		VertexDescriptor.attributes[2].format = MTLVertexFormatFloat4;
+		VertexDescriptor.attributes[2].offset = 2*sizeof(v4f);
+		VertexDescriptor.attributes[2].bufferIndex = 0;
+		VertexDescriptor.layouts[0].stride = sizeof(gpu_vertex); 
 
-	PipelineDescriptor.vertexDescriptor = VertexDescriptor;
+		PipelineDescriptor.vertexDescriptor = VertexDescriptor;
 
-	MTLSamplerDescriptor *SamplerDescriptor = [[MTLSamplerDescriptor alloc] init];
-	SamplerDescriptor.minFilter = MTLSamplerMinMagFilterLinear;
-	SamplerDescriptor.magFilter = MTLSamplerMinMagFilterLinear;
-	SamplerDescriptor.sAddressMode = MTLSamplerAddressModeClampToEdge;
-	SamplerDescriptor.tAddressMode = MTLSamplerAddressModeClampToEdge;
-	SamplerDescriptor.rAddressMode = MTLSamplerAddressModeClampToEdge;
-	SamplerDescriptor.mipFilter = MTLSamplerMipFilterNearest;
-	SamplerDescriptor.lodMinClamp = 0.0;
-	SamplerDescriptor.lodMaxClamp = FLT_MAX;
-	SamplerDescriptor.normalizedCoordinates = YES;
-	Metal->SamplerState = [Metal->Device newSamplerStateWithDescriptor:SamplerDescriptor];
+		MTLSamplerDescriptor *SamplerDescriptor = [[MTLSamplerDescriptor alloc] init];
+		SamplerDescriptor.minFilter = MTLSamplerMinMagFilterLinear;
+		SamplerDescriptor.magFilter = MTLSamplerMinMagFilterLinear;
+		SamplerDescriptor.sAddressMode = MTLSamplerAddressModeClampToEdge;
+		SamplerDescriptor.tAddressMode = MTLSamplerAddressModeClampToEdge;
+		SamplerDescriptor.rAddressMode = MTLSamplerAddressModeClampToEdge;
+		SamplerDescriptor.mipFilter = MTLSamplerMipFilterNearest;
+		SamplerDescriptor.lodMinClamp = 0.0;
+		SamplerDescriptor.lodMaxClamp = FLT_MAX;
+		SamplerDescriptor.normalizedCoordinates = YES;
+		Metal->SamplerState = [Metal->Device newSamplerStateWithDescriptor:SamplerDescriptor];
 
-	MTLDepthStencilDescriptor *DepthStencilDescriptor = [MTLDepthStencilDescriptor new];
-	DepthStencilDescriptor.depthCompareFunction = MTLCompareFunctionLess;
-	DepthStencilDescriptor.depthWriteEnabled = YES;
-	Metal->DepthStencilState = [Metal->Device newDepthStencilStateWithDescriptor:DepthStencilDescriptor];
+		MTLDepthStencilDescriptor *DepthStencilDescriptor = [MTLDepthStencilDescriptor new];
+		DepthStencilDescriptor.depthCompareFunction = MTLCompareFunctionLess;
+		DepthStencilDescriptor.depthWriteEnabled = YES;
+		Metal->DepthStencilState = [Metal->Device newDepthStencilStateWithDescriptor:DepthStencilDescriptor];
 
-	Metal->PipelineState = [Metal->Device newRenderPipelineStateWithDescriptor:PipelineDescriptor error:&Error];
+		Metal->TrianglePipelineState = [Metal->Device newRenderPipelineStateWithDescriptor:PipelineDescriptor error:&Error];
+	}
+
+	{
+		NSError* Error = nil;
+		NSString* Source = [[NSString alloc] initWithBytes:(const void*)G_BloomShader
+										length:sizeof(G_BloomShader)
+										encoding:NSUTF8StringEncoding];
+		id<MTLLibrary> BloomLibrary = [Metal->Device newLibraryWithSource:Source options:nil error:&Error];
+		id<MTLFunction> VertexFunction = [BloomLibrary newFunctionWithName:@"VertexMain"];
+		id<MTLFunction> FragmentFunction = [BloomLibrary newFunctionWithName:@"FragmentMain"];
+
+		MTLRenderPipelineDescriptor* PipelineDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
+		PipelineDescriptor.vertexFunction = VertexFunction;
+		PipelineDescriptor.fragmentFunction = FragmentFunction;
+		PipelineDescriptor.colorAttachments[0].pixelFormat = MTLPixelFormatBGRA8Unorm;
+
+		MTLSamplerDescriptor *SamplerDescriptor = [[MTLSamplerDescriptor alloc] init];
+		SamplerDescriptor.minFilter = MTLSamplerMinMagFilterLinear;
+		SamplerDescriptor.magFilter = MTLSamplerMinMagFilterLinear;
+		SamplerDescriptor.sAddressMode = MTLSamplerAddressModeClampToEdge;
+		SamplerDescriptor.tAddressMode = MTLSamplerAddressModeClampToEdge;
+		SamplerDescriptor.rAddressMode = MTLSamplerAddressModeClampToEdge;
+		SamplerDescriptor.mipFilter = MTLSamplerMipFilterNearest;
+		SamplerDescriptor.lodMinClamp = 0.0;
+		SamplerDescriptor.lodMaxClamp = FLT_MAX;
+		SamplerDescriptor.normalizedCoordinates = YES;
+		Metal->BloomSamplerState = [Metal->Device newSamplerStateWithDescriptor:SamplerDescriptor];
+
+		Metal->BloomPipelineState = [Metal->Device newRenderPipelineStateWithDescriptor:PipelineDescriptor error:&Error];
+	}
 
 }
 
@@ -170,7 +207,7 @@ void R_Update(r_context *R_Context)
 	CAMetalLayer *MetalLayer = (CAMetalLayer *)Drawable.layer;
 	MetalLayer.framebufferOnly = NO;
 
-	if(!Metal->Texture)
+	if(!Metal->BaseFrameBuffer)
 	{
 		MTLTextureDescriptor *Desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:Drawable.texture.pixelFormat 
 														width:Drawable.texture.width
@@ -179,11 +216,23 @@ void R_Update(r_context *R_Context)
 		Desc.storageMode = MTLStorageModePrivate;
 
 
-		Metal->Texture = [Metal->Device newTextureWithDescriptor:Desc];
+		Metal->BaseFrameBuffer = [Metal->Device newTextureWithDescriptor:Desc];
+	}
+
+	if(!Metal->BlurredFrameBuffer)
+	{
+		MTLTextureDescriptor *Desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:Drawable.texture.pixelFormat 
+														width:Drawable.texture.width
+														height:Drawable.texture.height mipmapped:NO];
+		Desc.usage = MTLTextureUsageShaderRead | MTLTextureUsageShaderWrite;
+		Desc.storageMode = MTLStorageModePrivate;
+
+
+		Metal->BlurredFrameBuffer = [Metal->Device newTextureWithDescriptor:Desc];
 	}
 
 	MTLRenderPassDescriptor* PassDesc = [MTLRenderPassDescriptor renderPassDescriptor];
-	PassDesc.colorAttachments[0].texture = Metal->Texture;
+	PassDesc.colorAttachments[0].texture = Metal->BaseFrameBuffer;
 	PassDesc.colorAttachments[0].loadAction = MTLLoadActionClear;
 	PassDesc.colorAttachments[0].clearColor = MTLClearColorMake(0.05,0.05,0.05,1);
 
@@ -228,7 +277,7 @@ void R_Update(r_context *R_Context)
 	R_Context->Arena->At = ArenaResetTo;
 
 	id<MTLRenderCommandEncoder> Encoder = [CommandBuffer renderCommandEncoderWithDescriptor:PassDesc];
-	[Encoder setRenderPipelineState:Metal->PipelineState];
+	[Encoder setRenderPipelineState:Metal->TrianglePipelineState];
 	[Encoder setFrontFacingWinding:MTLWindingClockwise];
 	[Encoder setCullMode:(MTLCullModeNone)];
 	[Encoder setVertexBuffer:Metal->VertexBuffer offset:0 atIndex:0];
@@ -247,7 +296,9 @@ void R_Update(r_context *R_Context)
 
 	MPSImageGaussianBlur *GaussianBlur = [[MPSImageGaussianBlur alloc] initWithDevice:Metal->Device sigma:20];
 
-	[GaussianBlur encodeToCommandBuffer:CommandBuffer sourceTexture:Metal->Texture destinationTexture:Drawable.texture];
+	[GaussianBlur encodeToCommandBuffer:CommandBuffer
+				  sourceTexture:Metal->BaseFrameBuffer
+				  destinationTexture:Metal->BlurredFrameBuffer];
 
 
 	[CommandBuffer presentDrawable:Drawable];

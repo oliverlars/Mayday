@@ -238,7 +238,7 @@ void D_DrawQuad(r_context *R_Context, d_context *D_Context,
 
 		*R_Vertices++ = Vertex;
 	}
-
+	Command.Type = R_COMMAND_TRIANGLE;
 	R_PushCommand(R_Context, Arena, Command);
 }
 
@@ -327,5 +327,6 @@ void D_DrawStr8(r_context *R_Context,
 		Position.X += Glyph->AdvanceX * Scale * TabMultiplier;
 	}
 
+	Command.Type = R_COMMAND_GLYPH;
 	R_PushCommand(R_Context, Arena, Command);
 }

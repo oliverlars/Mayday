@@ -38,7 +38,7 @@ void OS_Update(void *Data)
 
 	D_DrawQuad(&Application->R_Context, &Application->D_Context,
 			   Application->FrameArena,
-			   v2f(2000, 600), 200, 200, v4f(1, 0, 0, 1));
+			   v2f(2000, 800), 200, 200, v4f(1, 0.5, 0, 1));
 
 	D_GlyphsToAtlas(&Application->D_Context);
 
@@ -55,6 +55,7 @@ void OS_Initialise(void *Data)
 {
 	mayday *Application = Data;
 	R_Init(&Application->R_Context);
+	Application->R_Context.Logger->Silent = True;
 }
 
 int main()
@@ -63,7 +64,7 @@ int main()
 	memory_arena FrameArena = {0};
 
 	logger Logger = {0};
-	Logger.Silent = True;
+	//Logger.Silent = True;
 	Logger.Arena = &Arena;
 
 	mayday Application = {0};

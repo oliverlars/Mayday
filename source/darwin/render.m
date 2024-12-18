@@ -141,7 +141,10 @@ metal_shader R_GlyphShader(r_context *R_Context)
 	id<MTLFunction> VertexFunction    = [Shader.Library newFunctionWithName:@"VertexMain"];
 	id<MTLFunction> FragmentFunction  = [Shader.Library newFunctionWithName:@"FragmentMain"];
 
-	NSLog(@"Failed to create library: %@", Error);
+	if(!Shader.Library)
+	{
+		LogError(R_Context->Logger, (char*)Error.localizedDescription.cString);
+	}
 
 	MTLRenderPipelineDescriptor* PipelineDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
 	PipelineDescriptor.vertexFunction = VertexFunction;
@@ -203,7 +206,10 @@ metal_shader R_TriangleShader(r_context *R_Context)
 	id<MTLFunction> VertexFunction    = [Shader.Library newFunctionWithName:@"VertexMain"];
 	id<MTLFunction> FragmentFunction  = [Shader.Library newFunctionWithName:@"FragmentMain"];
 
-	NSLog(@"Failed to create library: %@", Error);
+	if(!Shader.Library)
+	{
+		LogError(R_Context->Logger, (char*)Error.localizedDescription.cString);
+	}
 
 	MTLRenderPipelineDescriptor* PipelineDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
 	PipelineDescriptor.vertexFunction = VertexFunction;
@@ -344,13 +350,11 @@ void R_RenderFullscreenBloom(r_context *R_Context, id<MTLCommandBuffer> CommandB
 				  destinationTexture:Metal->BlurredFrameBuffer];
 
 	MTLRenderPassDescriptor* PassDesc = [MTLRenderPassDescriptor renderPassDescriptor];
-	id<MTLRenderCommandEncoder> Encoder = [CommandBuffer renderCommandEncoderWithDescriptor:PassDesc];
-
+	PassDesc.colorAttachments[0].texture = Metal->Drawable.texture;
 	PassDesc.colorAttachments[0].loadAction = MTLLoadActionClear;
 	PassDesc.colorAttachments[0].clearColor = MTLClearColorMake(0.0,0.0,0.0,1);
-	PassDesc.colorAttachments[0].texture = Metal->Drawable.texture;
 
-	Encoder = [CommandBuffer renderCommandEncoderWithDescriptor:PassDesc];
+	id<MTLRenderCommandEncoder> Encoder = [CommandBuffer renderCommandEncoderWithDescriptor:PassDesc];
 	[Encoder setRenderPipelineState:Metal->BloomShader.PipelineState];
 	[Encoder setFrontFacingWinding:MTLWindingClockwise];
 	[Encoder setCullMode:(MTLCullModeNone)];
@@ -453,18 +457,17 @@ void R_Update(r_context *R_Context)
 		{
 			if(Command->Type == R_COMMAND_GLYPH)
 			{
-				R_RenderGlyphs(R_Context, CommandBuffer, Command->VerticesCount);
+				R_RenderGlyphs(R_Context, CommandBuffer, TotalVertices);
 			}
 			else if(Command->Type == R_COMMAND_TRIANGLE)
 			{
-				R_RenderTriangles(R_Context, CommandBuffer, Command->VerticesCount);
+				R_RenderTriangles(R_Context, CommandBuffer, TotalVertices);
 			}
+			TotalVertices = 0;
 		}
 	}
 
 	R_Context->Arena->At = ArenaResetTo;
-
-	R_RenderGlyphs(R_Context, CommandBuffer, TotalVertices);
 
 	R_RenderFullscreenBloom(R_Context, CommandBuffer);
 

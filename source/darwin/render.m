@@ -94,6 +94,102 @@ id<MTLTexture> ResizeDepthTexture(r_context *R_Context, CGSize Size)
 	return Metal->DepthTexture;
 }
 
+metal_shader R_BloomShader(r_context *R_Context)
+{
+	metal_context *Metal = (metal_context*)R_Context->Backend;
+	metal_shader Shader = {0};
+
+	NSError* Error = nil;
+	NSString* Source = [[NSString alloc] initWithBytes:(const void*)G_BloomShader
+									length:sizeof(G_BloomShader)
+									encoding:NSUTF8StringEncoding];
+	Shader.Library                   = [Metal->Device newLibraryWithSource:Source options:nil error:&Error];
+	id<MTLFunction> VertexFunction   = [Shader.Library newFunctionWithName:@"VertexMain"];
+	id<MTLFunction> FragmentFunction = [Shader.Library newFunctionWithName:@"FragmentMain"];
+
+	MTLRenderPipelineDescriptor* PipelineDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
+	PipelineDescriptor.vertexFunction = VertexFunction;
+	PipelineDescriptor.fragmentFunction = FragmentFunction;
+	PipelineDescriptor.colorAttachments[0].pixelFormat = MTLPixelFormatBGRA8Unorm;
+
+	MTLSamplerDescriptor *SamplerDescriptor = [[MTLSamplerDescriptor alloc] init];
+	SamplerDescriptor.minFilter = MTLSamplerMinMagFilterLinear;
+	SamplerDescriptor.magFilter = MTLSamplerMinMagFilterLinear;
+	SamplerDescriptor.sAddressMode = MTLSamplerAddressModeClampToEdge;
+	SamplerDescriptor.tAddressMode = MTLSamplerAddressModeClampToEdge;
+	SamplerDescriptor.rAddressMode = MTLSamplerAddressModeClampToEdge;
+	SamplerDescriptor.mipFilter = MTLSamplerMipFilterNearest;
+	SamplerDescriptor.lodMinClamp = 0.0;
+	SamplerDescriptor.lodMaxClamp = FLT_MAX;
+	SamplerDescriptor.normalizedCoordinates = YES;
+	Metal->BloomSamplerState = [Metal->Device newSamplerStateWithDescriptor:SamplerDescriptor];
+
+	Shader.PipelineState =  [Metal->Device newRenderPipelineStateWithDescriptor:PipelineDescriptor error:&Error];
+	return Shader;
+}
+
+metal_shader R_GlyphShader(r_context *R_Context)
+{
+	metal_context *Metal = R_Context->Backend;
+	metal_shader Shader = {0};
+
+	NSError* Error = nil;
+	NSString* Source = [[NSString alloc] initWithBytes:(const void*)G_GlyphShader
+											length:sizeof(G_GlyphShader)
+											encoding:NSUTF8StringEncoding];
+	Shader.Library                    = [Metal->Device newLibraryWithSource:Source options:nil error:&Error];
+	id<MTLFunction> VertexFunction    = [Shader.Library newFunctionWithName:@"VertexMain"];
+	id<MTLFunction> FragmentFunction  = [Shader.Library newFunctionWithName:@"FragmentMain"];
+
+	NSLog(@"Failed to create library: %@", Error);
+
+	MTLRenderPipelineDescriptor* PipelineDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
+	PipelineDescriptor.vertexFunction = VertexFunction;
+	PipelineDescriptor.fragmentFunction = FragmentFunction;
+	PipelineDescriptor.colorAttachments[0].pixelFormat = MTLPixelFormatBGRA8Unorm;
+	PipelineDescriptor.colorAttachments[0].blendingEnabled = true;
+	PipelineDescriptor.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactorSourceAlpha;
+	PipelineDescriptor.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
+	PipelineDescriptor.colorAttachments[0].sourceAlphaBlendFactor = MTLBlendFactorSourceAlpha;
+	PipelineDescriptor.colorAttachments[0].destinationAlphaBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
+	PipelineDescriptor.depthAttachmentPixelFormat = MTLPixelFormatDepth32Float;
+
+
+	MTLVertexDescriptor *VertexDescriptor = [[MTLVertexDescriptor alloc] init];
+	VertexDescriptor.attributes[0].format = MTLVertexFormatFloat4;
+	VertexDescriptor.attributes[0].offset = 0;
+	VertexDescriptor.attributes[0].bufferIndex = 0;
+	VertexDescriptor.attributes[1].format = MTLVertexFormatFloat4;
+	VertexDescriptor.attributes[1].offset = sizeof(v4f);
+	VertexDescriptor.attributes[1].bufferIndex = 0;
+	VertexDescriptor.attributes[2].format = MTLVertexFormatFloat4;
+	VertexDescriptor.attributes[2].offset = 2*sizeof(v4f);
+	VertexDescriptor.attributes[2].bufferIndex = 0;
+	VertexDescriptor.layouts[0].stride = sizeof(gpu_vertex); 
+
+	PipelineDescriptor.vertexDescriptor = VertexDescriptor;
+
+	MTLSamplerDescriptor *SamplerDescriptor = [[MTLSamplerDescriptor alloc] init];
+	SamplerDescriptor.minFilter = MTLSamplerMinMagFilterLinear;
+	SamplerDescriptor.magFilter = MTLSamplerMinMagFilterLinear;
+	SamplerDescriptor.sAddressMode = MTLSamplerAddressModeClampToEdge;
+	SamplerDescriptor.tAddressMode = MTLSamplerAddressModeClampToEdge;
+	SamplerDescriptor.rAddressMode = MTLSamplerAddressModeClampToEdge;
+	SamplerDescriptor.mipFilter = MTLSamplerMipFilterNearest;
+	SamplerDescriptor.lodMinClamp = 0.0;
+	SamplerDescriptor.lodMaxClamp = FLT_MAX;
+	SamplerDescriptor.normalizedCoordinates = YES;
+	Metal->SamplerState = [Metal->Device newSamplerStateWithDescriptor:SamplerDescriptor];
+
+	MTLDepthStencilDescriptor *DepthStencilDescriptor = [MTLDepthStencilDescriptor new];
+	DepthStencilDescriptor.depthCompareFunction = MTLCompareFunctionLess;
+	DepthStencilDescriptor.depthWriteEnabled = YES;
+	Metal->DepthStencilState = [Metal->Device newDepthStencilStateWithDescriptor:DepthStencilDescriptor];
+
+	Shader.PipelineState = [Metal->Device newRenderPipelineStateWithDescriptor:PipelineDescriptor error:&Error];
+	return Shader;
+}
+
 void R_Init(r_context *R_Context)
 {
 	metal_context* Metal = ArenaPushTypeZero(R_Context->Arena, metal_context);
@@ -109,109 +205,87 @@ void R_Init(r_context *R_Context)
 	Metal->UniformBuffer = [Metal->Device newBufferWithLength:sizeof(Uniforms)
 					 options:MTLResourceStorageModeShared];
 
-	{
-		NSError* Error = nil;
-		NSString* Source = [[NSString alloc] initWithBytes:(const void*)G_TriangleShader
-											 length:sizeof(G_TriangleShader)
-											 encoding:NSUTF8StringEncoding];
-		id<MTLLibrary> TriangleLibrary = [Metal->Device newLibraryWithSource:Source options:nil error:&Error];
-		id<MTLFunction> VertexFunction = [TriangleLibrary newFunctionWithName:@"VertexMain"];
-		id<MTLFunction> FragmentFunction = [TriangleLibrary newFunctionWithName:@"FragmentMain"];
 
-		NSLog(@"Failed to create library: %@", Error);
-
-		MTLRenderPipelineDescriptor* PipelineDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
-		PipelineDescriptor.vertexFunction = VertexFunction;
-		PipelineDescriptor.fragmentFunction = FragmentFunction;
-		PipelineDescriptor.colorAttachments[0].pixelFormat = MTLPixelFormatBGRA8Unorm;
-		PipelineDescriptor.colorAttachments[0].blendingEnabled = true;
-		PipelineDescriptor.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactorSourceAlpha;
-		PipelineDescriptor.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
-		PipelineDescriptor.colorAttachments[0].sourceAlphaBlendFactor = MTLBlendFactorSourceAlpha;
-		PipelineDescriptor.colorAttachments[0].destinationAlphaBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
-		PipelineDescriptor.depthAttachmentPixelFormat = MTLPixelFormatDepth32Float;
-
-
-		MTLVertexDescriptor *VertexDescriptor = [[MTLVertexDescriptor alloc] init];
-		VertexDescriptor.attributes[0].format = MTLVertexFormatFloat4;
-		VertexDescriptor.attributes[0].offset = 0;
-		VertexDescriptor.attributes[0].bufferIndex = 0;
-		VertexDescriptor.attributes[1].format = MTLVertexFormatFloat4;
-		VertexDescriptor.attributes[1].offset = sizeof(v4f);
-		VertexDescriptor.attributes[1].bufferIndex = 0;
-		VertexDescriptor.attributes[2].format = MTLVertexFormatFloat4;
-		VertexDescriptor.attributes[2].offset = 2*sizeof(v4f);
-		VertexDescriptor.attributes[2].bufferIndex = 0;
-		VertexDescriptor.layouts[0].stride = sizeof(gpu_vertex); 
-
-		PipelineDescriptor.vertexDescriptor = VertexDescriptor;
-
-		MTLSamplerDescriptor *SamplerDescriptor = [[MTLSamplerDescriptor alloc] init];
-		SamplerDescriptor.minFilter = MTLSamplerMinMagFilterLinear;
-		SamplerDescriptor.magFilter = MTLSamplerMinMagFilterLinear;
-		SamplerDescriptor.sAddressMode = MTLSamplerAddressModeClampToEdge;
-		SamplerDescriptor.tAddressMode = MTLSamplerAddressModeClampToEdge;
-		SamplerDescriptor.rAddressMode = MTLSamplerAddressModeClampToEdge;
-		SamplerDescriptor.mipFilter = MTLSamplerMipFilterNearest;
-		SamplerDescriptor.lodMinClamp = 0.0;
-		SamplerDescriptor.lodMaxClamp = FLT_MAX;
-		SamplerDescriptor.normalizedCoordinates = YES;
-		Metal->SamplerState = [Metal->Device newSamplerStateWithDescriptor:SamplerDescriptor];
-
-		MTLDepthStencilDescriptor *DepthStencilDescriptor = [MTLDepthStencilDescriptor new];
-		DepthStencilDescriptor.depthCompareFunction = MTLCompareFunctionLess;
-		DepthStencilDescriptor.depthWriteEnabled = YES;
-		Metal->DepthStencilState = [Metal->Device newDepthStencilStateWithDescriptor:DepthStencilDescriptor];
-
-		Metal->TrianglePipelineState = [Metal->Device newRenderPipelineStateWithDescriptor:PipelineDescriptor error:&Error];
-	}
-
-	{
-		NSError* Error = nil;
-		NSString* Source = [[NSString alloc] initWithBytes:(const void*)G_BloomShader
-										length:sizeof(G_BloomShader)
-										encoding:NSUTF8StringEncoding];
-		id<MTLLibrary> BloomLibrary = [Metal->Device newLibraryWithSource:Source options:nil error:&Error];
-		id<MTLFunction> VertexFunction = [BloomLibrary newFunctionWithName:@"VertexMain"];
-		id<MTLFunction> FragmentFunction = [BloomLibrary newFunctionWithName:@"FragmentMain"];
-
-		MTLRenderPipelineDescriptor* PipelineDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
-		PipelineDescriptor.vertexFunction = VertexFunction;
-		PipelineDescriptor.fragmentFunction = FragmentFunction;
-		PipelineDescriptor.colorAttachments[0].pixelFormat = MTLPixelFormatBGRA8Unorm;
-
-		MTLSamplerDescriptor *SamplerDescriptor = [[MTLSamplerDescriptor alloc] init];
-		SamplerDescriptor.minFilter = MTLSamplerMinMagFilterLinear;
-		SamplerDescriptor.magFilter = MTLSamplerMinMagFilterLinear;
-		SamplerDescriptor.sAddressMode = MTLSamplerAddressModeClampToEdge;
-		SamplerDescriptor.tAddressMode = MTLSamplerAddressModeClampToEdge;
-		SamplerDescriptor.rAddressMode = MTLSamplerAddressModeClampToEdge;
-		SamplerDescriptor.mipFilter = MTLSamplerMipFilterNearest;
-		SamplerDescriptor.lodMinClamp = 0.0;
-		SamplerDescriptor.lodMaxClamp = FLT_MAX;
-		SamplerDescriptor.normalizedCoordinates = YES;
-		Metal->BloomSamplerState = [Metal->Device newSamplerStateWithDescriptor:SamplerDescriptor];
-
-		Metal->BloomPipelineState = [Metal->Device newRenderPipelineStateWithDescriptor:PipelineDescriptor error:&Error];
-	}
+	Metal->BloomShader = R_BloomShader(R_Context);
+	Metal->GlyphShader = R_GlyphShader(R_Context);
 
 }
 
 f32 Angle = 0.0;
 
-void R_Update(r_context *R_Context)
+
+void R_RenderGlyphs(r_context *R_Context, id<MTLCommandBuffer> CommandBuffer, int VertexCount)
 {
 	metal_context *Metal = R_Context->Backend;
 
-	id<CAMetalDrawable> Drawable = (__bridge id<CAMetalDrawable>)sapp_metal_get_current_drawable();
-	CAMetalLayer *MetalLayer = (CAMetalLayer *)Drawable.layer;
+	MTLRenderPassDescriptor* PassDesc = [MTLRenderPassDescriptor renderPassDescriptor];
+	PassDesc.colorAttachments[0].texture = Metal->BaseFrameBuffer;
+	PassDesc.colorAttachments[0].loadAction = MTLLoadActionClear;
+	PassDesc.colorAttachments[0].clearColor = MTLClearColorMake(0.0,0.0,0.0,1);
+
+	PassDesc.depthAttachment.texture = ResizeDepthTexture(R_Context, CGSizeMake(Metal->Drawable.texture.width, Metal->Drawable.texture.height));
+	PassDesc.depthAttachment.loadAction = MTLLoadActionClear;
+	PassDesc.depthAttachment.clearDepth = 1.0;
+
+
+	id<MTLRenderCommandEncoder> Encoder = [CommandBuffer renderCommandEncoderWithDescriptor:PassDesc];
+	[Encoder setRenderPipelineState:Metal->GlyphShader.PipelineState];
+	[Encoder setFrontFacingWinding:MTLWindingClockwise];
+	[Encoder setCullMode:(MTLCullModeNone)];
+	[Encoder setVertexBuffer:Metal->VertexBuffer offset:0 atIndex:0];
+	[Encoder setVertexBuffer:Metal->UniformBuffer offset:0 atIndex:1];
+	[Encoder setDepthStencilState:Metal->DepthStencilState];
+	[Encoder setFragmentTexture:Metal->FontAtlasTexture atIndex:0];
+	[Encoder setFragmentSamplerState:Metal->SamplerState atIndex:0];
+	[Encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:VertexCount];
+
+
+	[Encoder endEncoding];
+}
+
+
+void R_RenderFullscreenBloom(r_context *R_Context, id<MTLCommandBuffer> CommandBuffer)
+{
+	metal_context *Metal = R_Context->Backend;
+
+	MPSImageGaussianBlur *GaussianBlur = [[MPSImageGaussianBlur alloc] initWithDevice:Metal->Device sigma:10];
+
+	[GaussianBlur encodeToCommandBuffer:CommandBuffer
+				  sourceTexture:Metal->BaseFrameBuffer
+				  destinationTexture:Metal->BlurredFrameBuffer];
+
+	MTLRenderPassDescriptor* PassDesc = [MTLRenderPassDescriptor renderPassDescriptor];
+	id<MTLRenderCommandEncoder> Encoder = [CommandBuffer renderCommandEncoderWithDescriptor:PassDesc];
+
+	PassDesc.colorAttachments[0].loadAction = MTLLoadActionClear;
+	PassDesc.colorAttachments[0].clearColor = MTLClearColorMake(0.0,0.0,0.0,1);
+	PassDesc.colorAttachments[0].texture = Metal->Drawable.texture;
+
+	Encoder = [CommandBuffer renderCommandEncoderWithDescriptor:PassDesc];
+	[Encoder setRenderPipelineState:Metal->BloomShader.PipelineState];
+	[Encoder setFrontFacingWinding:MTLWindingClockwise];
+	[Encoder setCullMode:(MTLCullModeNone)];
+	[Encoder setFragmentTexture:Metal->BaseFrameBuffer atIndex:0];
+	[Encoder setFragmentTexture:Metal->BlurredFrameBuffer atIndex:1];
+	[Encoder setFragmentSamplerState:Metal->BloomSamplerState atIndex:0];
+	[Encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:6];	
+
+	[Encoder endEncoding];
+}
+
+void R_Update(r_context *R_Context)
+{
+	metal_context *Metal = R_Context->Backend;
+	Metal->Drawable = (__bridge id<CAMetalDrawable>)sapp_metal_get_current_drawable();
+	
+	CAMetalLayer *MetalLayer = (CAMetalLayer *)Metal->Drawable.layer;
 	MetalLayer.framebufferOnly = NO;
 
 	if(!Metal->BaseFrameBuffer)
 	{
-		MTLTextureDescriptor *Desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:Drawable.texture.pixelFormat 
-														width:Drawable.texture.width
-														height:Drawable.texture.height mipmapped:NO];
+		MTLTextureDescriptor *Desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:Metal->Drawable.texture.pixelFormat 
+														width:Metal->Drawable.texture.width
+														height:Metal->Drawable.texture.height mipmapped:NO];
 		Desc.usage = MTLTextureUsageShaderRead | MTLTextureUsageRenderTarget;
 		Desc.storageMode = MTLStorageModePrivate;
 
@@ -221,9 +295,9 @@ void R_Update(r_context *R_Context)
 
 	if(!Metal->BlurredFrameBuffer)
 	{
-		MTLTextureDescriptor *Desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:Drawable.texture.pixelFormat 
-														width:Drawable.texture.width
-														height:Drawable.texture.height mipmapped:NO];
+		MTLTextureDescriptor *Desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:Metal->Drawable.texture.pixelFormat 
+														width:Metal->Drawable.texture.width
+														height:Metal->Drawable.texture.height mipmapped:NO];
 		Desc.usage = MTLTextureUsageShaderRead | MTLTextureUsageShaderWrite;
 		Desc.storageMode = MTLStorageModePrivate;
 
@@ -231,14 +305,6 @@ void R_Update(r_context *R_Context)
 		Metal->BlurredFrameBuffer = [Metal->Device newTextureWithDescriptor:Desc];
 	}
 
-	MTLRenderPassDescriptor* PassDesc = [MTLRenderPassDescriptor renderPassDescriptor];
-	PassDesc.colorAttachments[0].texture = Metal->BaseFrameBuffer;
-	PassDesc.colorAttachments[0].loadAction = MTLLoadActionClear;
-	PassDesc.colorAttachments[0].clearColor = MTLClearColorMake(0.0,0.0,0.0,1);
-
-	PassDesc.depthAttachment.texture = ResizeDepthTexture(R_Context, CGSizeMake(Drawable.texture.width, Drawable.texture.height));
-	PassDesc.depthAttachment.loadAction = MTLLoadActionClear;
-	PassDesc.depthAttachment.clearDepth = 1.0;
 
 	id<MTLCommandBuffer> CommandBuffer = [Metal->CommandQueue commandBuffer];
 
@@ -246,7 +312,6 @@ void R_Update(r_context *R_Context)
 	Angle += 0.01;
 	Uniforms.ModelMatrix = MulM44FM44F(Uniforms.ModelMatrix, M44FTranslate(v3f(0, 2 * sinf(Angle), 0)));
 	
-	//Uniforms.PerspectiveMatrix = M44FPerspective((f32)Drawable.texture.width/(f32)Drawable.texture.height, 100.0, 0.1, 10000.0);
 	Uniforms.ProjectionMatrix = M44FOrthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0);
 	Uniforms.ViewMatrix = M44FLookAt(v3f(0, 0, 10), v3f(0, 0, 0), v3f(0, 1, 0));
 
@@ -276,48 +341,11 @@ void R_Update(r_context *R_Context)
 
 	R_Context->Arena->At = ArenaResetTo;
 
-	id<MTLRenderCommandEncoder> Encoder = [CommandBuffer renderCommandEncoderWithDescriptor:PassDesc];
-	[Encoder setRenderPipelineState:Metal->TrianglePipelineState];
-	[Encoder setFrontFacingWinding:MTLWindingClockwise];
-	[Encoder setCullMode:(MTLCullModeNone)];
-	[Encoder setVertexBuffer:Metal->VertexBuffer offset:0 atIndex:0];
-	[Encoder setVertexBuffer:Metal->UniformBuffer offset:0 atIndex:1];
-	[Encoder setDepthStencilState:Metal->DepthStencilState];
-	[Encoder setFragmentTexture:Metal->FontAtlasTexture atIndex:0];
-	[Encoder setFragmentSamplerState:Metal->SamplerState atIndex:0];
-	// [Encoder drawIndexedPrimitives:MTLPrimitiveTypeTriangle indexCount:36
-	// 														indexType:MTLIndexTypeUInt32
-	// 														indexBuffer:IndexBuffer
-	// 														indexBufferOffset:0];
-	[Encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:TotalVertices];
+	R_RenderGlyphs(R_Context, CommandBuffer, TotalVertices);
 
+	R_RenderFullscreenBloom(R_Context, CommandBuffer);
 
-	[Encoder endEncoding];
-
-	MPSImageGaussianBlur *GaussianBlur = [[MPSImageGaussianBlur alloc] initWithDevice:Metal->Device sigma:10];
-
-	[GaussianBlur encodeToCommandBuffer:CommandBuffer
-				  sourceTexture:Metal->BaseFrameBuffer
-				  destinationTexture:Metal->BlurredFrameBuffer];
-
-	
-	PassDesc.colorAttachments[0].texture = Drawable.texture;
-	Encoder = [CommandBuffer renderCommandEncoderWithDescriptor:PassDesc];
-	[Encoder setRenderPipelineState:Metal->BloomPipelineState];
-	[Encoder setFrontFacingWinding:MTLWindingClockwise];
-	[Encoder setCullMode:(MTLCullModeNone)];
-	[Encoder setFragmentTexture:Metal->BaseFrameBuffer atIndex:0];
-	[Encoder setFragmentTexture:Metal->BlurredFrameBuffer atIndex:1];
-	[Encoder setFragmentSamplerState:Metal->BloomSamplerState atIndex:0];
-	// [Encoder drawIndexedPrimitives:MTLPrimitiveTypeTriangle indexCount:36
-	// 														indexType:MTLIndexTypeUInt32
-	// 														indexBuffer:IndexBuffer
-	// 														indexBufferOffset:0];
-	[Encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:6];	
-
-	[Encoder endEncoding];
-
-	[CommandBuffer presentDrawable:Drawable];
+	[CommandBuffer presentDrawable:Metal->Drawable];
 	[CommandBuffer commit];
 
 	[CommandBuffer waitUntilCompleted];

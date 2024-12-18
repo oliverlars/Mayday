@@ -7,12 +7,22 @@
 
 #include "render.h"
 
+
+typedef struct metal_shader
+{
+	id<MTLRenderPipelineState> PipelineState;
+	id<MTLLibrary> Library;
+} metal_shader;
+
 typedef struct metal_context
 {
 	id<MTLCommandQueue>        CommandQueue;
 	id<MTLDevice>              Device;
-	id<MTLRenderPipelineState> TrianglePipelineState;
-	id<MTLRenderPipelineState> BloomPipelineState;
+	
+	metal_shader               BloomShader;
+	metal_shader               TriangleShader;
+	metal_shader               GlyphShader;
+
 	id<MTLDepthStencilState>   DepthStencilState;
 	id<MTLTexture>             DepthTexture;
 	id<MTLTexture>             BaseFrameBuffer;
@@ -24,5 +34,7 @@ typedef struct metal_context
 	id<MTLBuffer>              UniformBuffer;
 	id<MTLSamplerState>        SamplerState;
 	id<MTLSamplerState>        BloomSamplerState;
+
+	id<CAMetalDrawable>        Drawable;
 }
 metal_context;

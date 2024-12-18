@@ -33,13 +33,8 @@ void OS_Update(void *Data)
 
 	D_DrawStr8(&Application->R_Context, &Application->D_Context,
 			   Application->FrameArena, Application->Font,
-			   v2f(50,  (f32)WindowHeight - 100), v4f(1, 0, 0, 1),
-			   30, (str8){sizeof(G_TriangleShader), G_TriangleShader});
-
-	D_DrawStr8(&Application->R_Context, &Application->D_Context,
-			   Application->FrameArena, Application->Font,
-			   v2f(100, 100), v4f(0, 1, 0, 1),
-			   100, Str8("COOL GREEN TEXT!!!"));
+			   v2f(50,  (f32)WindowHeight - 100), v4f(1, 0.5, 0, 1),
+			   50, (str8){sizeof(G_TriangleShader), G_TriangleShader});
 
 	D_GlyphsToAtlas(&Application->D_Context);
 

@@ -23,10 +23,10 @@ vertex vertex_output VertexMain(uint VertexID [[vertex_id]])
 }
 
 fragment float4 FragmentMain(vertex_output Input [[stage_in]],
-							 texture2d<float> TextureA [[texture(0)]],
-							 texture2d<float> TextureB [[texture(1)]],
+							 texture2d<float> Base [[texture(0)]],
+							 texture2d<float> Bloom [[texture(1)]],
 							 sampler Sampler [[sampler(0)]])
 {
-	float4 Colour = float4(TextureA.sample(Sampler, Input.UV).rgb + TextureB.sample(Sampler, Input.UV).rgb, 1.0);
+	float4 Colour = float4(Base.sample(Sampler, Input.UV).rgb + Bloom.sample(Sampler, Input.UV).rgb*2.0, 1.0);
 	return Colour;
 }

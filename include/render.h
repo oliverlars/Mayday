@@ -35,8 +35,18 @@ typedef struct r_texture
 	r_texture_format Format;
 } r_texture;
 
+typedef enum r_command_type
+{
+	R_COMMAND_GLYPH,
+	R_COMMAND_TRIANGLE,
+	R_COMMAND_BLOOM,
+} r_command_type;
+
 typedef struct r_command
 {
+	//NOTE(Oliver): not sure this is really necessary
+	r_command_type Type;
+
 	r_vertex *Vertices;
 	int VerticesCount;
 	r_vertex_format VerticesFormat;

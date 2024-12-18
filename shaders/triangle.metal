@@ -6,14 +6,12 @@ struct vertex_output
 {
 	float4 Position [[position]];
 	float4 Colour;
-	float2 UV;
 };
 
 struct vertex_input
 {
 	float4 Position [[attribute(0)]];
 	float4 Colour   [[attribute(1)]];
-	float4 UV       [[attribute(2)]];
 };
 
 struct uniforms
@@ -30,14 +28,11 @@ vertex vertex_output VertexMain(constant vertex_input *Vertices [[buffer(0)]],
 	vertex_output Output;
 	Output.Position = Uniforms.ProjectionMatrix * Vertices[VertexID].Position;
 	Output.Colour = Vertices[VertexID].Colour;
-	Output.UV = Vertices[VertexID].UV.xy;
 	return Output;
 }
 
-fragment float4 FragmentMain(vertex_output Input [[stage_in]],
-							 texture2d<float> FontAtlas [[texture(0)]],
-							 sampler Sampler [[sampler(0)]])
+fragment float4 FragmentMain(vertex_output Input [[stage_in]])
 {
-	float4 Colour = float4(Input.Colour.rgb, FontAtlas.sample(Sampler, Input.UV).r);
+	float4 Colour = float4(Input.Colour.rgb, 1.0);
 	return Colour;
 }

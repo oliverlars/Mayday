@@ -103,10 +103,12 @@ Entry(InputWaveInfo)
 
 		str8_list Shaders = {0};
 		Str8ListAppend(&Arena, &Shaders, Str8("shaders/triangle.metal"));
+		Str8ListAppend(&Arena, &Shaders, Str8("shaders/glyph.metal"));
 		Str8ListAppend(&Arena, &Shaders, Str8("shaders/bloom.metal"));
 
 		str8_list ShaderVariableNames = {0};
 		Str8ListAppend(&Arena, &ShaderVariableNames, Str8("G_TriangleShader"));
+		Str8ListAppend(&Arena, &ShaderVariableNames, Str8("G_GlyphShader"));
 		Str8ListAppend(&Arena, &ShaderVariableNames, Str8("G_BloomShader"));
 
 		EmbedFiles(&Arena, Shaders, Str8("embed/shaders.h"), ShaderVariableNames);

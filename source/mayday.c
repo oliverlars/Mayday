@@ -24,15 +24,16 @@ mayday;
 
 #include "shaders.h"
 
-#include "sokol_app.h"
-
 void OS_Update(void *Data)
 {
 	mayday *Application = Data;
 
+	//TODO(Oliver): Theres a better way to do this
+	int WindowHeight = OS_WindowHeight(&Application->Window);
+
 	D_DrawStr8(&Application->R_Context, &Application->D_Context,
 			   Application->FrameArena, Application->Font,
-			   v2f(50, sapp_heightf() - 100), v4f(1, 0, 0, 1),
+			   v2f(50,  (f32)WindowHeight - 100), v4f(1, 0, 0, 1),
 			   30, (str8){sizeof(G_TriangleShader), G_TriangleShader});
 
 	D_DrawStr8(&Application->R_Context, &Application->D_Context,
@@ -47,10 +48,6 @@ void OS_Update(void *Data)
 	R_Update(&Application->R_Context);
 
 	Application->FrameArena->At = 0;
-
-	Application->Window.Width = sapp_width();
-	Application->Window.Height = sapp_height();
-
 
 	ArenaReset(Application->FrameArena);
 }

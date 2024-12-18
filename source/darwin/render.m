@@ -2,6 +2,7 @@
 #include <Metal/Metal.h>
 #include <ModelIO/ModelIO.h>
 #include <QuartzCore/QuartzCore.h>
+#include <MetalPerformanceShaders/MetalPerformanceShaders.h>
 
 #include "memory.h"
 #include "misc.h"
@@ -13,16 +14,7 @@
 #include "shaders.h"
 #include "log.h"
 
-id<MTLCommandQueue>        CommandQueue;
-id<MTLDevice>              Device;
-id<MTLRenderPipelineState> PipelineState;
-id<MTLDepthStencilState>   DepthStencilState;
-id<MTLTexture>             DepthTexture;
-id<MTLTexture>             FontAtlasTexture;
-id<MTLBuffer>              VertexBuffer;
-id<MTLBuffer>              IndexBuffer;
-id<MTLBuffer>              UniformBuffer;
-id<MTLSamplerState>        SamplerState;
+#include "darwin/metal_render.h"
 
 typedef struct uniforms
 {
@@ -60,59 +52,64 @@ void R_PushCommand(r_context *R_Context, memory_arena *Arena, r_command Command)
 // Dumb hack
 void R_TextureFromBytes(r_context *R_Context, u8 *Bytes, s32 Width, s32 Height)
 {
+	metal_context *Metal = R_Context->Backend;
 	MTLTextureDescriptor *TextureDescriptor = [MTLTextureDescriptor
 											   texture2DDescriptorWithPixelFormat:MTLPixelFormatR8Unorm
 											   width:Width
 											   height:Height
 											   mipmapped:NO];
 	TextureDescriptor.usage = MTLTextureUsageShaderRead | MTLTextureUsageShaderWrite;
-	FontAtlasTexture = [Device newTextureWithDescriptor:TextureDescriptor];
+	Metal->FontAtlasTexture = [Metal->Device newTextureWithDescriptor:TextureDescriptor];
 	MTLRegion region = MTLRegionMake2D(0, 0, Width, Height);
-	[FontAtlasTexture replaceRegion:region mipmapLevel:0 withBytes:Bytes bytesPerRow:Width];
+	[Metal->FontAtlasTexture replaceRegion:region mipmapLevel:0 withBytes:Bytes bytesPerRow:Width];
 }
 
 id<MTLTexture> MakeDepthTexture(r_context *R_Context, CGSize Size)
 {
+	metal_context *Metal = R_Context->Backend;
 	MTLTextureDescriptor *Desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatDepth32Float 
 													   width:Size.width
 													   height:Size.height mipmapped:NO];
 	Desc.usage = MTLTextureUsageRenderTarget;
 	Desc.storageMode = MTLStorageModeMemoryless;
 
-	id<MTLTexture> Result = [Device newTextureWithDescriptor:Desc];
+	id<MTLTexture> Result = [Metal->Device newTextureWithDescriptor:Desc];
 	assert(Result != nil);
 	return Result;
 }
 
 id<MTLTexture> ResizeDepthTexture(r_context *R_Context, CGSize Size)
 {
-	if(Size.width != [DepthTexture width] || Size.height != [DepthTexture height] || DepthTexture == nil)
+	metal_context *Metal = R_Context->Backend;
+	if(Size.width != [Metal->DepthTexture width] || Size.height != [Metal->DepthTexture height] || Metal->DepthTexture == nil)
 	{
-		DepthTexture = nil;
+		Metal->DepthTexture = nil;
 
-		DepthTexture = MakeDepthTexture(R_Context, Size);
+		Metal->DepthTexture = MakeDepthTexture(R_Context, Size);
 
 		LogInfo(R_Context->Logger, "DepthTexture resized");
 	}
-	return DepthTexture;
+	return Metal->DepthTexture;
 }
 
 void R_Init(r_context *R_Context)
 {
+	metal_context* Metal = ArenaPushTypeZero(R_Context->Arena, metal_context);
+	R_Context->Backend = Metal;
 
-	Device = (__bridge id<MTLDevice>)sapp_metal_get_device();
+	Metal->Device = (__bridge id<MTLDevice>)sapp_metal_get_device();
 
-	CommandQueue = [Device newCommandQueue];
+	Metal->CommandQueue = [Metal->Device newCommandQueue];
 
-	VertexBuffer = [Device newBufferWithLength:MegaBytes(16)*sizeof(gpu_vertex)
+	Metal->VertexBuffer = [Metal->Device newBufferWithLength:MegaBytes(16)*sizeof(gpu_vertex)
 					options:MTLResourceStorageModeShared];
 
-	UniformBuffer = [Device newBufferWithLength:sizeof(Uniforms)
+	Metal->UniformBuffer = [Metal->Device newBufferWithLength:sizeof(Uniforms)
 					 options:MTLResourceStorageModeShared];
 
 	NSError* Error = nil;
 	NSString* Source = [NSString stringWithUTF8String:(char*)G_TriangleShader];
-	id<MTLLibrary> Library = [Device newLibraryWithSource:Source options:nil error:&Error];
+	id<MTLLibrary> Library = [Metal->Device newLibraryWithSource:Source options:nil error:&Error];
 	id<MTLFunction> VertexFunction = [Library newFunctionWithName:@"VertexMain"];
 	id<MTLFunction> FragmentFunction = [Library newFunctionWithName:@"FragmentMain"];
 
@@ -152,15 +149,14 @@ void R_Init(r_context *R_Context)
 	SamplerDescriptor.lodMinClamp = 0.0;
 	SamplerDescriptor.lodMaxClamp = FLT_MAX;
 	SamplerDescriptor.normalizedCoordinates = YES;
-	SamplerState = [Device newSamplerStateWithDescriptor:SamplerDescriptor];
+	Metal->SamplerState = [Metal->Device newSamplerStateWithDescriptor:SamplerDescriptor];
 
 	MTLDepthStencilDescriptor *DepthStencilDescriptor = [MTLDepthStencilDescriptor new];
 	DepthStencilDescriptor.depthCompareFunction = MTLCompareFunctionLess;
 	DepthStencilDescriptor.depthWriteEnabled = YES;
-	DepthStencilState = [Device newDepthStencilStateWithDescriptor:DepthStencilDescriptor];
+	Metal->DepthStencilState = [Metal->Device newDepthStencilStateWithDescriptor:DepthStencilDescriptor];
 
-	PipelineState = [Device newRenderPipelineStateWithDescriptor:PipelineDescriptor error:&Error];
-
+	Metal->PipelineState = [Metal->Device newRenderPipelineStateWithDescriptor:PipelineDescriptor error:&Error];
 
 }
 
@@ -168,9 +164,26 @@ f32 Angle = 0.0;
 
 void R_Update(r_context *R_Context)
 {
+	metal_context *Metal = R_Context->Backend;
+
 	id<CAMetalDrawable> Drawable = (__bridge id<CAMetalDrawable>)sapp_metal_get_current_drawable();
+	CAMetalLayer *MetalLayer = (CAMetalLayer *)Drawable.layer;
+	MetalLayer.framebufferOnly = NO;
+
+	if(!Metal->Texture)
+	{
+		MTLTextureDescriptor *Desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:Drawable.texture.pixelFormat 
+														width:Drawable.texture.width
+														height:Drawable.texture.height mipmapped:NO];
+		Desc.usage = MTLTextureUsageShaderRead | MTLTextureUsageRenderTarget;
+		Desc.storageMode = MTLStorageModePrivate;
+
+
+		Metal->Texture = [Metal->Device newTextureWithDescriptor:Desc];
+	}
+
 	MTLRenderPassDescriptor* PassDesc = [MTLRenderPassDescriptor renderPassDescriptor];
-	PassDesc.colorAttachments[0].texture = Drawable.texture;
+	PassDesc.colorAttachments[0].texture = Metal->Texture;
 	PassDesc.colorAttachments[0].loadAction = MTLLoadActionClear;
 	PassDesc.colorAttachments[0].clearColor = MTLClearColorMake(0.05,0.05,0.05,1);
 
@@ -178,7 +191,7 @@ void R_Update(r_context *R_Context)
 	PassDesc.depthAttachment.loadAction = MTLLoadActionClear;
 	PassDesc.depthAttachment.clearDepth = 1.0;
 
-	id<MTLCommandBuffer> CommandBuffer = [CommandQueue commandBuffer];
+	id<MTLCommandBuffer> CommandBuffer = [Metal->CommandQueue commandBuffer];
 
 	Uniforms.ModelMatrix = M44FromXAngle(Angle);
 	Angle += 0.01;
@@ -188,7 +201,7 @@ void R_Update(r_context *R_Context)
 	Uniforms.ProjectionMatrix = M44FOrthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0);
 	Uniforms.ViewMatrix = M44FLookAt(v3f(0, 0, 10), v3f(0, 0, 0), v3f(0, 1, 0));
 
-	MemoryCopy(UniformBuffer.contents, &Uniforms, sizeof(Uniforms));
+	MemoryCopy(Metal->UniformBuffer.contents, &Uniforms, sizeof(Uniforms));
 
 	// TODO(Oliver): Make this a proper construct
 	u64 ArenaResetTo = R_Context->Arena->At;
@@ -207,7 +220,7 @@ void R_Update(r_context *R_Context)
 			GPUVertices[V].Colour = Colour;
 			GPUVertices[V].UV = v4f(UV.X, UV.Y, 0, 0);
 		}
-		MemoryCopy(VertexBuffer.contents + TotalVertices*sizeof(gpu_vertex),
+		MemoryCopy(Metal->VertexBuffer.contents + TotalVertices*sizeof(gpu_vertex),
 				   GPUVertices, sizeof(gpu_vertex)*Command->VerticesCount);
 		TotalVertices += Command->VerticesCount;
 	}
@@ -215,24 +228,32 @@ void R_Update(r_context *R_Context)
 	R_Context->Arena->At = ArenaResetTo;
 
 	id<MTLRenderCommandEncoder> Encoder = [CommandBuffer renderCommandEncoderWithDescriptor:PassDesc];
-	[Encoder setRenderPipelineState:PipelineState];
+	[Encoder setRenderPipelineState:Metal->PipelineState];
 	[Encoder setFrontFacingWinding:MTLWindingClockwise];
 	[Encoder setCullMode:(MTLCullModeNone)];
-	[Encoder setVertexBuffer:VertexBuffer offset:0 atIndex:0];
-	[Encoder setVertexBuffer:UniformBuffer offset:0 atIndex:1];
-	[Encoder setDepthStencilState:DepthStencilState];
-	[Encoder setFragmentTexture:FontAtlasTexture atIndex:0];
-	[Encoder setFragmentSamplerState:SamplerState atIndex:0];
+	[Encoder setVertexBuffer:Metal->VertexBuffer offset:0 atIndex:0];
+	[Encoder setVertexBuffer:Metal->UniformBuffer offset:0 atIndex:1];
+	[Encoder setDepthStencilState:Metal->DepthStencilState];
+	[Encoder setFragmentTexture:Metal->FontAtlasTexture atIndex:0];
+	[Encoder setFragmentSamplerState:Metal->SamplerState atIndex:0];
 	// [Encoder drawIndexedPrimitives:MTLPrimitiveTypeTriangle indexCount:36
 	// 														indexType:MTLIndexTypeUInt32
 	// 														indexBuffer:IndexBuffer
 	// 														indexBufferOffset:0];
 	[Encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:TotalVertices];
-			 
+
+
 	[Encoder endEncoding];
+
+	MPSImageGaussianBlur *GaussianBlur = [[MPSImageGaussianBlur alloc] initWithDevice:Metal->Device sigma:20];
+
+	[GaussianBlur encodeToCommandBuffer:CommandBuffer sourceTexture:Metal->Texture destinationTexture:Drawable.texture];
+
 
 	[CommandBuffer presentDrawable:Drawable];
 	[CommandBuffer commit];
+
+	[CommandBuffer waitUntilCompleted];
 
 	R_Context->CommandsFirst = Null;
 	R_Context->CommandsLast = Null;

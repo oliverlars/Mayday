@@ -94,7 +94,7 @@ Entry(InputWaveInfo)
 			AppendSourceFilesInFolder(&Shared->Arena, &SourceFiles, Str8("source/darwin"));
 			AppendSourceFilesInFolder(&Shared->Arena, &SourceFiles, Str8("source/sokol"));
 			AppendSourceFilesInFolder(&Shared->Arena, &SourceFiles, Str8("external"));
-			Str8ListAppend(&Shared->Arena, &ExtraLinkFlags, Str8("-framework Cocoa -framework MetalKit -framework QuartzCore -framework Metal"));
+			Str8ListAppend(&Shared->Arena, &ExtraLinkFlags, Str8("-framework Cocoa -framework MetalKit -framework QuartzCore -framework Metal -framework MetalPerformanceShaders"));
 		}
 
 		EmbedFile(&Arena, Str8("fonts/BerkeleyMono-Regular.ttf"),

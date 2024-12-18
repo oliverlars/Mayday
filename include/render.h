@@ -60,7 +60,7 @@ typedef struct r_context
 	r_command *CommandsFirst;
 	r_command *CommandsLast;
 
-	r_command TempCommand;
+	void *Backend;
 }
 r_context;
 

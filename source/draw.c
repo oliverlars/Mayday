@@ -148,7 +148,8 @@ d_atlas_glyph *D_GlyphFromCodePoint(draw_context *D, d_font Font, s32 HeightInPi
 		NextGlyph->AdvanceX = AdvanceX;
 		NextGlyph->Hash = Hash;
 		NextGlyph->CodePoint = CodePoint;
-		stbtt_GetCodepointBox(&Font.Info, CodePoint, &NextGlyph->Box.X, &NextGlyph->Box.Y, &NextGlyph->Box.Z, &NextGlyph->Box.W);
+		stbtt_GetCodepointBox(&Font.Info, CodePoint, &NextGlyph->Box.X, &NextGlyph->Box.Y, 
+													 &NextGlyph->Box.Z, &NextGlyph->Box.W);
 
 		PushGlyphOntoLRU(D, NextGlyph);
 
@@ -180,7 +181,8 @@ d_atlas_glyph *D_GlyphFromCodePoint(draw_context *D, d_font Font, s32 HeightInPi
 		Glyph->AdvanceX = AdvanceX;
 		Glyph->Hash = Hash;
 		Glyph->CodePoint = CodePoint;
-		stbtt_GetCodepointBox(&Font.Info, Glyph->CodePoint, &Glyph->Box.X, &Glyph->Box.Y, &Glyph->Box.Z, &Glyph->Box.W);
+		stbtt_GetCodepointBox(&Font.Info, Glyph->CodePoint, &Glyph->Box.X, &Glyph->Box.Y,
+															&Glyph->Box.Z, &Glyph->Box.W);
 		PushGlyphOntoLRU(D, Glyph);
 
 

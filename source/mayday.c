@@ -20,6 +20,7 @@ typedef struct mayday
 	os_window Window;
 	r_context R_Context;
 	d_context D_Context;
+	e_context E_Context;
 
 	d_font Font;
 
@@ -75,6 +76,12 @@ void OS_Event(const sapp_event *Event, void *Data)
 	mayday *Application = (mayday*)Data;
 	if(Event->type == SAPP_EVENTTYPE_KEY_DOWN)
 	{	
+
+		if(Event->key_code == SAPP_KEYCODE_BACKSPACE)
+		{
+
+		}
+
 		if(Event->key_code == SAPP_KEYCODE_RIGHT)
 		{
 			Application->Cursor.At += 1;
@@ -103,6 +110,11 @@ void OS_Event(const sapp_event *Event, void *Data)
 			Application->Cursor.At -= E_DistanceFromPreviousNewLine(&Application->D_Context, &Application->Cursor, Application->Buffer);
 			Application->Cursor.At += DistanceFromPreviousNewLine;
 		}
+	}
+	else if(Event->type == SAPP_EVENTTYPE_CHAR)
+	{
+		E_InsertTextAtCursor(&Application->E_Context, Application->Cursor, &Application->Buffer, Str8PushF(Application->FrameArena, "?char", Event->char_code));
+		Application->Cursor.At += 1;
 	}
 }
 

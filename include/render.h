@@ -80,7 +80,7 @@ typedef struct r_options
 r_options;
 
 void R_Init(render_context *R);
-void R_Update(render_context *R);
+void R_Update(render_context *R, memory_arena *FrameArena);
 
 void R_TextureFromBytes(render_context *R, u8 *Bytes, s32 Width, s32 Height);
 

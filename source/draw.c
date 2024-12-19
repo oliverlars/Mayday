@@ -5,6 +5,7 @@
 #include "strings.h"
 #include "draw.h"
 
+#include <assert.h>
 #include <math.h>
 
 d_font D_LoadFontFromTTF(draw_context *D_Context, u8 *Data)
@@ -24,27 +25,30 @@ d_font D_LoadFontFromTTF(draw_context *D_Context, u8 *Data)
 	return Font;
 }
 
-void D_GlyphsToAtlas(draw_context *D_Context)
+void D_GlyphsToAtlas(draw_context *D)
 {
-	if(!D_Context->NewestGlyph)
+	if(!D->NewestGlyph)
 	{
-		LogInfo(D_Context->Logger, "No glyphs to place in atlas");
+		LogInfo(D->Logger, "No glyphs to place in atlas");
 		return;
 	}
 
-	if(!D_Context->FontAtlas)
+	if(!D->FontAtlas)
 	{
-		D_Context->FontAtlas = ArenaPushZero(D_Context->Arena, D_FONT_ATLAS_SIZE*D_FONT_ATLAS_SIZE);
+		D->FontAtlas = ArenaPushZero(D->Arena, D_FONT_ATLAS_SIZE*D_FONT_ATLAS_SIZE);
 	}
 
 	u64 HashOfNewestGlyph = M_FNVHashBytes(M_FNV_HASH_START,
-												(u8*)D_Context->NewestGlyph,
+												(u8*)D->NewestGlyph,
 												sizeof(d_atlas_glyph));
 
-	if(HashOfNewestGlyph != D_Context->HashOfNewestGlyph)
+	if(HashOfNewestGlyph != D->HashOfNewestGlyph)
 	{
-		LogInfo(D_Context->Logger, "Atlas will be updated");
-		D_Context->HashOfNewestGlyph = HashOfNewestGlyph;
+		{
+			MemorySet(D->FontAtlas,  0, D_FONT_ATLAS_SIZE*D_FONT_ATLAS_SIZE);
+		}
+		LogInfo(D->Logger, "Atlas will be updated");
+		D->HashOfNewestGlyph = HashOfNewestGlyph;
 
 		int TotalY = D_FONT_ATLAS_SIZE;
 		int AtlasY = 0;
@@ -52,7 +56,7 @@ void D_GlyphsToAtlas(draw_context *D_Context)
 		int TallestYOnThisRow = 0;
 
 		int Padding = 8;
-		for(d_atlas_glyph *Glyph = D_Context->NewestGlyph;
+		for(d_atlas_glyph *Glyph = D->NewestGlyph;
 			Glyph != Null;
 			Glyph = Glyph->PreviousInLRU)
 		{
@@ -74,14 +78,14 @@ void D_GlyphsToAtlas(draw_context *D_Context)
 				// newest to oldest, the current glyph is the 
 				// oldest invalid glyph, so we pop all glyphs
 				// from this glyph onwards.
-				D_Context->OldestGlyph = Glyph->NextInLRU;
-				D_Context->OldestGlyph->PreviousInLRU = Null;
-				LogInfo(D_Context->Logger, "Evicted Glyphs");
+				D->OldestGlyph = Glyph->NextInLRU;
+				D->OldestGlyph->PreviousInLRU = Null;
+				LogInfo(D->Logger, "Evicted Glyphs");
 			}
 			else
 			{
 				Glyph->AtlasPosition = v2f(AtlasX, AtlasY);
-				u8 *Row = D_Context->FontAtlas + AtlasX + AtlasY * D_FONT_ATLAS_SIZE;
+				u8 *Row = D->FontAtlas + AtlasX + AtlasY * D_FONT_ATLAS_SIZE;
 				for(int Y = 0; Y < Height; Y++)
 				{
 					for(int X = 0; X < Width; X++)

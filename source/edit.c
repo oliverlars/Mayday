@@ -87,6 +87,8 @@ void E_InsertTextAtCursor(edit_context *E_Context, cursor *Cursor, editable_buff
 
 
 	E_AdvanceCursorXByN(Cursor, Buffer, TextToInsert.Size);
+
+	Buffer->String.Size += TextToInsert.Size;
 }
 
 void E_RemoveTextFromTextRange(edit_context *E_Context, cursor *Cursor, editable_buffer *Buffer,
@@ -103,6 +105,8 @@ void E_RemoveTextFromTextRange(edit_context *E_Context, cursor *Cursor, editable
 	MemoryCopy(E_Context->Temp + RangeStart, Buffer->String.Bytes + RangeEnd, Buffer->String.Size - RangeEnd);
 
 	MemoryCopy(Buffer->String.Bytes, E_Context->Temp, Buffer->String.Size - (RangeEnd-RangeStart));
+
+	Buffer->String.Size -= (RangeEnd-RangeStart);
 }
 
 v2f E_GetPositionFromEditableBuffer(draw_context *D_Context,

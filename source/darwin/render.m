@@ -389,7 +389,7 @@ void R_ClearAllTextures(render_context *R, id<MTLCommandBuffer> CommandBuffer)
 	[Encoder endEncoding];
 }
 
-void R_Update(render_context *R)
+void R_Update(render_context *R, memory_arena *FrameArena)
 {
 	metal_context *Metal = R->Backend;
 	Metal->Drawable = (__bridge id<CAMetalDrawable>)sapp_metal_get_current_drawable();
@@ -436,9 +436,6 @@ void R_Update(render_context *R)
 
 	MemoryCopy(Metal->UniformBuffer.contents, &Uniforms, sizeof(Uniforms));
 
-	// TODO(Oliver): Make this a proper construct
-	u64 ArenaResetTo = R->Arena->At;
-
 	int TotalVertices = 0;
 	for(r_command *Command = R->CommandsFirst; Command != Null; Command = Command->Next)
 	{
@@ -446,7 +443,7 @@ void R_Update(render_context *R)
 		if(0){}
 		else if(Command->Type == R_COMMAND_GLYPH)
 		{	
-			gpu_vertex *GPUVertices = (gpu_vertex*)ArenaPush(R->Arena,
+			gpu_vertex *GPUVertices = (gpu_vertex*)ArenaPush(FrameArena,
 															 sizeof(gpu_vertex)*Command->VerticesCount);
 			for(int V = 0; V < Command->VerticesCount; V++)
 			{
@@ -463,7 +460,7 @@ void R_Update(render_context *R)
 		}
 		else if(Command->Type == R_COMMAND_TRIANGLE)
 		{
-			gpu_vertex *GPUVertices = (gpu_vertex*)ArenaPush(R->Arena,
+			gpu_vertex *GPUVertices = (gpu_vertex*)ArenaPush(FrameArena,
 															 sizeof(gpu_vertex)*Command->VerticesCount);
 			for(int V = 0; V < Command->VerticesCount; V++)
 			{
@@ -491,8 +488,6 @@ void R_Update(render_context *R)
 			TotalVertices = 0;
 		}
 	}
-
-	R->Arena->At = ArenaResetTo;
 
 	R_RenderFullscreenBloom(R, CommandBuffer);
 

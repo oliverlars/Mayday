@@ -12,6 +12,7 @@ typedef struct memory_arena
 }
 memory_arena;
 
+void MemorySet(void *Destination, int Byte, s64 NumberOfBytes);
 void MemoryCopy(void *Destination, void *Source, s64 NumberOfBytes);
 u8* MemoryReserve(s64 NumberOfBytes);
 void MemoryCommit(void *Address, s64 NumberOfBytes);

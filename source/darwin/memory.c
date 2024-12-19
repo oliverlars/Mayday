@@ -24,6 +24,11 @@ void MemoryZero(void *Destination, s64 NumberOfBytes)
 	memset(Destination, 0, NumberOfBytes);
 }
 
+void MemorySet(void *Destination, int Byte, s64 NumberOfBytes)
+{
+	memset(Destination, Byte, NumberOfBytes);
+}
+
 u64 GetPageSize()
 {
 	return getpagesize();

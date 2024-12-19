@@ -75,7 +75,7 @@ void OS_Update(void *Data)
 	D_GlyphsToAtlas(&M->Draw);
 	R_TextureFromBytes(&M->Render, M->Draw.FontAtlas, D_FONT_ATLAS_SIZE, D_FONT_ATLAS_SIZE);
 
-	R_Update(&M->Render);
+	R_Update(&M->Render, M->FrameArena);
 
 	M->FrameArena->At = 0;
 
@@ -103,14 +103,14 @@ void OS_Event(const sapp_event *Event, void *Data)
 		{
 			if(Event->modifiers == SAPP_MODIFIER_SUPER)
 			{
-				M->Buffer.HeightInPixels += 5;
+				M->Buffer.HeightInPixels += 4;
 			}
 		}
 		if(Event->key_code == SAPP_KEYCODE_MINUS)
 		{
 			if(Event->modifiers == SAPP_MODIFIER_SUPER)
 			{
-				M->Buffer.HeightInPixels -= 5;
+				M->Buffer.HeightInPixels -= 4;
 			}
 		}
 
@@ -158,7 +158,7 @@ void OS_Event(const sapp_event *Event, void *Data)
 void OS_Initialise(void *Data)
 {
 	mayday_context *M = Data;
-	M->Buffer.HeightInPixels = 50;
+	M->Buffer.HeightInPixels = 48;
 	R_Init(&M->Render);
 	//Application->R.Logger->Silent = True;
 }

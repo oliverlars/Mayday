@@ -124,13 +124,13 @@ void PopGlyphOffLRU(draw_context *D_Context)
 	}
 }
 
-d_atlas_glyph *D_GlyphFromCodePoint(draw_context *D_Context, d_font Font, s32 HeightInPixels, u32 CodePoint)
+d_atlas_glyph *D_GlyphFromCodePoint(draw_context *D, d_font Font, s32 HeightInPixels, u32 CodePoint)
 {
 	u64 Hash = M_FNVHashBytes(M_FNV_HASH_START, (u8*)&Font, sizeof(d_font));
 	Hash = M_FNVHashBytes(Hash, (u8*)&HeightInPixels, sizeof(s32));
 	Hash = M_FNVHashBytes(Hash, (u8*)&CodePoint, sizeof(u32));
 
-	d_atlas_glyph *Glyph = D_Context->GlyphTable + (Hash % D_GLYPH_TABLE_SIZE);
+	d_atlas_glyph *Glyph = D->GlyphTable + (Hash % D_GLYPH_TABLE_SIZE);
 	for(;Glyph->NextInHashSlot != Null && Glyph->Hash != Hash; Glyph = Glyph->NextInHashSlot);
 	d_atlas_glyph *ResultGlyph = Glyph;
 
@@ -138,19 +138,19 @@ d_atlas_glyph *D_GlyphFromCodePoint(draw_context *D_Context, d_font Font, s32 He
 	
 	if(Glyph->Hash != 0 && Glyph->Hash != Hash)
 	{
-		LogInfo(D_Context->Logger, "Glyph collision occured");
-		d_atlas_glyph *NextGlyph = ArenaPushTypeZero(D_Context->Arena, d_atlas_glyph);
+		LogInfo(D->Logger, "Glyph collision occured");
+		d_atlas_glyph *NextGlyph = ArenaPushTypeZero(D->Arena, d_atlas_glyph);
 		Glyph->NextInHashSlot = NextGlyph;
 
 		int AdvanceX;
 		int LeftSideBearing;
 		stbtt_GetCodepointHMetrics(&Font.Info, CodePoint, &AdvanceX, &LeftSideBearing);
-		Glyph->AdvanceX = AdvanceX;
+		NextGlyph->AdvanceX = AdvanceX;
 		NextGlyph->Hash = Hash;
 		NextGlyph->CodePoint = CodePoint;
 		stbtt_GetCodepointBox(&Font.Info, CodePoint, &NextGlyph->Box.X, &NextGlyph->Box.Y, &NextGlyph->Box.Z, &NextGlyph->Box.W);
 
-		PushGlyphOntoLRU(D_Context, NextGlyph);
+		PushGlyphOntoLRU(D, NextGlyph);
 
 		v4i BitmapBox = {0};
 		stbtt_GetCodepointBitmapBox(&Font.Info,
@@ -160,7 +160,7 @@ d_atlas_glyph *D_GlyphFromCodePoint(draw_context *D_Context, d_font Font, s32 He
 									&BitmapBox.Z, &BitmapBox.W);
 		
 		int GlyphSizeInBytes = (BitmapBox.Z - BitmapBox.X)*(BitmapBox.W - BitmapBox.Y);
-		NextGlyph->Data = ArenaPushZero(D_Context->Arena, GlyphSizeInBytes);
+		NextGlyph->Data = ArenaPushZero(D->Arena, GlyphSizeInBytes);
 		stbtt_MakeCodepointBitmap(&Font.Info,
 								  NextGlyph->Data,
 								  BitmapBox.Z - BitmapBox.X,
@@ -173,8 +173,6 @@ d_atlas_glyph *D_GlyphFromCodePoint(draw_context *D_Context, d_font Font, s32 He
 	}
 	else if(Glyph->Hash == 0)
 	{
-		LogInfo(D_Context->Logger, "Empty glyph hash slot is now filled");
-
 		int AdvanceX;
 		int LeftSideBearing;
 		stbtt_GetCodepointHMetrics(&Font.Info, CodePoint, &AdvanceX, &LeftSideBearing);
@@ -183,7 +181,7 @@ d_atlas_glyph *D_GlyphFromCodePoint(draw_context *D_Context, d_font Font, s32 He
 		Glyph->Hash = Hash;
 		Glyph->CodePoint = CodePoint;
 		stbtt_GetCodepointBox(&Font.Info, Glyph->CodePoint, &Glyph->Box.X, &Glyph->Box.Y, &Glyph->Box.Z, &Glyph->Box.W);
-		PushGlyphOntoLRU(D_Context, Glyph);
+		PushGlyphOntoLRU(D, Glyph);
 
 
 		v4i BitmapBox = {0};
@@ -193,7 +191,7 @@ d_atlas_glyph *D_GlyphFromCodePoint(draw_context *D_Context, d_font Font, s32 He
 									&BitmapBox.X, &BitmapBox.Y,
 									&BitmapBox.Z, &BitmapBox.W);
 		int GlyphSizeInBytes = (BitmapBox.Z - BitmapBox.X)*(BitmapBox.W - BitmapBox.Y);
-		Glyph->Data = ArenaPushZero(D_Context->Arena, GlyphSizeInBytes);
+		Glyph->Data = ArenaPushZero(D->Arena, GlyphSizeInBytes);
 		stbtt_MakeCodepointBitmap(&Font.Info,
 								  Glyph->Data,
 								  BitmapBox.Z - BitmapBox.X,
@@ -203,19 +201,16 @@ d_atlas_glyph *D_GlyphFromCodePoint(draw_context *D_Context, d_font Font, s32 He
 								  Glyph->CodePoint);
 		Glyph->BitmapBox = BitmapBox;
 	}
-	else
-	{
-		//LogInfo(D_Context->Logger, "Glyph already in table");
-	}
+
 	return ResultGlyph;
 }
 
-void D_DrawQuad(draw_context *D_Context,
+void D_DrawQuad(draw_context *D,
 				memory_arena *Arena, v2f Position,
 				f32 Width, f32 Height,
 				v4f Colour)
 {
-	render_context *R = D_Context->R;
+	render_context *R = D->R;
 	r_command Command = {0};
 	Command.Vertices = (r_vertex*)ArenaPush(Arena, 6*sizeof(r_vertex));
 	Command.VerticesCount = 6;

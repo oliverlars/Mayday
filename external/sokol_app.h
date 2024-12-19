@@ -27,13 +27,14 @@
 
     Optionally provide the following defines with your own implementations:
 
-        SOKOL_ASSERT(c)     - your own assert macro (default: assert(c))
-        SOKOL_UNREACHABLE() - a guard macro for unreachable code (default: assert(false))
-        SOKOL_WIN32_FORCE_MAIN  - define this on Win32 to use a main() entry point instead of WinMain
-        SOKOL_NO_ENTRY      - define this if sokol_app.h shouldn't "hijack" the main() function
-        SOKOL_APP_API_DECL  - public function declaration prefix (default: extern)
-        SOKOL_API_DECL      - same as SOKOL_APP_API_DECL
-        SOKOL_API_IMPL      - public function implementation prefix (default: -)
+        SOKOL_ASSERT(c)             - your own assert macro (default: assert(c))
+        SOKOL_UNREACHABLE()         - a guard macro for unreachable code (default: assert(false))
+        SOKOL_WIN32_FORCE_MAIN      - define this on Win32 to add a main() entry point
+        SOKOL_WIN32_FORCE_WINMAIN   - define this on Win32 to add a WinMain() entry point (enabled by default unless SOKOL_WIN32_FORCE_MAIN or SOKOL_NO_ENTRY is defined)
+        SOKOL_NO_ENTRY              - define this if sokol_app.h shouldn't "hijack" the main() function
+        SOKOL_APP_API_DECL          - public function declaration prefix (default: extern)
+        SOKOL_API_DECL              - same as SOKOL_APP_API_DECL
+        SOKOL_API_IMPL              - public function implementation prefix (default: -)
 
     Optionally define the following to force debug checks and validations
     even in release mode:
@@ -47,6 +48,9 @@
 
     On Windows, SOKOL_DLL will define SOKOL_APP_API_DECL as __declspec(dllexport)
     or __declspec(dllimport) as needed.
+
+    if SOKOL_WIN32_FORCE_MAIN and SOKOL_WIN32_FORCE_WINMAIN are both defined,
+    it is up to the developer to define the desired subsystem.
 
     On Linux, SOKOL_GLCORE can use either GLX or EGL.
     GLX is default, set SOKOL_FORCE_EGL to override.
@@ -290,7 +294,7 @@
             back with a (ARC) __bridge cast.
 
         const void* sapp_d3d11_get_device(void)
-        const void* sapp_d3d11_get_devicedit_context(void)
+        const void* sapp_d3d11_get_device_context(void)
         const void* sapp_d3d11_get_render_view(void)
         const void* sapp_d3d11_get_resolve_view(void);
         const void* sapp_d3d11_get_depth_stencil_view(void)
@@ -1648,8 +1652,8 @@ typedef struct sapp_allocator {
     _SAPP_LOGITEM_XMACRO(WIN32_WGL_FIND_PIXELFORMAT_FAILED, "failed to find matching WGL pixel format") \
     _SAPP_LOGITEM_XMACRO(WIN32_WGL_DESCRIBE_PIXELFORMAT_FAILED, "failed to get pixel format descriptor") \
     _SAPP_LOGITEM_XMACRO(WIN32_WGL_SET_PIXELFORMAT_FAILED, "failed to set selected pixel format") \
-    _SAPP_LOGITEM_XMACRO(WIN32_WGL_ARB_CREATE_CONTEXT_REQUIRED, "ARB_createdit_context required") \
-    _SAPP_LOGITEM_XMACRO(WIN32_WGL_ARB_CREATE_CONTEXT_PROFILE_REQUIRED, "ARB_createdit_context_profile required") \
+    _SAPP_LOGITEM_XMACRO(WIN32_WGL_ARB_CREATE_CONTEXT_REQUIRED, "ARB_create_context required") \
+    _SAPP_LOGITEM_XMACRO(WIN32_WGL_ARB_CREATE_CONTEXT_PROFILE_REQUIRED, "ARB_create_context_profile required") \
     _SAPP_LOGITEM_XMACRO(WIN32_WGL_OPENGL_VERSION_NOT_SUPPORTED, "requested OpenGL version not supported by GL driver (ERROR_INVALID_VERSION_ARB)") \
     _SAPP_LOGITEM_XMACRO(WIN32_WGL_OPENGL_PROFILE_NOT_SUPPORTED, "requested OpenGL profile not support by GL driver (ERROR_INVALID_PROFILE_ARB)") \
     _SAPP_LOGITEM_XMACRO(WIN32_WGL_INCOMPATIBLE_DEVICE_CONTEXT, "CreateContextAttribsARB failed with ERROR_INCOMPATIBLE_DEVICE_CONTEXTS_ARB") \
@@ -1669,7 +1673,7 @@ typedef struct sapp_allocator {
     _SAPP_LOGITEM_XMACRO(LINUX_GLX_NO_GLXFBCONFIGS, "glXGetFBConfigs() returned no configs") \
     _SAPP_LOGITEM_XMACRO(LINUX_GLX_NO_SUITABLE_GLXFBCONFIG, "failed to find a suitable GLXFBConfig") \
     _SAPP_LOGITEM_XMACRO(LINUX_GLX_GET_VISUAL_FROM_FBCONFIG_FAILED, "glXGetVisualFromFBConfig failed") \
-    _SAPP_LOGITEM_XMACRO(LINUX_GLX_REQUIRED_EXTENSIONS_MISSING, "GLX extensions ARB_createdit_context and ARB_createdit_context_profile missing") \
+    _SAPP_LOGITEM_XMACRO(LINUX_GLX_REQUIRED_EXTENSIONS_MISSING, "GLX extensions ARB_create_context and ARB_create_context_profile missing") \
     _SAPP_LOGITEM_XMACRO(LINUX_GLX_CREATE_CONTEXT_FAILED, "Failed to create GL context via glXCreateContextAttribsARB") \
     _SAPP_LOGITEM_XMACRO(LINUX_GLX_CREATE_WINDOW_FAILED, "glXCreateWindow() failed") \
     _SAPP_LOGITEM_XMACRO(LINUX_X11_CREATE_WINDOW_FAILED, "XCreateWindow() failed") \
@@ -1960,7 +1964,7 @@ SOKOL_APP_API_DECL const void* sapp_ios_get_window(void);
 /* D3D11: get pointer to ID3D11Device object */
 SOKOL_APP_API_DECL const void* sapp_d3d11_get_device(void);
 /* D3D11: get pointer to ID3D11DeviceContext object */
-SOKOL_APP_API_DECL const void* sapp_d3d11_get_devicedit_context(void);
+SOKOL_APP_API_DECL const void* sapp_d3d11_get_device_context(void);
 /* D3D11: get pointer to IDXGISwapChain object */
 SOKOL_APP_API_DECL const void* sapp_d3d11_get_swap_chain(void);
 /* D3D11: get pointer to ID3D11RenderTargetView object for rendering */
@@ -1997,14 +2001,6 @@ SOKOL_APP_API_DECL const void* sapp_android_get_native_activity(void);
 /* reference-based equivalents for C++ */
 inline void sapp_run(const sapp_desc& desc) { return sapp_run(&desc); }
 
-#endif
-
-// this WinRT specific hack is required when wWinMain is in a static library
-#if defined(_MSC_VER) && defined(UNICODE)
-#include <winapifamily.h>
-#if defined(WINAPI_FAMILY_PARTITION) && !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
-#pragma comment(linker, "/include:wWinMain")
-#endif
 #endif
 
 #endif // SOKOL_APP_INCLUDED
@@ -2185,8 +2181,11 @@ inline void sapp_run(const sapp_desc& desc) { return sapp_run(&desc); }
     #include <windows.h>
     #include <windowsx.h>
     #include <shellapi.h>
-    #if !defined(SOKOL_NO_ENTRY)    // if SOKOL_NO_ENTRY is defined, it's the applications' responsibility to use the right subsystem
-        #if defined(SOKOL_WIN32_FORCE_MAIN)
+    #if !defined(SOKOL_NO_ENTRY)    // if SOKOL_NO_ENTRY is defined, it's the application's responsibility to use the right subsystem
+
+        #if defined(SOKOL_WIN32_FORCE_MAIN) && defined(SOKOL_WIN32_FORCE_WINMAIN)
+            // If both are defined, it's the application's responsibility to use the right subsystem
+        #elif defined(SOKOL_WIN32_FORCE_MAIN)
             #pragma comment (linker, "/subsystem:console")
         #else
             #pragma comment (linker, "/subsystem:windows")
@@ -2580,7 +2579,7 @@ typedef struct {
 #if defined(SOKOL_D3D11) && defined(_SAPP_WIN32)
 typedef struct {
     ID3D11Device* device;
-    ID3D11DeviceContext* devicedit_context;
+    ID3D11DeviceContext* device_context;
     ID3D11Texture2D* rt;
     ID3D11RenderTargetView* rtv;
     ID3D11Texture2D* msaa_rt;
@@ -2696,8 +2695,8 @@ typedef struct {
     bool ext_swap_control;
     bool arb_multisample;
     bool arb_pixel_format;
-    bool arb_createdit_context;
-    bool arb_createdit_context_profile;
+    bool arb_create_context;
+    bool arb_create_context_profile;
     HWND msg_hwnd;
     HDC msg_dc;
 } _sapp_wgl_t;
@@ -2893,8 +2892,8 @@ typedef struct {
     bool EXT_swap_control;
     bool MESA_swap_control;
     bool ARB_multisample;
-    bool ARB_createdit_context;
-    bool ARB_createdit_context_profile;
+    bool ARB_create_context;
+    bool ARB_create_context_profile;
 } _sapp_glx_t;
 
 #else
@@ -5709,9 +5708,9 @@ _SOKOL_PRIVATE void _sapp_emsc_webgl_init(void) {
     attrs.preserveDrawingBuffer = _sapp.desc.html5_preserve_drawing_buffer;
     attrs.enableExtensionsByDefault = true;
     attrs.majorVersion = 2;
-    EMSCRIPTEN_WEBGL_CONTEXT_HANDLE ctx = emscripten_webgl_createdit_context(_sapp.html5_canvas_selector, &attrs);
+    EMSCRIPTEN_WEBGL_CONTEXT_HANDLE ctx = emscripten_webgl_create_context(_sapp.html5_canvas_selector, &attrs);
     // FIXME: error message?
-    emscripten_webgl_makedit_context_current(ctx);
+    emscripten_webgl_make_context_current(ctx);
     glGetIntegerv(GL_FRAMEBUFFER_BINDING, (GLint*)&_sapp.gl.framebuffer);
 
     // FIXME: remove PVRTC support here and in sokol-gfx at some point
@@ -6578,7 +6577,7 @@ _SOKOL_PRIVATE void _sapp_d3d11_create_device_and_swapchain(void) {
         &_sapp.d3d11.swap_chain,        /* ppSwapChain */
         &_sapp.d3d11.device,            /* ppDevice */
         &feature_level,                 /* pFeatureLevel */
-        &_sapp.d3d11.devicedit_context);   /* ppImmediateContext */
+        &_sapp.d3d11.device_context);   /* ppImmediateContext */
     _SOKOL_UNUSED(hr);
     #if defined(SOKOL_DEBUG)
     if (!SUCCEEDED(hr)) {
@@ -6605,10 +6604,10 @@ _SOKOL_PRIVATE void _sapp_d3d11_create_device_and_swapchain(void) {
             &_sapp.d3d11.swap_chain,        /* ppSwapChain */
             &_sapp.d3d11.device,            /* ppDevice */
             &feature_level,                 /* pFeatureLevel */
-            &_sapp.d3d11.devicedit_context);   /* ppImmediateContext */
+            &_sapp.d3d11.device_context);   /* ppImmediateContext */
     }
     #endif
-    SOKOL_ASSERT(SUCCEEDED(hr) && _sapp.d3d11.swap_chain && _sapp.d3d11.device && _sapp.d3d11.devicedit_context);
+    SOKOL_ASSERT(SUCCEEDED(hr) && _sapp.d3d11.swap_chain && _sapp.d3d11.device && _sapp.d3d11.device_context);
 
     // minimize frame latency, disable Alt-Enter
     hr = _sapp_d3d11_QueryInterface(_sapp.d3d11.device, _sapp_win32_refiid(_sapp_IID_IDXGIDevice1), (void**)&_sapp.d3d11.dxgi_device);
@@ -6640,7 +6639,7 @@ _SOKOL_PRIVATE void _sapp_d3d11_create_device_and_swapchain(void) {
 _SOKOL_PRIVATE void _sapp_d3d11_destroy_device_and_swapchain(void) {
     _SAPP_SAFE_RELEASE(_sapp.d3d11.swap_chain);
     _SAPP_SAFE_RELEASE(_sapp.d3d11.dxgi_device);
-    _SAPP_SAFE_RELEASE(_sapp.d3d11.devicedit_context);
+    _SAPP_SAFE_RELEASE(_sapp.d3d11.device_context);
     _SAPP_SAFE_RELEASE(_sapp.d3d11.device);
 }
 
@@ -6836,8 +6835,8 @@ _SOKOL_PRIVATE void _sapp_wgl_load_extensions(void) {
     _sapp.wgl.SwapIntervalEXT = (PFNWGLSWAPINTERVALEXTPROC)(void*) _sapp.wgl.GetProcAddress("wglSwapIntervalEXT");
     _sapp.wgl.GetPixelFormatAttribivARB = (PFNWGLGETPIXELFORMATATTRIBIVARBPROC)(void*) _sapp.wgl.GetProcAddress("wglGetPixelFormatAttribivARB");
     _sapp.wgl.arb_multisample = _sapp_wgl_ext_supported("WGL_ARB_multisample");
-    _sapp.wgl.arb_createdit_context = _sapp_wgl_ext_supported("WGL_ARB_createdit_context");
-    _sapp.wgl.arb_createdit_context_profile = _sapp_wgl_ext_supported("WGL_ARB_createdit_context_profile");
+    _sapp.wgl.arb_create_context = _sapp_wgl_ext_supported("WGL_ARB_create_context");
+    _sapp.wgl.arb_create_context_profile = _sapp_wgl_ext_supported("WGL_ARB_create_context_profile");
     _sapp.wgl.ext_swap_control = _sapp_wgl_ext_supported("WGL_EXT_swap_control");
     _sapp.wgl.arb_pixel_format = _sapp_wgl_ext_supported("WGL_ARB_pixel_format");
     _sapp.wgl.MakeCurrent(_sapp.wgl.msg_dc, 0);
@@ -6954,7 +6953,7 @@ _SOKOL_PRIVATE int _sapp_wgl_find_pixel_format(void) {
     return pixel_format;
 }
 
-_SOKOL_PRIVATE void _sapp_wgl_createdit_context(void) {
+_SOKOL_PRIVATE void _sapp_wgl_create_context(void) {
     int pixel_format = _sapp_wgl_find_pixel_format();
     if (0 == pixel_format) {
         _SAPP_PANIC(WIN32_WGL_FIND_PIXELFORMAT_FAILED);
@@ -6966,10 +6965,10 @@ _SOKOL_PRIVATE void _sapp_wgl_createdit_context(void) {
     if (!SetPixelFormat(_sapp.win32.dc, pixel_format, &pfd)) {
         _SAPP_PANIC(WIN32_WGL_SET_PIXELFORMAT_FAILED);
     }
-    if (!_sapp.wgl.arb_createdit_context) {
+    if (!_sapp.wgl.arb_create_context) {
         _SAPP_PANIC(WIN32_WGL_ARB_CREATE_CONTEXT_REQUIRED);
     }
-    if (!_sapp.wgl.arb_createdit_context_profile) {
+    if (!_sapp.wgl.arb_create_context_profile) {
         _SAPP_PANIC(WIN32_WGL_ARB_CREATE_CONTEXT_PROFILE_REQUIRED);
     }
     const int attrs[] = {
@@ -8058,7 +8057,7 @@ _SOKOL_PRIVATE void _sapp_win32_run(const sapp_desc* desc) {
     #if defined(SOKOL_GLCORE)
         _sapp_wgl_init();
         _sapp_wgl_load_extensions();
-        _sapp_wgl_createdit_context();
+        _sapp_wgl_create_context();
     #endif
     _sapp.valid = true;
 
@@ -8155,7 +8154,8 @@ int main(int argc, char* argv[]) {
     _sapp_win32_run(&desc);
     return 0;
 }
-#else
+#endif /* SOKOL_WIN32_FORCE_MAIN */
+#if defined(SOKOL_WIN32_FORCE_WINMAIN) || !defined(SOKOL_WIN32_FORCE_MAIN)
 int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nCmdShow) {
     _SOKOL_UNUSED(hInstance);
     _SOKOL_UNUSED(hPrevInstance);
@@ -8168,7 +8168,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
     _sapp_free(argv_utf8);
     return 0;
 }
-#endif /* SOKOL_WIN32_FORCE_MAIN */
+#endif /* SOKOL_WIN32_FORCE_WINMAIN */
 #endif /* SOKOL_NO_ENTRY */
 
 #ifdef _MSC_VER
@@ -10225,11 +10225,11 @@ _SOKOL_PRIVATE void _sapp_glx_init(void) {
         _sapp.glx.MESA_swap_control = 0 != _sapp.glx.SwapIntervalMESA;
     }
     _sapp.glx.ARB_multisample = _sapp_glx_extsupported("GLX_ARB_multisample", exts);
-    if (_sapp_glx_extsupported("GLX_ARB_createdit_context", exts)) {
+    if (_sapp_glx_extsupported("GLX_ARB_create_context", exts)) {
         _sapp.glx.CreateContextAttribsARB = (PFNGLXCREATECONTEXTATTRIBSARBPROC) _sapp_glx_getprocaddr("glXCreateContextAttribsARB");
-        _sapp.glx.ARB_createdit_context = 0 != _sapp.glx.CreateContextAttribsARB;
+        _sapp.glx.ARB_create_context = 0 != _sapp.glx.CreateContextAttribsARB;
     }
-    _sapp.glx.ARB_createdit_context_profile = _sapp_glx_extsupported("GLX_ARB_createdit_context_profile", exts);
+    _sapp.glx.ARB_create_context_profile = _sapp_glx_extsupported("GLX_ARB_create_context_profile", exts);
 }
 
 _SOKOL_PRIVATE int _sapp_glx_attrib(GLXFBConfig fbconfig, int attrib) {
@@ -10330,12 +10330,12 @@ _SOKOL_PRIVATE void _sapp_glx_make_current(void) {
     glGetIntegerv(GL_FRAMEBUFFER_BINDING, (GLint*)&_sapp.gl.framebuffer);
 }
 
-_SOKOL_PRIVATE void _sapp_glx_createdit_context(void) {
+_SOKOL_PRIVATE void _sapp_glx_create_context(void) {
     GLXFBConfig native = _sapp_glx_choosefbconfig();
     if (0 == native){
         _SAPP_PANIC(LINUX_GLX_NO_SUITABLE_GLXFBCONFIG);
     }
-    if (!(_sapp.glx.ARB_createdit_context && _sapp.glx.ARB_createdit_context_profile)) {
+    if (!(_sapp.glx.ARB_create_context && _sapp.glx.ARB_create_context_profile)) {
         _SAPP_PANIC(LINUX_GLX_REQUIRED_EXTENSIONS_MISSING);
     }
     _sapp_x11_grab_error_handler();
@@ -11627,7 +11627,7 @@ _SOKOL_PRIVATE void _sapp_linux_run(const sapp_desc* desc) {
     int depth = 0;
     _sapp_glx_choose_visual(&visual, &depth);
     _sapp_x11_create_window(visual, depth);
-    _sapp_glx_createdit_context();
+    _sapp_glx_create_context();
     _sapp_glx_swapinterval(_sapp.swap_interval);
 #else
     _sapp_egl_init();
@@ -12154,10 +12154,10 @@ SOKOL_API_IMPL const void* sapp_d3d11_get_device(void) {
     #endif
 }
 
-SOKOL_API_IMPL const void* sapp_d3d11_get_devicedit_context(void) {
+SOKOL_API_IMPL const void* sapp_d3d11_get_device_context(void) {
     SOKOL_ASSERT(_sapp.valid);
     #if defined(SOKOL_D3D11)
-        return _sapp.d3d11.devicedit_context;
+        return _sapp.d3d11.device_context;
     #else
         return 0;
     #endif

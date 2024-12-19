@@ -145,7 +145,7 @@ int main()
 	memory_arena FrameArena = {0};
 
 	logger Logger = {0};
-	//Logger.Silent = True;
+	Logger.Silent = True;
 	Logger.Arena = &Arena;
 
 	mayday Application = {0};

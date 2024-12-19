@@ -339,7 +339,6 @@ void R_RenderGlyphs(r_context *R_Context, id<MTLCommandBuffer> CommandBuffer, in
 	[Encoder endEncoding];
 }
 
-
 void R_RenderFullscreenBloom(r_context *R_Context, id<MTLCommandBuffer> CommandBuffer)
 {
 	metal_context *Metal = R_Context->Backend;
@@ -415,7 +414,7 @@ void R_Update(r_context *R_Context)
 		MTLTextureDescriptor *Desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:Metal->Drawable.texture.pixelFormat 
 														width:Metal->Drawable.texture.width
 														height:Metal->Drawable.texture.height mipmapped:NO];
-		Desc.usage = MTLTextureUsageShaderRead | MTLTextureUsageShaderWrite;
+		Desc.usage = MTLTextureUsageShaderRead | MTLTextureUsageShaderWrite | MTLTextureUsageRenderTarget;
 		Desc.storageMode = MTLStorageModePrivate;
 
 

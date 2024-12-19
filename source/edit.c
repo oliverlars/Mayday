@@ -15,12 +15,6 @@ void E_AdvanceCursorXByN(cursor *Cursor, editable_buffer *Buffer, int N)
 	if(N + Index >= Buffer->String.Size) N = Buffer->String.Size - Index;
 	if(N + Index < 0) N = Index;
 
-	/*
-	
-		We process the range [Index, Index + N) or (N, )
-
-	*/
-
 	if(N > 0)
 	{
 		for(int I = 0; I < N; I++)

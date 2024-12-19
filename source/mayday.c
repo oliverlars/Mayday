@@ -53,8 +53,6 @@ void OS_Update(void *Data)
 		NumbersPosition.Y -= LineHeight;
 	}
 
-	M->Buffer.HeightInPixels = 50;
-
 	M->Buffer.String = (str8){sizeof(G_TriangleShader), G_TriangleShader};
 
 	M->Cursor.TargetPosition = E_GetPositionFromEditableBuffer(&M->Draw,
@@ -72,7 +70,7 @@ void OS_Update(void *Data)
 	D_DrawStr8(&M->Draw,
 			   M->FrameArena, M->Font,
 			   BufferPosition, v4f(1, 0.5, 0, 1),
-			   50, M->Buffer.String);
+			   M->Buffer.HeightInPixels, M->Buffer.String);
 
 	D_GlyphsToAtlas(&M->Draw);
 	R_TextureFromBytes(&M->Render, M->Draw.FontAtlas, D_FONT_ATLAS_SIZE, D_FONT_ATLAS_SIZE);
@@ -89,7 +87,6 @@ void OS_Event(const sapp_event *Event, void *Data)
 	mayday_context *M = (mayday_context*)Data;
 	if(Event->type == SAPP_EVENTTYPE_KEY_DOWN)
 	{	
-
 		if(Event->key_code == SAPP_KEYCODE_BACKSPACE)	
 		{
 			int BufferIndex = E_BufferIndexFromCursor(&M->Buffer, &M->Cursor);
@@ -100,6 +97,21 @@ void OS_Event(const sapp_event *Event, void *Data)
 		if(Event->key_code == SAPP_KEYCODE_RIGHT)
 		{
 			E_AdvanceCursorXByN(&M->Cursor, &M->Buffer, +1);
+		}
+
+		if(Event->key_code == SAPP_KEYCODE_EQUAL)
+		{
+			if(Event->modifiers == SAPP_MODIFIER_SUPER)
+			{
+				M->Buffer.HeightInPixels += 5;
+			}
+		}
+		if(Event->key_code == SAPP_KEYCODE_MINUS)
+		{
+			if(Event->modifiers == SAPP_MODIFIER_SUPER)
+			{
+				M->Buffer.HeightInPixels -= 5;
+			}
 		}
 
 		if(Event->key_code == SAPP_KEYCODE_LEFT)
@@ -117,20 +129,28 @@ void OS_Event(const sapp_event *Event, void *Data)
 		{
 			M->Cursor.Column -= 1;
 		}
-	}
-	else if(Event->type == SAPP_EVENTTYPE_CHAR)
-	{
-		if(Event->char_code == 127)
-		{
-			// HACK(Oliver): Why the hell do i need to do this?
-		}
-		else if(Event->char_code == 13)
+
+		if(Event->key_code == SAPP_KEYCODE_ENTER)
 		{
 			E_InsertTextAtCursor(&M->Edit, &M->Cursor, &M->Buffer, Str8("\n"));
 		}
-		else
+
+		if(Event->key_code == SAPP_KEYCODE_SPACE)
 		{
-			E_InsertTextAtCursor(&M->Edit, &M->Cursor, &M->Buffer, Str8PushF(M->FrameArena, "?char", Event->char_code));
+			E_InsertTextAtCursor(&M->Edit, &M->Cursor, &M->Buffer, Str8(" "));
+		}
+
+		if(Event->key_code == SAPP_KEYCODE_TAB)
+		{
+			E_InsertTextAtCursor(&M->Edit, &M->Cursor, &M->Buffer, Str8("\t"));
+		}
+	}
+	else if(Event->type == SAPP_EVENTTYPE_CHAR && Event->char_code > 32 && Event->char_code <= 126)
+	{
+		if(!(Event->modifiers & SAPP_MODIFIER_SUPER))
+		{
+			E_InsertTextAtCursor(&M->Edit, &M->Cursor, &M->Buffer,
+								 Str8PushF(M->FrameArena, "?char", Event->char_code));
 		}
 	}
 }
@@ -138,6 +158,7 @@ void OS_Event(const sapp_event *Event, void *Data)
 void OS_Initialise(void *Data)
 {
 	mayday_context *M = Data;
+	M->Buffer.HeightInPixels = 50;
 	R_Init(&M->Render);
 	//Application->R.Logger->Silent = True;
 }

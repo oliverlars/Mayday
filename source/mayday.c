@@ -43,7 +43,7 @@ void OS_Update(void *Data)
 
 	Application->Buffer.String = (str8){sizeof(G_TriangleShader), G_TriangleShader};
 
-	Application->Cursor.TargetPosition = GetPositionFromEditableBuffer(&Application->D_Context,
+	Application->Cursor.TargetPosition = E_GetPositionFromEditableBuffer(&Application->D_Context,
 																	   &Application->Cursor,
 																	   Application->Buffer,
 																	   Application->Font,
@@ -83,6 +83,25 @@ void OS_Event(const sapp_event *Event, void *Data)
 		if(Event->key_code == SAPP_KEYCODE_LEFT)
 		{
 			Application->Cursor.At -= 1;
+		}
+
+		if(Event->key_code == SAPP_KEYCODE_DOWN)
+		{
+			int DistanceFromNewLine = E_DistanceFromNextNewLine(&Application->D_Context, &Application->Cursor, Application->Buffer);
+			int DistanceFromPreviousNewLine = E_DistanceFromPreviousNewLine(&Application->D_Context, &Application->Cursor, Application->Buffer);
+
+			Application->Cursor.At += DistanceFromNewLine;
+			Application->Cursor.At += DistanceFromPreviousNewLine;
+		}
+
+		if(Event->key_code == SAPP_KEYCODE_UP)
+		{
+			int DistanceFromPreviousNewLine = E_DistanceFromPreviousNewLine(&Application->D_Context, &Application->Cursor, Application->Buffer);
+			int DistanceFromNewLine = E_DistanceFromNextNewLine(&Application->D_Context, &Application->Cursor, Application->Buffer);
+			Application->Cursor.At -= DistanceFromPreviousNewLine;
+			Application->Cursor.At -= 1;
+			Application->Cursor.At -= E_DistanceFromPreviousNewLine(&Application->D_Context, &Application->Cursor, Application->Buffer);
+			Application->Cursor.At += DistanceFromPreviousNewLine;
 		}
 	}
 }

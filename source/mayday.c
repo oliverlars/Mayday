@@ -92,9 +92,9 @@ void OS_Event(const sapp_event *Event, void *Data)
 
 		if(Event->key_code == SAPP_KEYCODE_BACKSPACE)	
 		{
-			// E_RemoveTextFromTextRange(&M->Edit, M->Cursor, &M->Buffer,
-			// 				   M->Cursor.At-1, M->Cursor.At);
-			// M->Cursor.At -= 1;
+			int BufferIndex = E_BufferIndexFromCursor(&M->Buffer, &M->Cursor);
+			E_RemoveTextFromTextRange(&M->Edit, &M->Cursor, &M->Buffer, BufferIndex-1, BufferIndex);
+			E_AdvanceCursorXByN(&M->Cursor, &M->Buffer, -1);
 		}
 
 		if(Event->key_code == SAPP_KEYCODE_RIGHT)

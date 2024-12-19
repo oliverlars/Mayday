@@ -12,10 +12,14 @@
 void E_AdvanceCursorXByN(cursor *Cursor, editable_buffer *Buffer, int N)
 {
 	int Index = E_BufferIndexFromCursor(Buffer, Cursor);
-	if(Index + N >= Buffer->String.Size)
-	{
-		N = Buffer->String.Size - Index;
-	}
+	if(N + Index >= Buffer->String.Size) N = Buffer->String.Size - Index;
+	if(N + Index < 0) N = Index;
+
+	/*
+	
+		We process the range [Index, Index + N) or (N, )
+
+	*/
 
 	if(N > 0)
 	{
@@ -23,29 +27,29 @@ void E_AdvanceCursorXByN(cursor *Cursor, editable_buffer *Buffer, int N)
 		{
 			if(Buffer->String.Bytes[Index + I] == '\n')
 			{
-				Cursor->Column++;
 				Cursor->StickyX = 0;
+				Cursor->Column += 1;
 			}
 			else
 			{
-				Cursor->StickyX++;
+				Cursor->StickyX += 1;
 			}
 		}
 	}
 	else
 	{
-		for(int I = 0; I < -N; I++)
+		for(int I = N; I < 0; I++)
 		{
-			if(Buffer->String.Bytes[Index - I] == '\n')
+			if(Buffer->String.Bytes[Index + I] == '\n')
 			{
-				Cursor->Column--;
 				Cursor->StickyX = 0;
+				Cursor->Column -= 1;
 			}
 			else
 			{
-				Cursor->StickyX--;
+				Cursor->StickyX -= 1;	
 			}
-		}	
+		}		
 	}
 }
 
@@ -91,7 +95,7 @@ void E_InsertTextAtCursor(edit_context *E_Context, cursor *Cursor, editable_buff
 	E_AdvanceCursorXByN(Cursor, Buffer, TextToInsert.Size);
 }
 
-void E_RemoveTextFromTextRange(edit_context *E_Context, cursor Cursor, editable_buffer *Buffer,
+void E_RemoveTextFromTextRange(edit_context *E_Context, cursor *Cursor, editable_buffer *Buffer,
 							   int RangeStart, int RangeEnd)
 {
 	if(!E_Context->Temp)

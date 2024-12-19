@@ -21,6 +21,34 @@ u64 M_FNVHashBytes(u64 Hash, u8 *Bytes, int ByteCount)
 	return M_FNVHashString(Hash, BytesAsString);
 }
 
+f32 ClampF32(f32 Value, f32 Low, f32 High)
+{
+	f32 Result = Value;
+	if(Value < Low)
+	{
+		Result = Low;
+	}
+	if(Value > High)
+	{
+		Result = High;
+	}
+	return Result;
+}
+
+s32 ClampS32(s32 Value, s32 Low, s32 High)
+{
+	s32 Result = Value;
+	if(Value < Low)
+	{
+		Result = Low;
+	}
+	if(Value > High)
+	{
+		Result = High;
+	}
+	return Result;
+}
+
 /*
 
 V2

@@ -55,5 +55,5 @@ int E_DistanceFromPreviousNewLine(cursor *Cursor,
 int E_DistanceFromNextNewLine(cursor *Cursor,
 							  editable_buffer Buffer);
 
-void E_RemoveTextFromTextRange(edit_context *E_Context, cursor Cursor, editable_buffer *Buffer,
-							   int RangeLeft, int RangeRight);
+void E_RemoveTextFromTextRange(edit_context *E_Context, cursor *Cursor, editable_buffer *Buffer,
+							   int RangeStart, int RangeEnd);

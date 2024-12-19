@@ -13,104 +13,117 @@
 
 #include "edit.h"
 
-typedef struct mayday
+typedef struct mayday_context
 {
 	memory_arena *FrameArena;
 	memory_arena *PermanentArena;
 	os_window Window;
-	r_context R_Context;
-	d_context D_Context;
-	e_context E_Context;
+	render_context Render;
+	draw_context Draw;
+	edit_context Edit;
 
 	d_font Font;
 
 	editable_buffer Buffer;
 	cursor Cursor;
 }
-mayday;
+mayday_context;
 
 #include "shaders.h"
 
 void OS_Update(void *Data)
 {
-	mayday *Application = Data;
+	mayday_context *M = Data;
 
 	//TODO(Oliver): Theres a better way to do this
-	int WindowHeight = OS_WindowHeight(&Application->Window);
+	int WindowHeight = OS_WindowHeight(&M->Window);
 
-	v2f BufferPosition = v2f(50, (f32)WindowHeight - 100);
+	v2f BufferPosition = v2f(200, (f32)WindowHeight - 100);
 
-	Application->Buffer.HeightInPixels = 50;
+	v2f NumbersPosition = v2f(10, (f32)WindowHeight - 100);
 
-	Application->Buffer.String = (str8){sizeof(G_TriangleShader), G_TriangleShader};
+	f32 LineHeight = D_LineHeightFromFont(M->Font, M->Buffer.HeightInPixels);
 
-	Application->Cursor.TargetPosition = E_GetPositionFromEditableBuffer(&Application->D_Context,
-																	   &Application->Cursor,
-																	   Application->Buffer,
-																	   Application->Font,
-																	   BufferPosition);
-	Application->Cursor.Position = LerpV2f(Application->Cursor.Position, Application->Cursor.TargetPosition, 0.3);
+	for(int I = 0; I < 50; I++)
+	{
+		D_DrawStr8(&M->Draw,
+			M->FrameArena, M->Font,
+			BufferPosition, v4f(0.5, 0.1, 0, 1),
+			50, Str8PushF(M->FrameArena, "?u32", I));
+		NumbersPosition.Y -= LineHeight;
+	}
 
-	f32 LineHeight = D_LineHeightFromFont(Application->Font, Application->Buffer.HeightInPixels);
+	M->Buffer.HeightInPixels = 50;
 
-	D_DrawQuad(&Application->D_Context, Application->FrameArena,
-	Application->Cursor.Position, 5, LineHeight, v4f(0, 1, 0, 1));
+	M->Buffer.String = (str8){sizeof(G_TriangleShader), G_TriangleShader};
 
-	D_DrawStr8(&Application->D_Context,
-			   Application->FrameArena, Application->Font,
+	M->Cursor.TargetPosition = E_GetPositionFromEditableBuffer(&M->Draw,
+															   &M->Cursor,
+															   M->Buffer,
+															   M->Font,
+															   BufferPosition);
+	M->Cursor.Position = LerpV2f(M->Cursor.Position, M->Cursor.TargetPosition, 0.3);
+
+
+	D_DrawQuad(&M->Draw, M->FrameArena,
+	M->Cursor.Position, 5, LineHeight, v4f(0, 1, 0, 1));
+
+
+	D_DrawStr8(&M->Draw,
+			   M->FrameArena, M->Font,
 			   BufferPosition, v4f(1, 0.5, 0, 1),
-			   50, Application->Buffer.String);
+			   50, M->Buffer.String);
 
-	D_GlyphsToAtlas(&Application->D_Context);
-	R_TextureFromBytes(&Application->R_Context, Application->D_Context.FontAtlas, D_FONT_ATLAS_SIZE, D_FONT_ATLAS_SIZE);
+	D_GlyphsToAtlas(&M->Draw);
+	R_TextureFromBytes(&M->Render, M->Draw.FontAtlas, D_FONT_ATLAS_SIZE, D_FONT_ATLAS_SIZE);
 
-	R_Update(&Application->R_Context);
+	R_Update(&M->Render);
 
-	Application->FrameArena->At = 0;
+	M->FrameArena->At = 0;
 
-	ArenaReset(Application->FrameArena);
+	ArenaReset(M->FrameArena);
 }
 
 void OS_Event(const sapp_event *Event, void *Data)
 {
-	mayday *Application = (mayday*)Data;
+	mayday_context *M = (mayday_context*)Data;
 	if(Event->type == SAPP_EVENTTYPE_KEY_DOWN)
 	{	
 
-		if(Event->key_code == SAPP_KEYCODE_BACKSPACE)
+		if(Event->key_code == SAPP_KEYCODE_BACKSPACE)	
 		{
-			E_RemoveTextFromTextRange(&Application->E_Context, Application->Cursor, &Application->Buffer,
-							   Application->Cursor.At-1, Application->Cursor.At);
-			Application->Cursor.At -= 1;
+			E_RemoveTextFromTextRange(&M->Edit, M->Cursor, &M->Buffer,
+							   M->Cursor.At-1, M->Cursor.At);
+			M->Cursor.At -= 1;
 		}
 
 		if(Event->key_code == SAPP_KEYCODE_RIGHT)
 		{
-			Application->Cursor.At += 1;
+			M->Cursor.At += 1;
 		}
 
 		if(Event->key_code == SAPP_KEYCODE_LEFT)
 		{
-			Application->Cursor.At -= 1;
+			M->Cursor.At -= 1;
 		}
 
 		if(Event->key_code == SAPP_KEYCODE_DOWN)
 		{
-			int DistanceFromNewLine = E_DistanceFromNextNewLine(&Application->D_Context, &Application->Cursor, Application->Buffer);
-			int DistanceFromPreviousNewLine = E_DistanceFromPreviousNewLine(&Application->D_Context, &Application->Cursor, Application->Buffer);
-
-			Application->Cursor.At += DistanceFromNewLine;
-			Application->Cursor.At += DistanceFromPreviousNewLine;
+			int DistanceFromNewLine = E_DistanceFromNextNewLine(&M->Draw, &M->Cursor, M->Buffer);
+			int DistanceFromPreviousNewLine = E_DistanceFromPreviousNewLine(&M->Draw, &M->Cursor, M->Buffer);
+			if(M->Buffer.String.Bytes[M->Cursor.At] == '\n') M->Cursor.At++;
+			M->Cursor.At += DistanceFromNewLine;
+			M->Cursor.At += DistanceFromPreviousNewLine;
 		}
 
 		if(Event->key_code == SAPP_KEYCODE_UP)
 		{
-			int DistanceFromPreviousNewLine = E_DistanceFromPreviousNewLine(&Application->D_Context, &Application->Cursor, Application->Buffer);
-			int DistanceFromNewLine = E_DistanceFromNextNewLine(&Application->D_Context, &Application->Cursor, Application->Buffer);
-			Application->Cursor.At -= DistanceFromPreviousNewLine;
-			Application->Cursor.At -= 1;
-			Application->Cursor.At -= E_DistanceFromPreviousNewLine(&Application->D_Context, &Application->Cursor, Application->Buffer);
-			Application->Cursor.At += DistanceFromPreviousNewLine;
+			int DistanceFromPreviousNewLine = E_DistanceFromPreviousNewLine(&M->Draw, &M->Cursor, M->Buffer);
+			int DistanceFromNewLine = E_DistanceFromNextNewLine(&M->Draw, &M->Cursor, M->Buffer);
+			M->Cursor.At -= DistanceFromPreviousNewLine;
+			M->Cursor.At -= 1;
+			M->Cursor.At -= E_DistanceFromPreviousNewLine(&M->Draw, &M->Cursor, M->Buffer);
+			M->Cursor.At += DistanceFromPreviousNewLine;
 		}
 	}
 	else if(Event->type == SAPP_EVENTTYPE_CHAR)
@@ -121,22 +134,22 @@ void OS_Event(const sapp_event *Event, void *Data)
 		}
 		else if(Event->char_code == 13)
 		{
-			E_InsertTextAtCursor(&Application->E_Context, Application->Cursor, &Application->Buffer, Str8("\n"));
-			Application->Cursor.At += 1;
+			E_InsertTextAtCursor(&M->Edit, M->Cursor, &M->Buffer, Str8("\n"));
+			M->Cursor.At += 1;
 		}
 		else
 		{
-			E_InsertTextAtCursor(&Application->E_Context, Application->Cursor, &Application->Buffer, Str8PushF(Application->FrameArena, "?char", Event->char_code));
-			Application->Cursor.At += 1;
+			E_InsertTextAtCursor(&M->Edit, M->Cursor, &M->Buffer, Str8PushF(M->FrameArena, "?char", Event->char_code));
+			M->Cursor.At += 1;
 		}
 	}
 }
 
 void OS_Initialise(void *Data)
 {
-	mayday *Application = Data;
-	R_Init(&Application->R_Context);
-	//Application->R_Context.Logger->Silent = True;
+	mayday_context *M = Data;
+	R_Init(&M->Render);
+	//Application->R.Logger->Silent = True;
 }
 
 int main()
@@ -148,22 +161,22 @@ int main()
 	Logger.Silent = True;
 	Logger.Arena = &Arena;
 
-	mayday Application = {0};
+	mayday_context M = {0};
 	
-	Application.PermanentArena = &Arena;
-	Application.FrameArena = &FrameArena;
+	M.PermanentArena = &Arena;
+	M.FrameArena = &FrameArena;
 
-	Application.R_Context.Arena = &Arena;
-	Application.R_Context.Logger = &Logger;
+	M.Render.Arena = &Arena;
+	M.Render.Logger = &Logger;
 
 
-	Application.D_Context.Arena = &Arena;
-	Application.D_Context.Logger = &Logger;
-	Application.D_Context.R_Context = &Application.R_Context;
+	M.Draw.Arena = &Arena;
+	M.Draw.Logger = &Logger;
+	M.Draw.R = &M.Render;
 
-	Application.Window = OS_MakeWindow(Str8("Mayday"), 3024, 1964);
+	M.Window = OS_MakeWindow(Str8("Mayday"), 3024, 1964);
 
-	Application.Font = D_LoadFontFromTTF(&Application.D_Context, G_BerkeleyMonoRegular);
+	M.Font = D_LoadFontFromTTF(&M.Draw, G_BerkeleyMonoRegular);
 
-	OS_Run(Application.Window, &Application);
+	OS_Run(M.Window, &M);
 }

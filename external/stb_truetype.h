@@ -676,7 +676,7 @@ STBTT_DEF int  stbtt_PackFontRangesRenderIntoRects(stbtt_pack_context *spc, cons
 // this is an opaque structure that you shouldn't mess with which holds
 // all the context needed from PackBegin to PackEnd.
 struct stbtt_pack_context {
-   void *user_allocator_context;
+   void *user_allocatorender_context;
    void *pack_info;
    int   width;
    int   height;
@@ -3966,7 +3966,7 @@ STBTT_DEF int stbtt_PackBegin(stbtt_pack_context *spc, unsigned char *pixels, in
       return 0;
    }
 
-   spc->user_allocator_context = alloc_context;
+   spc->user_allocatorender_context = alloc_context;
    spc->width = pw;
    spc->height = ph;
    spc->pixels = pixels;
@@ -3988,8 +3988,8 @@ STBTT_DEF int stbtt_PackBegin(stbtt_pack_context *spc, unsigned char *pixels, in
 
 STBTT_DEF void stbtt_PackEnd  (stbtt_pack_context *spc)
 {
-   STBTT_free(spc->nodes    , spc->user_allocator_context);
-   STBTT_free(spc->pack_info, spc->user_allocator_context);
+   STBTT_free(spc->nodes    , spc->user_allocatorender_context);
+   STBTT_free(spc->pack_info, spc->user_allocatorender_context);
 }
 
 STBTT_DEF void stbtt_PackSetOversampling(stbtt_pack_context *spc, unsigned int h_oversample, unsigned int v_oversample)
@@ -4318,11 +4318,11 @@ STBTT_DEF int stbtt_PackFontRanges(stbtt_pack_context *spc, const unsigned char 
    for (i=0; i < num_ranges; ++i)
       n += ranges[i].num_chars;
 
-   rects = (stbrp_rect *) STBTT_malloc(sizeof(*rects) * n, spc->user_allocator_context);
+   rects = (stbrp_rect *) STBTT_malloc(sizeof(*rects) * n, spc->user_allocatorender_context);
    if (rects == NULL)
       return 0;
 
-   info.userdata = spc->user_allocator_context;
+   info.userdata = spc->user_allocatorender_context;
    stbtt_InitFont(&info, fontdata, stbtt_GetFontOffsetForIndex(fontdata,font_index));
 
    n = stbtt_PackFontRangesGatherRects(spc, &info, ranges, num_ranges, rects);
@@ -4331,7 +4331,7 @@ STBTT_DEF int stbtt_PackFontRanges(stbtt_pack_context *spc, const unsigned char 
 
    return_value = stbtt_PackFontRangesRenderIntoRects(spc, &info, ranges, num_ranges, rects);
 
-   STBTT_free(rects, spc->user_allocator_context);
+   STBTT_free(rects, spc->user_allocatorender_context);
    return return_value;
 }
 

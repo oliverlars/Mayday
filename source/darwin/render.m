@@ -35,26 +35,26 @@ typedef struct gpu_vertex
 }
 gpu_vertex;
 
-void R_PushCommand(r_context *R_Context, memory_arena *Arena, r_command Command)
+void R_PushCommand(render_context *R, memory_arena *Arena, r_command Command)
 {
 	r_command *NextCommand = (r_command*)ArenaPushZero(Arena, sizeof(r_command));
 	NextCommand[0] = Command;
-	if(!R_Context->CommandsLast)
+	if(!R->CommandsLast)
 	{
-		R_Context->CommandsFirst = NextCommand;
-		R_Context->CommandsLast = NextCommand;
+		R->CommandsFirst = NextCommand;
+		R->CommandsLast = NextCommand;
 	}
 	else
 	{
-		R_Context->CommandsLast->Next = NextCommand;
-		R_Context->CommandsLast = NextCommand;
+		R->CommandsLast->Next = NextCommand;
+		R->CommandsLast = NextCommand;
 	}
 }
 
 // Dumb hack
-void R_TextureFromBytes(r_context *R_Context, u8 *Bytes, s32 Width, s32 Height)
+void R_TextureFromBytes(render_context *R, u8 *Bytes, s32 Width, s32 Height)
 {
-	metal_context *Metal = R_Context->Backend;
+	metal_context *Metal = R->Backend;
 	MTLTextureDescriptor *TextureDescriptor = [MTLTextureDescriptor
 											   texture2DDescriptorWithPixelFormat:MTLPixelFormatR8Unorm
 											   width:Width
@@ -66,9 +66,9 @@ void R_TextureFromBytes(r_context *R_Context, u8 *Bytes, s32 Width, s32 Height)
 	[Metal->FontAtlasTexture replaceRegion:region mipmapLevel:0 withBytes:Bytes bytesPerRow:Width];
 }
 
-id<MTLTexture> MakeDepthTexture(r_context *R_Context, CGSize Size)
+id<MTLTexture> MakeDepthTexture(render_context *R, CGSize Size)
 {
-	metal_context *Metal = R_Context->Backend;
+	metal_context *Metal = R->Backend;
 	MTLTextureDescriptor *Desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatDepth32Float 
 													   width:Size.width
 													   height:Size.height mipmapped:NO];
@@ -80,23 +80,23 @@ id<MTLTexture> MakeDepthTexture(r_context *R_Context, CGSize Size)
 	return Result;
 }
 
-id<MTLTexture> ResizeDepthTexture(r_context *R_Context, CGSize Size)
+id<MTLTexture> ResizeDepthTexture(render_context *R, CGSize Size)
 {
-	metal_context *Metal = R_Context->Backend;
+	metal_context *Metal = R->Backend;
 	if(Size.width != [Metal->DepthTexture width] || Size.height != [Metal->DepthTexture height] || Metal->DepthTexture == nil)
 	{
 		Metal->DepthTexture = nil;
 
-		Metal->DepthTexture = MakeDepthTexture(R_Context, Size);
+		Metal->DepthTexture = MakeDepthTexture(R, Size);
 
-		LogInfo(R_Context->Logger, "DepthTexture resized");
+		LogInfo(R->Logger, "DepthTexture resized");
 	}
 	return Metal->DepthTexture;
 }
 
-metal_shader R_BloomShader(r_context *R_Context)
+metal_shader R_BloomShader(render_context *R)
 {
-	metal_context *Metal = (metal_context*)R_Context->Backend;
+	metal_context *Metal = (metal_context*)R->Backend;
 	metal_shader Shader = {0};
 
 	NSError* Error = nil;
@@ -128,9 +128,9 @@ metal_shader R_BloomShader(r_context *R_Context)
 	return Shader;
 }
 
-metal_shader R_GlyphShader(r_context *R_Context)
+metal_shader R_GlyphShader(render_context *R)
 {
-	metal_context *Metal = R_Context->Backend;
+	metal_context *Metal = R->Backend;
 	metal_shader Shader = {0};
 
 	NSError* Error = nil;
@@ -143,7 +143,7 @@ metal_shader R_GlyphShader(r_context *R_Context)
 
 	if(!Shader.Library)
 	{
-		LogError(R_Context->Logger, (char*)Error.localizedDescription.cString);
+		LogError(R->Logger, (char*)Error.localizedDescription.cString);
 	}
 
 	MTLRenderPipelineDescriptor* PipelineDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
@@ -193,9 +193,9 @@ metal_shader R_GlyphShader(r_context *R_Context)
 	return Shader;
 }
 
-metal_shader R_TriangleShader(r_context *R_Context)
+metal_shader R_TriangleShader(render_context *R)
 {
-	metal_context *Metal = R_Context->Backend;
+	metal_context *Metal = R->Backend;
 	metal_shader Shader = {0};
 
 	NSError* Error = nil;
@@ -208,7 +208,7 @@ metal_shader R_TriangleShader(r_context *R_Context)
 
 	if(!Shader.Library)
 	{
-		LogError(R_Context->Logger, (char*)Error.localizedDescription.cString);
+		LogError(R->Logger, (char*)Error.localizedDescription.cString);
 	}
 
 	MTLRenderPipelineDescriptor* PipelineDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
@@ -255,10 +255,10 @@ metal_shader R_TriangleShader(r_context *R_Context)
 	return Shader;
 }
 
-void R_Init(r_context *R_Context)
+void R_Init(render_context *R)
 {
-	metal_context* Metal = ArenaPushTypeZero(R_Context->Arena, metal_context);
-	R_Context->Backend = Metal;
+	metal_context* Metal = ArenaPushTypeZero(R->Arena, metal_context);
+	R->Backend = Metal;
 
 	Metal->Device = (__bridge id<MTLDevice>)sapp_metal_get_device();
 
@@ -274,25 +274,25 @@ void R_Init(r_context *R_Context)
 					 options:MTLResourceStorageModeShared];
 
 
-	Metal->BloomShader = R_BloomShader(R_Context);
-	Metal->GlyphShader = R_GlyphShader(R_Context);
-	Metal->TriangleShader = R_TriangleShader(R_Context);
+	Metal->BloomShader = R_BloomShader(R);
+	Metal->GlyphShader = R_GlyphShader(R);
+	Metal->TriangleShader = R_TriangleShader(R);
 
 }
 
 f32 Angle = 0.0;
 
 
-void R_RenderTriangles(r_context *R_Context, id<MTLCommandBuffer> CommandBuffer, int VertexCount)
+void R_RenderTriangles(render_context *R, id<MTLCommandBuffer> CommandBuffer, int VertexCount)
 {
-	metal_context *Metal = R_Context->Backend;
+	metal_context *Metal = R->Backend;
 
 	MTLRenderPassDescriptor* PassDesc = [MTLRenderPassDescriptor renderPassDescriptor];
 	PassDesc.colorAttachments[0].texture = Metal->BaseFrameBuffer;
 	PassDesc.colorAttachments[0].loadAction = MTLLoadActionLoad;
 	PassDesc.colorAttachments[0].clearColor = MTLClearColorMake(0.0,0.0,0.0,1);
 
-	PassDesc.depthAttachment.texture = ResizeDepthTexture(R_Context, CGSizeMake(Metal->Drawable.texture.width, Metal->Drawable.texture.height));
+	PassDesc.depthAttachment.texture = ResizeDepthTexture(R, CGSizeMake(Metal->Drawable.texture.width, Metal->Drawable.texture.height));
 	PassDesc.depthAttachment.loadAction = MTLLoadActionLoad;
 	PassDesc.depthAttachment.clearDepth = 1.0;
 
@@ -310,16 +310,16 @@ void R_RenderTriangles(r_context *R_Context, id<MTLCommandBuffer> CommandBuffer,
 	[Encoder endEncoding];
 }
 
-void R_RenderGlyphs(r_context *R_Context, id<MTLCommandBuffer> CommandBuffer, int VertexCount)
+void R_RenderGlyphs(render_context *R, id<MTLCommandBuffer> CommandBuffer, int VertexCount)
 {
-	metal_context *Metal = R_Context->Backend;
+	metal_context *Metal = R->Backend;
 
 	MTLRenderPassDescriptor* PassDesc = [MTLRenderPassDescriptor renderPassDescriptor];
 	PassDesc.colorAttachments[0].texture = Metal->BaseFrameBuffer;
 	PassDesc.colorAttachments[0].loadAction = MTLLoadActionLoad;
 	PassDesc.colorAttachments[0].clearColor = MTLClearColorMake(0.0,0.0,0.0,1);
 
-	PassDesc.depthAttachment.texture = ResizeDepthTexture(R_Context, CGSizeMake(Metal->Drawable.texture.width, Metal->Drawable.texture.height));
+	PassDesc.depthAttachment.texture = ResizeDepthTexture(R, CGSizeMake(Metal->Drawable.texture.width, Metal->Drawable.texture.height));
 	PassDesc.depthAttachment.loadAction = MTLLoadActionLoad;
 	PassDesc.depthAttachment.clearDepth = 1.0;
 
@@ -339,9 +339,9 @@ void R_RenderGlyphs(r_context *R_Context, id<MTLCommandBuffer> CommandBuffer, in
 	[Encoder endEncoding];
 }
 
-void R_RenderFullscreenBloom(r_context *R_Context, id<MTLCommandBuffer> CommandBuffer)
+void R_RenderFullscreenBloom(render_context *R, id<MTLCommandBuffer> CommandBuffer)
 {
-	metal_context *Metal = R_Context->Backend;
+	metal_context *Metal = R->Backend;
 
 	MPSImageGaussianBlur *GaussianBlur = [[MPSImageGaussianBlur alloc] initWithDevice:Metal->Device sigma:10];
 
@@ -366,9 +366,9 @@ void R_RenderFullscreenBloom(r_context *R_Context, id<MTLCommandBuffer> CommandB
 	[Encoder endEncoding];
 }
 
-void R_ClearAllTextures(r_context *R_Context, id<MTLCommandBuffer> CommandBuffer)
+void R_ClearAllTextures(render_context *R, id<MTLCommandBuffer> CommandBuffer)
 {
-	metal_context *Metal = R_Context->Backend;
+	metal_context *Metal = R->Backend;
 
 	MTLRenderPassDescriptor* PassDesc = [MTLRenderPassDescriptor renderPassDescriptor];
 	PassDesc.colorAttachments[0].texture = Metal->Drawable.texture;
@@ -381,7 +381,7 @@ void R_ClearAllTextures(r_context *R_Context, id<MTLCommandBuffer> CommandBuffer
 	PassDesc.colorAttachments[2].loadAction = MTLLoadActionClear;
 	PassDesc.colorAttachments[2].clearColor = MTLClearColorMake(0.0,0.0,0.0,1);
 
-	PassDesc.depthAttachment.texture = ResizeDepthTexture(R_Context, CGSizeMake(Metal->Drawable.texture.width, Metal->Drawable.texture.height));
+	PassDesc.depthAttachment.texture = ResizeDepthTexture(R, CGSizeMake(Metal->Drawable.texture.width, Metal->Drawable.texture.height));
 	PassDesc.depthAttachment.loadAction = MTLLoadActionLoad;
 	PassDesc.depthAttachment.clearDepth = 1.0;
 
@@ -389,9 +389,9 @@ void R_ClearAllTextures(r_context *R_Context, id<MTLCommandBuffer> CommandBuffer
 	[Encoder endEncoding];
 }
 
-void R_Update(r_context *R_Context)
+void R_Update(render_context *R)
 {
-	metal_context *Metal = R_Context->Backend;
+	metal_context *Metal = R->Backend;
 	Metal->Drawable = (__bridge id<CAMetalDrawable>)sapp_metal_get_current_drawable();
 
 	CAMetalLayer *MetalLayer = (CAMetalLayer *)Metal->Drawable.layer;
@@ -425,7 +425,7 @@ void R_Update(r_context *R_Context)
 	id<MTLCommandBuffer> CommandBuffer = [Metal->CommandQueue commandBuffer];
 
 
-	R_ClearAllTextures(R_Context, CommandBuffer);
+	R_ClearAllTextures(R, CommandBuffer);
 
 	Uniforms.ModelMatrix = M44FromXAngle(Angle);
 	Angle += 0.01;
@@ -437,16 +437,16 @@ void R_Update(r_context *R_Context)
 	MemoryCopy(Metal->UniformBuffer.contents, &Uniforms, sizeof(Uniforms));
 
 	// TODO(Oliver): Make this a proper construct
-	u64 ArenaResetTo = R_Context->Arena->At;
+	u64 ArenaResetTo = R->Arena->At;
 
 	int TotalVertices = 0;
-	for(r_command *Command = R_Context->CommandsFirst; Command != Null; Command = Command->Next)
+	for(r_command *Command = R->CommandsFirst; Command != Null; Command = Command->Next)
 	{
 
 		if(0){}
 		else if(Command->Type == R_COMMAND_GLYPH)
 		{	
-			gpu_vertex *GPUVertices = (gpu_vertex*)ArenaPush(R_Context->Arena,
+			gpu_vertex *GPUVertices = (gpu_vertex*)ArenaPush(R->Arena,
 															 sizeof(gpu_vertex)*Command->VerticesCount);
 			for(int V = 0; V < Command->VerticesCount; V++)
 			{
@@ -463,7 +463,7 @@ void R_Update(r_context *R_Context)
 		}
 		else if(Command->Type == R_COMMAND_TRIANGLE)
 		{
-			gpu_vertex *GPUVertices = (gpu_vertex*)ArenaPush(R_Context->Arena,
+			gpu_vertex *GPUVertices = (gpu_vertex*)ArenaPush(R->Arena,
 															 sizeof(gpu_vertex)*Command->VerticesCount);
 			for(int V = 0; V < Command->VerticesCount; V++)
 			{
@@ -482,25 +482,25 @@ void R_Update(r_context *R_Context)
 		{
 			if(Command->Type == R_COMMAND_GLYPH)
 			{
-				R_RenderGlyphs(R_Context, CommandBuffer, TotalVertices);
+				R_RenderGlyphs(R, CommandBuffer, TotalVertices);
 			}
 			else if(Command->Type == R_COMMAND_TRIANGLE)
 			{
-				R_RenderTriangles(R_Context, CommandBuffer, TotalVertices);
+				R_RenderTriangles(R, CommandBuffer, TotalVertices);
 			}
 			TotalVertices = 0;
 		}
 	}
 
-	R_Context->Arena->At = ArenaResetTo;
+	R->Arena->At = ArenaResetTo;
 
-	R_RenderFullscreenBloom(R_Context, CommandBuffer);
+	R_RenderFullscreenBloom(R, CommandBuffer);
 
 	[CommandBuffer presentDrawable:Metal->Drawable];
 	[CommandBuffer commit];
 
 	[CommandBuffer waitUntilCompleted];
 
-	R_Context->CommandsFirst = Null;
-	R_Context->CommandsLast = Null;
+	R->CommandsFirst = Null;
+	R->CommandsLast = Null;
 }

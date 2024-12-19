@@ -7,7 +7,7 @@
 
 #include <math.h>
 
-d_font D_LoadFontFromTTF(d_context *D_Context, u8 *Data)
+d_font D_LoadFontFromTTF(draw_context *D_Context, u8 *Data)
 {
 	d_font Font = {0};
 	stbtt_fontinfo Info = {0};
@@ -24,7 +24,7 @@ d_font D_LoadFontFromTTF(d_context *D_Context, u8 *Data)
 	return Font;
 }
 
-void D_GlyphsToAtlas(d_context *D_Context)
+void D_GlyphsToAtlas(draw_context *D_Context)
 {
 	if(!D_Context->NewestGlyph)
 	{
@@ -96,7 +96,7 @@ void D_GlyphsToAtlas(d_context *D_Context)
 	}
 }
 
-void PushGlyphOntoLRU(d_context *D_Context, d_atlas_glyph *Glyph)
+void PushGlyphOntoLRU(draw_context *D_Context, d_atlas_glyph *Glyph)
 {
 	if(!D_Context->OldestGlyph)
 	{
@@ -111,7 +111,7 @@ void PushGlyphOntoLRU(d_context *D_Context, d_atlas_glyph *Glyph)
 	}
 }
 
-void PopGlyphOffLRU(d_context *D_Context)
+void PopGlyphOffLRU(draw_context *D_Context)
 {
 	if(D_Context->OldestGlyph)
 	{
@@ -120,7 +120,7 @@ void PopGlyphOffLRU(d_context *D_Context)
 	}
 }
 
-d_atlas_glyph *D_GlyphFromCodePoint(d_context *D_Context, d_font Font, s32 HeightInPixels, u32 CodePoint)
+d_atlas_glyph *D_GlyphFromCodePoint(draw_context *D_Context, d_font Font, s32 HeightInPixels, u32 CodePoint)
 {
 	u64 Hash = M_FNVHashBytes(M_FNV_HASH_START, (u8*)&Font, sizeof(d_font));
 	Hash = M_FNVHashBytes(Hash, (u8*)&HeightInPixels, sizeof(s32));
@@ -206,12 +206,12 @@ d_atlas_glyph *D_GlyphFromCodePoint(d_context *D_Context, d_font Font, s32 Heigh
 	return ResultGlyph;
 }
 
-void D_DrawQuad(d_context *D_Context,
+void D_DrawQuad(draw_context *D_Context,
 				memory_arena *Arena, v2f Position,
 				f32 Width, f32 Height,
 				v4f Colour)
 {
-	r_context *R_Context = D_Context->R_Context;
+	render_context *R = D_Context->R;
 	r_command Command = {0};
 	Command.Vertices = (r_vertex*)ArenaPush(Arena, 6*sizeof(r_vertex));
 	Command.VerticesCount = 6;
@@ -240,10 +240,10 @@ void D_DrawQuad(d_context *D_Context,
 		*R_Vertices++ = Vertex;
 	}
 	Command.Type = R_COMMAND_TRIANGLE;
-	R_PushCommand(R_Context, Arena, Command);
+	R_PushCommand(R, Arena, Command);
 }
 
-void D_DrawStr8(d_context *D_Context,
+void D_DrawStr8(draw_context *D,
 				memory_arena *Arena,
 				d_font Font,
 				v2f Position,
@@ -251,8 +251,8 @@ void D_DrawStr8(d_context *D_Context,
 				f32 HeightInPixels,
 				str8 String)
 {
-	r_context *R_Context = D_Context->R_Context;
-	
+	render_context *R = D->R;
+
 	f32 Scale = stbtt_ScaleForPixelHeight(&Font.Info, HeightInPixels);
 	int TotalTriangleCount = String.Size*6;
 	r_command Command = {0};
@@ -281,7 +281,7 @@ void D_DrawStr8(d_context *D_Context,
 			TabMultiplier *= 4.0;
 		}
 
-		d_atlas_glyph *Glyph  = D_GlyphFromCodePoint(D_Context, Font, HeightInPixels, CodePoint);
+		d_atlas_glyph *Glyph  = D_GlyphFromCodePoint(D, Font, HeightInPixels, CodePoint);
 
 		f32 GlyphWidth = ((f32)(Glyph->Box.Z - Glyph->Box.X)*Scale);
 		f32 GlyphHeight = ((f32)(Glyph->Box.W - Glyph->Box.Y)*Scale);
@@ -330,7 +330,7 @@ void D_DrawStr8(d_context *D_Context,
 	}
 
 	Command.Type = R_COMMAND_GLYPH;
-	R_PushCommand(R_Context, Arena, Command);
+	R_PushCommand(R, Arena, Command);
 }
 
 f32 D_LineHeightFromFont(d_font Font, f32 HeightInPixels)

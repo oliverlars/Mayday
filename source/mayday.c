@@ -38,7 +38,7 @@ void OS_Update(void *Data)
 	//TODO(Oliver): Theres a better way to do this
 	int WindowHeight = OS_WindowHeight(&Application->Window);
 
-	v2f BufferPosition = v2f(50,  (f32)WindowHeight - 100);
+	v2f BufferPosition = v2f(50, (f32)WindowHeight - 100);
 
 	Application->Buffer.HeightInPixels = 50;
 
@@ -53,10 +53,10 @@ void OS_Update(void *Data)
 
 	f32 LineHeight = D_LineHeightFromFont(Application->Font, Application->Buffer.HeightInPixels);
 
-	D_DrawQuad(&Application->R_Context, &Application->D_Context, Application->FrameArena,
+	D_DrawQuad(&Application->D_Context, Application->FrameArena,
 	Application->Cursor.Position, 5, LineHeight, v4f(0, 1, 0, 1));
 
-	D_DrawStr8(&Application->R_Context, &Application->D_Context,
+	D_DrawStr8(&Application->D_Context,
 			   Application->FrameArena, Application->Font,
 			   BufferPosition, v4f(1, 0.5, 0, 1),
 			   50, Application->Buffer.String);
@@ -142,8 +142,10 @@ int main()
 	Application.R_Context.Arena = &Arena;
 	Application.R_Context.Logger = &Logger;
 
+
 	Application.D_Context.Arena = &Arena;
 	Application.D_Context.Logger = &Logger;
+	Application.D_Context.R_Context = &Application.R_Context;
 
 	Application.Window = OS_MakeWindow(Str8("Mayday"), 3024, 1964);
 

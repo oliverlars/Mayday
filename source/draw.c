@@ -206,11 +206,12 @@ d_atlas_glyph *D_GlyphFromCodePoint(d_context *D_Context, d_font Font, s32 Heigh
 	return ResultGlyph;
 }
 
-void D_DrawQuad(r_context *R_Context, d_context *D_Context,
+void D_DrawQuad(d_context *D_Context,
 				memory_arena *Arena, v2f Position,
 				f32 Width, f32 Height,
 				v4f Colour)
 {
+	r_context *R_Context = D_Context->R_Context;
 	r_command Command = {0};
 	Command.Vertices = (r_vertex*)ArenaPush(Arena, 6*sizeof(r_vertex));
 	Command.VerticesCount = 6;
@@ -242,8 +243,7 @@ void D_DrawQuad(r_context *R_Context, d_context *D_Context,
 	R_PushCommand(R_Context, Arena, Command);
 }
 
-void D_DrawStr8(r_context *R_Context,
-				d_context *D_Context,
+void D_DrawStr8(d_context *D_Context,
 				memory_arena *Arena,
 				d_font Font,
 				v2f Position,
@@ -251,6 +251,8 @@ void D_DrawStr8(r_context *R_Context,
 				f32 HeightInPixels,
 				str8 String)
 {
+	r_context *R_Context = D_Context->R_Context;
+	
 	f32 Scale = stbtt_ScaleForPixelHeight(&Font.Info, HeightInPixels);
 	int TotalTriangleCount = String.Size*6;
 	r_command Command = {0};

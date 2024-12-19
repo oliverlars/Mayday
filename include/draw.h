@@ -33,6 +33,9 @@ typedef struct d_context
 {
 	memory_arena *Arena;
 	logger *Logger;
+
+	r_context *R_Context;
+
 	d_atlas_glyph GlyphTable[D_GLYPH_TABLE_SIZE];
 
 	d_atlas_glyph *OldestGlyph;
@@ -55,9 +58,8 @@ void D_GlyphsToAtlas(d_context *D_Context);
 
 d_font D_LoadFontFromFile(d_context *D_Context, str8 FileName);
 d_font D_LoadFontFromTTF(d_context *D_Context, u8 *Data);
-void D_DrawGlyph(r_context *R_Context, d_atlas_glyph *Glyph);
-void D_DrawStr8(r_context *R_Context,
-				d_context *D_Context,
+void D_DrawGlyph(d_context *D_Context, d_atlas_glyph *Glyph);
+void D_DrawStr8(d_context *D_Context,
 				memory_arena *Arena,
 				d_font Font,
 				v2f Position,
@@ -65,7 +67,7 @@ void D_DrawStr8(r_context *R_Context,
 				f32 HeightInPixels,
 				str8 String);
 
-void D_DrawQuad(r_context *R_Context, d_context *D_Context,
+void D_DrawQuad(d_context *D_Context,
 				memory_arena *Arena, v2f Position,
 				f32 Width, f32 Height,
 				v4f Colour);

@@ -201,7 +201,7 @@ d_atlas_glyph *D_GlyphFromCodePoint(d_context *D_Context, d_font Font, s32 Heigh
 	}
 	else
 	{
-		LogInfo(D_Context->Logger, "Glyph already in table");
+		//LogInfo(D_Context->Logger, "Glyph already in table");
 	}
 	return ResultGlyph;
 }
@@ -329,4 +329,11 @@ void D_DrawStr8(r_context *R_Context,
 
 	Command.Type = R_COMMAND_GLYPH;
 	R_PushCommand(R_Context, Arena, Command);
+}
+
+f32 D_LineHeightFromFont(d_font Font, f32 HeightInPixels)
+{
+	f32 Scale = stbtt_ScaleForPixelHeight(&Font.Info, HeightInPixels);
+
+	return (Font.Ascent - Font.Descent + Font.LineGap)*Scale;
 }

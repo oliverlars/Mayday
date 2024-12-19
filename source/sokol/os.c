@@ -21,9 +21,10 @@ void OS_Run(os_window Window, void *Data)
 {
 	sapp_desc SAPPDesc = (sapp_desc)
 	{
-		.window_title = Window.Title.Bytes,
+		.window_title = (char*)Window.Title.Bytes,
 		.init_userdata_cb = OS_Initialise,
 		.frame_userdata_cb = OS_Update,
+		.event_userdata_cb = OS_Event,
 		.width = Window.Width,
 		.height = Window.Height,
 		.user_data = Data,

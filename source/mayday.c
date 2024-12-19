@@ -1,6 +1,7 @@
 
 #include "draw.h"
 #include "log.h"
+#include "maths.h"
 #include "memory.h"
 #include "misc.h"
 #include "os.h"
@@ -9,6 +10,8 @@
 #include "draw.h"
 #include "berkeley_mono_font.h"
 #include "render.h"
+
+#include "edit.h"
 
 typedef struct mayday
 {
@@ -19,6 +22,9 @@ typedef struct mayday
 	d_context D_Context;
 
 	d_font Font;
+
+	editable_buffer Buffer;
+	cursor Cursor;
 }
 mayday;
 
@@ -31,17 +37,30 @@ void OS_Update(void *Data)
 	//TODO(Oliver): Theres a better way to do this
 	int WindowHeight = OS_WindowHeight(&Application->Window);
 
+	v2f BufferPosition = v2f(50,  (f32)WindowHeight - 100);
+
+	Application->Buffer.HeightInPixels = 50;
+
+	Application->Buffer.String = (str8){sizeof(G_TriangleShader), G_TriangleShader};
+
+	Application->Cursor.TargetPosition = GetPositionFromEditableBuffer(&Application->D_Context,
+																	   &Application->Cursor,
+																	   Application->Buffer,
+																	   Application->Font,
+																	   BufferPosition);
+	Application->Cursor.Position = LerpV2f(Application->Cursor.Position, Application->Cursor.TargetPosition, 0.3);
+
+	f32 LineHeight = D_LineHeightFromFont(Application->Font, Application->Buffer.HeightInPixels);
+
+	D_DrawQuad(&Application->R_Context, &Application->D_Context, Application->FrameArena,
+	Application->Cursor.Position, 5, LineHeight, v4f(0, 1, 0, 1));
+
 	D_DrawStr8(&Application->R_Context, &Application->D_Context,
 			   Application->FrameArena, Application->Font,
-			   v2f(50,  (f32)WindowHeight - 100), v4f(1, 0.5, 0, 1),
-			   50, (str8){sizeof(G_TriangleShader), G_TriangleShader});
-
-	D_DrawQuad(&Application->R_Context, &Application->D_Context,
-			   Application->FrameArena,
-			   v2f(2000, 800), 200, 200, v4f(1, 0.5, 0, 1));
+			   BufferPosition, v4f(1, 0.5, 0, 1),
+			   50, Application->Buffer.String);
 
 	D_GlyphsToAtlas(&Application->D_Context);
-
 	R_TextureFromBytes(&Application->R_Context, Application->D_Context.FontAtlas, D_FONT_ATLAS_SIZE, D_FONT_ATLAS_SIZE);
 
 	R_Update(&Application->R_Context);
@@ -51,11 +70,28 @@ void OS_Update(void *Data)
 	ArenaReset(Application->FrameArena);
 }
 
+void OS_Event(const sapp_event *Event, void *Data)
+{
+	mayday *Application = (mayday*)Data;
+	if(Event->type == SAPP_EVENTTYPE_KEY_DOWN)
+	{	
+		if(Event->key_code == SAPP_KEYCODE_RIGHT)
+		{
+			Application->Cursor.At += 1;
+		}
+
+		if(Event->key_code == SAPP_KEYCODE_LEFT)
+		{
+			Application->Cursor.At -= 1;
+		}
+	}
+}
+
 void OS_Initialise(void *Data)
 {
 	mayday *Application = Data;
 	R_Init(&Application->R_Context);
-	Application->R_Context.Logger->Silent = True;
+	//Application->R_Context.Logger->Silent = True;
 }
 
 int main()

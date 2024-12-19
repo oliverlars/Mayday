@@ -73,7 +73,7 @@ id<MTLTexture> MakeDepthTexture(r_context *R_Context, CGSize Size)
 													   width:Size.width
 													   height:Size.height mipmapped:NO];
 	Desc.usage = MTLTextureUsageRenderTarget;
-	Desc.storageMode = MTLStorageModeMemoryless;
+	Desc.storageMode = MTLStorageModePrivate;
 
 	id<MTLTexture> Result = [Metal->Device newTextureWithDescriptor:Desc];
 	assert(Result != nil);
@@ -264,7 +264,10 @@ void R_Init(r_context *R_Context)
 
 	Metal->CommandQueue = [Metal->Device newCommandQueue];
 
-	Metal->VertexBuffer = [Metal->Device newBufferWithLength:MegaBytes(16)*sizeof(gpu_vertex)
+	Metal->GlyphVertexBuffer = [Metal->Device newBufferWithLength:MegaBytes(8)*sizeof(gpu_vertex)
+					options:MTLResourceStorageModeShared];
+
+	Metal->TriangleVertexBuffer = [Metal->Device newBufferWithLength:MegaBytes(8)*sizeof(gpu_vertex)
 					options:MTLResourceStorageModeShared];
 
 	Metal->UniformBuffer = [Metal->Device newBufferWithLength:sizeof(Uniforms)
@@ -286,11 +289,11 @@ void R_RenderTriangles(r_context *R_Context, id<MTLCommandBuffer> CommandBuffer,
 
 	MTLRenderPassDescriptor* PassDesc = [MTLRenderPassDescriptor renderPassDescriptor];
 	PassDesc.colorAttachments[0].texture = Metal->BaseFrameBuffer;
-	PassDesc.colorAttachments[0].loadAction = MTLLoadActionClear;
+	PassDesc.colorAttachments[0].loadAction = MTLLoadActionLoad;
 	PassDesc.colorAttachments[0].clearColor = MTLClearColorMake(0.0,0.0,0.0,1);
 
 	PassDesc.depthAttachment.texture = ResizeDepthTexture(R_Context, CGSizeMake(Metal->Drawable.texture.width, Metal->Drawable.texture.height));
-	PassDesc.depthAttachment.loadAction = MTLLoadActionClear;
+	PassDesc.depthAttachment.loadAction = MTLLoadActionLoad;
 	PassDesc.depthAttachment.clearDepth = 1.0;
 
 
@@ -298,11 +301,9 @@ void R_RenderTriangles(r_context *R_Context, id<MTLCommandBuffer> CommandBuffer,
 	[Encoder setRenderPipelineState:Metal->TriangleShader.PipelineState];
 	[Encoder setFrontFacingWinding:MTLWindingClockwise];
 	[Encoder setCullMode:(MTLCullModeNone)];
-	[Encoder setVertexBuffer:Metal->VertexBuffer offset:0 atIndex:0];
+	[Encoder setVertexBuffer:Metal->TriangleVertexBuffer offset:0 atIndex:0];
 	[Encoder setVertexBuffer:Metal->UniformBuffer offset:0 atIndex:1];
 	[Encoder setDepthStencilState:Metal->DepthStencilState];
-	[Encoder setFragmentTexture:Metal->FontAtlasTexture atIndex:0];
-	[Encoder setFragmentSamplerState:Metal->SamplerState atIndex:0];
 	[Encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:VertexCount];
 
 
@@ -315,11 +316,11 @@ void R_RenderGlyphs(r_context *R_Context, id<MTLCommandBuffer> CommandBuffer, in
 
 	MTLRenderPassDescriptor* PassDesc = [MTLRenderPassDescriptor renderPassDescriptor];
 	PassDesc.colorAttachments[0].texture = Metal->BaseFrameBuffer;
-	PassDesc.colorAttachments[0].loadAction = MTLLoadActionClear;
+	PassDesc.colorAttachments[0].loadAction = MTLLoadActionLoad;
 	PassDesc.colorAttachments[0].clearColor = MTLClearColorMake(0.0,0.0,0.0,1);
 
 	PassDesc.depthAttachment.texture = ResizeDepthTexture(R_Context, CGSizeMake(Metal->Drawable.texture.width, Metal->Drawable.texture.height));
-	PassDesc.depthAttachment.loadAction = MTLLoadActionClear;
+	PassDesc.depthAttachment.loadAction = MTLLoadActionLoad;
 	PassDesc.depthAttachment.clearDepth = 1.0;
 
 
@@ -327,7 +328,7 @@ void R_RenderGlyphs(r_context *R_Context, id<MTLCommandBuffer> CommandBuffer, in
 	[Encoder setRenderPipelineState:Metal->GlyphShader.PipelineState];
 	[Encoder setFrontFacingWinding:MTLWindingClockwise];
 	[Encoder setCullMode:(MTLCullModeNone)];
-	[Encoder setVertexBuffer:Metal->VertexBuffer offset:0 atIndex:0];
+	[Encoder setVertexBuffer:Metal->GlyphVertexBuffer offset:0 atIndex:0];
 	[Encoder setVertexBuffer:Metal->UniformBuffer offset:0 atIndex:1];
 	[Encoder setDepthStencilState:Metal->DepthStencilState];
 	[Encoder setFragmentTexture:Metal->FontAtlasTexture atIndex:0];
@@ -351,7 +352,7 @@ void R_RenderFullscreenBloom(r_context *R_Context, id<MTLCommandBuffer> CommandB
 
 	MTLRenderPassDescriptor* PassDesc = [MTLRenderPassDescriptor renderPassDescriptor];
 	PassDesc.colorAttachments[0].texture = Metal->Drawable.texture;
-	PassDesc.colorAttachments[0].loadAction = MTLLoadActionClear;
+	PassDesc.colorAttachments[0].loadAction = MTLLoadActionLoad;
 	PassDesc.colorAttachments[0].clearColor = MTLClearColorMake(0.0,0.0,0.0,1);
 
 	id<MTLRenderCommandEncoder> Encoder = [CommandBuffer renderCommandEncoderWithDescriptor:PassDesc];
@@ -363,6 +364,29 @@ void R_RenderFullscreenBloom(r_context *R_Context, id<MTLCommandBuffer> CommandB
 	[Encoder setFragmentSamplerState:Metal->BloomSamplerState atIndex:0];
 	[Encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:6];	
 
+	[Encoder endEncoding];
+}
+
+void R_ClearAllTextures(r_context *R_Context, id<MTLCommandBuffer> CommandBuffer)
+{
+	metal_context *Metal = R_Context->Backend;
+
+	MTLRenderPassDescriptor* PassDesc = [MTLRenderPassDescriptor renderPassDescriptor];
+	PassDesc.colorAttachments[0].texture = Metal->Drawable.texture;
+	PassDesc.colorAttachments[0].loadAction = MTLLoadActionClear;
+	PassDesc.colorAttachments[0].clearColor = MTLClearColorMake(0.0,0.0,0.0,1);
+	PassDesc.colorAttachments[1].texture = Metal->BaseFrameBuffer;
+	PassDesc.colorAttachments[1].loadAction = MTLLoadActionClear;
+	PassDesc.colorAttachments[1].clearColor = MTLClearColorMake(0.0,0.0,0.0,1);
+	PassDesc.colorAttachments[2].texture = Metal->BlurredFrameBuffer;
+	PassDesc.colorAttachments[2].loadAction = MTLLoadActionClear;
+	PassDesc.colorAttachments[2].clearColor = MTLClearColorMake(0.0,0.0,0.0,1);
+
+	PassDesc.depthAttachment.texture = ResizeDepthTexture(R_Context, CGSizeMake(Metal->Drawable.texture.width, Metal->Drawable.texture.height));
+	PassDesc.depthAttachment.loadAction = MTLLoadActionLoad;
+	PassDesc.depthAttachment.clearDepth = 1.0;
+
+	id<MTLRenderCommandEncoder> Encoder = [CommandBuffer renderCommandEncoderWithDescriptor:PassDesc];
 	[Encoder endEncoding];
 }
 
@@ -401,6 +425,9 @@ void R_Update(r_context *R_Context)
 
 	id<MTLCommandBuffer> CommandBuffer = [Metal->CommandQueue commandBuffer];
 
+
+	R_ClearAllTextures(R_Context, CommandBuffer);
+
 	Uniforms.ModelMatrix = M44FromXAngle(Angle);
 	Angle += 0.01;
 	Uniforms.ModelMatrix = MulM44FM44F(Uniforms.ModelMatrix, M44FTranslate(v3f(0, 2 * sinf(Angle), 0)));
@@ -431,7 +458,7 @@ void R_Update(r_context *R_Context)
 				GPUVertices[V].Colour = Colour;
 				GPUVertices[V].UV = v4f(UV.X, UV.Y, 0, 0);
 			}
-			MemoryCopy(Metal->VertexBuffer.contents + TotalVertices*sizeof(gpu_vertex),
+			MemoryCopy(Metal->GlyphVertexBuffer.contents + TotalVertices*sizeof(gpu_vertex),
 					GPUVertices, sizeof(gpu_vertex)*Command->VerticesCount);
 			TotalVertices += Command->VerticesCount;
 		}
@@ -446,14 +473,13 @@ void R_Update(r_context *R_Context)
 				v4f Colour = Command->Vertices[V].Colour;
 				GPUVertices[V].Position = P;
 				GPUVertices[V].Colour = Colour;
-				GPUVertices[V].UV = v4f(UV.X, UV.Y, 0, 0);
 			}
-			MemoryCopy(Metal->VertexBuffer.contents + TotalVertices*sizeof(gpu_vertex),
+			MemoryCopy(Metal->TriangleVertexBuffer.contents + TotalVertices*sizeof(gpu_vertex),
 					GPUVertices, sizeof(gpu_vertex)*Command->VerticesCount);
 			TotalVertices += Command->VerticesCount;
 		}
 
-		if(Command->Next && Command->Next->Type != Command->Type)
+		if((Command->Next && Command->Next->Type != Command->Type) || (!Command->Next))
 		{
 			if(Command->Type == R_COMMAND_GLYPH)
 			{

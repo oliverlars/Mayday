@@ -59,6 +59,14 @@ v2f DivV2F(v2f A, v2f B)
 	return Result;
 }
 
+v2f LerpV2f(v2f Source, v2f Target, float T)
+{
+	v2f Result;
+	Result.X = Source.X + T * (Target.X - Source.X);
+	Result.Y = Source.Y + T * (Target.Y - Source.Y);
+	return Result;
+}
+
 v2d AddV2D(v2d A, v2d B)
 {
 	v2d Result = A;

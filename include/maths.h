@@ -21,6 +21,7 @@ v2f AddV2F(v2f A, v2f B);
 v2f SubV2F(v2f A, v2f B);
 v2f MulV2F(v2f A, v2f B);
 v2f DivV2F(v2f A, v2f B);
+v2f LerpV2f(v2f Source, v2f Target, float T);
 
 typedef struct v2d { f64 X; f64 Y; } v2d;
 #define v2d(...) (v2d){ __VA_ARGS__ }

@@ -79,7 +79,9 @@ void OS_Event(const sapp_event *Event, void *Data)
 
 		if(Event->key_code == SAPP_KEYCODE_BACKSPACE)
 		{
-
+			E_RemoveTextFromTextRange(&Application->E_Context, Application->Cursor, &Application->Buffer,
+							   Application->Cursor.At-1, Application->Cursor.At);
+			Application->Cursor.At -= 1;
 		}
 
 		if(Event->key_code == SAPP_KEYCODE_RIGHT)
@@ -113,8 +115,20 @@ void OS_Event(const sapp_event *Event, void *Data)
 	}
 	else if(Event->type == SAPP_EVENTTYPE_CHAR)
 	{
-		E_InsertTextAtCursor(&Application->E_Context, Application->Cursor, &Application->Buffer, Str8PushF(Application->FrameArena, "?char", Event->char_code));
-		Application->Cursor.At += 1;
+		if(Event->char_code == 127)
+		{
+			// HACK(Oliver): Why the hell do i need to do this?
+		}
+		else if(Event->char_code == 13)
+		{
+			E_InsertTextAtCursor(&Application->E_Context, Application->Cursor, &Application->Buffer, Str8("\n"));
+			Application->Cursor.At += 1;
+		}
+		else
+		{
+			E_InsertTextAtCursor(&Application->E_Context, Application->Cursor, &Application->Buffer, Str8PushF(Application->FrameArena, "?char", Event->char_code));
+			Application->Cursor.At += 1;
+		}
 	}
 }
 

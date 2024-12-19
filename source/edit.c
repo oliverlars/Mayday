@@ -8,21 +8,87 @@
 
 #include <assert.h>
 
-void E_InsertTextAtCursor(edit_context *E_Context, cursor Cursor, editable_buffer *Buffer, str8 TextToInsert)
+
+void E_AdvanceCursorXByN(cursor *Cursor, editable_buffer *Buffer, int N)
+{
+	int Index = E_BufferIndexFromCursor(Buffer, Cursor);
+	if(Index + N >= Buffer->String.Size)
+	{
+		N = Buffer->String.Size - Index;
+	}
+
+	if(N > 0)
+	{
+		for(int I = 0; I < N; I++)
+		{
+			if(Buffer->String.Bytes[Index + I] == '\n')
+			{
+				Cursor->Column++;
+				Cursor->StickyX = 0;
+			}
+			else
+			{
+				Cursor->StickyX++;
+			}
+		}
+	}
+	else
+	{
+		for(int I = 0; I < -N; I++)
+		{
+			if(Buffer->String.Bytes[Index - I] == '\n')
+			{
+				Cursor->Column--;
+				Cursor->StickyX = 0;
+			}
+			else
+			{
+				Cursor->StickyX--;
+			}
+		}	
+	}
+}
+
+int E_BufferIndexFromCursor(editable_buffer *Buffer, cursor *Cursor)
+{
+	int Result = 0;
+	int Column = 0;
+	int BufferIndex = 0;
+	for(; BufferIndex < Buffer->String.Size; BufferIndex++)
+	{
+		if(Cursor->Column == Column) break;
+		if(Buffer->String.Bytes[BufferIndex] == '\n') Column++;
+	}
+
+	int LengthOfLine = 0;
+	for(; LengthOfLine + BufferIndex < Buffer->String.Size; LengthOfLine++)
+	{
+		if(Buffer->String.Bytes[LengthOfLine + BufferIndex] == '\n') break;
+	}
+	return BufferIndex + Min(Cursor->StickyX, LengthOfLine);
+}
+
+void E_InsertTextAtCursor(edit_context *E_Context, cursor *Cursor, editable_buffer *Buffer, str8 TextToInsert)
 {
 	if(!E_Context->Temp)
 	{
 		E_Context->Temp = ArenaPushZero(&E_Context->Arena, MegaBytes(1));
 	}
+
+	int At = E_BufferIndexFromCursor(Buffer, Cursor);
+
 	//TODO(Oliver): Not implemented yet
 	assert(Buffer->String.Size + TextToInsert.Size < MegaBytes(1));
 	assert(E_Context->Temp);
 	
-	MemoryCopy(E_Context->Temp, Buffer->String.Bytes, Cursor.At);
-	MemoryCopy(E_Context->Temp + Cursor.At, TextToInsert.Bytes, TextToInsert.Size);
-	MemoryCopy(E_Context->Temp + Cursor.At + TextToInsert.Size, Buffer->String.Bytes + Cursor.At, Buffer->String.Size - Cursor.At);
+	MemoryCopy(E_Context->Temp, Buffer->String.Bytes, At);
+	MemoryCopy(E_Context->Temp + At, TextToInsert.Bytes, TextToInsert.Size);
+	MemoryCopy(E_Context->Temp + At + TextToInsert.Size, Buffer->String.Bytes + At, Buffer->String.Size - At);
 
 	MemoryCopy(Buffer->String.Bytes, E_Context->Temp, Buffer->String.Size + TextToInsert.Size);
+
+
+	E_AdvanceCursorXByN(Cursor, Buffer, TextToInsert.Size);
 }
 
 void E_RemoveTextFromTextRange(edit_context *E_Context, cursor Cursor, editable_buffer *Buffer,
@@ -51,12 +117,14 @@ v2f E_GetPositionFromEditableBuffer(draw_context *D_Context,
 
 	f32 StartX = Position.X;
 	v2f Result = Position;
+
+	int At = E_BufferIndexFromCursor(&Buffer, Cursor);
 	for(int I = 0; I < Buffer.String.Size; I++)
 	{
 		// TODO(Oliver): Needs to actually iterate utf-8
 		u32 CodePoint = Buffer.String.Bytes[I];
 
-		if(I == Cursor->At)
+		if(I == At)
 		{
 			break;
 		}
@@ -86,7 +154,8 @@ v2f E_GetPositionFromEditableBuffer(draw_context *D_Context,
 int E_DistanceFromNextNewLine(cursor *Cursor,
 							  editable_buffer Buffer)
 {
-	int I = Cursor->At;
+	int At = E_BufferIndexFromCursor(&Buffer, Cursor); 
+	int I = At;
 	for(;I < Buffer.String.Size; I++)
 	{
 		if(Buffer.String.Bytes[I] == '\n')
@@ -94,13 +163,14 @@ int E_DistanceFromNextNewLine(cursor *Cursor,
 			break;
 		}
 	}
-	return I - Cursor->At;
+	return I - At;
 }
 
 int E_DistanceFromPreviousNewLine(cursor *Cursor,
 								  editable_buffer Buffer)
 {
-	int I = Cursor->At;
+	int At = E_BufferIndexFromCursor(&Buffer, Cursor); 
+	int I = At;
 	for(;I >= 0; I--)
 	{
 		if(Buffer.String.Bytes[I] == '\n')
@@ -108,10 +178,5 @@ int E_DistanceFromPreviousNewLine(cursor *Cursor,
 			break;
 		}
 	}
-	return Cursor->At - I;
-}
-
-void InsertTextAtCursor(memory_arena *Arena, cursor *Cursor, editable_buffer Buffer, str8 TextToInsert)
-{
-
+	return At - I;
 }

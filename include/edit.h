@@ -7,7 +7,14 @@ typedef struct cursor
 	v2f Position;
 	v2f TargetPosition;
 
-	int At;
+
+	/* 
+		NOTE(Oliver): We maintain a fixed horizontal position
+		that clamps to the length of the line, column tells us
+		which line we are on
+	*/
+	int StickyX;
+	int Column;
 } cursor;
 
 typedef struct editable_buffer
@@ -30,7 +37,11 @@ typedef struct edit_context
 	u8* Temp;
 } edit_context;
 
-void E_InsertTextAtCursor(edit_context *E, cursor Cursor, editable_buffer *Buffer, str8 TextToInsert);
+void E_AdvanceCursorXByN(cursor *Cursor, editable_buffer *Buffer, int N);
+
+int E_BufferIndexFromCursor(editable_buffer *Buffer, cursor *Cursor);
+
+void E_InsertTextAtCursor(edit_context *E, cursor *Cursor, editable_buffer *Buffer, str8 TextToInsert);
 
 v2f E_GetPositionFromEditableBuffer(draw_context *D_Context,
 									cursor *Cursor,

@@ -92,38 +92,30 @@ void OS_Event(const sapp_event *Event, void *Data)
 
 		if(Event->key_code == SAPP_KEYCODE_BACKSPACE)	
 		{
-			E_RemoveTextFromTextRange(&M->Edit, M->Cursor, &M->Buffer,
-							   M->Cursor.At-1, M->Cursor.At);
-			M->Cursor.At -= 1;
+			// E_RemoveTextFromTextRange(&M->Edit, M->Cursor, &M->Buffer,
+			// 				   M->Cursor.At-1, M->Cursor.At);
+			// M->Cursor.At -= 1;
 		}
 
 		if(Event->key_code == SAPP_KEYCODE_RIGHT)
 		{
-			M->Cursor.At += 1;
+			E_AdvanceCursorXByN(&M->Cursor, &M->Buffer, +1);
 		}
 
 		if(Event->key_code == SAPP_KEYCODE_LEFT)
 		{
-			M->Cursor.At -= 1;
+			
+			E_AdvanceCursorXByN(&M->Cursor, &M->Buffer, -1);
 		}
 
 		if(Event->key_code == SAPP_KEYCODE_DOWN)
 		{
-			int DistanceFromNewLine = E_DistanceFromNextNewLine(&M->Cursor, M->Buffer);
-			int DistanceFromPreviousNewLine = E_DistanceFromPreviousNewLine(&M->Cursor, M->Buffer);
-			if(M->Buffer.String.Bytes[M->Cursor.At] == '\n') M->Cursor.At++;
-			M->Cursor.At += DistanceFromNewLine;
-			M->Cursor.At += DistanceFromPreviousNewLine;
+			M->Cursor.Column += 1;
 		}
 
 		if(Event->key_code == SAPP_KEYCODE_UP)
 		{
-			int DistanceFromPreviousNewLine = E_DistanceFromPreviousNewLine(&M->Cursor, M->Buffer);
-			int DistanceFromNewLine = E_DistanceFromNextNewLine(&M->Cursor, M->Buffer);
-			M->Cursor.At -= DistanceFromPreviousNewLine;
-			M->Cursor.At -= 1;
-			M->Cursor.At -= E_DistanceFromPreviousNewLine(&M->Cursor, M->Buffer);
-			M->Cursor.At += DistanceFromPreviousNewLine;
+			M->Cursor.Column -= 1;
 		}
 	}
 	else if(Event->type == SAPP_EVENTTYPE_CHAR)
@@ -134,13 +126,11 @@ void OS_Event(const sapp_event *Event, void *Data)
 		}
 		else if(Event->char_code == 13)
 		{
-			E_InsertTextAtCursor(&M->Edit, M->Cursor, &M->Buffer, Str8("\n"));
-			M->Cursor.At += 1;
+			E_InsertTextAtCursor(&M->Edit, &M->Cursor, &M->Buffer, Str8("\n"));
 		}
 		else
 		{
-			E_InsertTextAtCursor(&M->Edit, M->Cursor, &M->Buffer, Str8PushF(M->FrameArena, "?char", Event->char_code));
-			M->Cursor.At += 1;
+			E_InsertTextAtCursor(&M->Edit, &M->Cursor, &M->Buffer, Str8PushF(M->FrameArena, "?char", Event->char_code));
 		}
 	}
 }

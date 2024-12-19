@@ -206,6 +206,8 @@ d_atlas_glyph *D_GlyphFromCodePoint(draw_context *D, d_font Font, s32 HeightInPi
 		Glyph->BitmapBox = BitmapBox;
 	}
 
+	assert(CodePoint == ResultGlyph->CodePoint);
+
 	return ResultGlyph;
 }
 

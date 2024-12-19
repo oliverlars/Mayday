@@ -44,16 +44,25 @@ void OS_Update(void *Data)
 
 	f32 LineHeight = D_LineHeightFromFont(M->Font, M->Buffer.HeightInPixels);
 
+	D_DrawStr8(&M->Draw,
+			   M->FrameArena, M->Font,
+			   BufferPosition, v4f(1, 0.5, 0, 1),
+			   M->Buffer.HeightInPixels, M->Buffer.String);
+
 	for(int I = 0; I < 50; I++)
 	{
-		D_DrawStr8(&M->Draw,
-			M->FrameArena, M->Font,
-			BufferPosition, v4f(0.5, 0.1, 0, 1),
-			50, Str8PushF(M->FrameArena, "?u32", I));
+		if(M->Cursor.Column == I)
+		{
+			D_DrawStr8(&M->Draw, M->FrameArena, M->Font, NumbersPosition,
+				v4f(1.0, 0.5, .2, 1), LineHeight, Str8PushF(M->FrameArena, "?u32", I));
+		}
+		else
+		{
+			D_DrawStr8(&M->Draw, M->FrameArena, M->Font, NumbersPosition,
+					v4f(0.1, 0.05, 0, 1), LineHeight, Str8PushF(M->FrameArena, "?u32", I));
+		}
 		NumbersPosition.Y -= LineHeight;
 	}
-
-	M->Buffer.String = (str8){sizeof(G_TriangleShader), G_TriangleShader};
 
 	M->Cursor.TargetPosition = E_GetPositionFromEditableBuffer(&M->Draw,
 															   &M->Cursor,
@@ -63,14 +72,9 @@ void OS_Update(void *Data)
 	M->Cursor.Position = LerpV2f(M->Cursor.Position, M->Cursor.TargetPosition, 0.3);
 
 
-	D_DrawQuad(&M->Draw, M->FrameArena,
-	M->Cursor.Position, 5, LineHeight, v4f(0, 1, 0, 1));
+	D_DrawQuad(&M->Draw, M->FrameArena, M->Cursor.Position, 5, LineHeight, v4f(0, 1, 0, 1));
 
 
-	D_DrawStr8(&M->Draw,
-			   M->FrameArena, M->Font,
-			   BufferPosition, v4f(1, 0.5, 0, 1),
-			   M->Buffer.HeightInPixels, M->Buffer.String);
 
 	D_GlyphsToAtlas(&M->Draw);
 
@@ -157,6 +161,10 @@ void OS_Initialise(void *Data)
 	mayday_context *M = Data;
 	M->Buffer.HeightInPixels = 48;
 	R_Init(&M->Render);
+
+	M->Buffer.String.Bytes = ArenaPushZero(M->PermanentArena, MegaBytes(1));
+	M->Buffer.String.Size = sizeof(G_TriangleShader);
+	MemoryCopy(M->Buffer.String.Bytes, G_TriangleShader, sizeof(G_TriangleShader));
 	//Application->R.Logger->Silent = True;
 }
 

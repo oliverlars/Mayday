@@ -83,8 +83,7 @@ v2f E_GetPositionFromEditableBuffer(draw_context *D_Context,
 	return Result;
 }
 
-int E_DistanceFromNextNewLine(draw_context *D_Context,
-							  cursor *Cursor,
+int E_DistanceFromNextNewLine(cursor *Cursor,
 							  editable_buffer Buffer)
 {
 	int I = Cursor->At;
@@ -98,8 +97,7 @@ int E_DistanceFromNextNewLine(draw_context *D_Context,
 	return I - Cursor->At;
 }
 
-int E_DistanceFromPreviousNewLine(draw_context *D_Context,
-								  cursor *Cursor,
+int E_DistanceFromPreviousNewLine(cursor *Cursor,
 								  editable_buffer Buffer)
 {
 	int I = Cursor->At;

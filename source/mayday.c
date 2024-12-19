@@ -109,8 +109,8 @@ void OS_Event(const sapp_event *Event, void *Data)
 
 		if(Event->key_code == SAPP_KEYCODE_DOWN)
 		{
-			int DistanceFromNewLine = E_DistanceFromNextNewLine(&M->Draw, &M->Cursor, M->Buffer);
-			int DistanceFromPreviousNewLine = E_DistanceFromPreviousNewLine(&M->Draw, &M->Cursor, M->Buffer);
+			int DistanceFromNewLine = E_DistanceFromNextNewLine(&M->Cursor, M->Buffer);
+			int DistanceFromPreviousNewLine = E_DistanceFromPreviousNewLine(&M->Cursor, M->Buffer);
 			if(M->Buffer.String.Bytes[M->Cursor.At] == '\n') M->Cursor.At++;
 			M->Cursor.At += DistanceFromNewLine;
 			M->Cursor.At += DistanceFromPreviousNewLine;
@@ -118,11 +118,11 @@ void OS_Event(const sapp_event *Event, void *Data)
 
 		if(Event->key_code == SAPP_KEYCODE_UP)
 		{
-			int DistanceFromPreviousNewLine = E_DistanceFromPreviousNewLine(&M->Draw, &M->Cursor, M->Buffer);
-			int DistanceFromNewLine = E_DistanceFromNextNewLine(&M->Draw, &M->Cursor, M->Buffer);
+			int DistanceFromPreviousNewLine = E_DistanceFromPreviousNewLine(&M->Cursor, M->Buffer);
+			int DistanceFromNewLine = E_DistanceFromNextNewLine(&M->Cursor, M->Buffer);
 			M->Cursor.At -= DistanceFromPreviousNewLine;
 			M->Cursor.At -= 1;
-			M->Cursor.At -= E_DistanceFromPreviousNewLine(&M->Draw, &M->Cursor, M->Buffer);
+			M->Cursor.At -= E_DistanceFromPreviousNewLine(&M->Cursor, M->Buffer);
 			M->Cursor.At += DistanceFromPreviousNewLine;
 		}
 	}

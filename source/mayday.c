@@ -73,11 +73,8 @@ void OS_Update(void *Data)
 			   M->Buffer.HeightInPixels, M->Buffer.String);
 
 	D_GlyphsToAtlas(&M->Draw);
-	R_TextureFromBytes(&M->Render, M->Draw.FontAtlas, D_FONT_ATLAS_SIZE, D_FONT_ATLAS_SIZE);
 
 	R_Update(&M->Render, M->FrameArena);
-
-	M->FrameArena->At = 0;
 
 	ArenaReset(M->FrameArena);
 }

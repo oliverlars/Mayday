@@ -97,11 +97,13 @@ void D_GlyphsToAtlas(draw_context *D)
 			}
 			AtlasX += Width + Padding;
 		}
+		R_TextureFromBytes(D->R, D->FontAtlas, D_FONT_ATLAS_SIZE, D_FONT_ATLAS_SIZE);
 	}
 }
 
 void PushGlyphOntoLRU(draw_context *D_Context, d_atlas_glyph *Glyph)
 {
+	
 	if(!D_Context->OldestGlyph)
 	{
 		D_Context->OldestGlyph = Glyph;

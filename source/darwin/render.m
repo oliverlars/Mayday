@@ -60,7 +60,7 @@ void R_TextureFromBytes(render_context *R, u8 *Bytes, s32 Width, s32 Height)
 											   width:Width
 											   height:Height
 											   mipmapped:NO];
-	TextureDescriptor.usage = MTLTextureUsageShaderRead | MTLTextureUsageShaderWrite;
+	TextureDescriptor.usage = MTLTextureUsageShaderRead;
 	Metal->FontAtlasTexture = [Metal->Device newTextureWithDescriptor:TextureDescriptor];
 	MTLRegion region = MTLRegionMake2D(0, 0, Width, Height);
 	[Metal->FontAtlasTexture replaceRegion:region mipmapLevel:0 withBytes:Bytes bytesPerRow:Width];
@@ -264,10 +264,10 @@ void R_Init(render_context *R)
 
 	Metal->CommandQueue = [Metal->Device newCommandQueue];
 
-	Metal->GlyphVertexBuffer = [Metal->Device newBufferWithLength:MegaBytes(8)*sizeof(gpu_vertex)
+	Metal->GlyphVertexBuffer = [Metal->Device newBufferWithLength:MegaBytes(8)
 					options:MTLResourceStorageModeShared];
 
-	Metal->TriangleVertexBuffer = [Metal->Device newBufferWithLength:MegaBytes(8)*sizeof(gpu_vertex)
+	Metal->TriangleVertexBuffer = [Metal->Device newBufferWithLength:MegaBytes(8)
 					options:MTLResourceStorageModeShared];
 
 	Metal->UniformBuffer = [Metal->Device newBufferWithLength:sizeof(Uniforms)
@@ -382,7 +382,7 @@ void R_ClearAllTextures(render_context *R, id<MTLCommandBuffer> CommandBuffer)
 	PassDesc.colorAttachments[2].clearColor = MTLClearColorMake(0.0,0.0,0.0,1);
 
 	PassDesc.depthAttachment.texture = ResizeDepthTexture(R, CGSizeMake(Metal->Drawable.texture.width, Metal->Drawable.texture.height));
-	PassDesc.depthAttachment.loadAction = MTLLoadActionLoad;
+	PassDesc.depthAttachment.loadAction = MTLLoadActionClear;
 	PassDesc.depthAttachment.clearDepth = 1.0;
 
 	id<MTLRenderCommandEncoder> Encoder = [CommandBuffer renderCommandEncoderWithDescriptor:PassDesc];
@@ -395,7 +395,7 @@ void R_Update(render_context *R, memory_arena *FrameArena)
 	Metal->Drawable = (__bridge id<CAMetalDrawable>)sapp_metal_get_current_drawable();
 
 	CAMetalLayer *MetalLayer = (CAMetalLayer *)Metal->Drawable.layer;
-	MetalLayer.framebufferOnly = NO;
+	MetalLayer.framebufferOnly = YES;
 
 	if(!Metal->BaseFrameBuffer)
 	{

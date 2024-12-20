@@ -33,8 +33,7 @@ void E_InsertTextAtCursor(edit_context *E, cursor *Cursor, editable_buffer *Buff
 	Buffer->String.Size = ClampS32(Buffer->String.Size + TextToInsert.Size, 0, MegaBytes(1));
 }
 
-void E_RemoveTextFromTextRange(edit_context *E, cursor *Cursor, editable_buffer *Buffer,
-							   int RangeStart, int RangeEnd)
+void E_RemoveSelectedTextAtCursors(edit_context *E, cursor *Cursor, editable_buffer *Buffer)
 {
 	if(!E->Temp)
 	{
@@ -53,7 +52,11 @@ void E_RemoveTextFromTextRange(edit_context *E, cursor *Cursor, editable_buffer 
 	{
 		int Start = Cursor->Start;
 		int End = Cursor->End;
-		if(End < Start)
+		if(Start == End)
+		{
+			End += 1;
+		}
+		else if(End < Start)
 		{
 			int Temp = Start;
 			Start = End;
@@ -65,19 +68,17 @@ void E_RemoveTextFromTextRange(edit_context *E, cursor *Cursor, editable_buffer 
 		BytesCopiedSoFar += SegmentSize;
 		PreviousEnd = End;
 
+		Cursor->Start = Start;
+		Cursor->End = End;
 		// HACK(Oliver): Do this better it's shit
-		if(Cursor->End > Cursor->Start)
+		if(End > Start)
 		{
-			TotalDistanceToMoveCursors += (Cursor->End - Cursor->Start);
+			TotalDistanceToMoveCursors += (End - Start);
 			Cursor->End -= TotalDistanceToMoveCursors;
 		}
 		else
 		{
-			int Temp = Cursor->Start;
-			Cursor->Start = Cursor->End;
-			Cursor->End = Temp;
-
-			TotalDistanceToMoveCursors += (Cursor->End - Cursor->Start);
+			TotalDistanceToMoveCursors += (End - Start);
 			Cursor->End -= TotalDistanceToMoveCursors;
 		}
 		

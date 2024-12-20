@@ -152,13 +152,12 @@ void OS_Event(const sapp_event *Event, void *Data)
 		{
 			if(M->Cursor.Start == M->Cursor.End)
 			{
-				E_RemoveTextFromTextRange(&M->Edit, &M->Cursor, &M->Buffer, M->Cursor.End-1, M->Cursor.End);
+				E_RemoveSelectedTextAtCursors(&M->Edit, &M->Cursor, &M->Buffer);
 			}
 			else
 			{
-				E_RemoveTextFromTextRange(&M->Edit, &M->Cursor, &M->Buffer, M->Cursor.Start, M->Cursor.End);
+				E_RemoveSelectedTextAtCursors(&M->Edit, &M->Cursor, &M->Buffer);
 			}
-			
 		}
 
 		if(Event->key_code == SAPP_KEYCODE_RIGHT)

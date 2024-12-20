@@ -59,6 +59,15 @@ void OS_Update(void *Data)
 												E_DistanceFromPreviousNewLine(&M->Edit, &M->Cursor, &M->Buffer),
 												E_DistanceFromNextNewLine(&M->Edit, &M->Cursor, &M->Buffer)));
 
+	f32 HeightOffset = 0;
+	for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
+	{
+		D_DrawStr8(&M->Draw, M->FrameArena, M->Font, v2f(1600, WindowHeight - 500 + HeightOffset), v4f(1, 1, 1, 1),
+			M->Buffer.HeightInPixels, Str8PushF(M->FrameArena, "Start: ?u32 | End: ?u32 | VisualX: ?u32",
+			Cursor->Start, Cursor->End, Cursor->VisualX));
+		HeightOffset -= M->Buffer.HeightInPixels;
+	}
+
 
 	for(int I = 0; I < 50; I++)
 	{
@@ -144,36 +153,11 @@ void OS_Event(const sapp_event *Event, void *Data)
 			if(M->Cursor.Start == M->Cursor.End)
 			{
 				E_RemoveTextFromTextRange(&M->Edit, &M->Cursor, &M->Buffer, M->Cursor.End-1, M->Cursor.End);
-				//E_AdvanceCursorsXByN(&M->Edit, Cursor->Next, &M->Buffer, 1);
 			}
 			else
 			{
 				E_RemoveTextFromTextRange(&M->Edit, &M->Cursor, &M->Buffer, M->Cursor.Start, M->Cursor.End);
-				//E_AdvanceCursorsXByN(&M->Edit, Cursor->Next, &M->Buffer, (End - Start));
-				//Cursor->Start = Cursor->End;
 			}
-			
-			// for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
-			// {
-			// 	int Start = Cursor->Start;
-			// 	int End = Cursor->End;
-			// 	if(Cursor->End < Cursor->Start)
-			// 	{
-			// 		int Temp = End;
-			// 		End = Start;
-			// 		Start = Temp;
-			// 	}
-			// 	if(Cursor->Start == Cursor->End)
-			// 	{
-			// 		E_RemoveTextFromTextRange(&M->Edit, Cursor, &M->Buffer, End-1, End);
-			// 		//E_AdvanceCursorsXByN(&M->Edit, Cursor->Next, &M->Buffer, 1);
-			// 	}
-			// 	else
-			// 	{
-			// 		E_RemoveTextFromTextRange(&M->Edit, Cursor, &M->Buffer, Start, End);
-			// 		//E_AdvanceCursorsXByN(&M->Edit, Cursor->Next, &M->Buffer, (End - Start));
-			// 		//Cursor->Start = Cursor->End;
-			// 	}
 			
 		}
 

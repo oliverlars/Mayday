@@ -42,21 +42,17 @@ void E_RemoveTextFromTextRange(edit_context *E, cursor *Cursor, editable_buffer 
 	}
 
 	assert(E->Temp);
-	
-	int Count = RangeEnd - RangeStart;
 
 	int BytesCopiedSoFar = 0;
 
 	int PreviousEnd = 0;
+
+	int TotalDistanceToMoveCursors = 0;
+
 	for(; Cursor; Cursor = Cursor->Next)
 	{
 		int Start = Cursor->Start;
 		int End = Cursor->End;
-		int UpTo = Buffer->String.Size;
-		if(Cursor->Next)
-		{
-			UpTo = Min(Cursor->Next->Start, Cursor->Next->End);
-		}
 		if(End < Start)
 		{
 			int Temp = Start;
@@ -64,18 +60,35 @@ void E_RemoveTextFromTextRange(edit_context *E, cursor *Cursor, editable_buffer 
 			End = Temp;
 		}
 
-		int SegmentSize = Start - PreviousEnd;
-
+		int SegmentSize = Max(Start - PreviousEnd, 0);
 		MemoryCopy(E->Temp + BytesCopiedSoFar, Buffer->String.Bytes + PreviousEnd, SegmentSize);
 		BytesCopiedSoFar += SegmentSize;
 		PreviousEnd = End;
+
+		// HACK(Oliver): Do this better it's shit
+		if(Cursor->End > Cursor->Start)
+		{
+			TotalDistanceToMoveCursors += (Cursor->End - Cursor->Start);
+			Cursor->End -= TotalDistanceToMoveCursors;
+		}
+		else
+		{
+			int Temp = Cursor->Start;
+			Cursor->Start = Cursor->End;
+			Cursor->End = Temp;
+
+			TotalDistanceToMoveCursors += (Cursor->End - Cursor->Start);
+			Cursor->End -= TotalDistanceToMoveCursors;
+		}
+		
+		Cursor->Start = Cursor->End;
 	}
 
 	int TailLength = Buffer->String.Size - PreviousEnd;
 	MemoryCopy(E->Temp + BytesCopiedSoFar, Buffer->String.Bytes + PreviousEnd, TailLength);
 	BytesCopiedSoFar += TailLength;
 	MemoryCopy(Buffer->String.Bytes, E->Temp, BytesCopiedSoFar);
-	
+
 	Buffer->String.Size = BytesCopiedSoFar;
 }
 

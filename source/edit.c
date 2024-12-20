@@ -11,61 +11,13 @@
 
 void E_AdvanceCursorXByN(edit_context *E, cursor *Cursor, editable_buffer *Buffer, int N)
 {
-	int Index = E_BufferIndexFromCursor(E, Buffer, Cursor);
-
-	if(N > 0)
-	{
-		for(int I = 0; I < N; I++)
-		{
-			if(Buffer->String.Bytes[Index + I] == '\n')
-			{
-				Cursor->Column += 1;
-				Cursor->StickyX = 0;
-			}
-			else
-			{
-				Cursor->StickyX += 1;
-			}
-		}
-	}
-	else if(N < 0)
-	{
-		int NextIndex = ClampS32(Index + N, 0, Buffer->String.Size-1);
-		int Columns = 0;
-
-		int LineStart = 0;
-
-		for(int I = 0; I < NextIndex; I++)
-		{
-			if(Buffer->String.Bytes[I] == '\n')
-			{
-				LineStart = I + 1;
-				Columns++;
-			}
-		}
-	
-		Cursor->Column = Columns;
-		Cursor->StickyX = NextIndex - LineStart;
-	}
+	Cursor->End += N;
+	Cursor->Start += N;
 }
 
 int E_BufferIndexFromCursor(edit_context *E, editable_buffer *Buffer, cursor *Cursor)
 {
-	int Result = 0;
-	int Column = 0;
-	int BufferIndex = 0;
-	for(; BufferIndex < Buffer->String.Size; BufferIndex++)
-	{
-		if(Cursor->Column == Column) break;
-		if(Buffer->String.Bytes[BufferIndex] == '\n') Column++;
-	}
-
-	int LengthOfLine = 0;
-	for(; LengthOfLine + BufferIndex < Buffer->String.Size; LengthOfLine++)
-	{
-		if(Buffer->String.Bytes[LengthOfLine + BufferIndex] == '\n') break;
-	}
-	return BufferIndex + Min(Cursor->StickyX, LengthOfLine);
+	return Cursor->End;
 }
 
 void E_InsertTextAtCursor(edit_context *E, cursor *Cursor, editable_buffer *Buffer, str8 TextToInsert)
@@ -75,7 +27,7 @@ void E_InsertTextAtCursor(edit_context *E, cursor *Cursor, editable_buffer *Buff
 		E->Temp = ArenaPushZero(&E->Arena, MegaBytes(1));
 	}
 
-	int At = E_BufferIndexFromCursor(E, Buffer, Cursor);
+	int At = Cursor->End;
 
 	//TODO(Oliver): Not implemented yet
 	assert(Buffer->String.Size + TextToInsert.Size < MegaBytes(1));
@@ -125,7 +77,7 @@ v2f E_GetPositionFromEditableBuffer(edit_context *E,
 	f32 StartX = Position.X;
 	v2f Result = Position;
 
-	int At = E_BufferIndexFromCursor(E, &Buffer, Cursor);
+	int At = Cursor->End;
 	for(int I = 0; I < Buffer.String.Size; I++)
 	{
 		// TODO(Oliver): Needs to actually iterate utf-8
@@ -161,7 +113,7 @@ v2f E_GetPositionFromEditableBuffer(edit_context *E,
 int E_DistanceFromNextNewLine(edit_context *E, cursor *Cursor,
 							  editable_buffer Buffer)
 {
-	int At = E_BufferIndexFromCursor(E, &Buffer, Cursor); 
+	int At = Cursor->End; 
 	int I = At;
 	for(;I < Buffer.String.Size; I++)
 	{
@@ -173,10 +125,22 @@ int E_DistanceFromNextNewLine(edit_context *E, cursor *Cursor,
 	return I - At;
 }
 
+
+int E_LineFromBufferIndex(edit_context *E_Context, cursor *Cursor, editable_buffer *Buffer)
+{
+	int Line = 0;
+	for(int I = 0; I < Cursor->End; I++)
+	{
+		if(Buffer->String.Bytes[I] == '\n') Line++;
+	}
+
+	return Line;
+}
+
 int E_DistanceFromPreviousNewLine(edit_context *E, cursor *Cursor,
 								  editable_buffer Buffer)
 {
-	int At = E_BufferIndexFromCursor(E, &Buffer, Cursor); 
+	int At = Cursor->End - 1;
 	int I = At;
 	for(;I >= 0; I--)
 	{
@@ -186,6 +150,66 @@ int E_DistanceFromPreviousNewLine(edit_context *E, cursor *Cursor,
 		}
 	}
 	return At - I;
+}
+
+int E_GetMaxTextWidthFromRange(edit_context *E, draw_context *D, d_font Font, cursor *Cursor,
+							   editable_buffer *Buffer, int RangeStart, int RangeEnd)
+{
+	f32 Scale = stbtt_ScaleForPixelHeight(&Font.Info, Buffer->HeightInPixels);
+	int MaxWidth = 0;
+	int X = 0;
+	for(int I = RangeStart; I < RangeEnd; I++)
+	{
+		u32 CodePoint =  Buffer->String.Bytes[I];
+		
+		if(CodePoint == '\n')
+		{
+			X = 0;
+			continue;
+		}
+
+		f32 TabMultiplier = 1.0;
+		if(CodePoint == '\t')
+		{
+
+			TabMultiplier *= 4.0;
+		}
+		d_atlas_glyph *Glyph  = D_GlyphFromCodePoint(D, Font, Buffer->HeightInPixels, CodePoint);
+
+		X += Glyph->AdvanceX * Scale * TabMultiplier;
+		MaxWidth = Max(X, MaxWidth);
+	}
+
+	return MaxWidth;
+}
+
+int E_RangeEndFromWidth(edit_context *E, draw_context *D, d_font Font,
+						cursor *Cursor, editable_buffer *Buffer, int Width, int RangeStart)
+{
+	f32 Scale = stbtt_ScaleForPixelHeight(&Font.Info, Buffer->HeightInPixels);
+	int X = 0;
+	int RangeEnd = RangeStart;
+	for(;RangeEnd < Buffer->String.Size; RangeEnd++)
+	{
+		u32 CodePoint =  Buffer->String.Bytes[RangeEnd];
+		
+		if(CodePoint == '\n' || X >= Width)
+		{
+			break;
+		}
+
+		f32 TabMultiplier = 1.0;
+		if(CodePoint == '\t')
+		{
+
+			TabMultiplier *= 4.0;
+		}
+		d_atlas_glyph *Glyph  = D_GlyphFromCodePoint(D, Font, Buffer->HeightInPixels, CodePoint);
+
+		X += Glyph->AdvanceX * Scale * TabMultiplier;
+	}
+
+	return RangeEnd;
 }
 
 void E_AppendCursor(edit_context *E_Context, cursor *Cursor, cursor NextCursor)

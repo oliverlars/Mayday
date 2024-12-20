@@ -48,13 +48,20 @@ void OS_Update(void *Data)
 
 	D_DrawStr8(&M->Draw,
 			M->FrameArena, M->Font,
-			v2f(1000, WindowHeight - 100), v4f(1, 1, 1, 1),
-			M->Buffer.HeightInPixels, Str8PushF(M->FrameArena, "Column: ?u32 | StickyX: ?u32 | BufferIndex: ?u32", M->Cursor.Column, M->Cursor.StickyX, E_BufferIndexFromCursor(&M->Edit, &M->Buffer, &M->Cursor)));
+			v2f(700, WindowHeight - 100), v4f(1, 1, 1, 1),
+			M->Buffer.HeightInPixels, Str8PushF(M->FrameArena,
+												"Line: ?u32 | StickyX: ?u32 | BufferIndex: ?u32 | VisualX: ?u32 | DistanceFromStart: ?u32 | DistanceFromEnd: ?u32",
+												E_LineFromBufferIndex(&M->Edit, &M->Cursor, &M->Buffer),
+												0,
+												E_BufferIndexFromCursor(&M->Edit, &M->Buffer, &M->Cursor),
+												M->Cursor.VisualX,
+												E_DistanceFromPreviousNewLine(&M->Edit, &M->Cursor, M->Buffer),
+												E_DistanceFromNextNewLine(&M->Edit, &M->Cursor, M->Buffer)));
 
 
 	for(int I = 0; I < 50; I++)
 	{
-		if(M->Cursor.Column == I)
+		if(I == 0)
 		{
 			D_DrawStr8(&M->Draw, M->FrameArena, M->Font, NumbersPosition,
 				v4f(1.0, 0.5, .2, 1), LineHeight, Str8PushF(M->FrameArena, "?u32", I));
@@ -101,6 +108,13 @@ void OS_Event(const sapp_event *Event, void *Data)
 	mayday_context *M = (mayday_context*)Data;
 	if(Event->type == SAPP_EVENTTYPE_KEY_DOWN)
 	{	
+
+		if(Event->key_code == SAPP_KEYCODE_ESCAPE)
+		{
+			// HACK(Oliver): This will mean multiple cursors leak memory
+			M->Cursor.Next = Null;
+		}
+
 		if(Event->key_code == SAPP_KEYCODE_BACKSPACE)	
 		{
 			for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
@@ -115,6 +129,7 @@ void OS_Event(const sapp_event *Event, void *Data)
 		{
 			for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
 			{
+				Cursor->VisualX = 0;
 				E_AdvanceCursorXByN(&M->Edit, Cursor, &M->Buffer, +1);	
 			}
 		}
@@ -138,6 +153,7 @@ void OS_Event(const sapp_event *Event, void *Data)
 		{
 			for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
 			{
+				Cursor->VisualX = 0;
 				E_AdvanceCursorXByN(&M->Edit, Cursor, &M->Buffer, -1);
 			}
 		}
@@ -151,14 +167,26 @@ void OS_Event(const sapp_event *Event, void *Data)
 				for(;LastCursor->Next; LastCursor = LastCursor->Next);
 				
 				NextCursor = LastCursor[0];
-				NextCursor.Column += 1;
 				E_AppendCursor(&M->Edit, LastCursor, NextCursor);
 			}
 			else
 			{
+				int DistanceFromPreviousNewLine = E_DistanceFromPreviousNewLine(&M->Edit, &M->Cursor, M->Buffer);
+				int DistanceFromNextNewLine = E_DistanceFromNextNewLine(&M->Edit, &M->Cursor, M->Buffer);
 				for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
 				{
-					Cursor->Column += 1;
+					
+					if(Cursor->VisualX == 0)
+					{
+						int RangeStart = Cursor->End - DistanceFromPreviousNewLine;
+						int RangeEnd = Cursor->End;
+						Cursor->VisualX = E_GetMaxTextWidthFromRange(&M->Edit, &M->Draw, M->Font, Cursor, &M->Buffer, RangeStart, RangeEnd);
+					}
+					Cursor->End += DistanceFromNextNewLine + 1;
+					DistanceFromNextNewLine = E_DistanceFromNextNewLine(&M->Edit, &M->Cursor, M->Buffer);
+
+					int RangeEndFromVisualX = E_RangeEndFromWidth(&M->Edit, &M->Draw, M->Font, Cursor, &M->Buffer, Cursor->VisualX, Cursor->End);
+					Cursor->End += Min(DistanceFromNextNewLine, RangeEndFromVisualX - Cursor->End);
 				}
 			}
 		}
@@ -167,23 +195,50 @@ void OS_Event(const sapp_event *Event, void *Data)
 		{
 			for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
 			{
-				Cursor->Column -= 1;
+				int DistanceFromPreviousNewLine = E_DistanceFromPreviousNewLine(&M->Edit, &M->Cursor, M->Buffer);
+				for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
+				{
+					if(Cursor->VisualX == 0)
+					{
+						int RangeStart = Cursor->End - DistanceFromPreviousNewLine;
+						int RangeEnd = Cursor->End;
+						Cursor->VisualX = E_GetMaxTextWidthFromRange(&M->Edit, &M->Draw, M->Font, Cursor, &M->Buffer, RangeStart, RangeEnd);
+					}
+					Cursor->End -= DistanceFromPreviousNewLine + 1;
+					DistanceFromPreviousNewLine = E_DistanceFromPreviousNewLine(&M->Edit, &M->Cursor, M->Buffer);
+					
+					Cursor->End -= DistanceFromPreviousNewLine;
+					int DistanceFromNextNewLine = E_DistanceFromNextNewLine(&M->Edit, &M->Cursor, M->Buffer);
+
+					int RangeEndFromVisualX = E_RangeEndFromWidth(&M->Edit, &M->Draw, M->Font, Cursor, &M->Buffer, Cursor->VisualX, Cursor->End);
+					Cursor->End += Min(DistanceFromNextNewLine, RangeEndFromVisualX - Cursor->End);
+				}	
 			}
 		}
 
 		if(Event->key_code == SAPP_KEYCODE_ENTER)
 		{
-			E_InsertTextAtCursor(&M->Edit, &M->Cursor, &M->Buffer, Str8("\n"));
+			for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
+			{
+				E_InsertTextAtCursor(&M->Edit, Cursor, &M->Buffer, Str8("\n"));
+			}
 		}
 
 		if(Event->key_code == SAPP_KEYCODE_SPACE)
 		{
-			E_InsertTextAtCursor(&M->Edit, &M->Cursor, &M->Buffer, Str8(" "));
+			for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
+			{
+				E_InsertTextAtCursor(&M->Edit, Cursor, &M->Buffer, Str8(" "));
+			}
 		}
 
 		if(Event->key_code == SAPP_KEYCODE_TAB)
 		{
-			E_InsertTextAtCursor(&M->Edit, &M->Cursor, &M->Buffer, Str8("\t"));
+			for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
+			{
+				E_InsertTextAtCursor(&M->Edit, Cursor, &M->Buffer, Str8("\t"));
+			}
+			
 		}
 	}
 	else if(Event->type == SAPP_EVENTTYPE_CHAR && Event->char_code > 32 && Event->char_code <= 126)

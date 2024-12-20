@@ -7,14 +7,10 @@ typedef struct cursor
 	v2f Position;
 	v2f TargetPosition;
 
+	int Start;
+	int End;
 
-	/* 
-		NOTE(Oliver): We maintain a fixed horizontal position
-		that clamps to the length of the line, column tells us
-		which line we are on
-	*/
-	int StickyX;
-	int Column;
+	int VisualX;
 
 	struct cursor *Next;
 	struct cursor *Previous;
@@ -62,5 +58,13 @@ int E_DistanceFromNextNewLine(edit_context *E, cursor *Cursor,
 
 void E_RemoveTextFromTextRange(edit_context *E_Context, cursor *Cursor, editable_buffer *Buffer,
 							   int RangeStart, int RangeEnd);
+
+int E_LineFromBufferIndex(edit_context *E_Context, cursor *Cursor, editable_buffer *Buffer);
+
+int E_GetMaxTextWidthFromRange(edit_context *E, draw_context *D, d_font Font, cursor *Cursor,
+							   editable_buffer *Buffer, int RangeStart, int RangeEnd);
+
+int E_RangeEndFromWidth(edit_context *E, draw_context *D, d_font Font,
+						cursor *Cursor, editable_buffer *Buffer, int Width, int RangeStart);
 
 void E_AppendCursor(edit_context *E_Context, cursor *Cursor, cursor NextCursor);

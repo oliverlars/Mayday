@@ -67,6 +67,16 @@ void D_DrawStr8(draw_context *D_Context,
 				f32 HeightInPixels,
 				str8 String);
 
+void D_DrawSelectionRange(draw_context *D,
+						  memory_arena *Arena,
+						  d_font Font,
+						  v2f Position,
+						  v4f Colour,
+						  f32 HeightInPixels,
+						  str8 String,
+						  s32 Start,
+						  s32 End);
+
 void D_DrawQuad(draw_context *D_Context,
 				memory_arena *Arena, v2f Position,
 				f32 Width, f32 Height,

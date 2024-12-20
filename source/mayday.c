@@ -74,6 +74,31 @@ void OS_Update(void *Data)
 		NumbersPosition.Y -= LineHeight;
 	}
 
+	for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
+	{
+		int Start = Cursor->Start;
+		int End = Cursor->End;
+
+		//if(Start == End) continue;
+
+		if(Cursor->End < Cursor->Start)
+		{
+			int Temp = Start;
+			Start = End;
+			End = Temp;
+		}
+		D_DrawSelectionRange(&M->Draw,
+							M->FrameArena,
+							M->Font,
+							BufferPosition,
+							v4f(0, 1, 0, 0.1),
+							M->Buffer.HeightInPixels,
+							M->Buffer.String,
+							0,
+							5);
+		break;
+	}
+	
 	D_DrawStr8(&M->Draw,
 			M->FrameArena, M->Font,
 			BufferPosition, v4f(1, 0.5, 0, 1),
@@ -126,7 +151,14 @@ void OS_Event(const sapp_event *Event, void *Data)
 
 		if(Event->key_code == SAPP_KEYCODE_RIGHT)
 		{
-			E_AdvanceCursorsXByN(&M->Edit, &M->Cursor, &M->Buffer, +1);		
+			E_AdvanceCursorsXByN(&M->Edit, &M->Cursor, &M->Buffer, +1);	
+			if(!(Event->modifiers & SAPP_MODIFIER_SHIFT))
+			{
+				for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
+				{
+					Cursor->Start = Cursor->End;
+				}
+			}	
 		}
 
 		if(Event->key_code == SAPP_KEYCODE_EQUAL)
@@ -147,6 +179,13 @@ void OS_Event(const sapp_event *Event, void *Data)
 		if(Event->key_code == SAPP_KEYCODE_LEFT)
 		{
 			E_AdvanceCursorsXByN(&M->Edit, &M->Cursor, &M->Buffer, -1);
+			if(!(Event->modifiers & SAPP_MODIFIER_SHIFT))
+			{
+				for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
+				{
+					Cursor->Start = Cursor->End;
+				}
+			}
 		}
 
 		if(Event->key_code == SAPP_KEYCODE_DOWN)

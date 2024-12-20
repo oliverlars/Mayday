@@ -30,7 +30,7 @@ void E_InsertTextAtCursor(edit_context *E, cursor *Cursor, editable_buffer *Buff
 
 	E_AdvanceCursorsXByN(E, Cursor, Buffer, TextToInsert.Size);
 
-	Buffer->String.Size += TextToInsert.Size;
+	Buffer->String.Size = ClampS32(Buffer->String.Size + TextToInsert.Size, 0, MegaBytes(1));
 }
 
 void E_RemoveTextFromTextRange(edit_context *E, cursor *Cursor, editable_buffer *Buffer,
@@ -206,6 +206,7 @@ void E_AdvanceCursorsYByN(edit_context *E, draw_context *D, d_font Font, cursor 
 	{
 		for(;Cursor; Cursor = Cursor->Next)
 		{
+			int CursorEnd = Cursor->End;
 			int DistanceFromPreviousNewLine = E_DistanceFromPreviousNewLine(E, Cursor, Buffer);
 			int DistanceFromNextNewLine = E_DistanceFromNextNewLine(E, Cursor, Buffer);	
 			if(Cursor->VisualX == 0)
@@ -225,6 +226,7 @@ void E_AdvanceCursorsYByN(edit_context *E, draw_context *D, d_font Font, cursor 
 	{
 		for(;Cursor; Cursor = Cursor->Next)
 		{
+			int CursorEnd = Cursor->End;
 			int DistanceFromPreviousNewLine = E_DistanceFromPreviousNewLine(E, Cursor, Buffer);
 			if(Cursor->VisualX == 0)
 			{

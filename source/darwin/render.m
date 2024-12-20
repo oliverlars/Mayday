@@ -283,7 +283,7 @@ void R_Init(render_context *R)
 f32 Angle = 0.0;
 
 
-void R_RenderTriangles(render_context *R, id<MTLCommandBuffer> CommandBuffer, int VertexCount)
+void R_RenderTriangles(render_context *R, id<MTLCommandBuffer> CommandBuffer, int VertexCount, int Offset)
 {
 	metal_context *Metal = R->Backend;
 
@@ -304,13 +304,13 @@ void R_RenderTriangles(render_context *R, id<MTLCommandBuffer> CommandBuffer, in
 	[Encoder setVertexBuffer:Metal->TriangleVertexBuffer offset:0 atIndex:0];
 	[Encoder setVertexBuffer:Metal->UniformBuffer offset:0 atIndex:1];
 	[Encoder setDepthStencilState:Metal->DepthStencilState];
-	[Encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:VertexCount];
+	[Encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:Offset vertexCount:VertexCount];
 
 
 	[Encoder endEncoding];
 }
 
-void R_RenderGlyphs(render_context *R, id<MTLCommandBuffer> CommandBuffer, int VertexCount)
+void R_RenderGlyphs(render_context *R, id<MTLCommandBuffer> CommandBuffer, int VertexCount, int Offset)
 {
 	metal_context *Metal = R->Backend;
 
@@ -333,7 +333,7 @@ void R_RenderGlyphs(render_context *R, id<MTLCommandBuffer> CommandBuffer, int V
 	[Encoder setDepthStencilState:Metal->DepthStencilState];
 	[Encoder setFragmentTexture:Metal->FontAtlasTexture atIndex:0];
 	[Encoder setFragmentSamplerState:Metal->SamplerState atIndex:0];
-	[Encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:VertexCount];
+	[Encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:Offset vertexCount:VertexCount];
 
 
 	[Encoder endEncoding];
@@ -436,7 +436,11 @@ void R_Update(render_context *R, memory_arena *FrameArena)
 
 	MemoryCopy(Metal->UniformBuffer.contents, &Uniforms, sizeof(Uniforms));
 
-	int TotalVertices = 0;
+	int TotalGlyphVertices = 0;
+	int GlyphVertexOffset = 0;
+
+	int TotalTriangleVertices = 0;
+	int TriangleVertexOffset = 0;
 	for(r_command *Command = R->CommandsFirst; Command != Null; Command = Command->Next)
 	{
 
@@ -454,9 +458,9 @@ void R_Update(render_context *R, memory_arena *FrameArena)
 				GPUVertices[V].Colour = Colour;
 				GPUVertices[V].UV = v4f(UV.X, UV.Y, 0, 0);
 			}
-			MemoryCopy(Metal->GlyphVertexBuffer.contents + TotalVertices*sizeof(gpu_vertex),
+			MemoryCopy(Metal->GlyphVertexBuffer.contents + GlyphVertexOffset*sizeof(gpu_vertex) + TotalGlyphVertices*sizeof(gpu_vertex),
 					GPUVertices, sizeof(gpu_vertex)*Command->VerticesCount);
-			TotalVertices += Command->VerticesCount;
+			TotalGlyphVertices += Command->VerticesCount;
 		}
 		else if(Command->Type == R_COMMAND_TRIANGLE)
 		{
@@ -470,22 +474,25 @@ void R_Update(render_context *R, memory_arena *FrameArena)
 				GPUVertices[V].Position = P;
 				GPUVertices[V].Colour = Colour;
 			}
-			MemoryCopy(Metal->TriangleVertexBuffer.contents + TotalVertices*sizeof(gpu_vertex),
+			MemoryCopy(Metal->TriangleVertexBuffer.contents + TriangleVertexOffset*sizeof(gpu_vertex) + TotalTriangleVertices*sizeof(gpu_vertex),
 					GPUVertices, sizeof(gpu_vertex)*Command->VerticesCount);
-			TotalVertices += Command->VerticesCount;
+			TotalTriangleVertices += Command->VerticesCount;
 		}
 
 		if((Command->Next && Command->Next->Type != Command->Type) || (!Command->Next))
 		{
 			if(Command->Type == R_COMMAND_GLYPH)
 			{
-				R_RenderGlyphs(R, CommandBuffer, TotalVertices);
+				R_RenderGlyphs(R, CommandBuffer, TotalGlyphVertices, GlyphVertexOffset);
+				GlyphVertexOffset = TotalGlyphVertices;
+				TotalGlyphVertices = 0;
 			}
 			else if(Command->Type == R_COMMAND_TRIANGLE)
 			{
-				R_RenderTriangles(R, CommandBuffer, TotalVertices);
+				R_RenderTriangles(R, CommandBuffer, TotalTriangleVertices, TriangleVertexOffset);
+				TriangleVertexOffset = TotalTriangleVertices;
+				TotalTriangleVertices = 0;
 			}
-			TotalVertices = 0;
 		}
 	}
 

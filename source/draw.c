@@ -353,6 +353,52 @@ void D_DrawStr8(draw_context *D,
 	R_PushCommand(R, Arena, Command);
 }
 
+void D_DrawSelectionRange(draw_context *D,
+						  memory_arena *Arena,
+						  d_font Font,
+						  v2f Position,
+						  v4f Colour,
+						  f32 HeightInPixels,
+						  str8 String,
+						  s32 Start,
+						  s32 End)
+{
+	if(Start == End) return;
+	render_context *R = D->R;
+
+	f32 Scale = stbtt_ScaleForPixelHeight(&Font.Info, HeightInPixels);
+
+	f32 StartX = Position.X;
+
+	b32 InRange = False;
+
+	for(int I = 0; I < String.Size; I++)
+	{
+		// TODO(Oliver): Needs to actually iterate utf-8
+		u32 CodePoint = String.Bytes[I];
+
+		f32 TabMultiplier = 1.0f;
+		if(CodePoint == '\t')
+		{
+			CodePoint = ' ';
+			TabMultiplier *= 4.0;
+		}
+
+
+		if((CodePoint == '\n' && (I >= Start && I < End)) || ( I == End))
+		{
+			D_DrawQuad(D, Arena, v2f(StartX, Position.Y + Font.Descent*Scale), Position.X - StartX, (Font.Ascent - Font.Descent + Font.LineGap)*Scale, Colour);
+			Position.Y -= (Font.Ascent - Font.Descent + Font.LineGap)*Scale;
+			Position.X = StartX;
+			continue;
+		}
+
+		d_atlas_glyph *Glyph  = D_GlyphFromCodePoint(D, Font, HeightInPixels, CodePoint);
+
+		Position.X += Glyph->AdvanceX * Scale * TabMultiplier;
+	}
+}
+
 f32 D_LineHeightFromFont(d_font Font, f32 HeightInPixels)
 {
 	f32 Scale = stbtt_ScaleForPixelHeight(&Font.Info, HeightInPixels);

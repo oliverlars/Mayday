@@ -46,17 +46,11 @@ void OS_Update(void *Data)
 
 	f32 LineHeight = D_LineHeightFromFont(M->Font, M->Buffer.HeightInPixels);
 
-	//D_DrawQuad(&M->Draw, M->FrameArena, v2f(10, (f32)WindowHeight - 50),  WindowWidth - 10, 5, v4f(.2, 0.1, 0, 1.0));
-
-		D_DrawStr8(&M->Draw,
-			   M->FrameArena, M->Font,
-			   v2f(1000, WindowHeight - 100), v4f(1, 1, 1, 1),
-			   M->Buffer.HeightInPixels, Str8PushF(M->FrameArena, "Column: ?u32 | StickyX: ?u32 | BufferIndex: ?u32", M->Cursor.Column, M->Cursor.StickyX, E_BufferIndexFromCursor(&M->Edit, &M->Buffer, &M->Cursor)));
-
 	D_DrawStr8(&M->Draw,
-			   M->FrameArena, M->Font,
-			   BufferPosition, v4f(1, 0.5, 0, 1),
-			   M->Buffer.HeightInPixels, M->Buffer.String);
+			M->FrameArena, M->Font,
+			v2f(1000, WindowHeight - 100), v4f(1, 1, 1, 1),
+			M->Buffer.HeightInPixels, Str8PushF(M->FrameArena, "Column: ?u32 | StickyX: ?u32 | BufferIndex: ?u32", M->Cursor.Column, M->Cursor.StickyX, E_BufferIndexFromCursor(&M->Edit, &M->Buffer, &M->Cursor)));
+
 
 	for(int I = 0; I < 50; I++)
 	{
@@ -72,6 +66,11 @@ void OS_Update(void *Data)
 		}
 		NumbersPosition.Y -= LineHeight;
 	}
+
+	D_DrawStr8(&M->Draw,
+			M->FrameArena, M->Font,
+			BufferPosition, v4f(1, 0.5, 0, 1),
+			M->Buffer.HeightInPixels, M->Buffer.String);
 
 	M->Cursor.TargetPosition = E_GetPositionFromEditableBuffer(&M->Edit,
 															   &M->Draw,

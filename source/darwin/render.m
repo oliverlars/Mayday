@@ -443,7 +443,7 @@ void R_Update(render_context *R, memory_arena *FrameArena)
 		if(0){}
 		else if(Command->Type == R_COMMAND_GLYPH)
 		{	
-			gpu_vertex *GPUVertices = (gpu_vertex*)ArenaPush(FrameArena,
+			gpu_vertex *GPUVertices = (gpu_vertex*)ArenaPushZero(FrameArena,
 															 sizeof(gpu_vertex)*Command->VerticesCount);
 			for(int V = 0; V < Command->VerticesCount; V++)
 			{
@@ -460,7 +460,7 @@ void R_Update(render_context *R, memory_arena *FrameArena)
 		}
 		else if(Command->Type == R_COMMAND_TRIANGLE)
 		{
-			gpu_vertex *GPUVertices = (gpu_vertex*)ArenaPush(FrameArena,
+			gpu_vertex *GPUVertices = (gpu_vertex*)ArenaPushZero(FrameArena,
 															 sizeof(gpu_vertex)*Command->VerticesCount);
 			for(int V = 0; V < Command->VerticesCount; V++)
 			{

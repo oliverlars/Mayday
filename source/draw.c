@@ -218,7 +218,7 @@ void D_DrawQuad(draw_context *D,
 {
 	render_context *R = D->R;
 	r_command Command = {0};
-	Command.Vertices = (r_vertex*)ArenaPush(Arena, 6*sizeof(r_vertex));
+	Command.Vertices = (r_vertex*)ArenaPushZero(Arena, 6*sizeof(r_vertex));
 	Command.VerticesCount = 6;
 	Command.VerticesFormat = R_VF_POSITION | R_VF_UV;
 
@@ -261,7 +261,7 @@ void D_DrawStr8(draw_context *D,
 	f32 Scale = stbtt_ScaleForPixelHeight(&Font.Info, HeightInPixels);
 	int TotalTriangleCount = String.Size*6;
 	r_command Command = {0};
-	Command.Vertices = (r_vertex*)ArenaPush(Arena, TotalTriangleCount*sizeof(r_vertex));
+	Command.Vertices = (r_vertex*)ArenaPushZero(Arena, TotalTriangleCount*sizeof(r_vertex));
 	Command.VerticesCount = TotalTriangleCount;
 	Command.VerticesFormat = R_VF_POSITION | R_VF_UV;
 

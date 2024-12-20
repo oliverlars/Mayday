@@ -72,16 +72,20 @@ void OS_Update(void *Data)
 			BufferPosition, v4f(1, 0.5, 0, 1),
 			M->Buffer.HeightInPixels, M->Buffer.String);
 
-	M->Cursor.TargetPosition = E_GetPositionFromEditableBuffer(&M->Edit,
-															   &M->Draw,
-															   &M->Cursor,
-															   M->Buffer,
-															   M->Font,
-															   BufferPosition);
-	M->Cursor.Position = LerpV2f(M->Cursor.Position, M->Cursor.TargetPosition, 0.3);
 
+	for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
+	{
+		Cursor->TargetPosition = E_GetPositionFromEditableBuffer(&M->Edit,
+																   &M->Draw,
+																   Cursor,
+																   M->Buffer,
+																   M->Font,
+																   BufferPosition);
 
-	D_DrawQuad(&M->Draw, M->FrameArena, M->Cursor.Position, 5, LineHeight, v4f(0, 1, 0, 1));
+		Cursor->Position = LerpV2f(Cursor->Position, Cursor->TargetPosition, 0.3);
+
+		D_DrawQuad(&M->Draw, M->FrameArena, Cursor->Position, 5, LineHeight, v4f(0, 1, 0, 1));
+	}
 
 
 
@@ -99,14 +103,20 @@ void OS_Event(const sapp_event *Event, void *Data)
 	{	
 		if(Event->key_code == SAPP_KEYCODE_BACKSPACE)	
 		{
-			int BufferIndex = E_BufferIndexFromCursor(&M->Edit, &M->Buffer, &M->Cursor);
-			E_RemoveTextFromTextRange(&M->Edit, &M->Cursor, &M->Buffer, BufferIndex-1, BufferIndex);
+			for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
+			{
+				int BufferIndex = E_BufferIndexFromCursor(&M->Edit, &M->Buffer, Cursor);
+				E_RemoveTextFromTextRange(&M->Edit, Cursor, &M->Buffer, BufferIndex-1, BufferIndex);
+			}
 			//assert(BufferIndex == E_BufferIndexFromCursor(&M->Edit, &M->Buffer, &M->Cursor));
 		}
 
 		if(Event->key_code == SAPP_KEYCODE_RIGHT)
 		{
-			E_AdvanceCursorXByN(&M->Edit, &M->Cursor, &M->Buffer, +1);
+			for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
+			{
+				E_AdvanceCursorXByN(&M->Edit, Cursor, &M->Buffer, +1);	
+			}
 		}
 
 		if(Event->key_code == SAPP_KEYCODE_EQUAL)
@@ -126,18 +136,39 @@ void OS_Event(const sapp_event *Event, void *Data)
 
 		if(Event->key_code == SAPP_KEYCODE_LEFT)
 		{
-			
-			E_AdvanceCursorXByN(&M->Edit, &M->Cursor, &M->Buffer, -1);
+			for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
+			{
+				E_AdvanceCursorXByN(&M->Edit, Cursor, &M->Buffer, -1);
+			}
 		}
 
 		if(Event->key_code == SAPP_KEYCODE_DOWN)
 		{
-			M->Cursor.Column += 1;
+			if(Event->modifiers & SAPP_KEYCODE_LEFT_ALT)
+			{
+				cursor NextCursor = {0};
+				cursor *LastCursor = &M->Cursor;
+				for(;LastCursor->Next; LastCursor = LastCursor->Next);
+				
+				NextCursor = LastCursor[0];
+				NextCursor.Column += 1;
+				E_AppendCursor(&M->Edit, LastCursor, NextCursor);
+			}
+			else
+			{
+				for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
+				{
+					Cursor->Column += 1;
+				}
+			}
 		}
 
 		if(Event->key_code == SAPP_KEYCODE_UP)
 		{
-			M->Cursor.Column -= 1;
+			for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
+			{
+				Cursor->Column -= 1;
+			}
 		}
 
 		if(Event->key_code == SAPP_KEYCODE_ENTER)
@@ -159,8 +190,11 @@ void OS_Event(const sapp_event *Event, void *Data)
 	{
 		if(!(Event->modifiers & SAPP_MODIFIER_SUPER))
 		{
-			E_InsertTextAtCursor(&M->Edit, &M->Cursor, &M->Buffer,
+			for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
+			{
+				E_InsertTextAtCursor(&M->Edit, Cursor, &M->Buffer,
 								 Str8PushF(M->FrameArena, "?char", Event->char_code));
+			}
 		}
 	}
 }

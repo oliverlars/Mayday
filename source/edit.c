@@ -187,3 +187,14 @@ int E_DistanceFromPreviousNewLine(edit_context *E, cursor *Cursor,
 	}
 	return At - I;
 }
+
+void E_AppendCursor(edit_context *E_Context, cursor *Cursor, cursor NextCursor)
+{
+	assert(Cursor);
+
+	for(;Cursor->Next; Cursor = Cursor->Next);
+
+	Cursor->Next = ArenaPushTypeZero(&E_Context->Arena, cursor);
+	NextCursor.Previous = Cursor;
+	Cursor->Next[0] = NextCursor;
+}

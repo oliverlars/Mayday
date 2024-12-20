@@ -15,6 +15,9 @@ typedef struct cursor
 	*/
 	int StickyX;
 	int Column;
+
+	struct cursor *Next;
+	struct cursor *Previous;
 } cursor;
 
 typedef struct editable_buffer
@@ -59,3 +62,5 @@ int E_DistanceFromNextNewLine(edit_context *E, cursor *Cursor,
 
 void E_RemoveTextFromTextRange(edit_context *E_Context, cursor *Cursor, editable_buffer *Buffer,
 							   int RangeStart, int RangeEnd);
+
+void E_AppendCursor(edit_context *E_Context, cursor *Cursor, cursor NextCursor);

@@ -37,12 +37,15 @@ void OS_Update(void *Data)
 
 	//TODO(Oliver): Theres a better way to do this
 	int WindowHeight = OS_WindowHeight(&M->Window);
+	int WindowWidth = OS_WindowWidth(&M->Window);
 
-	v2f BufferPosition = v2f(200, (f32)WindowHeight - 100);
+	v2f BufferPosition = v2f(100, (f32)WindowHeight - 150);
 
-	v2f NumbersPosition = v2f(10, (f32)WindowHeight - 100);
+	v2f NumbersPosition = v2f(10, (f32)WindowHeight - 150);
 
 	f32 LineHeight = D_LineHeightFromFont(M->Font, M->Buffer.HeightInPixels);
+
+	//D_DrawQuad(&M->Draw, M->FrameArena, v2f(10, (f32)WindowHeight - 50),  WindowWidth - 10, 5, v4f(.2, 0.1, 0, 1.0));
 
 	D_DrawStr8(&M->Draw,
 			   M->FrameArena, M->Font,
@@ -59,7 +62,7 @@ void OS_Update(void *Data)
 		else
 		{
 			D_DrawStr8(&M->Draw, M->FrameArena, M->Font, NumbersPosition,
-					v4f(0.1, 0.05, 0, 1), LineHeight, Str8PushF(M->FrameArena, "?u32", I));
+					v4f(0.2, 0.1, 0, 1), LineHeight, Str8PushF(M->FrameArena, "?u32", I));
 		}
 		NumbersPosition.Y -= LineHeight;
 	}
@@ -92,7 +95,6 @@ void OS_Event(const sapp_event *Event, void *Data)
 		{
 			int BufferIndex = E_BufferIndexFromCursor(&M->Buffer, &M->Cursor);
 			E_RemoveTextFromTextRange(&M->Edit, &M->Cursor, &M->Buffer, BufferIndex-1, BufferIndex);
-			E_AdvanceCursorXByN(&M->Cursor, &M->Buffer, -1);
 		}
 
 		if(Event->key_code == SAPP_KEYCODE_RIGHT)

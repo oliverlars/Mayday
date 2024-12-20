@@ -107,6 +107,8 @@ void E_RemoveTextFromTextRange(edit_context *E_Context, cursor *Cursor, editable
 	MemoryCopy(Buffer->String.Bytes, E_Context->Temp, Buffer->String.Size - (RangeEnd-RangeStart));
 
 	Buffer->String.Size -= (RangeEnd-RangeStart);
+
+	E_AdvanceCursorXByN(Cursor, Buffer, -(RangeEnd-RangeStart));
 }
 
 v2f E_GetPositionFromEditableBuffer(draw_context *D_Context,

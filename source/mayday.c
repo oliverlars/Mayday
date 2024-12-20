@@ -53,10 +53,10 @@ void OS_Update(void *Data)
 												"Line: ?u32 | StickyX: ?u32 | BufferIndex: ?u32 | VisualX: ?u32 | DistanceFromStart: ?u32 | DistanceFromEnd: ?u32",
 												E_LineFromBufferIndex(&M->Edit, &M->Cursor, &M->Buffer),
 												0,
-												E_BufferIndexFromCursor(&M->Edit, &M->Buffer, &M->Cursor),
+												M->Cursor.End,
 												M->Cursor.VisualX,
-												E_DistanceFromPreviousNewLine(&M->Edit, &M->Cursor, M->Buffer),
-												E_DistanceFromNextNewLine(&M->Edit, &M->Cursor, M->Buffer)));
+												E_DistanceFromPreviousNewLine(&M->Edit, &M->Cursor, &M->Buffer),
+												E_DistanceFromNextNewLine(&M->Edit, &M->Cursor, &M->Buffer)));
 
 
 	for(int I = 0; I < 50; I++)
@@ -119,19 +119,14 @@ void OS_Event(const sapp_event *Event, void *Data)
 		{
 			for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
 			{
-				int BufferIndex = E_BufferIndexFromCursor(&M->Edit, &M->Buffer, Cursor);
-				E_RemoveTextFromTextRange(&M->Edit, Cursor, &M->Buffer, BufferIndex-1, BufferIndex);
+				E_RemoveTextFromTextRange(&M->Edit, Cursor, &M->Buffer, Cursor->End-1, Cursor->End);
 			}
 			//assert(BufferIndex == E_BufferIndexFromCursor(&M->Edit, &M->Buffer, &M->Cursor));
 		}
 
 		if(Event->key_code == SAPP_KEYCODE_RIGHT)
 		{
-			for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
-			{
-				Cursor->VisualX = 0;
-				E_AdvanceCursorXByN(&M->Edit, Cursor, &M->Buffer, +1);	
-			}
+			E_AdvanceCursorsXByN(&M->Edit, &M->Cursor, &M->Buffer, +1);		
 		}
 
 		if(Event->key_code == SAPP_KEYCODE_EQUAL)
@@ -151,11 +146,7 @@ void OS_Event(const sapp_event *Event, void *Data)
 
 		if(Event->key_code == SAPP_KEYCODE_LEFT)
 		{
-			for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
-			{
-				Cursor->VisualX = 0;
-				E_AdvanceCursorXByN(&M->Edit, Cursor, &M->Buffer, -1);
-			}
+			E_AdvanceCursorsXByN(&M->Edit, &M->Cursor, &M->Buffer, -1);
 		}
 
 		if(Event->key_code == SAPP_KEYCODE_DOWN)
@@ -168,52 +159,17 @@ void OS_Event(const sapp_event *Event, void *Data)
 				
 				NextCursor = LastCursor[0];
 				E_AppendCursor(&M->Edit, LastCursor, NextCursor);
+				E_AdvanceCursorsYByN(&M->Edit, &M->Draw, M->Font, LastCursor->Next, &M->Buffer, 1);
 			}
 			else
 			{
-				int DistanceFromPreviousNewLine = E_DistanceFromPreviousNewLine(&M->Edit, &M->Cursor, M->Buffer);
-				int DistanceFromNextNewLine = E_DistanceFromNextNewLine(&M->Edit, &M->Cursor, M->Buffer);
-				for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
-				{
-					
-					if(Cursor->VisualX == 0)
-					{
-						int RangeStart = Cursor->End - DistanceFromPreviousNewLine;
-						int RangeEnd = Cursor->End;
-						Cursor->VisualX = E_GetMaxTextWidthFromRange(&M->Edit, &M->Draw, M->Font, Cursor, &M->Buffer, RangeStart, RangeEnd);
-					}
-					Cursor->End += DistanceFromNextNewLine + 1;
-					DistanceFromNextNewLine = E_DistanceFromNextNewLine(&M->Edit, &M->Cursor, M->Buffer);
-
-					int RangeEndFromVisualX = E_RangeEndFromWidth(&M->Edit, &M->Draw, M->Font, Cursor, &M->Buffer, Cursor->VisualX, Cursor->End);
-					Cursor->End += Min(DistanceFromNextNewLine, RangeEndFromVisualX - Cursor->End);
-				}
+				E_AdvanceCursorsYByN(&M->Edit, &M->Draw, M->Font, &M->Cursor, &M->Buffer, 1);
 			}
 		}
 
 		if(Event->key_code == SAPP_KEYCODE_UP)
 		{
-			for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
-			{
-				int DistanceFromPreviousNewLine = E_DistanceFromPreviousNewLine(&M->Edit, &M->Cursor, M->Buffer);
-				for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
-				{
-					if(Cursor->VisualX == 0)
-					{
-						int RangeStart = Cursor->End - DistanceFromPreviousNewLine;
-						int RangeEnd = Cursor->End;
-						Cursor->VisualX = E_GetMaxTextWidthFromRange(&M->Edit, &M->Draw, M->Font, Cursor, &M->Buffer, RangeStart, RangeEnd);
-					}
-					Cursor->End -= DistanceFromPreviousNewLine + 1;
-					DistanceFromPreviousNewLine = E_DistanceFromPreviousNewLine(&M->Edit, &M->Cursor, M->Buffer);
-					
-					Cursor->End -= DistanceFromPreviousNewLine;
-					int DistanceFromNextNewLine = E_DistanceFromNextNewLine(&M->Edit, &M->Cursor, M->Buffer);
-
-					int RangeEndFromVisualX = E_RangeEndFromWidth(&M->Edit, &M->Draw, M->Font, Cursor, &M->Buffer, Cursor->VisualX, Cursor->End);
-					Cursor->End += Min(DistanceFromNextNewLine, RangeEndFromVisualX - Cursor->End);
-				}	
-			}
+			E_AdvanceCursorsYByN(&M->Edit, &M->Draw, M->Font, &M->Cursor, &M->Buffer, -1);
 		}
 
 		if(Event->key_code == SAPP_KEYCODE_ENTER)

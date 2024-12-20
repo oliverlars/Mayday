@@ -37,10 +37,6 @@ typedef struct edit_context
 	u8* Temp;
 } edit_context;
 
-void E_AdvanceCursorXByN(edit_context *E, cursor *Cursor, editable_buffer *Buffer, int N);
-
-int E_BufferIndexFromCursor(edit_context *E, editable_buffer *Buffer, cursor *Cursor);
-
 void E_InsertTextAtCursor(edit_context *E, cursor *Cursor, editable_buffer *Buffer, str8 TextToInsert);
 
 v2f E_GetPositionFromEditableBuffer(edit_context *E,
@@ -51,10 +47,10 @@ v2f E_GetPositionFromEditableBuffer(edit_context *E,
 									v2f Position);
 
 int E_DistanceFromPreviousNewLine(edit_context *E, cursor *Cursor,
-								  editable_buffer Buffer);
+								  editable_buffer *Buffer);
 
 int E_DistanceFromNextNewLine(edit_context *E, cursor *Cursor,
-							  editable_buffer Buffer);
+							  editable_buffer *Buffer);
 
 void E_RemoveTextFromTextRange(edit_context *E_Context, cursor *Cursor, editable_buffer *Buffer,
 							   int RangeStart, int RangeEnd);
@@ -66,5 +62,8 @@ int E_GetMaxTextWidthFromRange(edit_context *E, draw_context *D, d_font Font, cu
 
 int E_RangeEndFromWidth(edit_context *E, draw_context *D, d_font Font,
 						cursor *Cursor, editable_buffer *Buffer, int Width, int RangeStart);
+
+void E_AdvanceCursorsXByN(edit_context *E, cursor *Cursor, editable_buffer *Buffer, int N);
+void E_AdvanceCursorsYByN(edit_context *E, draw_context *D, d_font Font, cursor *Cursor, editable_buffer *Buffer, int N);
 
 void E_AppendCursor(edit_context *E_Context, cursor *Cursor, cursor NextCursor);

@@ -8,18 +8,6 @@
 
 #include <assert.h>
 
-
-void E_AdvanceCursorXByN(edit_context *E, cursor *Cursor, editable_buffer *Buffer, int N)
-{
-	Cursor->End += N;
-	Cursor->Start += N;
-}
-
-int E_BufferIndexFromCursor(edit_context *E, editable_buffer *Buffer, cursor *Cursor)
-{
-	return Cursor->End;
-}
-
 void E_InsertTextAtCursor(edit_context *E, cursor *Cursor, editable_buffer *Buffer, str8 TextToInsert)
 {
 	if(!E->Temp)
@@ -40,7 +28,7 @@ void E_InsertTextAtCursor(edit_context *E, cursor *Cursor, editable_buffer *Buff
 	MemoryCopy(Buffer->String.Bytes, E->Temp, Buffer->String.Size + TextToInsert.Size);
 
 
-	E_AdvanceCursorXByN(E, Cursor, Buffer, TextToInsert.Size);
+	E_AdvanceCursorsXByN(E, Cursor, Buffer, TextToInsert.Size);
 
 	Buffer->String.Size += TextToInsert.Size;
 }
@@ -55,7 +43,7 @@ void E_RemoveTextFromTextRange(edit_context *E, cursor *Cursor, editable_buffer 
 
 	assert(E->Temp);
 
-	E_AdvanceCursorXByN(E, Cursor, Buffer, -(RangeEnd-RangeStart));
+	E_AdvanceCursorsXByN(E, Cursor, Buffer, -(RangeEnd-RangeStart));
 	
 	MemoryCopy(E->Temp, Buffer->String.Bytes, RangeStart);
 	MemoryCopy(E->Temp + RangeStart, Buffer->String.Bytes + RangeEnd, Buffer->String.Size - RangeEnd);
@@ -111,13 +99,13 @@ v2f E_GetPositionFromEditableBuffer(edit_context *E,
 }
 
 int E_DistanceFromNextNewLine(edit_context *E, cursor *Cursor,
-							  editable_buffer Buffer)
+							  editable_buffer *Buffer)
 {
 	int At = Cursor->End; 
 	int I = At;
-	for(;I < Buffer.String.Size; I++)
+	for(;I < Buffer->String.Size; I++)
 	{
-		if(Buffer.String.Bytes[I] == '\n')
+		if(Buffer->String.Bytes[I] == '\n')
 		{
 			break;
 		}
@@ -138,13 +126,13 @@ int E_LineFromBufferIndex(edit_context *E_Context, cursor *Cursor, editable_buff
 }
 
 int E_DistanceFromPreviousNewLine(edit_context *E, cursor *Cursor,
-								  editable_buffer Buffer)
+								  editable_buffer *Buffer)
 {
 	int At = Cursor->End - 1;
 	int I = At;
 	for(;I >= 0; I--)
 	{
-		if(Buffer.String.Bytes[I] == '\n')
+		if(Buffer->String.Bytes[I] == '\n')
 		{
 			break;
 		}
@@ -210,6 +198,59 @@ int E_RangeEndFromWidth(edit_context *E, draw_context *D, d_font Font,
 	}
 
 	return RangeEnd;
+}
+
+void E_AdvanceCursorsYByN(edit_context *E, draw_context *D, d_font Font, cursor *Cursor, editable_buffer *Buffer, int N)
+{
+	if(N > 0)
+	{
+		for(;Cursor; Cursor = Cursor->Next)
+		{
+			int DistanceFromPreviousNewLine = E_DistanceFromPreviousNewLine(E, Cursor, Buffer);
+			int DistanceFromNextNewLine = E_DistanceFromNextNewLine(E, Cursor, Buffer);	
+			if(Cursor->VisualX == 0)
+			{
+				int RangeStart = Cursor->End - DistanceFromPreviousNewLine;
+				int RangeEnd = Cursor->End;
+				Cursor->VisualX = E_GetMaxTextWidthFromRange(E, D, Font, Cursor, Buffer, RangeStart, RangeEnd);
+			}
+			Cursor->End += DistanceFromNextNewLine + 1;
+			DistanceFromNextNewLine = E_DistanceFromNextNewLine(E, Cursor, Buffer);
+
+			int RangeEndFromVisualX = E_RangeEndFromWidth(E, D, Font, Cursor, Buffer, Cursor->VisualX, Cursor->End);
+			Cursor->End += Min(DistanceFromNextNewLine, RangeEndFromVisualX - Cursor->End);
+		}
+	}
+	else if(N < 0)
+	{
+		for(;Cursor; Cursor = Cursor->Next)
+		{
+			int DistanceFromPreviousNewLine = E_DistanceFromPreviousNewLine(E, Cursor, Buffer);
+			if(Cursor->VisualX == 0)
+			{
+				int RangeStart = Cursor->End - DistanceFromPreviousNewLine;
+				int RangeEnd = Cursor->End;
+				Cursor->VisualX = E_GetMaxTextWidthFromRange(E, D, Font, Cursor, Buffer, RangeStart, RangeEnd);
+			}
+			Cursor->End -= DistanceFromPreviousNewLine + 1;
+			DistanceFromPreviousNewLine = E_DistanceFromPreviousNewLine(E, Cursor, Buffer);
+			
+			Cursor->End -= DistanceFromPreviousNewLine;
+			int DistanceFromNextNewLine = E_DistanceFromNextNewLine(E, Cursor, Buffer);
+
+			int RangeEndFromVisualX = E_RangeEndFromWidth(E, D, Font, Cursor, Buffer, Cursor->VisualX, Cursor->End);
+			Cursor->End += Min(DistanceFromNextNewLine, RangeEndFromVisualX - Cursor->End);
+		}	
+	}
+}
+
+void E_AdvanceCursorsXByN(edit_context *E, cursor *Cursor, editable_buffer *Buffer, int N)
+{
+	for(;Cursor; Cursor = Cursor->Next)
+	{
+		Cursor->VisualX = 0;
+		Cursor->End = ClampS32(Cursor->End + N, 0, Buffer->String.Size);
+	}
 }
 
 void E_AppendCursor(edit_context *E_Context, cursor *Cursor, cursor NextCursor)

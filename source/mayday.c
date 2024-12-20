@@ -12,6 +12,7 @@
 #include "render.h"
 
 #include "edit.h"
+#include <assert.h>
 
 typedef struct mayday_context
 {
@@ -47,6 +48,11 @@ void OS_Update(void *Data)
 
 	//D_DrawQuad(&M->Draw, M->FrameArena, v2f(10, (f32)WindowHeight - 50),  WindowWidth - 10, 5, v4f(.2, 0.1, 0, 1.0));
 
+		D_DrawStr8(&M->Draw,
+			   M->FrameArena, M->Font,
+			   v2f(1000, WindowHeight - 100), v4f(1, 1, 1, 1),
+			   M->Buffer.HeightInPixels, Str8PushF(M->FrameArena, "Column: ?u32 | StickyX: ?u32 | BufferIndex: ?u32", M->Cursor.Column, M->Cursor.StickyX, E_BufferIndexFromCursor(&M->Edit, &M->Buffer, &M->Cursor)));
+
 	D_DrawStr8(&M->Draw,
 			   M->FrameArena, M->Font,
 			   BufferPosition, v4f(1, 0.5, 0, 1),
@@ -67,7 +73,8 @@ void OS_Update(void *Data)
 		NumbersPosition.Y -= LineHeight;
 	}
 
-	M->Cursor.TargetPosition = E_GetPositionFromEditableBuffer(&M->Draw,
+	M->Cursor.TargetPosition = E_GetPositionFromEditableBuffer(&M->Edit,
+															   &M->Draw,
 															   &M->Cursor,
 															   M->Buffer,
 															   M->Font,
@@ -93,13 +100,14 @@ void OS_Event(const sapp_event *Event, void *Data)
 	{	
 		if(Event->key_code == SAPP_KEYCODE_BACKSPACE)	
 		{
-			int BufferIndex = E_BufferIndexFromCursor(&M->Buffer, &M->Cursor);
+			int BufferIndex = E_BufferIndexFromCursor(&M->Edit, &M->Buffer, &M->Cursor);
 			E_RemoveTextFromTextRange(&M->Edit, &M->Cursor, &M->Buffer, BufferIndex-1, BufferIndex);
+			//assert(BufferIndex == E_BufferIndexFromCursor(&M->Edit, &M->Buffer, &M->Cursor));
 		}
 
 		if(Event->key_code == SAPP_KEYCODE_RIGHT)
 		{
-			E_AdvanceCursorXByN(&M->Cursor, &M->Buffer, +1);
+			E_AdvanceCursorXByN(&M->Edit, &M->Cursor, &M->Buffer, +1);
 		}
 
 		if(Event->key_code == SAPP_KEYCODE_EQUAL)
@@ -120,7 +128,7 @@ void OS_Event(const sapp_event *Event, void *Data)
 		if(Event->key_code == SAPP_KEYCODE_LEFT)
 		{
 			
-			E_AdvanceCursorXByN(&M->Cursor, &M->Buffer, -1);
+			E_AdvanceCursorXByN(&M->Edit, &M->Cursor, &M->Buffer, -1);
 		}
 
 		if(Event->key_code == SAPP_KEYCODE_DOWN)
@@ -191,6 +199,8 @@ int main()
 	M.Draw.Arena = &Arena;
 	M.Draw.Logger = &Logger;
 	M.Draw.R = &M.Render;
+
+	M.Edit.Logger = &Logger;
 
 	M.Window = OS_MakeWindow(Str8("Mayday"), 3024, 1964);
 

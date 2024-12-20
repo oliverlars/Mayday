@@ -30,6 +30,7 @@ typedef struct edit_context
 {
 	// NOTE(Oliver): This gets its own arena to just allocate all buffers from
 	memory_arena Arena;
+	logger *Logger;
 
 	editable_buffer Buffer;
 
@@ -37,22 +38,23 @@ typedef struct edit_context
 	u8* Temp;
 } edit_context;
 
-void E_AdvanceCursorXByN(cursor *Cursor, editable_buffer *Buffer, int N);
+void E_AdvanceCursorXByN(edit_context *E, cursor *Cursor, editable_buffer *Buffer, int N);
 
-int E_BufferIndexFromCursor(editable_buffer *Buffer, cursor *Cursor);
+int E_BufferIndexFromCursor(edit_context *E, editable_buffer *Buffer, cursor *Cursor);
 
 void E_InsertTextAtCursor(edit_context *E, cursor *Cursor, editable_buffer *Buffer, str8 TextToInsert);
 
-v2f E_GetPositionFromEditableBuffer(draw_context *D_Context,
+v2f E_GetPositionFromEditableBuffer(edit_context *E,
+									draw_context *D_Context,
 									cursor *Cursor,
 									editable_buffer Buffer,
 									d_font Font,
 									v2f Position);
 
-int E_DistanceFromPreviousNewLine(cursor *Cursor,
+int E_DistanceFromPreviousNewLine(edit_context *E, cursor *Cursor,
 								  editable_buffer Buffer);
 
-int E_DistanceFromNextNewLine(cursor *Cursor,
+int E_DistanceFromNextNewLine(edit_context *E, cursor *Cursor,
 							  editable_buffer Buffer);
 
 void E_RemoveTextFromTextRange(edit_context *E_Context, cursor *Cursor, editable_buffer *Buffer,

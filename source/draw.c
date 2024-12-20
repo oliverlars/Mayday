@@ -267,17 +267,15 @@ void D_DrawStr8(draw_context *D,
 
 	f32 StartX = Position.X;
 	r_vertex *R_Vertices = Command.Vertices;
+
+	b32 NewLine = False;
+	v4f Colours[2] = {Colour, v4f(0, 0, 1, 1) };
 	for(int I = 0; I < String.Size; I++)
 	{
 		// TODO(Oliver): Needs to actually iterate utf-8
 		u32 CodePoint = String.Bytes[I];
 
-		if(CodePoint == '\n')
-		{
-			Position.Y -= (Font.Ascent - Font.Descent + Font.LineGap)*Scale;
-			Position.X = StartX;
-			continue;
-		}
+
 
 		f32 TabMultiplier = 1.0f;
 		if(CodePoint == '\t')
@@ -285,6 +283,17 @@ void D_DrawStr8(draw_context *D,
 			CodePoint = ' ';
 			TabMultiplier *= 4.0;
 		}
+
+		if(CodePoint == '\n')
+		{
+			NewLine = True;
+		}
+		else
+		{
+			NewLine = False;
+		}
+		
+		if(NewLine) CodePoint = 'N';
 
 		d_atlas_glyph *Glyph  = D_GlyphFromCodePoint(D, Font, HeightInPixels, CodePoint);
 
@@ -322,7 +331,7 @@ void D_DrawStr8(draw_context *D,
 			r_vertex Vertex = {
 				.Position = v4f(Vertices[V].X, Vertices[V].Y, 0, 1),
 				.UV = DivV2F(UVs[V], V2FromF32((f32)D_FONT_ATLAS_SIZE)),
-				.Colour = Colour,
+				.Colour = Colours[NewLine],
 			};
 
 			Vertex.Position.Y += (Glyph->Box.Y*Scale);
@@ -331,6 +340,12 @@ void D_DrawStr8(draw_context *D,
 			if(CodePoint != ' ') *R_Vertices++ = Vertex;
 		}
 
+		if(NewLine)
+		{
+			Position.Y -= (Font.Ascent - Font.Descent + Font.LineGap)*Scale;
+			Position.X = StartX;
+			continue;
+		}
 		Position.X += Glyph->AdvanceX * Scale * TabMultiplier;
 	}
 

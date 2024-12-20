@@ -9,11 +9,9 @@
 #include <assert.h>
 
 
-void E_AdvanceCursorXByN(cursor *Cursor, editable_buffer *Buffer, int N)
+void E_AdvanceCursorXByN(edit_context *E, cursor *Cursor, editable_buffer *Buffer, int N)
 {
-	int Index = E_BufferIndexFromCursor(Buffer, Cursor);
-	if(N + Index >= Buffer->String.Size) N = Buffer->String.Size - Index;
-	if(N + Index < 0) N = Index;
+	int Index = E_BufferIndexFromCursor(E, Buffer, Cursor);
 
 	if(N > 0)
 	{
@@ -21,8 +19,8 @@ void E_AdvanceCursorXByN(cursor *Cursor, editable_buffer *Buffer, int N)
 		{
 			if(Buffer->String.Bytes[Index + I] == '\n')
 			{
-				Cursor->StickyX = 0;
 				Cursor->Column += 1;
+				Cursor->StickyX = 0;
 			}
 			else
 			{
@@ -30,24 +28,28 @@ void E_AdvanceCursorXByN(cursor *Cursor, editable_buffer *Buffer, int N)
 			}
 		}
 	}
-	else
+	else if(N < 0)
 	{
-		for(int I = N; I < 0; I++)
+		int NextIndex = ClampS32(Index + N, 0, Buffer->String.Size-1);
+		int Columns = 0;
+
+		int LineStart = 0;
+
+		for(int I = 0; I < NextIndex; I++)
 		{
-			if(Buffer->String.Bytes[Index + I] == '\n')
+			if(Buffer->String.Bytes[I] == '\n')
 			{
-				Cursor->StickyX = 0;
-				Cursor->Column -= 1;
+				LineStart = I + 1;
+				Columns++;
 			}
-			else
-			{
-				Cursor->StickyX -= 1;	
-			}
-		}		
+		}
+	
+		Cursor->Column = Columns;
+		Cursor->StickyX = NextIndex - LineStart;
 	}
 }
 
-int E_BufferIndexFromCursor(editable_buffer *Buffer, cursor *Cursor)
+int E_BufferIndexFromCursor(edit_context *E, editable_buffer *Buffer, cursor *Cursor)
 {
 	int Result = 0;
 	int Column = 0;
@@ -66,63 +68,64 @@ int E_BufferIndexFromCursor(editable_buffer *Buffer, cursor *Cursor)
 	return BufferIndex + Min(Cursor->StickyX, LengthOfLine);
 }
 
-void E_InsertTextAtCursor(edit_context *E_Context, cursor *Cursor, editable_buffer *Buffer, str8 TextToInsert)
+void E_InsertTextAtCursor(edit_context *E, cursor *Cursor, editable_buffer *Buffer, str8 TextToInsert)
 {
-	if(!E_Context->Temp)
+	if(!E->Temp)
 	{
-		E_Context->Temp = ArenaPushZero(&E_Context->Arena, MegaBytes(1));
+		E->Temp = ArenaPushZero(&E->Arena, MegaBytes(1));
 	}
 
-	int At = E_BufferIndexFromCursor(Buffer, Cursor);
+	int At = E_BufferIndexFromCursor(E, Buffer, Cursor);
 
 	//TODO(Oliver): Not implemented yet
 	assert(Buffer->String.Size + TextToInsert.Size < MegaBytes(1));
-	assert(E_Context->Temp);
+	assert(E->Temp);
 	
-	MemoryCopy(E_Context->Temp, Buffer->String.Bytes, At);
-	MemoryCopy(E_Context->Temp + At, TextToInsert.Bytes, TextToInsert.Size);
-	MemoryCopy(E_Context->Temp + At + TextToInsert.Size, Buffer->String.Bytes + At, Buffer->String.Size - At);
+	MemoryCopy(E->Temp, Buffer->String.Bytes, At);
+	MemoryCopy(E->Temp + At, TextToInsert.Bytes, TextToInsert.Size);
+	MemoryCopy(E->Temp + At + TextToInsert.Size, Buffer->String.Bytes + At, Buffer->String.Size - At);
 
-	MemoryCopy(Buffer->String.Bytes, E_Context->Temp, Buffer->String.Size + TextToInsert.Size);
+	MemoryCopy(Buffer->String.Bytes, E->Temp, Buffer->String.Size + TextToInsert.Size);
 
 
-	E_AdvanceCursorXByN(Cursor, Buffer, TextToInsert.Size);
+	E_AdvanceCursorXByN(E, Cursor, Buffer, TextToInsert.Size);
 
 	Buffer->String.Size += TextToInsert.Size;
 }
 
-void E_RemoveTextFromTextRange(edit_context *E_Context, cursor *Cursor, editable_buffer *Buffer,
+void E_RemoveTextFromTextRange(edit_context *E, cursor *Cursor, editable_buffer *Buffer,
 							   int RangeStart, int RangeEnd)
 {
-	if(!E_Context->Temp)
+	if(!E->Temp)
 	{
-		E_Context->Temp = ArenaPushZero(&E_Context->Arena, MegaBytes(1));
+		E->Temp = ArenaPushZero(&E->Arena, MegaBytes(1));
 	}
 
-	assert(E_Context->Temp);
-	
-	MemoryCopy(E_Context->Temp, Buffer->String.Bytes, RangeStart);
-	MemoryCopy(E_Context->Temp + RangeStart, Buffer->String.Bytes + RangeEnd, Buffer->String.Size - RangeEnd);
+	assert(E->Temp);
 
-	MemoryCopy(Buffer->String.Bytes, E_Context->Temp, Buffer->String.Size - (RangeEnd-RangeStart));
+	E_AdvanceCursorXByN(E, Cursor, Buffer, -(RangeEnd-RangeStart));
+	
+	MemoryCopy(E->Temp, Buffer->String.Bytes, RangeStart);
+	MemoryCopy(E->Temp + RangeStart, Buffer->String.Bytes + RangeEnd, Buffer->String.Size - RangeEnd);
+
+	MemoryCopy(Buffer->String.Bytes, E->Temp, Buffer->String.Size - (RangeEnd-RangeStart));
 
 	Buffer->String.Size -= (RangeEnd-RangeStart);
-
-	E_AdvanceCursorXByN(Cursor, Buffer, -(RangeEnd-RangeStart));
 }
 
-v2f E_GetPositionFromEditableBuffer(draw_context *D_Context,
-								  cursor *Cursor,
-								  editable_buffer Buffer,
-								  d_font Font,
-								  v2f Position)
+v2f E_GetPositionFromEditableBuffer(edit_context *E,
+									draw_context *D,
+									cursor *Cursor,
+									editable_buffer Buffer,
+									d_font Font,
+									v2f Position)
 {
 	f32 Scale = stbtt_ScaleForPixelHeight(&Font.Info, Buffer.HeightInPixels);
 
 	f32 StartX = Position.X;
 	v2f Result = Position;
 
-	int At = E_BufferIndexFromCursor(&Buffer, Cursor);
+	int At = E_BufferIndexFromCursor(E, &Buffer, Cursor);
 	for(int I = 0; I < Buffer.String.Size; I++)
 	{
 		// TODO(Oliver): Needs to actually iterate utf-8
@@ -147,7 +150,7 @@ v2f E_GetPositionFromEditableBuffer(draw_context *D_Context,
 			TabMultiplier *= 4.0;
 		}
 
-		d_atlas_glyph *Glyph  = D_GlyphFromCodePoint(D_Context, Font, Buffer.HeightInPixels, CodePoint);
+		d_atlas_glyph *Glyph  = D_GlyphFromCodePoint(D, Font, Buffer.HeightInPixels, CodePoint);
 
 		Result.X += Glyph->AdvanceX * Scale * TabMultiplier;
 	}
@@ -155,10 +158,10 @@ v2f E_GetPositionFromEditableBuffer(draw_context *D_Context,
 	return Result;
 }
 
-int E_DistanceFromNextNewLine(cursor *Cursor,
+int E_DistanceFromNextNewLine(edit_context *E, cursor *Cursor,
 							  editable_buffer Buffer)
 {
-	int At = E_BufferIndexFromCursor(&Buffer, Cursor); 
+	int At = E_BufferIndexFromCursor(E, &Buffer, Cursor); 
 	int I = At;
 	for(;I < Buffer.String.Size; I++)
 	{
@@ -170,10 +173,10 @@ int E_DistanceFromNextNewLine(cursor *Cursor,
 	return I - At;
 }
 
-int E_DistanceFromPreviousNewLine(cursor *Cursor,
+int E_DistanceFromPreviousNewLine(edit_context *E, cursor *Cursor,
 								  editable_buffer Buffer)
 {
-	int At = E_BufferIndexFromCursor(&Buffer, Cursor); 
+	int At = E_BufferIndexFromCursor(E, &Buffer, Cursor); 
 	int I = At;
 	for(;I >= 0; I--)
 	{

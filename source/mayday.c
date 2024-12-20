@@ -48,11 +48,12 @@ void OS_Update(void *Data)
 
 	D_DrawStr8(&M->Draw,
 			M->FrameArena, M->Font,
-			v2f(700, WindowHeight - 100), v4f(1, 1, 1, 1),
+			v2f(50, WindowHeight - 70), v4f(1, 1, 1, 1),
 			M->Buffer.HeightInPixels, Str8PushF(M->FrameArena,
-												"Line: ?u32 | StickyX: ?u32 | BufferIndex: ?u32 | VisualX: ?u32 | DistanceFromStart: ?u32 | DistanceFromEnd: ?u32",
+												"Line: ?u32 | StickyX: ?u32 | Start: ?u32 | End: ?u32 | VisualX: ?u32 | DistanceFromStart: ?u32 | DistanceFromEnd: ?u32",
 												E_LineFromBufferIndex(&M->Edit, &M->Cursor, &M->Buffer),
 												0,
+												M->Cursor.Start,
 												M->Cursor.End,
 												M->Cursor.VisualX,
 												E_DistanceFromPreviousNewLine(&M->Edit, &M->Cursor, &M->Buffer),
@@ -91,12 +92,12 @@ void OS_Update(void *Data)
 							M->FrameArena,
 							M->Font,
 							BufferPosition,
-							v4f(0, 1, 0, 0.1),
+							v4f(0.1, 0.05, 0, 0.1),
 							M->Buffer.HeightInPixels,
 							M->Buffer.String,
-							0,
-							5);
-		break;
+							Start,
+							End);
+		
 	}
 	
 	D_DrawStr8(&M->Draw,
@@ -118,8 +119,6 @@ void OS_Update(void *Data)
 
 		D_DrawQuad(&M->Draw, M->FrameArena, Cursor->Position, 5, LineHeight, v4f(0, 1, 0, 1));
 	}
-
-
 
 	D_GlyphsToAtlas(&M->Draw);
 
@@ -204,11 +203,27 @@ void OS_Event(const sapp_event *Event, void *Data)
 			{
 				E_AdvanceCursorsYByN(&M->Edit, &M->Draw, M->Font, &M->Cursor, &M->Buffer, 1);
 			}
+
+			if(!(Event->modifiers & SAPP_MODIFIER_SHIFT))
+			{
+				for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
+				{
+					Cursor->Start = Cursor->End;
+				}
+			}	
 		}
 
 		if(Event->key_code == SAPP_KEYCODE_UP)
 		{
 			E_AdvanceCursorsYByN(&M->Edit, &M->Draw, M->Font, &M->Cursor, &M->Buffer, -1);
+
+			if(!(Event->modifiers & SAPP_MODIFIER_SHIFT))
+			{
+				for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
+				{
+					Cursor->Start = Cursor->End;
+				}
+			}	
 		}
 
 		if(Event->key_code == SAPP_KEYCODE_ENTER)

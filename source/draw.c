@@ -287,13 +287,16 @@ void D_DrawStr8(draw_context *D,
 		if(CodePoint == '\n')
 		{
 			NewLine = True;
+			Position.Y -= (Font.Ascent - Font.Descent + Font.LineGap)*Scale;
+			Position.X = StartX;
+			continue;
 		}
 		else
 		{
 			NewLine = False;
 		}
 		
-		if(NewLine) CodePoint = 'N';
+		//if(NewLine) CodePoint = 'N';
 
 		d_atlas_glyph *Glyph  = D_GlyphFromCodePoint(D, Font, HeightInPixels, CodePoint);
 
@@ -364,11 +367,14 @@ void D_DrawSelectionRange(draw_context *D,
 						  s32 End)
 {
 	if(Start == End) return;
+
 	render_context *R = D->R;
 
 	f32 Scale = stbtt_ScaleForPixelHeight(&Font.Info, HeightInPixels);
 
 	f32 StartX = Position.X;
+
+	f32 SelectionStartX = StartX;
 
 	b32 InRange = False;
 
@@ -385,13 +391,21 @@ void D_DrawSelectionRange(draw_context *D,
 		}
 
 
-		if((CodePoint == '\n' && (I >= Start && I < End)) || ( I == End))
+		if(I == Start) SelectionStartX = Position.X;
+
+		if((I == End) || (I >= Start && I <= End && CodePoint == '\n'))
 		{
-			D_DrawQuad(D, Arena, v2f(StartX, Position.Y + Font.Descent*Scale), Position.X - StartX, (Font.Ascent - Font.Descent + Font.LineGap)*Scale, Colour);
+			D_DrawQuad(D, Arena, v2f(SelectionStartX, Position.Y + Font.Descent*Scale), Position.X - SelectionStartX, (Font.Ascent - Font.Descent + Font.LineGap)*Scale, Colour);
+		}
+
+		if(CodePoint == '\n')
+		{
 			Position.Y -= (Font.Ascent - Font.Descent + Font.LineGap)*Scale;
 			Position.X = StartX;
+			SelectionStartX = StartX;
 			continue;
 		}
+
 
 		d_atlas_glyph *Glyph  = D_GlyphFromCodePoint(D, Font, HeightInPixels, CodePoint);
 

@@ -235,6 +235,13 @@ void OS_Event(const sapp_event *Event, void *Data)
 		{
 			for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
 			{
+				if(Cursor->Start != Cursor->End)
+				{
+					E_RemoveSelectedTextAtCursors(&M->Edit, &M->Cursor, &M->Buffer);
+				}
+			}
+			for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
+			{
 				E_InsertTextAtCursor(&M->Edit, Cursor, &M->Buffer, Str8("\n"));
 			}
 		}
@@ -243,12 +250,28 @@ void OS_Event(const sapp_event *Event, void *Data)
 		{
 			for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
 			{
+				if(Cursor->Start != Cursor->End)
+				{
+					E_RemoveSelectedTextAtCursors(&M->Edit, &M->Cursor, &M->Buffer);
+				}
+			}
+
+			for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
+			{
 				E_InsertTextAtCursor(&M->Edit, Cursor, &M->Buffer, Str8(" "));
 			}
 		}
 
 		if(Event->key_code == SAPP_KEYCODE_TAB)
 		{
+			for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
+			{
+				if(Cursor->Start != Cursor->End)
+				{
+					E_RemoveSelectedTextAtCursors(&M->Edit, &M->Cursor, &M->Buffer);
+				}
+			}
+
 			for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
 			{
 				E_InsertTextAtCursor(&M->Edit, Cursor, &M->Buffer, Str8("\t"));

@@ -312,3 +312,38 @@ void E_AppendCursor(edit_context *E_Context, cursor *Cursor, cursor NextCursor)
 	NextCursor.Previous = Cursor;
 	Cursor->Next[0] = NextCursor;
 }
+
+void PushUndoAction(edit_context *E, cursor *Cursor, undo_type Type, str8 InsertedOrRemovedText)
+{
+	undo_stack *Action = (undo_stack*)ArenaPushZero(&E->Arena, sizeof(undo_stack));
+	Action->Index = Cursor->Start < Cursor->End ? Cursor->Start : Cursor->End;
+	Action->String = Str8PushF(&E->Arena, "?S", InsertedOrRemovedText);
+	Action->Type = Type;
+	if(!E->NewestAction)
+	{
+		E->NewestAction = Action;
+		E->OldestAction = Action;
+	}
+	else
+	{
+		E->NewestAction->Next = Action;
+		Action->Previous = E->NewestAction;
+		E->NewestAction = Action;
+	}
+}
+
+undo_stack *PopOffUndoStack(edit_context *E)
+{
+	assert(E->NewestAction);
+	undo_stack *Result = E->NewestAction;
+	if(E->NewestAction->Previous)
+	{
+		E->NewestAction = E->NewestAction->Previous;
+	}
+	else
+	{
+		E->NewestAction = Null;
+		E->OldestAction = Null;
+	}
+	return Result;
+}

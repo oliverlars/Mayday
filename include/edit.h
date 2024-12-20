@@ -16,6 +16,22 @@ typedef struct cursor
 	struct cursor *Previous;
 } cursor;
 
+typedef enum undo_type
+{
+	UNDO_NONE,
+	UNDO_REMOVED,
+	UNDO_INSERTED,
+} undo_type;
+
+typedef struct undo_stack
+{
+	undo_type Type;
+	int Index;
+	str8 String;
+	struct undo_stack *Previous;
+	struct undo_stack *Next;
+} undo_stack;
+
 typedef struct editable_buffer
 {
 	str8 String;
@@ -32,6 +48,9 @@ typedef struct edit_context
 	logger *Logger;
 
 	editable_buffer Buffer;
+
+	undo_stack *NewestAction;
+	undo_stack *OldestAction;
 
 	// HACK(Oliver): This is dumb, just add a pool allocator
 	u8* Temp;
@@ -68,3 +87,6 @@ void E_AdvanceCursorsXByN(edit_context *E, cursor *Cursor, editable_buffer *Buff
 void E_AdvanceCursorsYByN(edit_context *E, draw_context *D, d_font Font, cursor *Cursor, editable_buffer *Buffer, int N);
 
 void E_AppendCursor(edit_context *E_Context, cursor *Cursor, cursor NextCursor);
+
+void PushUndoAction(edit_context *E, cursor *Cursor, undo_type Type, str8 InsertedOrRemovedText);
+undo_stack *PopOffUndoStack(edit_context *E);

@@ -150,7 +150,32 @@ void OS_Event(const sapp_event *Event, void *Data)
 
 		if(Event->key_code == SAPP_KEYCODE_BACKSPACE)	
 		{
+			
+			if(M->Cursor.Start < M->Cursor.End)
+			{
+				PushUndoAction(&M->Edit, &M->Cursor, UNDO_REMOVED, 
+				(str8){M->Cursor.End - M->Cursor.Start, M->Buffer.String.Bytes + M->Cursor.Start});
+			}
+			else
+			{
+				PushUndoAction(&M->Edit, &M->Cursor, UNDO_REMOVED, 
+				(str8){M->Cursor.Start - M->Cursor.End, M->Buffer.String.Bytes + M->Cursor.End});
+			}
+
 			E_RemoveSelectedTextAtCursors(&M->Edit, &M->Cursor, &M->Buffer);	
+		}
+
+		if(Event->key_code == SAPP_KEYCODE_Z)
+		{
+			if(Event->modifiers & SAPP_MODIFIER_SUPER)
+			{
+				undo_stack *Top = PopOffUndoStack(&M->Edit);
+				cursor Cursor = {0};
+				Cursor.End = Top->Index;
+				Cursor.Start = Cursor.End;
+				E_InsertTextAtCursor(&M->Edit, &Cursor, &M->Buffer, Top->String);
+				
+			}
 		}
 
 		if(Event->key_code == SAPP_KEYCODE_RIGHT)

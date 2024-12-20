@@ -42,15 +42,41 @@ void E_RemoveTextFromTextRange(edit_context *E, cursor *Cursor, editable_buffer 
 	}
 
 	assert(E->Temp);
-
-	E_AdvanceCursorsXByN(E, Cursor, Buffer, -(RangeEnd-RangeStart));
 	
-	MemoryCopy(E->Temp, Buffer->String.Bytes, RangeStart);
-	MemoryCopy(E->Temp + RangeStart, Buffer->String.Bytes + RangeEnd, Buffer->String.Size - RangeEnd);
+	int Count = RangeEnd - RangeStart;
 
-	MemoryCopy(Buffer->String.Bytes, E->Temp, Buffer->String.Size - (RangeEnd-RangeStart));
+	int BytesCopiedSoFar = 0;
 
-	Buffer->String.Size -= (RangeEnd-RangeStart);
+	int PreviousEnd = 0;
+	for(; Cursor; Cursor = Cursor->Next)
+	{
+		int Start = Cursor->Start;
+		int End = Cursor->End;
+		int UpTo = Buffer->String.Size;
+		if(Cursor->Next)
+		{
+			UpTo = Min(Cursor->Next->Start, Cursor->Next->End);
+		}
+		if(End < Start)
+		{
+			int Temp = Start;
+			Start = End;
+			End = Temp;
+		}
+
+		int SegmentSize = Start - PreviousEnd;
+
+		MemoryCopy(E->Temp + BytesCopiedSoFar, Buffer->String.Bytes + PreviousEnd, SegmentSize);
+		BytesCopiedSoFar += SegmentSize;
+		PreviousEnd = End;
+	}
+
+	int TailLength = Buffer->String.Size - PreviousEnd;
+	MemoryCopy(E->Temp + BytesCopiedSoFar, Buffer->String.Bytes + PreviousEnd, TailLength);
+	BytesCopiedSoFar += TailLength;
+	MemoryCopy(Buffer->String.Bytes, E->Temp, BytesCopiedSoFar);
+	
+	Buffer->String.Size = BytesCopiedSoFar;
 }
 
 v2f E_GetPositionFromEditableBuffer(edit_context *E,
@@ -253,6 +279,12 @@ void E_AdvanceCursorsXByN(edit_context *E, cursor *Cursor, editable_buffer *Buff
 		Cursor->VisualX = 0;
 		Cursor->End = ClampS32(Cursor->End + N, 0, Buffer->String.Size);
 	}
+}
+
+void E_AdvanceSingleCursorXByN(edit_context *E, cursor *Cursor, editable_buffer *Buffer, int N)
+{
+	Cursor->VisualX = 0;
+	Cursor->End = ClampS32(Cursor->End + N, 0, Buffer->String.Size);	
 }
 
 void E_AppendCursor(edit_context *E_Context, cursor *Cursor, cursor NextCursor)

@@ -63,6 +63,8 @@ int E_GetMaxTextWidthFromRange(edit_context *E, draw_context *D, d_font Font, cu
 int E_RangeEndFromWidth(edit_context *E, draw_context *D, d_font Font,
 						cursor *Cursor, editable_buffer *Buffer, int Width, int RangeStart);
 
+void E_AdvanceSingleCursorXByN(edit_context *E, cursor *Cursor, editable_buffer *Buffer, int N);
+
 void E_AdvanceCursorsXByN(edit_context *E, cursor *Cursor, editable_buffer *Buffer, int N);
 void E_AdvanceCursorsYByN(edit_context *E, draw_context *D, d_font Font, cursor *Cursor, editable_buffer *Buffer, int N);
 

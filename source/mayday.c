@@ -141,11 +141,40 @@ void OS_Event(const sapp_event *Event, void *Data)
 
 		if(Event->key_code == SAPP_KEYCODE_BACKSPACE)	
 		{
-			for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
+			if(M->Cursor.Start == M->Cursor.End)
 			{
-				E_RemoveTextFromTextRange(&M->Edit, Cursor, &M->Buffer, Cursor->End-1, Cursor->End);
+				E_RemoveTextFromTextRange(&M->Edit, &M->Cursor, &M->Buffer, M->Cursor.End-1, M->Cursor.End);
+				//E_AdvanceCursorsXByN(&M->Edit, Cursor->Next, &M->Buffer, 1);
 			}
-			//assert(BufferIndex == E_BufferIndexFromCursor(&M->Edit, &M->Buffer, &M->Cursor));
+			else
+			{
+				E_RemoveTextFromTextRange(&M->Edit, &M->Cursor, &M->Buffer, M->Cursor.Start, M->Cursor.End);
+				//E_AdvanceCursorsXByN(&M->Edit, Cursor->Next, &M->Buffer, (End - Start));
+				//Cursor->Start = Cursor->End;
+			}
+			
+			// for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
+			// {
+			// 	int Start = Cursor->Start;
+			// 	int End = Cursor->End;
+			// 	if(Cursor->End < Cursor->Start)
+			// 	{
+			// 		int Temp = End;
+			// 		End = Start;
+			// 		Start = Temp;
+			// 	}
+			// 	if(Cursor->Start == Cursor->End)
+			// 	{
+			// 		E_RemoveTextFromTextRange(&M->Edit, Cursor, &M->Buffer, End-1, End);
+			// 		//E_AdvanceCursorsXByN(&M->Edit, Cursor->Next, &M->Buffer, 1);
+			// 	}
+			// 	else
+			// 	{
+			// 		E_RemoveTextFromTextRange(&M->Edit, Cursor, &M->Buffer, Start, End);
+			// 		//E_AdvanceCursorsXByN(&M->Edit, Cursor->Next, &M->Buffer, (End - Start));
+			// 		//Cursor->Start = Cursor->End;
+			// 	}
+			
 		}
 
 		if(Event->key_code == SAPP_KEYCODE_RIGHT)

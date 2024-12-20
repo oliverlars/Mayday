@@ -150,14 +150,7 @@ void OS_Event(const sapp_event *Event, void *Data)
 
 		if(Event->key_code == SAPP_KEYCODE_BACKSPACE)	
 		{
-			if(M->Cursor.Start == M->Cursor.End)
-			{
-				E_RemoveSelectedTextAtCursors(&M->Edit, &M->Cursor, &M->Buffer);
-			}
-			else
-			{
-				E_RemoveSelectedTextAtCursors(&M->Edit, &M->Cursor, &M->Buffer);
-			}
+			E_RemoveSelectedTextAtCursors(&M->Edit, &M->Cursor, &M->Buffer);	
 		}
 
 		if(Event->key_code == SAPP_KEYCODE_RIGHT)
@@ -269,8 +262,15 @@ void OS_Event(const sapp_event *Event, void *Data)
 		{
 			for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
 			{
-				E_InsertTextAtCursor(&M->Edit, Cursor, &M->Buffer,
-								 Str8PushF(M->FrameArena, "?char", Event->char_code));
+				if(Cursor->Start != Cursor->End)
+				{
+					E_RemoveSelectedTextAtCursors(&M->Edit, &M->Cursor, &M->Buffer);
+				}
+			}
+
+			for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
+			{
+				E_InsertTextAtCursor(&M->Edit, Cursor, &M->Buffer, Str8PushF(M->FrameArena, "?char", Event->char_code));
 			}
 		}
 	}

@@ -29,6 +29,7 @@ void E_InsertTextAtCursor(edit_context *E, cursor *Cursor, editable_buffer *Buff
 
 
 	E_AdvanceCursorsXByN(E, Cursor, Buffer, TextToInsert.Size);
+	Cursor->Start = Cursor->End;
 
 	Buffer->String.Size = ClampS32(Buffer->String.Size + TextToInsert.Size, 0, MegaBytes(1));
 }
@@ -54,7 +55,7 @@ void E_RemoveSelectedTextAtCursors(edit_context *E, cursor *Cursor, editable_buf
 		int End = Cursor->End;
 		if(Start == End)
 		{
-			End += 1;
+			Start = Max(Start - 1, 0);
 		}
 		else if(End < Start)
 		{

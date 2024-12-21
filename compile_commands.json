@@ -31,6 +31,11 @@
     },
     {
         "directory": "/Users/olivercruickshank/Mayday",
+        "command": "clang  -c source/ui.c -g -O0 -obuild/source/ui.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "file": "source/ui.c"
+    },
+    {
+        "directory": "/Users/olivercruickshank/Mayday",
         "command": "clang  -c source/darwin/memory.c -g -O0 -obuild/source/darwin/memory.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/darwin/memory.c"
     },

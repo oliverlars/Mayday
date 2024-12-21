@@ -9,6 +9,7 @@
 u64 M_FNVHashString(u64 Hash, str8 String);
 u64 M_FNVHashBytes(u64 Hash, u8 *Bytes, s32 ByteCount);
 
+f32 LerpF32(f32 Source, f32 Target, float T);
 
 f32 ClampF32(f32 Value, f32 Low, f32 High);
 s32 ClampS32(s32 Value, s32 Low, s32 High);

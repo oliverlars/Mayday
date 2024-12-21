@@ -49,6 +49,11 @@ s32 ClampS32(s32 Value, s32 Low, s32 High)
 	return Result;
 }
 
+f32 LerpF32(f32 Source, f32 Target, float T)
+{
+	return Source + T * (Target - Source);	
+}
+
 /*
 
 V2
@@ -59,7 +64,7 @@ v2f AddV2F(v2f A, v2f B)
 {
 	v2f Result = A;
 	Result.X += B.X;
-	Result.Y += B.X;
+	Result.Y += B.Y;
 	return Result;
 }
 
@@ -67,7 +72,7 @@ v2f SubV2F(v2f A, v2f B)
 {
 	v2f Result = A;
 	Result.X -= B.X;
-	Result.Y -= B.X;
+	Result.Y -= B.Y;
 	return Result;
 }
 
@@ -75,7 +80,7 @@ v2f MulV2F(v2f A, v2f B)
 {
 	v2f Result = A;
 	Result.X *= B.X;
-	Result.Y *= B.X;
+	Result.Y *= B.Y;
 	return Result;
 }
 
@@ -83,7 +88,7 @@ v2f DivV2F(v2f A, v2f B)
 {
 	v2f Result = A;
 	Result.X /= B.X;
-	Result.Y /= B.X;
+	Result.Y /= B.Y;
 	return Result;
 }
 

@@ -10,8 +10,9 @@
 #include "draw.h"
 #include "berkeley_mono_font.h"
 #include "render.h"
-
 #include "edit.h"
+
+#include "ui.h"
 #include <assert.h>
 
 typedef struct mayday_context
@@ -22,6 +23,8 @@ typedef struct mayday_context
 	render_context Render;
 	draw_context Draw;
 	edit_context Edit;
+
+	ui_context UI;
 
 	d_font Font;
 
@@ -68,6 +71,7 @@ void OS_Update(void *Data)
 		HeightOffset -= M->Buffer.HeightInPixels;
 	}
 
+	UI_TextButton(&M->UI, &M->Draw, M->FrameArena, Str8("Test Button"), 80, v2f(1600, 800));
 
 	for(int I = 0; I < 50; I++)
 	{
@@ -322,6 +326,11 @@ void OS_Event(const sapp_event *Event, void *Data)
 			}
 		}
 	}
+	else if(Event->type == SAPP_EVENTTYPE_MOUSE_MOVE)
+	{
+		M->UI.MousePosition.X = Event->mouse_x;
+		M->UI.MousePosition.Y = OS_WindowHeight(&M->Window) - Event->mouse_y;
+	}
 }
 
 void OS_Initialise(void *Data)
@@ -363,6 +372,8 @@ int main()
 	M.Window = OS_MakeWindow(Str8("Mayday"), 3024, 1964);
 
 	M.Font = D_LoadFontFromTTF(&M.Draw, G_BerkeleyMonoRegular);
+
+	M.UI.Font = M.Font;
 
 	OS_Run(M.Window, &M);
 }

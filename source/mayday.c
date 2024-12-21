@@ -183,14 +183,23 @@ void OS_Event(const sapp_event *Event, void *Data)
 
 		if(Event->key_code == SAPP_KEYCODE_RIGHT)
 		{
-			E_AdvanceCursorsXByN(&M->Edit, &M->Cursor, &M->Buffer, +1);	
+			if(Event->modifiers & SAPP_MODIFIER_SUPER)
+			{
+				int D = E_DistanceFromNextNewLine(&M->Edit, &M->Cursor, &M->Buffer);
+				E_AdvanceCursorsXByN(&M->Edit, &M->Cursor, &M->Buffer, D);
+			}
+			else
+			{
+				E_AdvanceCursorsXByN(&M->Edit, &M->Cursor, &M->Buffer, +1);
+			}
+
 			if(!(Event->modifiers & SAPP_MODIFIER_SHIFT))
 			{
 				for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
 				{
 					Cursor->Start = Cursor->End;
 				}
-			}	
+			}
 		}
 
 		if(Event->key_code == SAPP_KEYCODE_EQUAL)
@@ -210,7 +219,15 @@ void OS_Event(const sapp_event *Event, void *Data)
 
 		if(Event->key_code == SAPP_KEYCODE_LEFT)
 		{
-			E_AdvanceCursorsXByN(&M->Edit, &M->Cursor, &M->Buffer, -1);
+			if(Event->modifiers & SAPP_MODIFIER_SUPER)
+			{
+				int D = E_DistanceFromPreviousNewLine(&M->Edit, &M->Cursor, &M->Buffer);
+				E_AdvanceCursorsXByN(&M->Edit, &M->Cursor, &M->Buffer, -D);
+			}
+			else
+			{
+				E_AdvanceCursorsXByN(&M->Edit, &M->Cursor, &M->Buffer, -1);
+			}
 			if(!(Event->modifiers & SAPP_MODIFIER_SHIFT))
 			{
 				for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)

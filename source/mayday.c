@@ -43,24 +43,31 @@ void OS_Update(void *Data)
 	int WindowHeight = OS_WindowHeight(&M->Window);
 	int WindowWidth = OS_WindowWidth(&M->Window);
 
-	v2f BufferPosition = v2f(100, (f32)WindowHeight - 150);
+	v2f BufferPosition = v2f(100, (f32)WindowHeight - 200);
 
-	v2f NumbersPosition = v2f(10, (f32)WindowHeight - 150);
+	v2f NumbersPosition = v2f(10, (f32)WindowHeight - 200);
 
 	f32 LineHeight = D_LineHeightFromFont(M->Font, M->Buffer.HeightInPixels);
 
-	D_DrawStr8(&M->Draw,
-			M->FrameArena, M->Font,
-			v2f(50, WindowHeight - 70), v4f(1, 1, 1, 1),
-			M->Buffer.HeightInPixels, Str8PushF(M->FrameArena,
-												"Line: ?u32 | StickyX: ?u32 | Start: ?u32 | End: ?u32 | VisualX: ?u32 | DistanceFromStart: ?u32 | DistanceFromEnd: ?u32",
-												E_LineFromBufferIndex(&M->Edit, &M->Cursor, &M->Buffer),
-												0,
-												M->Cursor.Start,
-												M->Cursor.End,
-												M->Cursor.VisualX,
-												E_DistanceFromPreviousNewLine(&M->Edit, &M->Cursor, &M->Buffer),
-												E_DistanceFromNextNewLine(&M->Edit, &M->Cursor, &M->Buffer)));
+
+	UI_TextButton(&M->UI, &M->Draw, M->FrameArena, Str8("FILE"), 50, v2f(50, WindowHeight - 100), v4f(0.4, 0.2, 0.0, 1.0));
+
+	UI_TextButton(&M->UI, &M->Draw, M->FrameArena, Str8("EDIT"), 50, v2f(250, WindowHeight - 100), v4f(0.4, 0.2, 0.0, 1.0));
+
+	UI_TextButton(&M->UI, &M->Draw, M->FrameArena, Str8("HELP"), 50, v2f(WindowWidth - 250, WindowHeight - 100), v4f(0.4, 0.2, 0.0, 1.0));
+
+	// D_DrawStr8(&M->Draw,
+	// 		M->FrameArena, M->Font,
+	// 		v2f(50, WindowHeight - 70), v4f(1, 1, 1, 1),
+	// 		M->Buffer.HeightInPixels, Str8PushF(M->FrameArena,
+	// 											"Line: ?u32 | StickyX: ?u32 | Start: ?u32 | End: ?u32 | VisualX: ?u32 | DistanceFromStart: ?u32 | DistanceFromEnd: ?u32",
+	// 											E_LineFromBufferIndex(&M->Edit, &M->Cursor, &M->Buffer),
+	// 											0,
+	// 											M->Cursor.Start,
+	// 											M->Cursor.End,
+	// 											M->Cursor.VisualX,
+	// 											E_DistanceFromPreviousNewLine(&M->Edit, &M->Cursor, &M->Buffer),
+	// 											E_DistanceFromNextNewLine(&M->Edit, &M->Cursor, &M->Buffer)));
 
 	f32 HeightOffset = 0;
 	for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
@@ -70,8 +77,6 @@ void OS_Update(void *Data)
 			Cursor->Start, Cursor->End, Cursor->VisualX));
 		HeightOffset -= M->Buffer.HeightInPixels;
 	}
-
-	UI_TextButton(&M->UI, &M->Draw, M->FrameArena, Str8("Test Button"), 80, v2f(1600, 800));
 
 	int MainCursorLine = E_LineFromBufferIndex(&M->Edit, &M->Cursor, &M->Buffer);
 	for(int I = 0; I < 50; I++)
@@ -131,6 +136,7 @@ void OS_Update(void *Data)
 
 		D_DrawQuad(&M->Draw, M->FrameArena, Cursor->Position, 5, LineHeight, v4f(0.3, 0.7, 0, 1));
 	}
+
 
 	D_GlyphsToAtlas(&M->Draw);
 

@@ -264,10 +264,10 @@ void R_Init(render_context *R)
 
 	Metal->CommandQueue = [Metal->Device newCommandQueue];
 
-	Metal->GlyphVertexBuffer = [Metal->Device newBufferWithLength:MegaBytes(8)
+	Metal->GlyphVertexBuffer = [Metal->Device newBufferWithLength:MegaBytes(16)
 					options:MTLResourceStorageModeShared];
 
-	Metal->TriangleVertexBuffer = [Metal->Device newBufferWithLength:MegaBytes(8)
+	Metal->TriangleVertexBuffer = [Metal->Device newBufferWithLength:MegaBytes(16)
 					options:MTLResourceStorageModeShared];
 
 	Metal->UniformBuffer = [Metal->Device newBufferWithLength:sizeof(Uniforms)
@@ -282,6 +282,37 @@ void R_Init(render_context *R)
 
 f32 Angle = 0.0;
 
+void R_RenderPoints(render_context *R, id<MTLCommandBuffer> CommandBuffer, int VertexCount, int Offset)
+{
+	metal_context *Metal = R->Backend;
+
+	MTLRenderPassDescriptor* PassDesc = [MTLRenderPassDescriptor renderPassDescriptor];
+	PassDesc.colorAttachments[0].texture = Metal->BaseFrameBuffer;
+	PassDesc.colorAttachments[0].loadAction = MTLLoadActionLoad;
+	PassDesc.colorAttachments[0].clearColor = MTLClearColorMake(0.0,0.0,0.0,1);
+
+	PassDesc.depthAttachment.texture = ResizeDepthTexture(R, CGSizeMake(Metal->Drawable.texture.width, Metal->Drawable.texture.height));
+	PassDesc.depthAttachment.loadAction = MTLLoadActionLoad;
+	PassDesc.depthAttachment.clearDepth = 1.0;
+
+	Angle += 0.1;
+	Uniforms.ModelMatrix = M44FromZAngle(Angle);
+	Uniforms.ProjectionMatrix = M44FOrthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0);
+	Uniforms.ViewMatrix = M44FLookAt(v3f(0, 0, 10), v3f(0, 0, 0), v3f(0, 1, 0));
+	MemoryCopy(Metal->UniformBuffer.contents, &Uniforms, sizeof(Uniforms));
+
+	id<MTLRenderCommandEncoder> Encoder = [CommandBuffer renderCommandEncoderWithDescriptor:PassDesc];
+	[Encoder setRenderPipelineState:Metal->TriangleShader.PipelineState];
+	[Encoder setFrontFacingWinding:MTLWindingClockwise];
+	[Encoder setCullMode:(MTLCullModeNone)];
+	[Encoder setVertexBuffer:Metal->TriangleVertexBuffer offset:0 atIndex:0];
+	[Encoder setVertexBuffer:Metal->UniformBuffer offset:0 atIndex:1];
+	[Encoder setDepthStencilState:Metal->DepthStencilState];
+	[Encoder drawPrimitives:MTLPrimitiveTypePoint vertexStart:Offset vertexCount:VertexCount];
+
+
+	[Encoder endEncoding];
+}
 
 void R_RenderTriangles(render_context *R, id<MTLCommandBuffer> CommandBuffer, int VertexCount, int Offset)
 {
@@ -296,6 +327,11 @@ void R_RenderTriangles(render_context *R, id<MTLCommandBuffer> CommandBuffer, in
 	PassDesc.depthAttachment.loadAction = MTLLoadActionLoad;
 	PassDesc.depthAttachment.clearDepth = 1.0;
 
+
+	Uniforms.ModelMatrix = M44F_IDENTITY;
+	Uniforms.ProjectionMatrix = M44FOrthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0);
+	Uniforms.ViewMatrix = M44FLookAt(v3f(0, 0, 10), v3f(0, 0, 0), v3f(0, 1, 0));
+	MemoryCopy(Metal->UniformBuffer.contents, &Uniforms, sizeof(Uniforms));
 
 	id<MTLRenderCommandEncoder> Encoder = [CommandBuffer renderCommandEncoderWithDescriptor:PassDesc];
 	[Encoder setRenderPipelineState:Metal->TriangleShader.PipelineState];
@@ -323,6 +359,10 @@ void R_RenderGlyphs(render_context *R, id<MTLCommandBuffer> CommandBuffer, int V
 	PassDesc.depthAttachment.loadAction = MTLLoadActionLoad;
 	PassDesc.depthAttachment.clearDepth = 1.0;
 
+	Uniforms.ModelMatrix = M44F_IDENTITY;
+	Uniforms.ProjectionMatrix = M44FOrthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0);
+	Uniforms.ViewMatrix = M44FLookAt(v3f(0, 0, 10), v3f(0, 0, 0), v3f(0, 1, 0));
+	MemoryCopy(Metal->UniformBuffer.contents, &Uniforms, sizeof(Uniforms));
 
 	id<MTLRenderCommandEncoder> Encoder = [CommandBuffer renderCommandEncoderWithDescriptor:PassDesc];
 	[Encoder setRenderPipelineState:Metal->GlyphShader.PipelineState];
@@ -427,14 +467,7 @@ void R_Update(render_context *R, memory_arena *FrameArena)
 
 	R_ClearAllTextures(R, CommandBuffer);
 
-	Uniforms.ModelMatrix = M44FromXAngle(Angle);
 	Angle += 0.01;
-	Uniforms.ModelMatrix = MulM44FM44F(Uniforms.ModelMatrix, M44FTranslate(v3f(0, 2 * sinf(Angle), 0)));
-	
-	Uniforms.ProjectionMatrix = M44FOrthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0);
-	Uniforms.ViewMatrix = M44FLookAt(v3f(0, 0, 10), v3f(0, 0, 0), v3f(0, 1, 0));
-
-	MemoryCopy(Metal->UniformBuffer.contents, &Uniforms, sizeof(Uniforms));
 
 	int TotalGlyphVertices = 0;
 	int GlyphVertexOffset = 0;

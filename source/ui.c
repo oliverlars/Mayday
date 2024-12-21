@@ -42,17 +42,17 @@ void UI_DrawBoxCorners(ui_context *UI, draw_context *Draw, memory_arena *Arena, 
 	D_DrawQuad(Draw, Arena, SubV2F(Corners[3], v2f(0, LengthOfCornersInPixels)), 2, LengthOfCornersInPixels, v4f(0.5, 0.5, 0.5, 1.0));
 }
 
-b32 UI_TextButton(ui_context *UI, draw_context *Draw, memory_arena *Arena, str8 String, f32 HeightInPixels, v2f Position)
+b32 UI_TextButton(ui_context *UI, draw_context *Draw, memory_arena *Arena,
+				  str8 String, f32 HeightInPixels, v2f Position, v4f Colour)
 {
 	u64 Hash = M_FNVHashString(M_FNV_HASH_START, String);
 	f32 Scale = stbtt_ScaleForPixelHeight(&UI->Font.Info, HeightInPixels);
 	f32 Height = D_LineHeightFromFont(UI->Font, HeightInPixels);
 	f32 Width = E_GetTextWidth(UI, Draw, String, HeightInPixels);
 
-	v4f Colour = v4f(1, 1, 1, 1);
 	if(UI->Hot == Hash)
 	{
-		//Colour = v4f(1, 0, 0, 1);
+		Colour = MulV4F(Colour, V4FromF32(1.2));
 		UI->HotAnimation = LerpF32(UI->HotAnimation, 1.0, 0.1);
 	}
 
@@ -65,7 +65,7 @@ b32 UI_TextButton(ui_context *UI, draw_context *Draw, memory_arena *Arena, str8 
 		v2f CornersPosition = AddV2F(Position, v2f(0, UI->Font.Descent * Scale));
 		CornersPosition = SubV2F(CornersPosition, v2f(UI->HotAnimation*5.0, UI->HotAnimation*5.0));
 		v2f Size = AddV2F(v2f(Width, Height), v2f(UI->HotAnimation*10.0, UI->HotAnimation*10.0));
-		UI_DrawBoxCorners(UI, Draw,Arena, CornersPosition, Size, 20);
+		UI_DrawBoxCorners(UI, Draw,Arena, CornersPosition, Size, 10);
 	}
 	else 
 	{

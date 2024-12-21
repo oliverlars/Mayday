@@ -425,3 +425,40 @@ f32 D_LineHeightFromFont(d_font Font, f32 HeightInPixels)
 
 	return (Font.Ascent - Font.Descent + Font.LineGap)*Scale;
 }
+
+void D_DrawCube(draw_context *D,
+				memory_arena *Arena, v2f Position,
+				f32 Width, f32 Height,
+				v4f Colour)
+{
+	render_context *R = D->R;
+	r_command Command = {0};
+	Command.Vertices = (r_vertex*)ArenaPushZero(Arena, 6*sizeof(r_vertex));
+	Command.VerticesCount = 6;
+	Command.VerticesFormat = R_VF_POSITION | R_VF_UV;
+
+	r_vertex *R_Vertices = Command.Vertices;
+	
+	v2f Vertices[6] = 
+	{
+		v2f(Position.X, Position.Y),
+		v2f(Position.X + Width, Position.Y),
+		v2f(Position.X + Width, Position.Y + Height),
+
+		v2f(Position.X, Position.Y),
+		v2f(Position.X, Position.Y + Height),
+		v2f(Position.X + Width, Position.Y + Height),
+	};
+
+	for(int V = 0; V < 6; V++)
+	{
+		r_vertex Vertex = {
+			.Position = v4f(Vertices[V].X, Vertices[V].Y, 0, 1),
+			.Colour = Colour,
+		};
+
+		*R_Vertices++ = Vertex;
+	}
+	Command.Type = R_COMMAND_POINTS;
+	R_PushCommand(R, Arena, Command);
+}

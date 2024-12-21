@@ -82,4 +82,9 @@ void D_DrawQuad(draw_context *D_Context,
 				f32 Width, f32 Height,
 				v4f Colour);
 
+void D_DrawCube(draw_context *D_Context,
+						memory_arena *Arena, v2f Position,
+						f32 Width, f32 Height,
+						v4f Colour);
+
 f32 D_LineHeightFromFont(d_font Font, f32 HeightInPixels);

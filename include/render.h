@@ -40,6 +40,7 @@ typedef enum r_command_type
 	R_COMMAND_GLYPH,
 	R_COMMAND_TRIANGLE,
 	R_COMMAND_BLOOM,
+	R_COMMAND_POINTS,
 } r_command_type;
 
 typedef struct r_command

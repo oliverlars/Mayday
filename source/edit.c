@@ -283,6 +283,8 @@ void E_AdvanceCursorsYByN(edit_context *E, draw_context *D, d_font Font, cursor 
 
 			int RangeEndFromVisualX = E_RangeEndFromWidth(E, D, Font, Cursor, Buffer, Cursor->VisualX, Cursor->End);
 			Cursor->End += Min(DistanceFromNextNewLine, RangeEndFromVisualX - Cursor->End);
+
+			Cursor->End = Max(Cursor->End, 0);
 		}	
 	}
 }

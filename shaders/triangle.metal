@@ -27,7 +27,7 @@ vertex vertex_output VertexMain(constant vertex_input *Vertices [[buffer(0)]],
 								uint VertexID [[vertex_id]])
 {
 	vertex_output Output;
-	Output.Position = Uniforms.ProjectionMatrix * Vertices[VertexID].Position;
+	Output.Position = Uniforms.ProjectionMatrix * Uniforms.ModelMatrix * Vertices[VertexID].Position;
 	Output.Colour = Vertices[VertexID].Colour;
 	return Output;
 }

@@ -73,17 +73,18 @@ void OS_Update(void *Data)
 
 	UI_TextButton(&M->UI, &M->Draw, M->FrameArena, Str8("Test Button"), 80, v2f(1600, 800));
 
+	int MainCursorLine = E_LineFromBufferIndex(&M->Edit, &M->Cursor, &M->Buffer);
 	for(int I = 0; I < 50; I++)
 	{
-		if(I == 0)
+		if(MainCursorLine == I)
 		{
 			D_DrawStr8(&M->Draw, M->FrameArena, M->Font, NumbersPosition,
-				v4f(1.0, 0.5, .2, 1), LineHeight, Str8PushF(M->FrameArena, "?u32", I));
+				v4f(1.0, 0.5, .2, 1), LineHeight, Str8PushF(M->FrameArena, "?u32", I + 1));
 		}
 		else
 		{
 			D_DrawStr8(&M->Draw, M->FrameArena, M->Font, NumbersPosition,
-					v4f(0.2, 0.1, 0, 1), LineHeight, Str8PushF(M->FrameArena, "?u32", I));
+					v4f(0.2, 0.1, 0, 1), LineHeight, Str8PushF(M->FrameArena, "?u32", I + 1));
 		}
 		NumbersPosition.Y -= LineHeight;
 	}
@@ -92,8 +93,6 @@ void OS_Update(void *Data)
 	{
 		int Start = Cursor->Start;
 		int End = Cursor->End;
-
-		//if(Start == End) continue;
 
 		if(Cursor->End < Cursor->Start)
 		{
@@ -130,7 +129,7 @@ void OS_Update(void *Data)
 
 		Cursor->Position = LerpV2f(Cursor->Position, Cursor->TargetPosition, 0.3);
 
-		D_DrawQuad(&M->Draw, M->FrameArena, Cursor->Position, 5, LineHeight, v4f(0, 1, 0, 1));
+		D_DrawQuad(&M->Draw, M->FrameArena, Cursor->Position, 5, LineHeight, v4f(0.3, 0.7, 0, 1));
 	}
 
 	D_GlyphsToAtlas(&M->Draw);

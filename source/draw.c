@@ -392,9 +392,15 @@ void D_DrawSelectionRange(draw_context *D,
 
 
 		if(I == Start) SelectionStartX = Position.X;
-
 		if((I == End) || (I >= Start && I <= End && CodePoint == '\n'))
 		{
+			if(CodePoint == '\n')
+			{
+				// NOTE(Oliver): I only do this so that you can see if you're selecting
+				// whitespace
+				d_atlas_glyph *Space  = D_GlyphFromCodePoint(D, Font, HeightInPixels, ' ');
+				Position.X += Space->AdvanceX * Scale * TabMultiplier;
+			}
 			D_DrawQuad(D, Arena, v2f(SelectionStartX, Position.Y + Font.Descent*Scale), Position.X - SelectionStartX, (Font.Ascent - Font.Descent + Font.LineGap)*Scale, Colour);
 		}
 
@@ -407,7 +413,7 @@ void D_DrawSelectionRange(draw_context *D,
 		}
 
 
-		d_atlas_glyph *Glyph  = D_GlyphFromCodePoint(D, Font, HeightInPixels, CodePoint);
+		d_atlas_glyph *Glyph  = D_GlyphFromCodePoint(D, Font, HeightInPixels, CodePoint);		
 
 		Position.X += Glyph->AdvanceX * Scale * TabMultiplier;
 	}

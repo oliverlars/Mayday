@@ -397,7 +397,7 @@ int main()
 
 	M.Edit.Logger = &Logger;
 
-	M.Window = OS_MakeWindow(Str8("Mayday"), 3024, 1964);
+	M.Window = OS_MakeWindow(Str8("Mayday!"), 3024, 1964);
 
 	M.Font = D_LoadFontFromTTF(&M.Draw, G_BerkeleyMonoRegular);
 

@@ -36,13 +36,13 @@
     },
     {
         "directory": "/Users/olivercruickshank/Mayday",
-        "command": "clang  -c source/darwin/memory.c -g -O0 -obuild/source/darwin/memory.o -Iinclude/ -Iexternal/ -Iembed/  ",
-        "file": "source/darwin/memory.c"
+        "command": "clang -ObjC -fobjc-arc -c source/darwin/menu_bar.m -g -O0 -obuild/source/darwin/menu_bar.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "file": "source/darwin/menu_bar.m"
     },
     {
         "directory": "/Users/olivercruickshank/Mayday",
-        "command": "clang -ObjC -fobjc-arc -c source/darwin/menu.m -g -O0 -obuild/source/darwin/menu.o -Iinclude/ -Iexternal/ -Iembed/  ",
-        "file": "source/darwin/menu.m"
+        "command": "clang  -c source/darwin/memory.c -g -O0 -obuild/source/darwin/memory.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "file": "source/darwin/memory.c"
     },
     {
         "directory": "/Users/olivercruickshank/Mayday",

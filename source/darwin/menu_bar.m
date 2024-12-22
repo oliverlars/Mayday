@@ -10,7 +10,7 @@ void DarwinMenuBar() {
 	NSMenuItem *AppMenuItem = [[NSMenuItem alloc] init];
 	[MenuBar addItem:AppMenuItem];
 
-	NSMenu *AppMenu = [[NSMenu alloc] initWithTitle:@"App"];
+	NSMenu *AppMenu = [[NSMenu alloc] initWithTitle:@"Mayday!"];
 	
 	NSString *AboutTitle = [NSString stringWithFormat:@"About %@", 
 						   [[NSProcessInfo processInfo] processName]];

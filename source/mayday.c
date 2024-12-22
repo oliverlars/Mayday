@@ -47,19 +47,14 @@ void OS_Update(void *Data)
 	int WindowHeight = OS_WindowHeight(&M->Window);
 	int WindowWidth = OS_WindowWidth(&M->Window);
 
-	v2f BufferPosition = v2f(100, (f32)WindowHeight - 200);
+	v2f BufferPosition = v2f(100, (f32)WindowHeight - 50);
 
-	v2f NumbersPosition = v2f(10, (f32)WindowHeight - 200);
+	v2f NumbersPosition = v2f(10, (f32)WindowHeight - 50);
 
 	f32 LineHeight = D_LineHeightFromFont(M->Font, M->Buffer.HeightInPixels);
 
 
-	UI_TextButton(&M->UI, &M->Draw, M->FrameArena, Str8("FILE"), 50, v2f(50, WindowHeight - 100), v4f(0.4, 0.2, 0.0, 1.0));
-
-	UI_TextButton(&M->UI, &M->Draw, M->FrameArena, Str8("EDIT"), 50, v2f(250, WindowHeight - 100), v4f(0.4, 0.2, 0.0, 1.0));
-
-	UI_TextButton(&M->UI, &M->Draw, M->FrameArena, Str8("HELP"), 50, v2f(WindowWidth - 250, WindowHeight - 100), v4f(0.4, 0.2, 0.0, 1.0));
-
+	UI_TextButton(&M->UI, &M->Draw, M->FrameArena, Str8("ABC"), 50, v2f(1500, WindowHeight - 1000), v4f(0.4, 0.2, 0.0, 1.0));
 	// D_DrawStr8(&M->Draw,
 	// 		M->FrameArena, M->Font,
 	// 		v2f(50, WindowHeight - 70), v4f(1, 1, 1, 1),

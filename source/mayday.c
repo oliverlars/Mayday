@@ -13,6 +13,10 @@
 #include "edit.h"
 
 #include "ui.h"
+
+// TODO(Oliver): Remove platform specific code from here
+#include "darwin/menu_bar.h"
+
 #include <assert.h>
 
 typedef struct mayday_context
@@ -365,6 +369,8 @@ void OS_Initialise(void *Data)
 	M->Buffer.String.Size = sizeof(G_TriangleShader);
 	MemoryCopy(M->Buffer.String.Bytes, G_TriangleShader, sizeof(G_TriangleShader));
 	//Application->R.Logger->Silent = True;
+
+	DarwinMenuBar();
 }
 
 int main()

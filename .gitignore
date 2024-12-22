@@ -1,0 +1,5 @@
+build/*.o
+.cache/*
+.vscode/*
+.DS_Store
+fonts/.DS_Store

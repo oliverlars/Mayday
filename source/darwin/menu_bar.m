@@ -22,10 +22,10 @@ void DarwinMenuBar() {
 	
 	[AppMenu addItem:[NSMenuItem separatorItem]];
 	
-	NSString *quitTitle = [NSString stringWithFormat:@"Quit %@", 
+	NSString *QuitTitle = [NSString stringWithFormat:@"Quit %@", 
 						  [[NSProcessInfo processInfo] processName]];
 						  
-	NSMenuItem *QuitItem = [[NSMenuItem alloc] initWithTitle:quitTitle
+	NSMenuItem *QuitItem = [[NSMenuItem alloc] initWithTitle:QuitTitle
 											   action:@selector(terminate:) 
 											   keyEquivalent:@"q"];
 	[AppMenu addItem:QuitItem];

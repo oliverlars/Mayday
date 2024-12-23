@@ -18,20 +18,27 @@ v2i E_GetSortedSelection(v2i Selection)
 
 void E_DeleteTo(edit_context *Edit, draw_context *Draw, d_font Font, cursor *Cursor, editable_buffer *Buffer, edit_movement Movement)
 {
+	// NOTE(Oliver): For each deletion, every subsequent cursor should be 
+	// offset by the previous cursors selection range
+	int PerCursorOffset = 0;
 	for(;Cursor; Cursor = Cursor->Next)
 	{
 		if(Cursor->Selection.X != Cursor->Selection.Y)
 		{
 			v2i Selection = E_GetSortedSelection(Cursor->Selection);
+			Selection = v2i(Max(Selection.X - PerCursorOffset, 0), Max(Selection.Y - PerCursorOffset, 0));
 			E_RemoveTextFromSelection(Edit, Buffer, Selection);
 			// HACK(Oliver): Does this need to be moved?
-			Cursor->Selection.X = Cursor->Selection.Y;
+			Cursor->Selection = v2i(Selection.X, Selection.X);
+
+			PerCursorOffset += Selection.Y - Selection.X;
 		}
 		else
 		{
-			E_MoveCursors(Edit, Draw, Font, Cursor, Buffer, Movement, E_MOVE_NOT_SELECTING);
 			v2i Selection = E_GetSortedSelection(Cursor->Selection);
 			E_RemoveTextFromSelection(Edit, Buffer, v2i(Selection.X - 1, Selection.Y));
+			Cursor->Selection = v2i(Max(Selection.X - 1, 0), Max(Selection.X - 1, 0));
+
 		}
 	}
 }
@@ -55,17 +62,17 @@ void E_MoveCursors(edit_context *Edit, draw_context *Draw,
 	for(;Cursor; Cursor = Cursor->Next)
 	{
 		v2i Selection = Cursor->Selection;
-		b32 IsSelecting = Cursor->Selection.X != Cursor->Selection.Y;
-		if(Movement == E_MOVE_LEFT && IsSelecting)
+		b32 IsInSelection = Cursor->Selection.X != Cursor->Selection.Y;
+		if(Movement == E_MOVE_LEFT && IsInSelection && MoveType == E_MOVE_NOT_SELECTING)
 		{
 			Selection = E_GetSortedSelection(Cursor->Selection);
-			Selection = v2i(Selection.X - 1, Selection.X - 1);
+			Selection = v2i(Selection.X, Selection.X);
 			Cursor->VisualX = 0;
 		}
-		else if(Movement == E_MOVE_RIGHT && IsSelecting)
+		else if(Movement == E_MOVE_RIGHT && IsInSelection && MoveType == E_MOVE_NOT_SELECTING)
 		{
 			Selection = E_GetSortedSelection(Cursor->Selection);
-			Selection = v2i(Selection.Y + 1, Selection.Y + 1);
+			Selection = v2i(Selection.Y, Selection.Y);
 			Cursor->VisualX = 0;
 		}
 		else if(Movement == E_MOVE_LEFT)

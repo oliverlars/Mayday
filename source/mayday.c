@@ -165,7 +165,14 @@ void OS_Event(const sapp_event *Event, void *Data)
 
 		if(Event->key_code == SAPP_KEYCODE_RIGHT)
 		{
-			E_MoveCursors(&M->Edit, &M->Draw, M->Font, &M->Cursor, &M->Buffer, E_MOVE_RIGHT, MoveType);
+			if(Event->modifiers & SAPP_MODIFIER_ALT)
+			{
+				E_MoveCursors(&M->Edit, &M->Draw, M->Font, &M->Cursor, &M->Buffer, E_MOVE_WORD_RIGHT, MoveType);
+			}
+			else
+			{
+				E_MoveCursors(&M->Edit, &M->Draw, M->Font, &M->Cursor, &M->Buffer, E_MOVE_RIGHT, MoveType);
+			}
 		}
 
 		if(Event->key_code == SAPP_KEYCODE_EQUAL)
@@ -185,7 +192,15 @@ void OS_Event(const sapp_event *Event, void *Data)
 
 		if(Event->key_code == SAPP_KEYCODE_LEFT)
 		{
-			E_MoveCursors(&M->Edit, &M->Draw, M->Font, &M->Cursor, &M->Buffer, E_MOVE_LEFT, MoveType);	
+			if(Event->modifiers & SAPP_MODIFIER_ALT)
+			{
+				E_MoveCursors(&M->Edit, &M->Draw, M->Font, &M->Cursor, &M->Buffer, E_MOVE_WORD_LEFT, MoveType);
+			}
+			else
+			{
+				E_MoveCursors(&M->Edit, &M->Draw, M->Font, &M->Cursor, &M->Buffer, E_MOVE_LEFT, MoveType);
+			}
+			
 		}
 
 		if(Event->key_code == SAPP_KEYCODE_DOWN)

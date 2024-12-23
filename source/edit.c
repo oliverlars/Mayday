@@ -8,6 +8,7 @@
 
 
 #include <assert.h>
+#include <ctype.h>
 
 v2i E_GetSortedSelection(v2i Selection)
 {
@@ -144,13 +145,29 @@ void E_MoveCursors(edit_context *Edit, draw_context *Draw,
 			Index = Min(LineAboveEnd, IndexMaybePastLineEnd);
 			Selection = v2i(Index, Index);
 		}
-		else if(MoveType == E_MOVE_WORD_LEFT)
+		else if(Movement == E_MOVE_WORD_RIGHT)
 		{
+			if(!isalnum(Buffer->String.Bytes[Selection.Y]))
+			{
+				for(; Selection.Y< Buffer->String.Size && !isalnum(Buffer->String.Bytes[Selection.Y]);)
+				{
+					Selection.Y++;
+				}
+			}
 
+			for(; Selection.Y< Buffer->String.Size && isalnum(Buffer->String.Bytes[Selection.Y]);)
+			{
+				Selection.Y++;
+			}
+			Selection.X = Selection.Y;
 		}
-		else if(MoveType == E_MOVE_WORD_RIGHT)
+		else if(Movement == E_MOVE_WORD_LEFT)
 		{
-			
+			for(;Selection.Y - 1 > 0 && isalnum(Buffer->String.Bytes[Selection.Y - 1]);)
+			{
+				Selection.Y--;
+			}
+			Selection.X = Selection.Y;
 		}
 
 

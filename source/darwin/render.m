@@ -289,6 +289,7 @@ void R_RenderPoints(render_context *R, id<MTLCommandBuffer> CommandBuffer, int V
 	MTLRenderPassDescriptor* PassDesc = [MTLRenderPassDescriptor renderPassDescriptor];
 	PassDesc.colorAttachments[0].texture = Metal->BaseFrameBuffer;
 	PassDesc.colorAttachments[0].loadAction = MTLLoadActionLoad;
+	PassDesc.colorAttachments[0].storeAction = MTLStoreActionStore;
 	PassDesc.colorAttachments[0].clearColor = MTLClearColorMake(0.0,0.0,0.0,1);
 
 	PassDesc.depthAttachment.texture = ResizeDepthTexture(R, CGSizeMake(Metal->Drawable.texture.width, Metal->Drawable.texture.height));
@@ -321,6 +322,7 @@ void R_RenderTriangles(render_context *R, id<MTLCommandBuffer> CommandBuffer, in
 	MTLRenderPassDescriptor* PassDesc = [MTLRenderPassDescriptor renderPassDescriptor];
 	PassDesc.colorAttachments[0].texture = Metal->BaseFrameBuffer;
 	PassDesc.colorAttachments[0].loadAction = MTLLoadActionLoad;
+	PassDesc.colorAttachments[0].storeAction = MTLStoreActionStore;
 	PassDesc.colorAttachments[0].clearColor = MTLClearColorMake(0.0,0.0,0.0,1);
 
 	PassDesc.depthAttachment.texture = ResizeDepthTexture(R, CGSizeMake(Metal->Drawable.texture.width, Metal->Drawable.texture.height));
@@ -353,6 +355,7 @@ void R_RenderGlyphs(render_context *R, id<MTLCommandBuffer> CommandBuffer, int V
 	MTLRenderPassDescriptor* PassDesc = [MTLRenderPassDescriptor renderPassDescriptor];
 	PassDesc.colorAttachments[0].texture = Metal->BaseFrameBuffer;
 	PassDesc.colorAttachments[0].loadAction = MTLLoadActionLoad;
+	PassDesc.colorAttachments[0].storeAction = MTLStoreActionStore;
 	PassDesc.colorAttachments[0].clearColor = MTLClearColorMake(0.0,0.0,0.0,1);
 
 	PassDesc.depthAttachment.texture = ResizeDepthTexture(R, CGSizeMake(Metal->Drawable.texture.width, Metal->Drawable.texture.height));
@@ -413,16 +416,20 @@ void R_ClearAllTextures(render_context *R, id<MTLCommandBuffer> CommandBuffer)
 	MTLRenderPassDescriptor* PassDesc = [MTLRenderPassDescriptor renderPassDescriptor];
 	PassDesc.colorAttachments[0].texture = Metal->Drawable.texture;
 	PassDesc.colorAttachments[0].loadAction = MTLLoadActionClear;
+	PassDesc.colorAttachments[0].storeAction = MTLStoreActionStore;
 	PassDesc.colorAttachments[0].clearColor = MTLClearColorMake(0.0,0.0,0.0,1);
 	PassDesc.colorAttachments[1].texture = Metal->BaseFrameBuffer;
 	PassDesc.colorAttachments[1].loadAction = MTLLoadActionClear;
+	PassDesc.colorAttachments[1].storeAction = MTLStoreActionStore;
 	PassDesc.colorAttachments[1].clearColor = MTLClearColorMake(0.0,0.0,0.0,1);
 	PassDesc.colorAttachments[2].texture = Metal->BlurredFrameBuffer;
 	PassDesc.colorAttachments[2].loadAction = MTLLoadActionClear;
+	PassDesc.colorAttachments[2].storeAction = MTLStoreActionStore;
 	PassDesc.colorAttachments[2].clearColor = MTLClearColorMake(0.0,0.0,0.0,1);
 
 	PassDesc.depthAttachment.texture = ResizeDepthTexture(R, CGSizeMake(Metal->Drawable.texture.width, Metal->Drawable.texture.height));
 	PassDesc.depthAttachment.loadAction = MTLLoadActionClear;
+	PassDesc.depthAttachment.storeAction = MTLStoreActionStore;
 	PassDesc.depthAttachment.clearDepth = 1.0;
 
 	id<MTLRenderCommandEncoder> Encoder = [CommandBuffer renderCommandEncoderWithDescriptor:PassDesc];
@@ -435,7 +442,6 @@ void R_Update(render_context *R, memory_arena *FrameArena)
 	Metal->Drawable = (__bridge id<CAMetalDrawable>)sapp_metal_get_current_drawable();
 
 	CAMetalLayer *MetalLayer = (CAMetalLayer *)Metal->Drawable.layer;
-	MetalLayer.framebufferOnly = YES;
 
 	if(!Metal->BaseFrameBuffer)
 	{
@@ -533,6 +539,7 @@ void R_Update(render_context *R, memory_arena *FrameArena)
 
 	[CommandBuffer presentDrawable:Metal->Drawable];
 	[CommandBuffer commit];
+	[CommandBuffer waitUntilCompleted];
 
 	R->CommandsFirst = Null;
 	R->CommandsLast = Null;

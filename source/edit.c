@@ -33,7 +33,7 @@ void E_DeleteTo(edit_context *Edit, cursor *Cursor, editable_buffer *Buffer)
 		}
 		else
 		{
-			E_RemoveTextFromSelection(Edit, Buffer, v2i(Selection.X - 1, Selection.Y));
+			E_RemoveTextFromSelection(Edit, Buffer, v2i(Max(Selection.X - 1, 0), Selection.Y));
 			Cursor->Selection = v2i(Max(Selection.X - 1, 0), Max(Selection.X - 1, 0));
 			
 		}
@@ -97,7 +97,8 @@ void E_MoveCursors(edit_context *Edit, draw_context *Draw,
 			Selection = v2i(Selection.Y, Selection.Y);
 			Cursor->VisualX = 0;
 		}
-		else if(Movement == E_MOVE_LEFT)
+		
+		if(Movement == E_MOVE_LEFT)
 		{
 			Selection.X -= 1;
 			Selection.Y -= 1;

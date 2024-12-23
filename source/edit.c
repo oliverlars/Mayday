@@ -43,18 +43,19 @@ void E_DeleteTo(edit_context *Edit, cursor *Cursor, editable_buffer *Buffer)
 	{
 		v2i Selection = E_GetSortedSelection(Cursor->Selection);
 		Selection = v2i(Max(Selection.X - PerCursorOffset, 0), Max(Selection.Y - PerCursorOffset, 0));
+		
 		if(Cursor->Selection.X != Cursor->Selection.Y)
 		{
+			PerCursorOffset += Selection.Y - Selection.X;
 			E_RemoveTextFromSelection(Edit, Buffer, Selection);
 			Cursor->Selection = v2i(Selection.X, Selection.X);
 		}
 		else
 		{
+			PerCursorOffset -= Selection.X - 1 - Selection.Y;
 			E_RemoveTextFromSelection(Edit, Buffer, v2i(Max(Selection.X - 1, 0), Selection.Y));
-			Cursor->Selection = v2i(Max(Selection.X - 1, 0), Max(Selection.X - 1, 0));
-			
+			Cursor->Selection = v2i(Max(Selection.X - 1, 0), Max(Selection.X -1, 0));
 		}
-		PerCursorOffset += Selection.Y - Selection.X;
 	}
 }
 

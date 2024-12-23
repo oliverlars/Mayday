@@ -235,15 +235,37 @@ void OS_Event(const sapp_event *Event, void *Data)
 
 		if(Event->key_code == SAPP_KEYCODE_ENTER)
 		{
+			E_InsertTo(&M->Edit, &M->Cursor, &M->Buffer, Str8("\n"));
+
+			int TotalWhiteSpaceInserted = 0;
+			for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
+			{
+				int LineStart = E_LineStartFromIndex(&M->Edit, Cursor->Selection.Y, &M->Buffer);
+				
+				int FirstNonWhitespace = LineStart;
+				for(;M->Buffer.String.Bytes[FirstNonWhitespace] == ' ' ||
+					 M->Buffer.String.Bytes[FirstNonWhitespace] == '\t';)
+				{
+					FirstNonWhitespace++;
+				}
+				str8 WhiteSpaceToInsert = (str8){	FirstNonWhitespace - LineStart, M->Buffer.String.Bytes + LineStart};
+
+				E_InsertTextAtIndex(&M->Edit, Cursor->Selection.Y, &M->Buffer, WhiteSpaceToInsert);
+				TotalWhiteSpaceInserted += WhiteSpaceToInsert.Size;
+				Cursor->Selection.Y += TotalWhiteSpaceInserted;
+				Cursor->Selection.X = Cursor->Selection.Y;
+				//E_MoveCursors(&M->Edit, &M->Draw, M->Font, Cursor, &M->Buffer, E_MOVE_RIGHT, E_MOVE_NOT_SELECTING);
+			}
 		}
 
 		if(Event->key_code == SAPP_KEYCODE_SPACE)
 		{
-
+			E_InsertTo(&M->Edit, &M->Cursor, &M->Buffer, Str8(" "));
 		}
 
 		if(Event->key_code == SAPP_KEYCODE_TAB)
 		{
+			E_InsertTo(&M->Edit, &M->Cursor, &M->Buffer, Str8("\t"));
 		}
 	}
 	else if(Event->type == SAPP_EVENTTYPE_CHAR && Event->char_code > 32 && Event->char_code <= 126)

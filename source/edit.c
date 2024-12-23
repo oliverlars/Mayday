@@ -10,6 +10,22 @@
 #include <assert.h>
 #include <ctype.h>
 
+b32 IsWhiteSpace(u32 CodePoint)
+{
+	b32 Result = False;
+	switch(CodePoint)
+	{
+	case '\t':
+	case ' ':
+	case '\r':
+	case '\n':
+		Result = True;
+	break;
+	}
+
+	return Result;
+}
+
 v2i E_GetSortedSelection(v2i Selection)
 {
 	v2i Result;
@@ -278,6 +294,26 @@ int E_DistanceFromPreviousNewLine(edit_context *E, int Index, editable_buffer *B
 	return At - I;
 }
 
+
+int E_LineStartFromIndex(edit_context *Edit, int Index, editable_buffer *Buffer)
+{
+	if(Buffer->String.Bytes[Index] == '\n')
+	{
+		// NOTE(Oliver): We might be already on a newline, but that could be
+		// apart of the line, as it's inclusive of the newline. A newline
+		// only start when we are past the newline.
+		Index = Max(Index - 1, 0);
+	}
+
+	for(; Index > 0; Index--)
+	{
+		if(Buffer->String.Bytes[Index-1] == '\n')
+		{
+			break;
+		}
+	}
+	return Index;
+}
 
 int E_LineFromBufferIndex(edit_context *E_Context, int Index, editable_buffer *Buffer)
 {

@@ -76,6 +76,8 @@ typedef enum edit_move_type
 	E_MOVE_SELECTING,
 } edit_move_type;
 
+b32 IsWhiteSpace(u32 CodePoint);
+
 v2i E_GetSortedSelection(v2i Selection);
 
 void E_DeleteTo(edit_context *Edit, cursor *Cursor, editable_buffer *Buffer);
@@ -104,6 +106,7 @@ v2f E_GetPositionFromEditableBuffer(edit_context *E,
 
 int E_DistanceFromPreviousNewLine(edit_context *E, int Index, editable_buffer *Buffer);
 int E_DistanceFromNextNewLine(edit_context *E, int Index, editable_buffer *Buffer);
+int E_LineStartFromIndex(edit_context *Edit, int Index, editable_buffer *Buffer);
 
 void E_RemoveSelectedTextAtCursors(edit_context *E_Context, cursor *Cursor, editable_buffer *Buffer);
 

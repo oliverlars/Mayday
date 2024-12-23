@@ -130,7 +130,7 @@ void E_MoveCursors(edit_context *Edit, draw_context *Draw,
 		else if(Movement == E_MOVE_UP)
 		{
 			Selection = E_GetSortedSelection(Cursor->Selection);
-			int Index = Selection.Y;
+			int Index = Selection.X;
 			int DistancePreviousNewLine = E_DistanceFromPreviousNewLine(Edit, Index, Buffer);
 			
 			int LineAboveEnd = Index - DistancePreviousNewLine - 1;
@@ -138,12 +138,22 @@ void E_MoveCursors(edit_context *Edit, draw_context *Draw,
 
 			if(Cursor->VisualX == 0)
 			{
-				Cursor->VisualX = E_VisualXFromIndex(Edit, Draw, Font, Selection.Y, Buffer);
+				Cursor->VisualX = E_VisualXFromIndex(Edit, Draw, Font, Selection.X, Buffer);
 			}
 			int IndexMaybePastLineEnd = E_IndexFromVisualXAndLineStart(Edit, Draw, Font, Buffer, Cursor->VisualX, LineAboveStart);
 			Index = Min(LineAboveEnd, IndexMaybePastLineEnd);
 			Selection = v2i(Index, Index);
 		}
+		else if(MoveType == E_MOVE_WORD_LEFT)
+		{
+
+		}
+		else if(MoveType == E_MOVE_WORD_RIGHT)
+		{
+			
+		}
+
+
 		if(MoveType == E_MOVE_SELECTING)
 		{
 			Cursor->Selection.Y = ClampS32(Selection.Y, 0, Buffer->String.Size);

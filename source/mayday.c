@@ -48,9 +48,9 @@ void OS_Update(void *Data)
 	int WindowHeight = OS_WindowHeight(&M->Window);
 	int WindowWidth = OS_WindowWidth(&M->Window);
 
-	v2f BufferPosition = v2f(100, (f32)WindowHeight - 50);
+	v2f BufferPosition = v2f(100, (f32)WindowHeight - 50 + M->UI.ScrollOffset.Y*10);
 
-	v2f NumbersPosition = v2f(10, (f32)WindowHeight - 50);
+	v2f NumbersPosition = v2f(10, (f32)WindowHeight - 50 + M->UI.ScrollOffset.Y*10);
 
 	f32 LineHeight = D_LineHeightFromFont(M->Font, M->Buffer.HeightInPixels);
 
@@ -142,7 +142,7 @@ void OS_Update(void *Data)
 		}
 	}
 
-	if(OS_MilliSecondsFromTimeStamp(OS_TimeStampNow() - M->UI.TimeStampWhenMousePressed) > 300.0 &&
+	if(OS_MilliSecondsFromTimeStamp(OS_TimeStampNow() - M->UI.TimeStampWhenMousePressed) > 150.0 &&
 	   M->UI.MouseWasPressed)
 	{
 		M->UI.MouseIsDragging = True;
@@ -185,6 +185,13 @@ void OS_Event(const sapp_event *Event, void *Data)
 		}
 		M->UI.MouseWasPressed = True;
 		M->UI.TimeStampWhenMousePressed = OS_TimeStampNow();
+	}
+	else if(Event->type == SAPP_EVENTTYPE_MOUSE_SCROLL)
+	{
+		static int TimesScrolled = 0;
+		LogInfo(M->Edit.Logger, "Scroll ?u32", TimesScrolled++);
+		M->UI.ScrollOffset.Y -= Event->scroll_y;
+		M->UI.ScrollOffset.X += Event->scroll_x;
 	}
 	else if(Event->type == SAPP_EVENTTYPE_MOUSE_UP)
 	{

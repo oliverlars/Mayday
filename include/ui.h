@@ -21,6 +21,8 @@ typedef struct ui_context
 
 	d_font Font;
 
+	v2f ScrollOffset;
+
 	b32 MouseIsDragging;
 	v2i MousePosition;
 	b32 MouseWasPressed;

@@ -29,10 +29,9 @@ void E_DeleteTo(edit_context *Edit, draw_context *Draw, d_font Font, cursor *Cur
 		}
 		else
 		{
-			v2i Selection = E_GetSortedSelection(Cursor->Selection);
-			Selection.X -= 1;
 			E_MoveCursors(Edit, Draw, Font, Cursor, Buffer, Movement, E_MOVE_NOT_SELECTING);
-			E_RemoveTextFromSelection(Edit, Buffer, Selection);
+			v2i Selection = E_GetSortedSelection(Cursor->Selection);
+			E_RemoveTextFromSelection(Edit, Buffer, v2i(Selection.X - 1, Selection.Y));
 		}
 	}
 }
@@ -391,13 +390,19 @@ int E_VisualXFromIndex(edit_context *Edit, draw_context *Draw,
 // 	}
 // }
 
-void E_AppendCursor(edit_context *E_Context, cursor *Cursor, cursor NextCursor)
+
+cursor *E_LastCursor(edit_context *Edit, cursor *Cursor)
+{
+	for(;Cursor->Next; Cursor = Cursor->Next);
+	return Cursor;
+}
+
+void E_AppendCursor(edit_context *Edit, cursor *Cursor, cursor NextCursor)
 {
 	assert(Cursor);
+	Cursor = E_LastCursor(Edit, Cursor);
 
-	for(;Cursor->Next; Cursor = Cursor->Next);
-
-	Cursor->Next = ArenaPushTypeZero(&E_Context->Arena, cursor);
+	Cursor->Next = ArenaPushTypeZero(&Edit->Arena, cursor);
 	NextCursor.Previous = Cursor;
 	Cursor->Next[0] = NextCursor;
 }

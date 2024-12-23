@@ -192,8 +192,9 @@ void OS_Event(const sapp_event *Event, void *Data)
 		{
 			if(Event->modifiers & SAPP_MODIFIER_ALT)
 			{
-				cursor NextCursor = M->Cursor;
-				E_MoveCursors(&M->Edit, &M->Draw, M->Font, &M->Cursor, &M->Buffer, E_MOVE_DOWN, MoveType);
+				cursor *LastCursor = E_LastCursor(&M->Edit, &M->Cursor);
+				cursor NextCursor = LastCursor[0];
+				E_MoveCursors(&M->Edit, &M->Draw, M->Font, &NextCursor, &M->Buffer, E_MOVE_DOWN, MoveType);
 				E_AppendCursor(&M->Edit, &M->Cursor, NextCursor);
 			}
 			else
@@ -206,8 +207,9 @@ void OS_Event(const sapp_event *Event, void *Data)
 		{
 			if(Event->modifiers & SAPP_MODIFIER_ALT)
 			{
-				cursor NextCursor = M->Cursor;
-				E_MoveCursors(&M->Edit, &M->Draw, M->Font, &M->Cursor, &M->Buffer, E_MOVE_UP, MoveType);
+				cursor *LastCursor = E_LastCursor(&M->Edit, &M->Cursor);
+				cursor NextCursor = LastCursor[0];
+				E_MoveCursors(&M->Edit, &M->Draw, M->Font, &NextCursor, &M->Buffer, E_MOVE_UP, MoveType);
 				E_AppendCursor(&M->Edit, &M->Cursor, NextCursor);
 			}
 			else

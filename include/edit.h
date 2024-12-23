@@ -121,7 +121,8 @@ void E_AdvanceSingleCursorXByN(edit_context *E, cursor *Cursor, editable_buffer 
 void E_AdvanceCursorsXByN(edit_context *E, cursor *Cursor, editable_buffer *Buffer, int N);
 void E_AdvanceCursorsYByN(edit_context *E, draw_context *D, d_font Font, cursor *Cursor, editable_buffer *Buffer, int N);
 
-void E_AppendCursor(edit_context *E_Context, cursor *Cursor, cursor NextCursor);
+cursor *E_LastCursor(edit_context *Edit, cursor *Cursor);
+void E_AppendCursor(edit_context *Edit, cursor *Cursor, cursor NextCursor);
 
 void PushUndoAction(edit_context *E, cursor *Cursor, undo_type Type, str8 InsertedOrRemovedText);
 undo_stack *PopOffUndoStack(edit_context *E);

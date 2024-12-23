@@ -129,9 +129,9 @@ void OS_Update(void *Data)
 	}
 
 
-	D_GlyphsToAtlas(&M->Draw);
-
 	R_Update(&M->Render, M->FrameArena);
+
+	D_GlyphsToAtlas(&M->Draw);
 
 	ArenaReset(M->FrameArena);
 }

@@ -43,7 +43,8 @@ typedef struct draw_context
 
 	u64 HashOfNewestGlyph;
 
-	u8 *FontAtlas;
+	int WhichAtlas;
+	u8 *FontAtlas[2];
 } draw_context;
 
 d_atlas_glyph *D_GlyphFromCodePoint(draw_context *D_Context,

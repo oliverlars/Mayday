@@ -29,6 +29,7 @@ typedef struct metal_context
 	id<MTLTexture>             BlurredFrameBuffer;
 
 	id<MTLTexture>             FontAtlasTexture;
+
 	id<MTLBuffer>              TriangleVertexBuffer;
 	id<MTLBuffer>              GlyphVertexBuffer;
 	id<MTLBuffer>              IndexBuffer;

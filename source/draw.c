@@ -33,9 +33,9 @@ void D_GlyphsToAtlas(draw_context *D)
 		return;
 	}
 
-	if(!D->FontAtlas)
+	if(!D->FontAtlas[D->WhichAtlas % 2])
 	{
-		D->FontAtlas = ArenaPushZero(D->Arena, D_FONT_ATLAS_SIZE*D_FONT_ATLAS_SIZE);
+		D->FontAtlas[D->WhichAtlas % 2] = ArenaPushZero(D->Arena, D_FONT_ATLAS_SIZE*D_FONT_ATLAS_SIZE);
 	}
 
 	u64 HashOfNewestGlyph = M_FNVHashBytes(M_FNV_HASH_START,
@@ -44,9 +44,7 @@ void D_GlyphsToAtlas(draw_context *D)
 
 	if(HashOfNewestGlyph != D->HashOfNewestGlyph)
 	{
-		{
-			MemorySet(D->FontAtlas,  0, D_FONT_ATLAS_SIZE*D_FONT_ATLAS_SIZE);
-		}
+		MemorySet(D->FontAtlas[D->WhichAtlas % 2],  0, D_FONT_ATLAS_SIZE*D_FONT_ATLAS_SIZE);
 		LogInfo(D->Logger, "Atlas will be updated");
 		D->HashOfNewestGlyph = HashOfNewestGlyph;
 
@@ -85,7 +83,7 @@ void D_GlyphsToAtlas(draw_context *D)
 			else
 			{
 				Glyph->AtlasPosition = v2f(AtlasX, AtlasY);
-				u8 *Row = D->FontAtlas + AtlasX + AtlasY * D_FONT_ATLAS_SIZE;
+				u8 *Row = D->FontAtlas[D->WhichAtlas % 2] + AtlasX + AtlasY * D_FONT_ATLAS_SIZE;
 				for(int Y = 0; Y < Height; Y++)
 				{
 					for(int X = 0; X < Width; X++)
@@ -97,7 +95,7 @@ void D_GlyphsToAtlas(draw_context *D)
 			}
 			AtlasX += Width + Padding;
 		}
-		R_TextureFromBytes(D->R, D->FontAtlas, D_FONT_ATLAS_SIZE, D_FONT_ATLAS_SIZE);
+		R_TextureFromBytes(D->R, D->FontAtlas[D->WhichAtlas++ % 2], D_FONT_ATLAS_SIZE, D_FONT_ATLAS_SIZE);
 	}
 }
 

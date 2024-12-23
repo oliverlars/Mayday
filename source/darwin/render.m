@@ -55,15 +55,19 @@ void R_PushCommand(render_context *R, memory_arena *Arena, r_command Command)
 void R_TextureFromBytes(render_context *R, u8 *Bytes, s32 Width, s32 Height)
 {
 	metal_context *Metal = R->Backend;
-	MTLTextureDescriptor *TextureDescriptor = [MTLTextureDescriptor
-											   texture2DDescriptorWithPixelFormat:MTLPixelFormatR8Unorm
-											   width:Width
-											   height:Height
-											   mipmapped:NO];
-	TextureDescriptor.usage = MTLTextureUsageShaderRead;
-	Metal->FontAtlasTexture = [Metal->Device newTextureWithDescriptor:TextureDescriptor];
+	if(!Metal->FontAtlasTexture)
+	{
+		MTLTextureDescriptor *TextureDescriptor = [MTLTextureDescriptor
+													texture2DDescriptorWithPixelFormat:MTLPixelFormatR8Unorm
+													width:Width
+													height:Height
+													mipmapped:NO];
+		TextureDescriptor.usage = MTLTextureUsageShaderRead;
+		TextureDescriptor.storageMode = MTLStorageModeShared;
+		Metal->FontAtlasTexture = [Metal->Device newTextureWithDescriptor:TextureDescriptor];
+	}
 	MTLRegion region = MTLRegionMake2D(0, 0, Width, Height);
-	[Metal->FontAtlasTexture replaceRegion:region mipmapLevel:0 withBytes:Bytes bytesPerRow:Width];
+	[Metal->FontAtlasTexture replaceRegion:region mipmapLevel:0 withBytes:Bytes bytesPerRow:Width];	
 }
 
 id<MTLTexture> MakeDepthTexture(render_context *R, CGSize Size)
@@ -473,8 +477,6 @@ void R_Update(render_context *R, memory_arena *FrameArena)
 
 
 	id<MTLCommandBuffer> CommandBuffer = [Metal->CommandQueue commandBuffer];
-
-
 	R_ClearAllTextures(R, CommandBuffer);
 
 	Angle += 0.01;

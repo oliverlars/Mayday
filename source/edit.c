@@ -83,7 +83,7 @@ void E_MoveCursors(edit_context *Edit, draw_context *Draw,
 		else if(Movement == E_MOVE_DOWN)
 		{
 			Selection = E_GetSortedSelection(Cursor->Selection);
-			int Index = Selection.X;
+			int Index = Selection.Y;
 			int DistanceFromNextNewLine = E_DistanceFromNextNewLine(Edit, Index, Buffer);
 
 			int LineBelowStart = Index + DistanceFromNextNewLine + 1;
@@ -91,7 +91,7 @@ void E_MoveCursors(edit_context *Edit, draw_context *Draw,
 
 			if(Cursor->VisualX == 0)
 			{
-				Cursor->VisualX = E_VisualXFromIndex(Edit, Draw, Font, Selection.X, Buffer);
+				Cursor->VisualX = E_VisualXFromIndex(Edit, Draw, Font, Selection.Y, Buffer);
 			}
 			int IndexMaybePastLineEnd = E_IndexFromVisualXAndLineStart(Edit, Draw, Font, Buffer, Cursor->VisualX, LineBelowStart);
 			Index = Min(LineBelowEnd, IndexMaybePastLineEnd);
@@ -100,7 +100,7 @@ void E_MoveCursors(edit_context *Edit, draw_context *Draw,
 		else if(Movement == E_MOVE_UP)
 		{
 			Selection = E_GetSortedSelection(Cursor->Selection);
-			int Index = Selection.X;
+			int Index = Selection.Y;
 			int DistancePreviousNewLine = E_DistanceFromPreviousNewLine(Edit, Index, Buffer);
 			
 			int LineAboveEnd = Index - DistancePreviousNewLine - 1;
@@ -108,7 +108,7 @@ void E_MoveCursors(edit_context *Edit, draw_context *Draw,
 
 			if(Cursor->VisualX == 0)
 			{
-				Cursor->VisualX = E_VisualXFromIndex(Edit, Draw, Font, Selection.X, Buffer);
+				Cursor->VisualX = E_VisualXFromIndex(Edit, Draw, Font, Selection.Y, Buffer);
 			}
 			int IndexMaybePastLineEnd = E_IndexFromVisualXAndLineStart(Edit, Draw, Font, Buffer, Cursor->VisualX, LineAboveStart);
 			Index = Min(LineAboveEnd, IndexMaybePastLineEnd);

@@ -377,6 +377,45 @@ int E_GetMaxTextWidthFromRange(edit_context *E, draw_context *D, d_font Font,
 	return MaxWidth;
 }
 
+int E_IndexFromPosition(edit_context *Edit, draw_context *Draw, d_font Font,
+						editable_buffer *Buffer, v2f BufferPosition, v2i Position)
+{
+	f32 Scale = stbtt_ScaleForPixelHeight(&Font.Info, Buffer->HeightInPixels);
+	f32 LineHeight = D_LineHeightFromFont(Font, Buffer->HeightInPixels);
+	int Index = 0;
+	f32 BufferXStart = BufferPosition.X;
+	for(;Index < Buffer->String.Size; Index++)
+	{
+		u32 CodePoint =  Buffer->String.Bytes[Index];
+		
+		if(CodePoint == '\n')
+		{
+			BufferPosition.X = BufferXStart;
+			BufferPosition.Y -= LineHeight;
+			continue;
+		}
+
+		f32 TabMultiplier = 1.0;
+		if(CodePoint == '\t')
+		{
+
+			TabMultiplier *= 4.0;
+		}
+
+		d_atlas_glyph *Glyph  = D_GlyphFromCodePoint(Draw, Font, Buffer->HeightInPixels, CodePoint);
+		
+		if(Position.X >= BufferPosition.X && Position.X <= (BufferPosition.X + Glyph->AdvanceX*Scale) &&
+		   Position.Y >= BufferPosition.Y && Position.Y <= (BufferPosition.Y + LineHeight))
+		{
+			break;
+		}
+
+		BufferPosition.X += Glyph->AdvanceX * Scale * TabMultiplier;
+	}
+
+	return Index;	
+}
+
 int E_IndexFromVisualXAndLineStart(edit_context *E, draw_context *D, d_font Font,
 								   editable_buffer *Buffer, int VisualX, int LineStart)
 {

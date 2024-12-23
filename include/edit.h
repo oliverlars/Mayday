@@ -108,6 +108,9 @@ v2f E_GetPositionFromEditableBuffer(edit_context *E,
 int E_DistanceFromPreviousNewLine(edit_context *E, int Index, editable_buffer *Buffer);
 int E_DistanceFromNextNewLine(edit_context *E, int Index, editable_buffer *Buffer);
 int E_LineStartFromIndex(edit_context *Edit, int Index, editable_buffer *Buffer);
+int E_IndexFromPosition(edit_context *Edit, draw_context *Draw, d_font Font,
+						editable_buffer *Buffer, v2f BufferPosition, v2i Position);
+
 
 void E_RemoveSelectedTextAtCursors(edit_context *E_Context, cursor *Cursor, editable_buffer *Buffer);
 

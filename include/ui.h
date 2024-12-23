@@ -21,7 +21,10 @@ typedef struct ui_context
 
 	d_font Font;
 
+	b32 MouseIsDragging;
 	v2i MousePosition;
+	b32 MouseWasPressed;
+	u64 TimeStampWhenMousePressed;
 
 	ui_widget Widgets[UI_TABLE_SIZE];
 } ui_context;

@@ -128,6 +128,23 @@ void OS_Update(void *Data)
 		D_DrawQuad(&M->Draw, M->FrameArena, Cursor->Position, 5, LineHeight, v4f(0.3, 0.7, 0, 1));
 	}
 
+	if(OS_MilliSecondsFromTimeStamp(OS_TimeStampNow() - M->UI.TimeStampWhenMousePressed) > 300.0 &&
+	   M->UI.MouseWasPressed)
+	{
+		M->UI.MouseIsDragging = True;
+	}
+	else if(!M->UI.MouseWasPressed)
+	{
+		M->UI.MouseIsDragging = False;
+	}
+
+	if(M->UI.MouseIsDragging)
+	{
+		int Index = E_IndexFromPosition(&M->Edit, &M->Draw, M->Font,
+											&M->Buffer, BufferPosition, M->UI.MousePosition);
+			
+		M->Cursor.Selection.Y = Index;
+	}
 
 	R_Update(&M->Render, M->FrameArena);
 
@@ -139,7 +156,27 @@ void OS_Update(void *Data)
 void OS_Event(const sapp_event *Event, void *Data)
 {
 	mayday_context *M = (mayday_context*)Data;
-	if(Event->type == SAPP_EVENTTYPE_KEY_DOWN)
+
+	if(Event->type == SAPP_EVENTTYPE_MOUSE_DOWN)
+	{
+		int WindowHeight = OS_WindowHeight(&M->Window);
+
+		v2f BufferPosition = v2f(100, (f32)WindowHeight - 50);
+		if(Event->mouse_button == SAPP_MOUSEBUTTON_LEFT)
+		{
+			int Index = E_IndexFromPosition(&M->Edit, &M->Draw, M->Font,
+											&M->Buffer, BufferPosition, M->UI.MousePosition);
+			
+			M->Cursor.Selection = v2i(Index, Index);
+		}
+		M->UI.MouseWasPressed = True;
+		M->UI.TimeStampWhenMousePressed = OS_TimeStampNow();
+	}
+	else if(Event->type == SAPP_EVENTTYPE_MOUSE_UP)
+	{
+		M->UI.MouseWasPressed = False;
+	}
+	else if(Event->type == SAPP_EVENTTYPE_KEY_DOWN)
 	{
 		edit_move_type MoveType = E_MOVE_NOT_SELECTING;
 		if(Event->modifiers & SAPP_MODIFIER_SHIFT)
@@ -254,7 +291,6 @@ void OS_Event(const sapp_event *Event, void *Data)
 				TotalWhiteSpaceInserted += WhiteSpaceToInsert.Size;
 				Cursor->Selection.Y += TotalWhiteSpaceInserted;
 				Cursor->Selection.X = Cursor->Selection.Y;
-				//E_MoveCursors(&M->Edit, &M->Draw, M->Font, Cursor, &M->Buffer, E_MOVE_RIGHT, E_MOVE_NOT_SELECTING);
 			}
 		}
 
@@ -288,7 +324,6 @@ void OS_Initialise(void *Data)
 	M->Buffer.String.Bytes = ArenaPushZero(M->PermanentArena, MegaBytes(1));
 	M->Buffer.String.Size = sizeof(G_TriangleShader);
 	MemoryCopy(M->Buffer.String.Bytes, G_TriangleShader, sizeof(G_TriangleShader));
-	//Application->R.Logger->Silent = True;
 
 	DarwinMenuBar();
 }

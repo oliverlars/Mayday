@@ -2,6 +2,8 @@
 #define SOKOL_METAL
 #include "sokol_app.h"
 
+#include <mach/mach_time.h>
+
 #include "strings.h"
 #include "os.h"
 
@@ -45,4 +47,18 @@ int OS_WindowWidth(os_window *Window)
 int OS_WindowHeight(os_window *Window)
 {
 	return sapp_height();
+}
+
+
+u64 OS_TimeStampNow()
+{
+	return mach_absolute_time();
+}
+
+f32 OS_MilliSecondsFromTimeStamp(u64 TimeStamp)
+{
+	mach_timebase_info_data_t Info;
+	mach_timebase_info(&Info);
+
+	return (f32)((TimeStamp) * Info.numer / Info.denom) / 1000000.0;
 }

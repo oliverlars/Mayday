@@ -77,6 +77,7 @@ typedef enum edit_move_type
 } edit_move_type;
 
 b32 IsWhiteSpace(u32 CodePoint);
+b32 IsIdentifierCharacter(u32 CodePoint);
 
 v2i E_GetSortedSelection(v2i Selection);
 

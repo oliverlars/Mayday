@@ -26,6 +26,16 @@ b32 IsWhiteSpace(u32 CodePoint)
 	return Result;
 }
 
+b32 IsIdentifierCharacter(u32 CodePoint)
+{
+	b32 Result = False;
+	if(isalnum(CodePoint) || CodePoint == '_')
+	{
+		Result = True;
+	}
+	return Result;
+}
+
 v2i E_GetSortedSelection(v2i Selection)
 {
 	v2i Result;
@@ -166,15 +176,15 @@ void E_MoveCursors(edit_context *Edit, draw_context *Draw,
 		}
 		else if(Movement == E_MOVE_WORD_RIGHT)
 		{
-			if(!isalnum(Buffer->String.Bytes[Selection.Y]))
+			if(!IsIdentifierCharacter(Buffer->String.Bytes[Selection.Y]))
 			{
-				for(; Selection.Y< Buffer->String.Size && !isalnum(Buffer->String.Bytes[Selection.Y]);)
+				for(; Selection.Y < Buffer->String.Size && !IsIdentifierCharacter(Buffer->String.Bytes[Selection.Y]);)
 				{
 					Selection.Y++;
 				}
 			}
 
-			for(; Selection.Y< Buffer->String.Size && isalnum(Buffer->String.Bytes[Selection.Y]);)
+			for(; Selection.Y< Buffer->String.Size && IsIdentifierCharacter(Buffer->String.Bytes[Selection.Y]);)
 			{
 				Selection.Y++;
 			}
@@ -182,7 +192,14 @@ void E_MoveCursors(edit_context *Edit, draw_context *Draw,
 		}
 		else if(Movement == E_MOVE_WORD_LEFT)
 		{
-			for(;Selection.Y - 1 > 0 && isalnum(Buffer->String.Bytes[Selection.Y - 1]);)
+			if(!IsIdentifierCharacter(Buffer->String.Bytes[Selection.Y - 1]))
+			{
+				for(; Selection.Y -1 >= 0 && !IsIdentifierCharacter(Buffer->String.Bytes[Selection.Y - 1]);)
+				{
+					Selection.Y--;
+				}
+			}
+			for(;Selection.Y - 1 >= 0 && IsIdentifierCharacter(Buffer->String.Bytes[Selection.Y - 1]);)
 			{
 				Selection.Y--;
 			}

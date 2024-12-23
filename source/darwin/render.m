@@ -543,6 +543,7 @@ void R_Update(render_context *R, memory_arena *FrameArena)
 
 	[CommandBuffer presentDrawable:Metal->Drawable];
 	[CommandBuffer commit];
+	[CommandBuffer waitUntilCompleted];
 
 	R->CommandsFirst = Null;
 	R->CommandsLast = Null;

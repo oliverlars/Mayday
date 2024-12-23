@@ -155,6 +155,8 @@ void OS_Event(const sapp_event *Event, void *Data)
 
 		if(Event->key_code == SAPP_KEYCODE_BACKSPACE)	
 		{
+			E_DeleteTo(&M->Edit, &M->Draw, M->Font, &M->Cursor, &M->Buffer, E_MOVE_LEFT);
+
 		}
 
 		if(Event->key_code == SAPP_KEYCODE_Z)
@@ -183,17 +185,35 @@ void OS_Event(const sapp_event *Event, void *Data)
 
 		if(Event->key_code == SAPP_KEYCODE_LEFT)
 		{
-			E_MoveCursors(&M->Edit, &M->Draw, M->Font, &M->Cursor, &M->Buffer, E_MOVE_LEFT, MoveType);
+			E_MoveCursors(&M->Edit, &M->Draw, M->Font, &M->Cursor, &M->Buffer, E_MOVE_LEFT, MoveType);	
 		}
 
 		if(Event->key_code == SAPP_KEYCODE_DOWN)
 		{
-			E_MoveCursors(&M->Edit, &M->Draw, M->Font, &M->Cursor, &M->Buffer, E_MOVE_DOWN, MoveType);
+			if(Event->modifiers & SAPP_MODIFIER_ALT)
+			{
+				cursor NextCursor = M->Cursor;
+				E_MoveCursors(&M->Edit, &M->Draw, M->Font, &M->Cursor, &M->Buffer, E_MOVE_DOWN, MoveType);
+				E_AppendCursor(&M->Edit, &M->Cursor, NextCursor);
+			}
+			else
+			{
+				E_MoveCursors(&M->Edit, &M->Draw, M->Font, &M->Cursor, &M->Buffer, E_MOVE_DOWN, MoveType);
+			}
 		}
 
 		if(Event->key_code == SAPP_KEYCODE_UP)
 		{
-			E_MoveCursors(&M->Edit, &M->Draw, M->Font, &M->Cursor, &M->Buffer, E_MOVE_UP, MoveType);
+			if(Event->modifiers & SAPP_MODIFIER_ALT)
+			{
+				cursor NextCursor = M->Cursor;
+				E_MoveCursors(&M->Edit, &M->Draw, M->Font, &M->Cursor, &M->Buffer, E_MOVE_UP, MoveType);
+				E_AppendCursor(&M->Edit, &M->Cursor, NextCursor);
+			}
+			else
+			{
+				E_MoveCursors(&M->Edit, &M->Draw, M->Font, &M->Cursor, &M->Buffer, E_MOVE_UP, MoveType);
+			}
 		}
 
 		if(Event->key_code == SAPP_KEYCODE_ENTER)

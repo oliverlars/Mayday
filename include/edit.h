@@ -78,7 +78,8 @@ typedef enum edit_move_type
 
 v2i E_GetSortedSelection(v2i Selection);
 
-void E_DeleteTo(edit_context *Edit, cursor *Cursor, editable_buffer *Buffer, edit_movement Movement);
+void E_DeleteTo(edit_context *Edit, draw_context *Draw, d_font Font,
+				cursor *Cursor, editable_buffer *Buffer, edit_movement Movement);
 
 void E_RemoveTextFromSelection(edit_context *Edit, editable_buffer *Buffer, v2i Selection);
 

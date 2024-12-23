@@ -16,7 +16,7 @@ v2i E_GetSortedSelection(v2i Selection)
 	return Result;
 }
 
-void E_DeleteTo(edit_context *Edit, cursor *Cursor, editable_buffer *Buffer, edit_movement Movement)
+void E_DeleteTo(edit_context *Edit, draw_context *Draw, d_font Font, cursor *Cursor, editable_buffer *Buffer, edit_movement Movement)
 {
 	for(;Cursor; Cursor = Cursor->Next)
 	{
@@ -24,16 +24,29 @@ void E_DeleteTo(edit_context *Edit, cursor *Cursor, editable_buffer *Buffer, edi
 		{
 			v2i Selection = E_GetSortedSelection(Cursor->Selection);
 			E_RemoveTextFromSelection(Edit, Buffer, Selection);
+			// HACK(Oliver): Does this need to be moved?
+			Cursor->Selection.X = Cursor->Selection.Y;
+		}
+		else
+		{
+			v2i Selection = E_GetSortedSelection(Cursor->Selection);
+			Selection.X -= 1;
+			E_MoveCursors(Edit, Draw, Font, Cursor, Buffer, Movement, E_MOVE_NOT_SELECTING);
+			E_RemoveTextFromSelection(Edit, Buffer, Selection);
 		}
 	}
 }
 
 void E_RemoveTextFromSelection(edit_context *Edit, editable_buffer *Buffer, v2i Selection)
 {
+	if(!Edit->Temp)
+	{
+		Edit->Temp = ArenaPushZero(&Edit->Arena, MegaBytes(1));;
+	}
 	Selection = E_GetSortedSelection(Selection);
-	MemoryCopy(Edit->Temp + Selection.X, Buffer->String.Bytes, Selection.X);
-	MemoryCopy(Edit->Temp + Selection.Y, Buffer->String.Bytes, Buffer->String.Size - Selection.Y);
-	MemoryCopy(Buffer->String.Bytes, Edit->Temp, Buffer->String.Size - (Selection.X - Selection.Y));
+	MemoryCopy(Edit->Temp, Buffer->String.Bytes, Selection.X);
+	MemoryCopy(Edit->Temp + Selection.X, Buffer->String.Bytes + Selection.Y, Buffer->String.Size - Selection.Y);
+	MemoryCopy(Buffer->String.Bytes, Edit->Temp, Buffer->String.Size - (Selection.Y - Selection.X));
 }
 
 void E_MoveCursors(edit_context *Edit, draw_context *Draw,

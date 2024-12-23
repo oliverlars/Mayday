@@ -140,7 +140,12 @@ void OS_Event(const sapp_event *Event, void *Data)
 {
 	mayday_context *M = (mayday_context*)Data;
 	if(Event->type == SAPP_EVENTTYPE_KEY_DOWN)
-	{	
+	{
+		edit_move_type MoveType = E_MOVE_NOT_SELECTING;
+		if(Event->modifiers & SAPP_MODIFIER_SHIFT)
+		{
+			MoveType = E_MOVE_SELECTING;
+		}
 
 		if(Event->key_code == SAPP_KEYCODE_ESCAPE)
 		{
@@ -158,7 +163,7 @@ void OS_Event(const sapp_event *Event, void *Data)
 
 		if(Event->key_code == SAPP_KEYCODE_RIGHT)
 		{
-			E_MoveCursors(&M->Edit, &M->Draw, M->Font, &M->Cursor, &M->Buffer, E_MOVE_RIGHT);
+			E_MoveCursors(&M->Edit, &M->Draw, M->Font, &M->Cursor, &M->Buffer, E_MOVE_RIGHT, MoveType);
 		}
 
 		if(Event->key_code == SAPP_KEYCODE_EQUAL)
@@ -178,17 +183,17 @@ void OS_Event(const sapp_event *Event, void *Data)
 
 		if(Event->key_code == SAPP_KEYCODE_LEFT)
 		{
-			E_MoveCursors(&M->Edit, &M->Draw, M->Font, &M->Cursor, &M->Buffer, E_MOVE_LEFT);
+			E_MoveCursors(&M->Edit, &M->Draw, M->Font, &M->Cursor, &M->Buffer, E_MOVE_LEFT, MoveType);
 		}
 
 		if(Event->key_code == SAPP_KEYCODE_DOWN)
 		{
-			E_MoveCursors(&M->Edit, &M->Draw, M->Font, &M->Cursor, &M->Buffer, E_MOVE_DOWN);
+			E_MoveCursors(&M->Edit, &M->Draw, M->Font, &M->Cursor, &M->Buffer, E_MOVE_DOWN, MoveType);
 		}
 
 		if(Event->key_code == SAPP_KEYCODE_UP)
 		{
-			E_MoveCursors(&M->Edit, &M->Draw, M->Font, &M->Cursor, &M->Buffer, E_MOVE_UP);
+			E_MoveCursors(&M->Edit, &M->Draw, M->Font, &M->Cursor, &M->Buffer, E_MOVE_UP, MoveType);
 		}
 
 		if(Event->key_code == SAPP_KEYCODE_ENTER)

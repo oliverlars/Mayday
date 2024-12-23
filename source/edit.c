@@ -38,39 +38,41 @@ void E_RemoveTextFromSelection(edit_context *Edit, editable_buffer *Buffer, v2i 
 
 void E_MoveCursors(edit_context *Edit, draw_context *Draw,
 				   d_font Font, cursor *Cursor, editable_buffer *Buffer,
-				   edit_movement Movement)
+				   edit_movement Movement, edit_move_type MoveType)
 {
 	for(;Cursor; Cursor = Cursor->Next)
 	{
-		if(Movement == E_MOVE_LEFT && Cursor->Selection.X != Cursor->Selection.Y)
+		v2i Selection = Cursor->Selection;
+		b32 IsSelecting = Cursor->Selection.X != Cursor->Selection.Y;
+		if(Movement == E_MOVE_LEFT && IsSelecting)
 		{
-			v2i Selection = E_GetSortedSelection(Cursor->Selection);
-			Cursor->Selection.X = Selection.X;
-			Cursor->Selection.Y = Selection.X;
+			Selection = E_GetSortedSelection(Cursor->Selection);
+			Selection.X = Selection.X - 1;
+			Selection.Y = Selection.X - 1;
 			Cursor->VisualX = 0;
 		}
-		else if(Movement == E_MOVE_RIGHT && Cursor->Selection.X != Cursor->Selection.Y)
+		else if(Movement == E_MOVE_RIGHT && IsSelecting)
 		{
-			v2i Selection = E_GetSortedSelection(Cursor->Selection);
-			Cursor->Selection.X = Selection.Y;
-			Cursor->Selection.Y = Selection.Y;
+			Selection = E_GetSortedSelection(Cursor->Selection);
+			Selection.X = Selection.Y + 1;
+			Selection.Y = Selection.Y + 1;
 			Cursor->VisualX = 0;
 		}
 		else if(Movement == E_MOVE_LEFT)
 		{
-			Cursor->Selection.X -= 1;
-			Cursor->Selection.Y -= 1;
+			Selection.X -= 1;
+			Selection.Y -= 1;
 			Cursor->VisualX = 0;
 		}
 		else if(Movement == E_MOVE_RIGHT)
 		{
-			Cursor->Selection.X += 1;
-			Cursor->Selection.Y += 1;
+			Selection.X += 1;
+			Selection.Y += 1;
 			Cursor->VisualX = 0;
 		}
 		else if(Movement == E_MOVE_DOWN)
 		{
-			v2i Selection = E_GetSortedSelection(Cursor->Selection);
+			Selection = E_GetSortedSelection(Cursor->Selection);
 			int Index = Selection.X;
 			int DistanceFromNextNewLine = E_DistanceFromNextNewLine(Edit, Index, Buffer);
 
@@ -83,11 +85,11 @@ void E_MoveCursors(edit_context *Edit, draw_context *Draw,
 			}
 			int IndexMaybePastLineEnd = E_IndexFromVisualXAndLineStart(Edit, Draw, Font, Buffer, Cursor->VisualX, LineBelowStart);
 			Index = Min(LineBelowEnd, IndexMaybePastLineEnd);
-			Cursor->Selection = v2i(Index, Index);
+			Selection = v2i(Index, Index);
 		}
 		else if(Movement == E_MOVE_UP)
 		{
-			v2i Selection = E_GetSortedSelection(Cursor->Selection);
+			Selection = E_GetSortedSelection(Cursor->Selection);
 			int Index = Selection.X;
 			int DistancePreviousNewLine = E_DistanceFromPreviousNewLine(Edit, Index, Buffer);
 			
@@ -100,10 +102,17 @@ void E_MoveCursors(edit_context *Edit, draw_context *Draw,
 			}
 			int IndexMaybePastLineEnd = E_IndexFromVisualXAndLineStart(Edit, Draw, Font, Buffer, Cursor->VisualX, LineAboveStart);
 			Index = Min(LineAboveEnd, IndexMaybePastLineEnd);
-			Cursor->Selection = v2i(Index, Index);
+			Selection = v2i(Index, Index);
 		}
-		Cursor->Selection.X = ClampS32(Cursor->Selection.X, 0, Buffer->String.Size);
-		Cursor->Selection.Y = ClampS32(Cursor->Selection.Y, 0, Buffer->String.Size);
+		if(MoveType == E_MOVE_SELECTING)
+		{
+			Cursor->Selection.Y = ClampS32(Selection.Y, 0, Buffer->String.Size);
+		}
+		else if(MoveType == E_MOVE_NOT_SELECTING)
+		{
+			Cursor->Selection.X = ClampS32(Selection.X, 0, Buffer->String.Size);
+			Cursor->Selection.Y = ClampS32(Selection.Y, 0, Buffer->String.Size);
+		}
 	}
 }
 

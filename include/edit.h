@@ -7,8 +7,7 @@ typedef struct cursor
 	v2f Position;
 	v2f TargetPosition;
 
-	int Start;
-	int End;
+	v2i Selection;
 
 	int VisualX;
 
@@ -47,6 +46,8 @@ typedef struct edit_context
 	memory_arena Arena;
 	logger *Logger;
 
+	draw_context *Draw;
+
 	editable_buffer Buffer;
 
 	undo_stack *NewestAction;
@@ -56,30 +57,57 @@ typedef struct edit_context
 	u8* Temp;
 } edit_context;
 
+typedef enum edit_movement
+{
+	E_MOVE_START,
+	E_MOVE_END,
+	E_MOVE_LEFT,
+	E_MOVE_RIGHT,
+	E_MOVE_UP,
+	E_MOVE_DOWN,
+	E_MOVE_WORD_LEFT,
+	E_MOVE_WORD_RIGHT,
+
+} edit_movement;
+
+v2i E_GetSortedSelection(v2i Selection);
+
+void E_DeleteTo(edit_context *Edit, cursor *Cursor, editable_buffer *Buffer, edit_movement Movement);
+
+void E_RemoveTextFromSelection(edit_context *Edit, editable_buffer *Buffer, v2i Selection);
+
+void E_MoveCursors(edit_context *Edit, draw_context *Draw,
+				   d_font Font, cursor *Cursor, editable_buffer *Buffer,
+				   edit_movement Movement);
+
+void E_DeleteAtLeastOneCharacterInRange(edit_context *Edit,
+										edit_movement Movement,
+										cursor *Cursors);
+
 void E_InsertTextAtCursor(edit_context *E, cursor *Cursor, editable_buffer *Buffer, str8 TextToInsert);
 
 v2f E_GetPositionFromEditableBuffer(edit_context *E,
-									draw_context *D_Context,
-									cursor *Cursor,
+									draw_context *D,
+									int Index,
 									editable_buffer Buffer,
 									d_font Font,
 									v2f Position);
 
-int E_DistanceFromPreviousNewLine(edit_context *E, cursor *Cursor,
-								  editable_buffer *Buffer);
-
-int E_DistanceFromNextNewLine(edit_context *E, cursor *Cursor,
-							  editable_buffer *Buffer);
+int E_DistanceFromPreviousNewLine(edit_context *E, int Index, editable_buffer *Buffer);
+int E_DistanceFromNextNewLine(edit_context *E, int Index, editable_buffer *Buffer);
 
 void E_RemoveSelectedTextAtCursors(edit_context *E_Context, cursor *Cursor, editable_buffer *Buffer);
 
-int E_LineFromBufferIndex(edit_context *E_Context, cursor *Cursor, editable_buffer *Buffer);
+int E_LineFromBufferIndex(edit_context *E_Context, int Index, editable_buffer *Buffer);
 
-int E_GetMaxTextWidthFromRange(edit_context *E, draw_context *D, d_font Font, cursor *Cursor,
+int E_VisualXFromIndex(edit_context *Edit, draw_context *Draw,
+					   d_font Font, int Index, editable_buffer *Buffer);
+
+int E_GetMaxTextWidthFromRange(edit_context *E, draw_context *D, d_font Font,
 							   editable_buffer *Buffer, int RangeStart, int RangeEnd);
 
-int E_RangeEndFromWidth(edit_context *E, draw_context *D, d_font Font,
-						cursor *Cursor, editable_buffer *Buffer, int Width, int RangeStart);
+int E_IndexFromVisualXAndLineStart(edit_context *E, draw_context *D, d_font Font,
+								   editable_buffer *Buffer, int VisualX, int LineStart);
 
 void E_AdvanceSingleCursorXByN(edit_context *E, cursor *Cursor, editable_buffer *Buffer, int N);
 

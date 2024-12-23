@@ -18,6 +18,7 @@
 #include "darwin/menu_bar.h"
 
 #include <assert.h>
+#include <math.h>
 
 typedef struct mayday_context
 {
@@ -73,11 +74,11 @@ void OS_Update(void *Data)
 	{
 		D_DrawStr8(&M->Draw, M->FrameArena, M->Font, v2f(1600, WindowHeight - 500 + HeightOffset), v4f(1, 1, 1, 1),
 			M->Buffer.HeightInPixels, Str8PushF(M->FrameArena, "Start: ?u32 | End: ?u32 | VisualX: ?u32",
-			Cursor->Start, Cursor->End, Cursor->VisualX));
+			Cursor->Selection.X, Cursor->Selection.Y, Cursor->VisualX));
 		HeightOffset -= M->Buffer.HeightInPixels;
 	}
 
-	int MainCursorLine = E_LineFromBufferIndex(&M->Edit, &M->Cursor, &M->Buffer);
+	int MainCursorLine = E_LineFromBufferIndex(&M->Edit, M->Cursor.Selection.Y, &M->Buffer);
 	for(int I = 0; I < 50; I++)
 	{
 		if(MainCursorLine == I)
@@ -95,15 +96,7 @@ void OS_Update(void *Data)
 
 	for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
 	{
-		int Start = Cursor->Start;
-		int End = Cursor->End;
-
-		if(Cursor->End < Cursor->Start)
-		{
-			int Temp = Start;
-			Start = End;
-			End = Temp;
-		}
+		v2i Selection = E_GetSortedSelection(Cursor->Selection);
 		D_DrawSelectionRange(&M->Draw,
 							M->FrameArena,
 							M->Font,
@@ -111,8 +104,8 @@ void OS_Update(void *Data)
 							v4f(0.1, 0.05, 0, 0.1),
 							M->Buffer.HeightInPixels,
 							M->Buffer.String,
-							Start,
-							End);
+							Selection.X,
+							Selection.Y);
 		
 	}
 	
@@ -125,14 +118,13 @@ void OS_Update(void *Data)
 	for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
 	{
 		Cursor->TargetPosition = E_GetPositionFromEditableBuffer(&M->Edit,
-																   &M->Draw,
-																   Cursor,
-																   M->Buffer,
-																   M->Font,
-																   BufferPosition);
+																 &M->Draw,
+																 Cursor->Selection.Y,
+																 M->Buffer,
+																 M->Font,
+																 BufferPosition);
 
 		Cursor->Position = LerpV2f(Cursor->Position, Cursor->TargetPosition, 0.3);
-
 		D_DrawQuad(&M->Draw, M->FrameArena, Cursor->Position, 5, LineHeight, v4f(0.3, 0.7, 0, 1));
 	}
 
@@ -158,53 +150,15 @@ void OS_Event(const sapp_event *Event, void *Data)
 
 		if(Event->key_code == SAPP_KEYCODE_BACKSPACE)	
 		{
-			
-			if(M->Cursor.Start < M->Cursor.End)
-			{
-				PushUndoAction(&M->Edit, &M->Cursor, UNDO_REMOVED, 
-				(str8){M->Cursor.End - M->Cursor.Start, M->Buffer.String.Bytes + M->Cursor.Start});
-			}
-			else
-			{
-				PushUndoAction(&M->Edit, &M->Cursor, UNDO_REMOVED, 
-				(str8){M->Cursor.Start - M->Cursor.End, M->Buffer.String.Bytes + M->Cursor.End});
-			}
-
-			E_RemoveSelectedTextAtCursors(&M->Edit, &M->Cursor, &M->Buffer);	
 		}
 
 		if(Event->key_code == SAPP_KEYCODE_Z)
 		{
-			if(Event->modifiers & SAPP_MODIFIER_SUPER)
-			{
-				undo_stack *Top = PopOffUndoStack(&M->Edit);
-				cursor Cursor = {0};
-				Cursor.End = Top->Index;
-				Cursor.Start = Cursor.End;
-				E_InsertTextAtCursor(&M->Edit, &Cursor, &M->Buffer, Top->String);
-				
-			}
 		}
 
 		if(Event->key_code == SAPP_KEYCODE_RIGHT)
 		{
-			if(Event->modifiers & SAPP_MODIFIER_SUPER)
-			{
-				int D = E_DistanceFromNextNewLine(&M->Edit, &M->Cursor, &M->Buffer);
-				E_AdvanceCursorsXByN(&M->Edit, &M->Cursor, &M->Buffer, D);
-			}
-			else
-			{
-				E_AdvanceCursorsXByN(&M->Edit, &M->Cursor, &M->Buffer, +1);
-			}
-
-			if(!(Event->modifiers & SAPP_MODIFIER_SHIFT))
-			{
-				for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
-				{
-					Cursor->Start = Cursor->End;
-				}
-			}
+			E_MoveCursors(&M->Edit, &M->Draw, M->Font, &M->Cursor, &M->Buffer, E_MOVE_RIGHT);
 		}
 
 		if(Event->key_code == SAPP_KEYCODE_EQUAL)
@@ -224,128 +178,35 @@ void OS_Event(const sapp_event *Event, void *Data)
 
 		if(Event->key_code == SAPP_KEYCODE_LEFT)
 		{
-			if(Event->modifiers & SAPP_MODIFIER_SUPER)
-			{
-				int D = E_DistanceFromPreviousNewLine(&M->Edit, &M->Cursor, &M->Buffer);
-				E_AdvanceCursorsXByN(&M->Edit, &M->Cursor, &M->Buffer, -D);
-			}
-			else
-			{
-				E_AdvanceCursorsXByN(&M->Edit, &M->Cursor, &M->Buffer, -1);
-			}
-			if(!(Event->modifiers & SAPP_MODIFIER_SHIFT))
-			{
-				for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
-				{
-					Cursor->Start = Cursor->End;
-				}
-			}
+			E_MoveCursors(&M->Edit, &M->Draw, M->Font, &M->Cursor, &M->Buffer, E_MOVE_LEFT);
 		}
 
 		if(Event->key_code == SAPP_KEYCODE_DOWN)
 		{
-			if(Event->modifiers & SAPP_KEYCODE_LEFT_ALT)
-			{
-				cursor NextCursor = {0};
-				cursor *LastCursor = &M->Cursor;
-				for(;LastCursor->Next; LastCursor = LastCursor->Next);
-				
-				NextCursor = LastCursor[0];
-				E_AppendCursor(&M->Edit, LastCursor, NextCursor);
-				E_AdvanceCursorsYByN(&M->Edit, &M->Draw, M->Font, LastCursor->Next, &M->Buffer, 1);
-			}
-			else
-			{
-				E_AdvanceCursorsYByN(&M->Edit, &M->Draw, M->Font, &M->Cursor, &M->Buffer, 1);
-			}
-
-			if(!(Event->modifiers & SAPP_MODIFIER_SHIFT))
-			{
-				for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
-				{
-					Cursor->Start = Cursor->End;
-				}
-			}	
+			E_MoveCursors(&M->Edit, &M->Draw, M->Font, &M->Cursor, &M->Buffer, E_MOVE_DOWN);
 		}
 
 		if(Event->key_code == SAPP_KEYCODE_UP)
 		{
-			E_AdvanceCursorsYByN(&M->Edit, &M->Draw, M->Font, &M->Cursor, &M->Buffer, -1);
-
-			if(!(Event->modifiers & SAPP_MODIFIER_SHIFT))
-			{
-				for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
-				{
-					Cursor->Start = Cursor->End;
-				}
-			}	
+			E_MoveCursors(&M->Edit, &M->Draw, M->Font, &M->Cursor, &M->Buffer, E_MOVE_UP);
 		}
 
 		if(Event->key_code == SAPP_KEYCODE_ENTER)
 		{
-			for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
-			{
-				if(Cursor->Start != Cursor->End)
-				{
-					E_RemoveSelectedTextAtCursors(&M->Edit, &M->Cursor, &M->Buffer);
-				}
-			}
-			for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
-			{
-				E_InsertTextAtCursor(&M->Edit, Cursor, &M->Buffer, Str8("\n"));
-			}
 		}
 
 		if(Event->key_code == SAPP_KEYCODE_SPACE)
 		{
-			for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
-			{
-				if(Cursor->Start != Cursor->End)
-				{
-					E_RemoveSelectedTextAtCursors(&M->Edit, &M->Cursor, &M->Buffer);
-				}
-			}
 
-			for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
-			{
-				E_InsertTextAtCursor(&M->Edit, Cursor, &M->Buffer, Str8(" "));
-			}
 		}
 
 		if(Event->key_code == SAPP_KEYCODE_TAB)
 		{
-			for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
-			{
-				if(Cursor->Start != Cursor->End)
-				{
-					E_RemoveSelectedTextAtCursors(&M->Edit, &M->Cursor, &M->Buffer);
-				}
-			}
-
-			for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
-			{
-				E_InsertTextAtCursor(&M->Edit, Cursor, &M->Buffer, Str8("\t"));
-			}
-			
 		}
 	}
 	else if(Event->type == SAPP_EVENTTYPE_CHAR && Event->char_code > 32 && Event->char_code <= 126)
 	{
-		if(!(Event->modifiers & SAPP_MODIFIER_SUPER))
-		{
-			for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
-			{
-				if(Cursor->Start != Cursor->End)
-				{
-					E_RemoveSelectedTextAtCursors(&M->Edit, &M->Cursor, &M->Buffer);
-				}
-			}
 
-			for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
-			{
-				E_InsertTextAtCursor(&M->Edit, Cursor, &M->Buffer, Str8PushF(M->FrameArena, "?char", Event->char_code));
-			}
-		}
 	}
 	else if(Event->type == SAPP_EVENTTYPE_MOUSE_MOVE)
 	{

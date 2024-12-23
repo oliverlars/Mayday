@@ -294,6 +294,7 @@ void R_RenderPoints(render_context *R, id<MTLCommandBuffer> CommandBuffer, int V
 
 	PassDesc.depthAttachment.texture = ResizeDepthTexture(R, CGSizeMake(Metal->Drawable.texture.width, Metal->Drawable.texture.height));
 	PassDesc.depthAttachment.loadAction = MTLLoadActionLoad;
+	PassDesc.depthAttachment.storeAction = MTLStoreActionStore;
 	PassDesc.depthAttachment.clearDepth = 1.0;
 
 	Angle += 0.1;
@@ -395,6 +396,7 @@ void R_RenderFullscreenBloom(render_context *R, id<MTLCommandBuffer> CommandBuff
 	MTLRenderPassDescriptor* PassDesc = [MTLRenderPassDescriptor renderPassDescriptor];
 	PassDesc.colorAttachments[0].texture = Metal->Drawable.texture;
 	PassDesc.colorAttachments[0].loadAction = MTLLoadActionLoad;
+	PassDesc.colorAttachments[0].storeAction = MTLStoreActionStore;
 	PassDesc.colorAttachments[0].clearColor = MTLClearColorMake(0.0,0.0,0.0,1);
 
 	id<MTLRenderCommandEncoder> Encoder = [CommandBuffer renderCommandEncoderWithDescriptor:PassDesc];

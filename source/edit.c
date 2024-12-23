@@ -93,6 +93,8 @@ void E_RemoveTextFromSelection(edit_context *Edit, editable_buffer *Buffer, v2i 
 	MemoryCopy(Edit->Temp, Buffer->String.Bytes, Selection.X);
 	MemoryCopy(Edit->Temp + Selection.X, Buffer->String.Bytes + Selection.Y, Buffer->String.Size - Selection.Y);
 	MemoryCopy(Buffer->String.Bytes, Edit->Temp, Buffer->String.Size - (Selection.Y - Selection.X));
+
+	Buffer->String.Size -= Selection.Y - Selection.X;
 }
 
 void E_MoveCursors(edit_context *Edit, draw_context *Draw,

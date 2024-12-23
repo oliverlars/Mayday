@@ -115,17 +115,31 @@ void OS_Update(void *Data)
 			M->Buffer.HeightInPixels, M->Buffer.String);
 
 
-	for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
+	if(M->UI.MouseIsDragging || M->UI.MouseWasPressed)
 	{
-		Cursor->TargetPosition = E_GetPositionFromEditableBuffer(&M->Edit,
-																 &M->Draw,
-																 Cursor->Selection.Y,
-																 M->Buffer,
-																 M->Font,
-																 BufferPosition);
+		M->Cursor.TargetPosition = E_GetPositionFromEditableBuffer(&M->Edit,
+																	&M->Draw,
+																	M->Cursor.Selection.Y,
+																	M->Buffer,
+																	M->Font,
+																	BufferPosition);
+		M->Cursor.Position = M->Cursor.TargetPosition;
+		D_DrawQuad(&M->Draw, M->FrameArena, M->Cursor.Position, 5, LineHeight, v4f(0.3, 0.7, 0, 1));
+	}
+	else
+	{	
+		for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
+		{
+			Cursor->TargetPosition = E_GetPositionFromEditableBuffer(&M->Edit,
+																	&M->Draw,
+																	Cursor->Selection.Y,
+																	M->Buffer,
+																	M->Font,
+																	BufferPosition);
 
-		Cursor->Position = LerpV2f(Cursor->Position, Cursor->TargetPosition, 0.3);
-		D_DrawQuad(&M->Draw, M->FrameArena, Cursor->Position, 5, LineHeight, v4f(0.3, 0.7, 0, 1));
+			Cursor->Position = LerpV2f(Cursor->Position, Cursor->TargetPosition, 0.3);
+			D_DrawQuad(&M->Draw, M->FrameArena, Cursor->Position, 5, LineHeight, v4f(0.3, 0.7, 0, 1));
+		}
 	}
 
 	if(OS_MilliSecondsFromTimeStamp(OS_TimeStampNow() - M->UI.TimeStampWhenMousePressed) > 300.0 &&

@@ -384,6 +384,8 @@ int E_IndexFromPosition(edit_context *Edit, draw_context *Draw, d_font Font,
 	f32 LineHeight = D_LineHeightFromFont(Font, Buffer->HeightInPixels);
 	int Index = 0;
 	f32 BufferXStart = BufferPosition.X;
+
+	int Result = Index;
 	for(;Index < Buffer->String.Size; Index++)
 	{
 		u32 CodePoint =  Buffer->String.Bytes[Index];
@@ -404,16 +406,19 @@ int E_IndexFromPosition(edit_context *Edit, draw_context *Draw, d_font Font,
 
 		d_atlas_glyph *Glyph  = D_GlyphFromCodePoint(Draw, Font, Buffer->HeightInPixels, CodePoint);
 		
-		if(Position.X >= BufferPosition.X && Position.X <= (BufferPosition.X + Glyph->AdvanceX*Scale) &&
-		   Position.Y >= BufferPosition.Y && Position.Y <= (BufferPosition.Y + LineHeight))
+		if(Position.Y > (BufferPosition.Y + LineHeight))
 		{
 			break;
+		}
+		else if( BufferPosition.X < Position.X)
+		{
+			Result = Index;
 		}
 
 		BufferPosition.X += Glyph->AdvanceX * Scale * TabMultiplier;
 	}
 
-	return Index;	
+	return Result;	
 }
 
 int E_IndexFromVisualXAndLineStart(edit_context *E, draw_context *D, d_font Font,

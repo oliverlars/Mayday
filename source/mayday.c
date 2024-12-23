@@ -48,9 +48,9 @@ void OS_Update(void *Data)
 	int WindowHeight = OS_WindowHeight(&M->Window);
 	int WindowWidth = OS_WindowWidth(&M->Window);
 
-	v2f BufferPosition = v2f(100, (f32)WindowHeight - 50 + M->UI.ScrollOffset.Y*10);
+	v2f BufferPosition = v2f(100, (f32)WindowHeight - 50 + M->UI.ScrollOffset.Y*15);
 
-	v2f NumbersPosition = v2f(10, (f32)WindowHeight - 50 + M->UI.ScrollOffset.Y*10);
+	v2f NumbersPosition = v2f(10, (f32)WindowHeight - 50 + M->UI.ScrollOffset.Y*15);
 
 	f32 LineHeight = D_LineHeightFromFont(M->Font, M->Buffer.HeightInPixels);
 

@@ -180,12 +180,14 @@ void E_MoveCursors(edit_context *Edit, draw_context *Draw,
 			{
 				for(; Selection.Y < Buffer->String.Size && !IsIdentifierCharacter(Buffer->String.Bytes[Selection.Y]);)
 				{
+					if(Buffer->String.Bytes[Selection.Y] == '\n') break;
 					Selection.Y++;
 				}
 			}
 
 			for(; Selection.Y< Buffer->String.Size && IsIdentifierCharacter(Buffer->String.Bytes[Selection.Y]);)
 			{
+				if(Buffer->String.Bytes[Selection.Y] == '\n') break;
 				Selection.Y++;
 			}
 			Selection.X = Selection.Y;
@@ -196,11 +198,13 @@ void E_MoveCursors(edit_context *Edit, draw_context *Draw,
 			{
 				for(; Selection.Y -1 >= 0 && !IsIdentifierCharacter(Buffer->String.Bytes[Selection.Y - 1]);)
 				{
+					if(Buffer->String.Bytes[Selection.Y - 1] == '\n') break;
 					Selection.Y--;
 				}
 			}
 			for(;Selection.Y - 1 >= 0 && IsIdentifierCharacter(Buffer->String.Bytes[Selection.Y - 1]);)
 			{
+				if(Buffer->String.Bytes[Selection.Y - 1] == '\n') break;
 				Selection.Y--;
 			}
 			Selection.X = Selection.Y;
@@ -389,13 +393,6 @@ int E_IndexFromPosition(edit_context *Edit, draw_context *Draw, d_font Font,
 	for(;Index < Buffer->String.Size; Index++)
 	{
 		u32 CodePoint =  Buffer->String.Bytes[Index];
-		
-		if(CodePoint == '\n')
-		{
-			BufferPosition.X = BufferXStart;
-			BufferPosition.Y -= LineHeight;
-			continue;
-		}
 
 		f32 TabMultiplier = 1.0;
 		if(CodePoint == '\t')
@@ -413,6 +410,13 @@ int E_IndexFromPosition(edit_context *Edit, draw_context *Draw, d_font Font,
 		else if( BufferPosition.X < Position.X)
 		{
 			Result = Index;
+		}
+
+		if(CodePoint == '\n')
+		{
+			BufferPosition.X = BufferXStart;
+			BufferPosition.Y -= LineHeight;
+			continue;
 		}
 
 		BufferPosition.X += Glyph->AdvanceX * Scale * TabMultiplier;

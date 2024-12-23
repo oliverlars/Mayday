@@ -155,7 +155,7 @@ void OS_Event(const sapp_event *Event, void *Data)
 
 		if(Event->key_code == SAPP_KEYCODE_BACKSPACE)	
 		{
-			E_DeleteTo(&M->Edit, &M->Draw, M->Font, &M->Cursor, &M->Buffer, E_MOVE_LEFT);
+			E_DeleteTo(&M->Edit, &M->Cursor, &M->Buffer);
 
 		}
 
@@ -233,7 +233,7 @@ void OS_Event(const sapp_event *Event, void *Data)
 	}
 	else if(Event->type == SAPP_EVENTTYPE_CHAR && Event->char_code > 32 && Event->char_code <= 126)
 	{
-
+		E_InsertTo(&M->Edit, &M->Cursor, &M->Buffer, Str8PushF(M->FrameArena, "?char", Event->char_code));
 	}
 	else if(Event->type == SAPP_EVENTTYPE_MOUSE_MOVE)
 	{

@@ -1,5 +1,6 @@
 #include "edit.h"
 
+#include "maths.h"
 #include "memory.h"
 #include "misc.h"
 #include "stb_truetype.h"
@@ -16,30 +17,53 @@ v2i E_GetSortedSelection(v2i Selection)
 	return Result;
 }
 
-void E_DeleteTo(edit_context *Edit, draw_context *Draw, d_font Font, cursor *Cursor, editable_buffer *Buffer, edit_movement Movement)
+void E_DeleteTo(edit_context *Edit, cursor *Cursor, editable_buffer *Buffer)
 {
 	// NOTE(Oliver): For each deletion, every subsequent cursor should be 
 	// offset by the previous cursors selection range
 	int PerCursorOffset = 0;
 	for(;Cursor; Cursor = Cursor->Next)
 	{
+		v2i Selection = E_GetSortedSelection(Cursor->Selection);
+		Selection = v2i(Max(Selection.X - PerCursorOffset, 0), Max(Selection.Y - PerCursorOffset, 0));
 		if(Cursor->Selection.X != Cursor->Selection.Y)
 		{
-			v2i Selection = E_GetSortedSelection(Cursor->Selection);
-			Selection = v2i(Max(Selection.X - PerCursorOffset, 0), Max(Selection.Y - PerCursorOffset, 0));
 			E_RemoveTextFromSelection(Edit, Buffer, Selection);
-			// HACK(Oliver): Does this need to be moved?
 			Cursor->Selection = v2i(Selection.X, Selection.X);
-
-			PerCursorOffset += Selection.Y - Selection.X;
 		}
 		else
 		{
-			v2i Selection = E_GetSortedSelection(Cursor->Selection);
 			E_RemoveTextFromSelection(Edit, Buffer, v2i(Selection.X - 1, Selection.Y));
 			Cursor->Selection = v2i(Max(Selection.X - 1, 0), Max(Selection.X - 1, 0));
-
+			
 		}
+		PerCursorOffset += Selection.Y - Selection.X;
+	}
+}
+
+void E_InsertTo(edit_context *Edit, cursor *Cursor, editable_buffer *Buffer, str8 TextToInsert)
+{
+	// NOTE(Oliver): For each insertion, every subsequent cursor should be 
+	// offset by the previous cursors selection range
+	int PerCursorOffset = 0;
+	for(;Cursor; Cursor = Cursor->Next)
+	{
+		v2i Selection = E_GetSortedSelection(Cursor->Selection);
+		Selection = v2i(Selection.X + PerCursorOffset, Selection.Y + PerCursorOffset);
+		if(Cursor->Selection.X != Cursor->Selection.Y)
+		{
+			E_InsertTextAtIndex(Edit, Selection.X, Buffer, TextToInsert);
+			Selection = v2i(Selection.X, Selection.X);
+		}
+		else
+		{
+			E_InsertTextAtIndex(Edit, Selection.X, Buffer, TextToInsert);
+			Selection = v2i(Selection.X + TextToInsert.Size, Selection.X + TextToInsert.Size);
+		}
+		Selection.X = ClampS32(Selection.X, 0, Buffer->String.Size);
+		Selection.Y = ClampS32(Selection.Y, 0, Buffer->String.Size);
+		Cursor->Selection = Selection;
+		PerCursorOffset += TextToInsert.Size;
 	}
 }
 
@@ -133,69 +157,26 @@ void E_MoveCursors(edit_context *Edit, draw_context *Draw,
 	}
 }
 
-// void E_InsertTextAtCursor(edit_context *E, cursor *Cursor, editable_buffer *Buffer, str8 TextToInsert)
-// {
-// 	if(!E->Temp)
-// 	{
-// 		E->Temp = ArenaPushZero(&E->Arena, MegaBytes(1));
-// 	}
-
-// 	int At = Cursor->End;
-
-// 	//TODO(Oliver): Not implemented yet
-// 	assert(Buffer->String.Size + TextToInsert.Size < MegaBytes(1));
-// 	assert(E->Temp);
-	
-// 	MemoryCopy(E->Temp, Buffer->String.Bytes, At);
-// 	MemoryCopy(E->Temp + At, TextToInsert.Bytes, TextToInsert.Size);
-// 	MemoryCopy(E->Temp + At + TextToInsert.Size, Buffer->String.Bytes + At, Buffer->String.Size - At);
-
-// 	MemoryCopy(Buffer->String.Bytes, E->Temp, Buffer->String.Size + TextToInsert.Size);
-
-
-// 	E_AdvanceCursorsXByN(E, Cursor, Buffer, TextToInsert.Size);
-// 	Cursor->Start = Cursor->End;
-
-// 	Buffer->String.Size = ClampS32(Buffer->String.Size + TextToInsert.Size, 0, MegaBytes(1));
-// }
-
-void E_RemoveSelectedTextAtCursors(edit_context *E, cursor *Cursor, editable_buffer *Buffer)
+void E_InsertTextAtIndex(edit_context *E, int Index, editable_buffer *Buffer, str8 TextToInsert)
 {
 	if(!E->Temp)
 	{
 		E->Temp = ArenaPushZero(&E->Arena, MegaBytes(1));
 	}
 
+	int At = Index;
+
+	//TODO(Oliver): Not implemented yet
+	assert(Buffer->String.Size + TextToInsert.Size < MegaBytes(1));
 	assert(E->Temp);
+	
+	MemoryCopy(E->Temp, Buffer->String.Bytes, At);
+	MemoryCopy(E->Temp + At, TextToInsert.Bytes, TextToInsert.Size);
+	MemoryCopy(E->Temp + At + TextToInsert.Size, Buffer->String.Bytes + At, Buffer->String.Size - At);
 
-	int BytesCopiedSoFar = 0;
+	MemoryCopy(Buffer->String.Bytes, E->Temp, Buffer->String.Size + TextToInsert.Size);
 
-	int PreviousEnd = 0;
-
-	int TotalDistanceToMoveCursors = 0;
-
-	for(; Cursor; Cursor = Cursor->Next)
-	{
-		v2i Selection = E_GetSortedSelection(Cursor->Selection);
-		int SegmentSize = Max(Selection.X - PreviousEnd, 0);
-		MemoryCopy(E->Temp + BytesCopiedSoFar, Buffer->String.Bytes + PreviousEnd, SegmentSize);
-		BytesCopiedSoFar += SegmentSize;
-		PreviousEnd = Selection.Y;
-
-		Cursor->Selection = Selection;
-
-		TotalDistanceToMoveCursors += (Selection.Y - Selection.X);
-		Cursor->Selection.Y -= TotalDistanceToMoveCursors;
-		
-		Cursor->Selection.X = Cursor->Selection.Y;
-	}
-
-	int TailLength = Buffer->String.Size - PreviousEnd;
-	MemoryCopy(E->Temp + BytesCopiedSoFar, Buffer->String.Bytes + PreviousEnd, TailLength);
-	BytesCopiedSoFar += TailLength;
-	MemoryCopy(Buffer->String.Bytes, E->Temp, BytesCopiedSoFar);
-
-	Buffer->String.Size = BytesCopiedSoFar;
+	Buffer->String.Size = ClampS32(Buffer->String.Size + TextToInsert.Size, 0, MegaBytes(1));
 }
 
 v2f E_GetPositionFromEditableBuffer(edit_context *E,
@@ -350,51 +331,6 @@ int E_VisualXFromIndex(edit_context *Edit, draw_context *Draw,
 	int LineStart = Index - DistanceFromPreviousNewLine;
 	return E_GetMaxTextWidthFromRange(Edit, Draw, Font,  Buffer, LineStart, Index);
 }
-
-// void E_MoveCursorVertically(edit_context *E, draw_context *D, d_font Font, int VisualX, int Index, editable_buffer *Buffer, int N)
-// {
-// 	int Result = Index;
-// 	if(N > 0)
-// 	{
-// 			int DistanceFromPreviousNewLine = E_DistanceFromPreviousNewLine(E, Index, Buffer);
-// 			int DistanceFromNextNewLine = E_DistanceFromNextNewLine(E, Index, Buffer);	
-// 			if(VisualX == 0)
-// 			{
-// 				int RangeStart = Index - DistanceFromPreviousNewLine;
-// 				int RangeEnd =  Index;
-// 				VisualX = E_GetMaxTextWidthFromRange(E, D, Font, Cursor, Buffer, RangeStart, RangeEnd);
-// 			}
-// 			Cursor->End += DistanceFromNextNewLine + 1;
-// 			DistanceFromNextNewLine = E_DistanceFromNextNewLine(E, Cursor, Buffer);
-// 			int RangeEndFromVisualX = E_RangeEndFromWidth(E, D, Font, Cursor, Buffer, Cursor->VisualX, Cursor->End);
-// 			Cursor->End += Min(DistanceFromNextNewLine, RangeEndFromVisualX - Cursor->End);
-// 	}
-// 	else if(N < 0)
-// 	{
-// 		for(;Cursor; Cursor = Cursor->Next)
-// 		{
-// 			int CursorEnd = Cursor->End;
-// 			int DistanceFromPreviousNewLine = E_DistanceFromPreviousNewLine(E, Cursor, Buffer);
-// 			if(Cursor->VisualX == 0)
-// 			{
-// 				int RangeStart = Cursor->End - DistanceFromPreviousNewLine;
-// 				int RangeEnd = Cursor->End;
-// 				Cursor->VisualX = E_GetMaxTextWidthFromRange(E, D, Font, Cursor, Buffer, RangeStart, RangeEnd);
-// 			}
-// 			Cursor->End -= DistanceFromPreviousNewLine + 1;
-// 			DistanceFromPreviousNewLine = E_DistanceFromPreviousNewLine(E, Cursor, Buffer);
-			
-// 			Cursor->End -= DistanceFromPreviousNewLine;
-// 			int DistanceFromNextNewLine = E_DistanceFromNextNewLine(E, Cursor, Buffer);
-
-// 			int RangeEndFromVisualX = E_RangeEndFromWidth(E, D, Font, Cursor, Buffer, Cursor->VisualX, Cursor->End);
-// 			Cursor->End += Min(DistanceFromNextNewLine, RangeEndFromVisualX - Cursor->End);
-
-// 			Cursor->End = Max(Cursor->End, 0);
-// 		}	
-// 	}
-// }
-
 
 cursor *E_LastCursor(edit_context *Edit, cursor *Cursor)
 {

@@ -52,14 +52,12 @@ void E_InsertTo(edit_context *Edit, cursor *Cursor, editable_buffer *Buffer, str
 		Selection = v2i(Selection.X + PerCursorOffset, Selection.Y + PerCursorOffset);
 		if(Cursor->Selection.X != Cursor->Selection.Y)
 		{
-			E_InsertTextAtIndex(Edit, Selection.X, Buffer, TextToInsert);
-			Selection = v2i(Selection.X, Selection.X);
+			E_RemoveTextFromSelection(Edit, Buffer, Selection);
+			PerCursorOffset -= (Selection.Y - Selection.X);
 		}
-		else
-		{
-			E_InsertTextAtIndex(Edit, Selection.X, Buffer, TextToInsert);
-			Selection = v2i(Selection.X + TextToInsert.Size, Selection.X + TextToInsert.Size);
-		}
+		E_InsertTextAtIndex(Edit, Selection.X, Buffer, TextToInsert);
+		Selection = v2i(Selection.X + TextToInsert.Size, Selection.X + TextToInsert.Size);
+		
 		Selection.X = ClampS32(Selection.X, 0, Buffer->String.Size);
 		Selection.Y = ClampS32(Selection.Y, 0, Buffer->String.Size);
 		Cursor->Selection = Selection;

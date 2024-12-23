@@ -59,15 +59,13 @@ void E_MoveCursors(edit_context *Edit, draw_context *Draw,
 		if(Movement == E_MOVE_LEFT && IsSelecting)
 		{
 			Selection = E_GetSortedSelection(Cursor->Selection);
-			Selection.X = Selection.X - 1;
-			Selection.Y = Selection.X - 1;
+			Selection = v2i(Selection.X - 1, Selection.X - 1);
 			Cursor->VisualX = 0;
 		}
 		else if(Movement == E_MOVE_RIGHT && IsSelecting)
 		{
 			Selection = E_GetSortedSelection(Cursor->Selection);
-			Selection.X = Selection.Y + 1;
-			Selection.Y = Selection.Y + 1;
+			Selection = v2i(Selection.Y + 1, Selection.Y + 1);
 			Cursor->VisualX = 0;
 		}
 		else if(Movement == E_MOVE_LEFT)

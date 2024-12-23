@@ -330,11 +330,6 @@ void R_RenderTriangles(render_context *R, id<MTLCommandBuffer> CommandBuffer, in
 	PassDesc.colorAttachments[0].storeAction = MTLStoreActionStore;
 	PassDesc.colorAttachments[0].clearColor = MTLClearColorMake(0.0,0.0,0.0,1);
 
-	PassDesc.depthAttachment.texture = ResizeDepthTexture(R, CGSizeMake(Metal->Drawable.texture.width, Metal->Drawable.texture.height));
-	PassDesc.depthAttachment.loadAction = MTLLoadActionLoad;
-	PassDesc.depthAttachment.storeAction = MTLStoreActionStore;
-	PassDesc.depthAttachment.clearDepth = 1.0;
-
 
 	Uniforms.ModelMatrix = M44F_IDENTITY;
 	Uniforms.ProjectionMatrix = M44FOrthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0);

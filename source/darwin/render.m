@@ -520,13 +520,13 @@ void R_Update(render_context *R, memory_arena *FrameArena)
 			if(Command->Type == R_COMMAND_GLYPH)
 			{
 				R_RenderGlyphs(R, CommandBuffer, TotalGlyphVertices, GlyphVertexOffset);
-				GlyphVertexOffset = TotalGlyphVertices;
+				GlyphVertexOffset += TotalGlyphVertices;
 				TotalGlyphVertices = 0;
 			}
 			else if(Command->Type == R_COMMAND_TRIANGLE)
 			{
 				R_RenderTriangles(R, CommandBuffer, TotalTriangleVertices, TriangleVertexOffset);
-				TriangleVertexOffset = TotalTriangleVertices;
+				TriangleVertexOffset += TotalTriangleVertices;
 				TotalTriangleVertices = 0;
 			}
 		}

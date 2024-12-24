@@ -31,7 +31,8 @@ typedef struct mayday_context
 
 	ui_context UI;
 
-	d_font Font;
+	d_font CodeFont;
+	d_font LogoFont;
 
 	editable_buffer Buffer;
 	cursor Cursor;
@@ -52,7 +53,7 @@ void OS_Update(void *Data)
 
 	v2f NumbersPosition = v2f(10, (f32)WindowHeight - 50 + M->UI.ScrollOffset.Y*15);
 
-	f32 LineHeight = D_LineHeightFromFont(M->Font, M->Buffer.HeightInPixels);
+	f32 LineHeight = D_LineHeightFromFont(M->CodeFont, M->Buffer.HeightInPixels);
 
 	D_DrawQuad(&M->Draw, M->FrameArena, v2f(0, 0,),  WindowWidth, WindowHeight, v4f(0.02, 0.01, 0, 1.0));
 
@@ -73,7 +74,7 @@ void OS_Update(void *Data)
 	f32 HeightOffset = 0;
 	for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
 	{
-		D_DrawStr8(&M->Draw, M->FrameArena, M->Font, v2f(1600, WindowHeight - 500 + HeightOffset), v4f(1, 1, 1, 1),
+		D_DrawStr8(&M->Draw, M->FrameArena, M->CodeFont, v2f(1600, WindowHeight - 500 + HeightOffset), v4f(1, 1, 1, 1),
 			M->Buffer.HeightInPixels, Str8PushF(M->FrameArena, "Start: ?u32 | End: ?u32 | VisualX: ?u32",
 			Cursor->Selection.X, Cursor->Selection.Y, Cursor->VisualX));
 		HeightOffset -= M->Buffer.HeightInPixels;
@@ -84,12 +85,12 @@ void OS_Update(void *Data)
 	{
 		if(MainCursorLine == I)
 		{
-			D_DrawStr8(&M->Draw, M->FrameArena, M->Font, NumbersPosition,
+			D_DrawStr8(&M->Draw, M->FrameArena, M->CodeFont, NumbersPosition,
 				v4f(1.0, 0.5, .2, 1), LineHeight, Str8PushF(M->FrameArena, "?u32", I + 1));
 		}
 		else
 		{
-			D_DrawStr8(&M->Draw, M->FrameArena, M->Font, NumbersPosition,
+			D_DrawStr8(&M->Draw, M->FrameArena, M->CodeFont, NumbersPosition,
 					v4f(0.2, 0.1, 0, 1), LineHeight, Str8PushF(M->FrameArena, "?u32", I + 1));
 		}
 		NumbersPosition.Y -= LineHeight;
@@ -100,7 +101,7 @@ void OS_Update(void *Data)
 		v2i Selection = E_GetSortedSelection(Cursor->Selection);
 		D_DrawSelectionRange(&M->Draw,
 							M->FrameArena,
-							M->Font,
+							M->CodeFont,
 							BufferPosition,
 							v4f(0.1, 0.05, 0, 0.1),
 							M->Buffer.HeightInPixels,
@@ -111,7 +112,7 @@ void OS_Update(void *Data)
 	}
 	
 	D_DrawStr8(&M->Draw,
-			M->FrameArena, M->Font,
+			M->FrameArena, M->CodeFont,
 			BufferPosition, v4f(1, 0.5, 0, 1),
 			M->Buffer.HeightInPixels, M->Buffer.String);
 
@@ -122,7 +123,7 @@ void OS_Update(void *Data)
 																	&M->Draw,
 																	M->Cursor.Selection.Y,
 																	M->Buffer,
-																	M->Font,
+																	M->CodeFont,
 																	BufferPosition);
 		M->Cursor.Position = M->Cursor.TargetPosition;
 		D_DrawQuad(&M->Draw, M->FrameArena, M->Cursor.Position, 5, LineHeight, v4f(0.3, 0.7, 0, 1));
@@ -135,7 +136,7 @@ void OS_Update(void *Data)
 																	&M->Draw,
 																	Cursor->Selection.Y,
 																	M->Buffer,
-																	M->Font,
+																	M->CodeFont,
 																	BufferPosition);
 
 			Cursor->Position = LerpV2f(Cursor->Position, Cursor->TargetPosition, 0.3);
@@ -155,11 +156,15 @@ void OS_Update(void *Data)
 
 	if(M->UI.MouseIsDragging)
 	{
-		int Index = E_IndexFromPosition(&M->Edit, &M->Draw, M->Font,
+		int Index = E_IndexFromPosition(&M->Edit, &M->Draw, M->CodeFont,
 											&M->Buffer, BufferPosition, M->UI.MousePosition);
 			
 		M->Cursor.Selection.Y = Index;
 	}
+
+	D_DrawStr8(&M->Draw,
+		M->FrameArena, M->LogoFont,
+		v2f(1500, 1500), v4f(0.4, 0.05, 0, 1), 300, Str8("MAYDAY!"));
 
 	R_Update(&M->Render, M->FrameArena);
 
@@ -179,7 +184,7 @@ void OS_Event(const sapp_event *Event, void *Data)
 		v2f BufferPosition = v2f(100, (f32)WindowHeight - 50);
 		if(Event->mouse_button == SAPP_MOUSEBUTTON_LEFT && Event->modifiers & SAPP_MODIFIER_ALT)
 		{
-			int Index = E_IndexFromPosition(&M->Edit, &M->Draw, M->Font,
+			int Index = E_IndexFromPosition(&M->Edit, &M->Draw, M->CodeFont,
 											&M->Buffer, BufferPosition, M->UI.MousePosition);
 			cursor *LastCursor = E_LastCursor(&M->Edit, &M->Cursor);
 			cursor NextCursor = LastCursor[0];
@@ -189,7 +194,7 @@ void OS_Event(const sapp_event *Event, void *Data)
 		else if(Event->mouse_button == SAPP_MOUSEBUTTON_LEFT)
 		{
 			M->Cursor.Next = Null;
-			int Index = E_IndexFromPosition(&M->Edit, &M->Draw, M->Font,
+			int Index = E_IndexFromPosition(&M->Edit, &M->Draw, M->CodeFont,
 											&M->Buffer, BufferPosition, M->UI.MousePosition);
 			
 			M->Cursor.Selection = v2i(Index, Index);
@@ -199,8 +204,6 @@ void OS_Event(const sapp_event *Event, void *Data)
 	}
 	else if(Event->type == SAPP_EVENTTYPE_MOUSE_SCROLL)
 	{
-		static int TimesScrolled = 0;
-		LogInfo(M->Edit.Logger, "Scroll ?u32", TimesScrolled++);
 		M->UI.ScrollOffset.Y -= Event->scroll_y;
 		M->UI.ScrollOffset.X += Event->scroll_x;
 	}
@@ -237,15 +240,15 @@ void OS_Event(const sapp_event *Event, void *Data)
 		{
 			if(Event->modifiers & SAPP_MODIFIER_SUPER)
 			{
-				E_MoveCursors(&M->Edit, &M->Draw, M->Font, &M->Cursor, &M->Buffer, E_MOVE_LINE_END, MoveType);
+				E_MoveCursors(&M->Edit, &M->Draw, M->CodeFont, &M->Cursor, &M->Buffer, E_MOVE_LINE_END, MoveType);
 			}
 			else if(Event->modifiers & SAPP_MODIFIER_ALT)
 			{
-				E_MoveCursors(&M->Edit, &M->Draw, M->Font, &M->Cursor, &M->Buffer, E_MOVE_WORD_RIGHT, MoveType);
+				E_MoveCursors(&M->Edit, &M->Draw, M->CodeFont, &M->Cursor, &M->Buffer, E_MOVE_WORD_RIGHT, MoveType);
 			}
 			else
 			{
-				E_MoveCursors(&M->Edit, &M->Draw, M->Font, &M->Cursor, &M->Buffer, E_MOVE_RIGHT, MoveType);
+				E_MoveCursors(&M->Edit, &M->Draw, M->CodeFont, &M->Cursor, &M->Buffer, E_MOVE_RIGHT, MoveType);
 			}
 		}
 
@@ -268,15 +271,15 @@ void OS_Event(const sapp_event *Event, void *Data)
 		{
 			if(Event->modifiers & SAPP_MODIFIER_SUPER)
 			{
-				E_MoveCursors(&M->Edit, &M->Draw, M->Font, &M->Cursor, &M->Buffer, E_MOVE_LINE_START, MoveType);
+				E_MoveCursors(&M->Edit, &M->Draw, M->CodeFont, &M->Cursor, &M->Buffer, E_MOVE_LINE_START, MoveType);
 			}
 			else if(Event->modifiers & SAPP_MODIFIER_ALT)
 			{
-				E_MoveCursors(&M->Edit, &M->Draw, M->Font, &M->Cursor, &M->Buffer, E_MOVE_WORD_LEFT, MoveType);
+				E_MoveCursors(&M->Edit, &M->Draw, M->CodeFont, &M->Cursor, &M->Buffer, E_MOVE_WORD_LEFT, MoveType);
 			}
 			else
 			{
-				E_MoveCursors(&M->Edit, &M->Draw, M->Font, &M->Cursor, &M->Buffer, E_MOVE_LEFT, MoveType);
+				E_MoveCursors(&M->Edit, &M->Draw, M->CodeFont, &M->Cursor, &M->Buffer, E_MOVE_LEFT, MoveType);
 			}
 		}
 
@@ -286,12 +289,12 @@ void OS_Event(const sapp_event *Event, void *Data)
 			{
 				cursor *LastCursor = E_LastCursor(&M->Edit, &M->Cursor);
 				cursor NextCursor = LastCursor[0];
-				E_MoveCursors(&M->Edit, &M->Draw, M->Font, &NextCursor, &M->Buffer, E_MOVE_DOWN, MoveType);
+				E_MoveCursors(&M->Edit, &M->Draw, M->CodeFont, &NextCursor, &M->Buffer, E_MOVE_DOWN, MoveType);
 				E_AppendCursor(&M->Edit, &M->Cursor, NextCursor);
 			}
 			else
 			{
-				E_MoveCursors(&M->Edit, &M->Draw, M->Font, &M->Cursor, &M->Buffer, E_MOVE_DOWN, MoveType);
+				E_MoveCursors(&M->Edit, &M->Draw, M->CodeFont, &M->Cursor, &M->Buffer, E_MOVE_DOWN, MoveType);
 			}
 		}
 
@@ -301,12 +304,12 @@ void OS_Event(const sapp_event *Event, void *Data)
 			{
 				cursor *LastCursor = E_LastCursor(&M->Edit, &M->Cursor);
 				cursor NextCursor = LastCursor[0];
-				E_MoveCursors(&M->Edit, &M->Draw, M->Font, &NextCursor, &M->Buffer, E_MOVE_UP, MoveType);
+				E_MoveCursors(&M->Edit, &M->Draw, M->CodeFont, &NextCursor, &M->Buffer, E_MOVE_UP, MoveType);
 				E_AppendCursor(&M->Edit, &M->Cursor, NextCursor);
 			}
 			else
 			{
-				E_MoveCursors(&M->Edit, &M->Draw, M->Font, &M->Cursor, &M->Buffer, E_MOVE_UP, MoveType);
+				E_MoveCursors(&M->Edit, &M->Draw, M->CodeFont, &M->Cursor, &M->Buffer, E_MOVE_UP, MoveType);
 			}
 		}
 
@@ -394,9 +397,10 @@ int main()
 
 	M.Window = OS_MakeWindow(Str8("Mayday!"), 3024, 1964);
 
-	M.Font = D_LoadFontFromTTF(&M.Draw, G_BerkeleyMonoRegular);
+	M.CodeFont = D_LoadFontFromTTF(&M.Draw, G_BerkeleyMonoRegular);
+	M.LogoFont = D_LoadFontFromTTF(&M.Draw, G_BasementGrotesque);
 
-	M.UI.Font = M.Font;
+	M.UI.Font = M.CodeFont;
 
 	OS_Run(M.Window, &M);
 }

@@ -97,9 +97,18 @@ Entry(InputWaveInfo)
 			Str8ListAppend(&Shared->Arena, &ExtraLinkFlags, Str8("-framework Cocoa -framework MetalKit -framework QuartzCore -framework Metal -framework MetalPerformanceShaders"));
 		}
 
-		EmbedFile(&Arena, Str8("fonts/BerkeleyMono-Regular.ttf"),
-						  Str8("embed/berkeley_mono_font.h"),
-						  Str8("G_BerkeleyMonoRegular"));
+		str8_list Fonts = {0};
+		Str8ListAppend(&Arena, &Fonts, Str8("fonts/BerkeleyMono-Regular.ttf"));
+		Str8ListAppend(&Arena, &Fonts, Str8("fonts/BebasNeue-Regular.ttf"));
+		Str8ListAppend(&Arena, &Fonts, Str8("fonts/BasementGrotesque.otf"));
+
+		str8_list FontVariableNames = {0};
+		Str8ListAppend(&Arena, &FontVariableNames, Str8("G_BerkeleyMonoRegular"));
+		Str8ListAppend(&Arena, &FontVariableNames, Str8("G_BebasNeueRegular"));
+		Str8ListAppend(&Arena, &FontVariableNames, Str8("G_BasementGrotesque"));
+
+
+		EmbedFiles(&Arena, Fonts, Str8("embed/berkeley_mono_font.h"), FontVariableNames);
 
 		str8_list Shaders = {0};
 		Str8ListAppend(&Arena, &Shaders, Str8("shaders/triangle.metal"));

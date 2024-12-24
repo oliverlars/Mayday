@@ -86,12 +86,12 @@ void OS_Update(void *Data)
 		if(MainCursorLine == I)
 		{
 			D_DrawStr8(&M->Draw, M->FrameArena, M->CodeFont, NumbersPosition,
-				v4f(0.9, 0.4, .2, 1), LineHeight, Str8PushF(M->FrameArena, "?u32", I + 1));
+				v4f(0.8, 0.3, 0, 1), LineHeight, Str8PushF(M->FrameArena, "?u32", I + 1));
 		}
 		else
 		{
 			D_DrawStr8(&M->Draw, M->FrameArena, M->CodeFont, NumbersPosition,
-					v4f(0.3, 0.1, 0, 1), LineHeight, Str8PushF(M->FrameArena, "?u32", I + 1));
+					v4f(0.1, 0.04, 0, 1), LineHeight, Str8PushF(M->FrameArena, "?u32", I + 1));
 		}
 		NumbersPosition.Y -= LineHeight;
 	}

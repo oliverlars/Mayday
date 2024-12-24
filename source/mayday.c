@@ -91,7 +91,7 @@ void OS_Update(void *Data)
 		else
 		{
 			D_DrawStr8(&M->Draw, M->FrameArena, M->CodeFont, NumbersPosition,
-					v4f(0.2, 0.08, 0, 1), LineHeight, Str8PushF(M->FrameArena, "?u32", I + 1));
+					v4f(0.3, 0.1, 0, 1), LineHeight, Str8PushF(M->FrameArena, "?u32", I + 1));
 		}
 		NumbersPosition.Y -= LineHeight;
 	}
@@ -103,7 +103,7 @@ void OS_Update(void *Data)
 							M->FrameArena,
 							M->CodeFont,
 							BufferPosition,
-							v4f(0.04, 0.01, 0, 0.1),
+							v4f(0.03, 0.01, 0, 0.1),
 							M->Buffer.HeightInPixels,
 							M->Buffer.String,
 							Selection.X,

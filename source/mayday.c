@@ -103,7 +103,7 @@ void OS_Update(void *Data)
 							M->FrameArena,
 							M->CodeFont,
 							BufferPosition,
-							v4f(0.03, 0.01, 0, 0.1),
+							v4f(0.02, 0.006, 0, 0.1),
 							M->Buffer.HeightInPixels,
 							M->Buffer.String,
 							Selection.X,

@@ -103,7 +103,7 @@ void OS_Update(void *Data)
 							M->FrameArena,
 							M->CodeFont,
 							BufferPosition,
-							v4f(0.02, 0.006, 0, 0.1),
+							v4f(0.04, 0.01, 0, 0.1),
 							M->Buffer.HeightInPixels,
 							M->Buffer.String,
 							Selection.X,
@@ -143,32 +143,6 @@ void OS_Update(void *Data)
 			Cursor->Position = LerpV2f(Cursor->Position, Cursor->TargetPosition, 0.3);
 			D_DrawQuad(&M->Draw, M->FrameArena, Cursor->Position, 5, LineHeight, v4f(0.3, 0.7, 0, 1));
 		}
-	}
-
-	if(OS_MilliSecondsFromTimeStamp(OS_TimeStampNow() - M->UI.TimeStampWhenMousePressed) > 300)
-	{
-		M->UI.MouseClicksWithin500Milliseconds = 0;
-	}
-
-	if(M->UI.MouseClicksWithin500Milliseconds == 2)
-	{
-		/*
-		
-		HACK(Oliver): This is stupid and obviously needs fixing
-		
-		*/
-		v2i InitialSelection = M->Cursor.Selection;
-		E_MoveCursors(&M->Edit, &M->Draw, M->CodeFont, &M->Cursor, &M->Buffer, E_MOVE_WORD_RIGHT, E_MOVE_SELECTING);
-		v2i Selection = M->Cursor.Selection;
-		M->Cursor.Selection = InitialSelection;
-		E_MoveCursors(&M->Edit, &M->Draw, M->CodeFont, &M->Cursor, &M->Buffer, E_MOVE_WORD_LEFT, E_MOVE_NOT_SELECTING);
-		M->Cursor.Selection = v2i(M->Cursor.Selection.X, Selection.Y);
-	}
-	else if(M->UI.MouseClicksWithin500Milliseconds == 3)
-	{
-		int LineStart = E_LineStartFromIndex(&M->Edit, M->Cursor.Selection.Y, &M->Buffer);
-		int LineEnd = E_LineEndFromIndex(&M->Edit, M->Cursor.Selection.Y, &M->Buffer);
-		M->Cursor.Selection = v2i(LineStart, LineEnd);
 	}
 
 	if(OS_MilliSecondsFromTimeStamp(OS_TimeStampNow() - M->UI.TimeStampWhenMousePressed) > 150.0 &&
@@ -226,11 +200,39 @@ void OS_Event(const sapp_event *Event, void *Data)
 			M->Cursor.Next = Null;
 			int Index = E_IndexFromPosition(&M->Edit, &M->Draw, M->CodeFont,
 											&M->Buffer, BufferPosition, M->UI.MousePosition);
-			
-			M->Cursor.Selection = v2i(Index, Index);
+
+			f32 MillisecondsSinceLastClick = OS_MilliSecondsFromTimeStamp(OS_TimeStampNow() - M->UI.TimeStampWhenMousePressed);
+			if(MillisecondsSinceLastClick < 400 &&
+			   M->UI.MultiClickCount == 0)
+			{
+				v2i InitialSelection = M->Cursor.Selection;
+				E_MoveCursors(&M->Edit, &M->Draw, M->CodeFont, &M->Cursor, &M->Buffer, E_MOVE_WORD_RIGHT, E_MOVE_SELECTING);
+				v2i Selection = M->Cursor.Selection;
+				M->Cursor.Selection = InitialSelection;
+				E_MoveCursors(&M->Edit, &M->Draw, M->CodeFont, &M->Cursor, &M->Buffer, E_MOVE_WORD_LEFT, E_MOVE_NOT_SELECTING);
+				M->Cursor.Selection = v2i(M->Cursor.Selection.X, Selection.Y);
+				M->UI.MultiClickCount++;
+			}
+			else if(MillisecondsSinceLastClick < 400 && M->UI.MultiClickCount == 1)
+			{
+				int LineStart = E_LineStartFromIndex(&M->Edit, M->Cursor.Selection.Y, &M->Buffer);
+				int LineEnd = E_LineEndFromIndex(&M->Edit, M->Cursor.Selection.Y, &M->Buffer);
+				M->Cursor.Selection = v2i(LineStart, LineEnd);
+				M->UI.MultiClickCount++;
+			}
+			else if(MillisecondsSinceLastClick < 400 && M->UI.MultiClickCount == 2)
+			{
+				M->Cursor.Selection = v2i(0, M->Buffer.String.Size);
+				M->UI.MultiClickCount++;
+			}
+			else if(MillisecondsSinceLastClick > 400)
+			{
+				M->Cursor.Selection = v2i(Index, Index);
+				M->UI.MultiClickCount = 0;
+			}
+
 			M->UI.MouseWasPressed = True;
 			M->UI.TimeStampWhenMousePressed = OS_TimeStampNow();
-			M->UI.MouseClicksWithin500Milliseconds++;
 		}
 	}
 	else if(Event->type == SAPP_EVENTTYPE_MOUSE_SCROLL)

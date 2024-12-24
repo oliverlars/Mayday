@@ -27,7 +27,7 @@ typedef struct ui_context
 	v2i MousePosition;
 	b32 MouseWasPressed;
 
-	u8 MouseClicksWithin500Milliseconds;
+	u8 MultiClickCount;
 	u64 TimeStampWhenMousePressed;
 
 	ui_widget Widgets[UI_TABLE_SIZE];

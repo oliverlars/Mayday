@@ -39,7 +39,7 @@ fragment float4 FragmentMain(vertex_output Input [[stage_in]],
 							 sampler Sampler [[sampler(0)]])
 {
 	float4 Colour = float4(Base.sample(Sampler, Input.UV).rgb + Bloom.sample(Sampler, Input.UV).rgb*0.7, 1.0);
-
+	
 	Colour.rgb = TonemapToACESFilm(Colour.rgb);
 	return Colour;
 }

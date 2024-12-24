@@ -55,7 +55,7 @@ void OS_Update(void *Data)
 
 	f32 LineHeight = D_LineHeightFromFont(M->CodeFont, M->Buffer.HeightInPixels);
 
-	D_DrawQuad(&M->Draw, M->FrameArena, v2f(0, 0,),  WindowWidth, WindowHeight, v4f(0.02, 0.01, 0, 1.0));
+	D_DrawQuad(&M->Draw, M->FrameArena, v2f(0, 0),  WindowWidth, WindowHeight, v4f(0.009, 0.00, 0, 1.0));
 
 	//UI_TextButton(&M->UI, &M->Draw, M->FrameArena, Str8("triangle.metal"), 100, v2f(1500, WindowHeight - 1000), v4f(0.4, 0.2, 0.0, 1.0));
 	// D_DrawStr8(&M->Draw,
@@ -86,12 +86,12 @@ void OS_Update(void *Data)
 		if(MainCursorLine == I)
 		{
 			D_DrawStr8(&M->Draw, M->FrameArena, M->CodeFont, NumbersPosition,
-				v4f(1.0, 0.5, .2, 1), LineHeight, Str8PushF(M->FrameArena, "?u32", I + 1));
+				v4f(0.9, 0.4, .2, 1), LineHeight, Str8PushF(M->FrameArena, "?u32", I + 1));
 		}
 		else
 		{
 			D_DrawStr8(&M->Draw, M->FrameArena, M->CodeFont, NumbersPosition,
-					v4f(0.2, 0.1, 0, 1), LineHeight, Str8PushF(M->FrameArena, "?u32", I + 1));
+					v4f(0.2, 0.08, 0, 1), LineHeight, Str8PushF(M->FrameArena, "?u32", I + 1));
 		}
 		NumbersPosition.Y -= LineHeight;
 	}
@@ -103,17 +103,18 @@ void OS_Update(void *Data)
 							M->FrameArena,
 							M->CodeFont,
 							BufferPosition,
-							v4f(0.1, 0.05, 0, 0.1),
+							v4f(0.04, 0.01, 0, 0.1),
 							M->Buffer.HeightInPixels,
 							M->Buffer.String,
 							Selection.X,
 							Selection.Y);
+							
 		
 	}
 	
 	D_DrawStr8(&M->Draw,
 			M->FrameArena, M->CodeFont,
-			BufferPosition, v4f(1, 0.5, 0, 1),
+			BufferPosition, v4f(0.8, 0.3, 0, 1),
 			M->Buffer.HeightInPixels, M->Buffer.String);
 
 
@@ -142,6 +143,32 @@ void OS_Update(void *Data)
 			Cursor->Position = LerpV2f(Cursor->Position, Cursor->TargetPosition, 0.3);
 			D_DrawQuad(&M->Draw, M->FrameArena, Cursor->Position, 5, LineHeight, v4f(0.3, 0.7, 0, 1));
 		}
+	}
+
+	if(OS_MilliSecondsFromTimeStamp(OS_TimeStampNow() - M->UI.TimeStampWhenMousePressed) > 300)
+	{
+		M->UI.MouseClicksWithin500Milliseconds = 0;
+	}
+
+	if(M->UI.MouseClicksWithin500Milliseconds == 2)
+	{
+		/*
+		
+		HACK(Oliver): This is stupid and obviously needs fixing
+		
+		*/
+		v2i InitialSelection = M->Cursor.Selection;
+		E_MoveCursors(&M->Edit, &M->Draw, M->CodeFont, &M->Cursor, &M->Buffer, E_MOVE_WORD_RIGHT, E_MOVE_SELECTING);
+		v2i Selection = M->Cursor.Selection;
+		M->Cursor.Selection = InitialSelection;
+		E_MoveCursors(&M->Edit, &M->Draw, M->CodeFont, &M->Cursor, &M->Buffer, E_MOVE_WORD_LEFT, E_MOVE_NOT_SELECTING);
+		M->Cursor.Selection = v2i(M->Cursor.Selection.X, Selection.Y);
+	}
+	else if(M->UI.MouseClicksWithin500Milliseconds == 3)
+	{
+		int LineStart = E_LineStartFromIndex(&M->Edit, M->Cursor.Selection.Y, &M->Buffer);
+		int LineEnd = E_LineEndFromIndex(&M->Edit, M->Cursor.Selection.Y, &M->Buffer);
+		M->Cursor.Selection = v2i(LineStart, LineEnd);
 	}
 
 	if(OS_MilliSecondsFromTimeStamp(OS_TimeStampNow() - M->UI.TimeStampWhenMousePressed) > 150.0 &&
@@ -200,6 +227,7 @@ void OS_Event(const sapp_event *Event, void *Data)
 			M->Cursor.Selection = v2i(Index, Index);
 			M->UI.MouseWasPressed = True;
 			M->UI.TimeStampWhenMousePressed = OS_TimeStampNow();
+			M->UI.MouseClicksWithin500Milliseconds++;
 		}
 	}
 	else if(Event->type == SAPP_EVENTTYPE_MOUSE_SCROLL)
@@ -210,7 +238,7 @@ void OS_Event(const sapp_event *Event, void *Data)
 	else if(Event->type == SAPP_EVENTTYPE_MOUSE_UP)
 	{
 		M->UI.MouseWasPressed = False;
-		M->UI.TimeStampWhenMousePressed = 0;
+		//M->UI.TimeStampWhenMousePressed = 0;
 	}
 	else if(Event->type == SAPP_EVENTTYPE_KEY_DOWN)
 	{

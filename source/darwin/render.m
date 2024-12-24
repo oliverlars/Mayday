@@ -114,7 +114,7 @@ metal_shader R_BloomShader(render_context *R)
 	MTLRenderPipelineDescriptor* PipelineDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
 	PipelineDescriptor.vertexFunction = VertexFunction;
 	PipelineDescriptor.fragmentFunction = FragmentFunction;
-	PipelineDescriptor.colorAttachments[0].pixelFormat = MTLPixelFormatBGRA8Unorm;
+	PipelineDescriptor.colorAttachments[0].pixelFormat = MTLPixelFormatBGRA8Unorm_sRGB;
 
 	MTLSamplerDescriptor *SamplerDescriptor = [[MTLSamplerDescriptor alloc] init];
 	SamplerDescriptor.minFilter = MTLSamplerMinMagFilterLinear;
@@ -159,7 +159,6 @@ metal_shader R_GlyphShader(render_context *R)
 	PipelineDescriptor.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
 	PipelineDescriptor.colorAttachments[0].sourceAlphaBlendFactor = MTLBlendFactorSourceAlpha;
 	PipelineDescriptor.colorAttachments[0].destinationAlphaBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
-	PipelineDescriptor.depthAttachmentPixelFormat = MTLPixelFormatDepth32Float;
 
 
 	MTLVertexDescriptor *VertexDescriptor = [[MTLVertexDescriptor alloc] init];
@@ -224,7 +223,6 @@ metal_shader R_TriangleShader(render_context *R)
 	PipelineDescriptor.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
 	PipelineDescriptor.colorAttachments[0].sourceAlphaBlendFactor = MTLBlendFactorSourceAlpha;
 	PipelineDescriptor.colorAttachments[0].destinationAlphaBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
-	PipelineDescriptor.depthAttachmentPixelFormat = MTLPixelFormatDepth32Float;
 
 
 	MTLVertexDescriptor *VertexDescriptor = [[MTLVertexDescriptor alloc] init];
@@ -330,7 +328,6 @@ void R_RenderTriangles(render_context *R, id<MTLCommandBuffer> CommandBuffer, in
 	PassDesc.colorAttachments[0].storeAction = MTLStoreActionStore;
 	PassDesc.colorAttachments[0].clearColor = MTLClearColorMake(0.0,0.0,0.0,1);
 
-
 	Uniforms.ModelMatrix = M44F_IDENTITY;
 	Uniforms.ProjectionMatrix = M44FOrthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0);
 	Uniforms.ViewMatrix = M44FLookAt(v3f(0, 0, 10), v3f(0, 0, 0), v3f(0, 1, 0));
@@ -342,7 +339,6 @@ void R_RenderTriangles(render_context *R, id<MTLCommandBuffer> CommandBuffer, in
 	[Encoder setCullMode:(MTLCullModeNone)];
 	[Encoder setVertexBuffer:Metal->TriangleVertexBuffer offset:0 atIndex:0];
 	[Encoder setVertexBuffer:Metal->UniformBuffer offset:0 atIndex:1];
-	[Encoder setDepthStencilState:Metal->DepthStencilState];
 	[Encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:Offset vertexCount:VertexCount];
 
 
@@ -370,7 +366,6 @@ void R_RenderGlyphs(render_context *R, id<MTLCommandBuffer> CommandBuffer, int V
 	[Encoder setCullMode:(MTLCullModeNone)];
 	[Encoder setVertexBuffer:Metal->GlyphVertexBuffer offset:0 atIndex:0];
 	[Encoder setVertexBuffer:Metal->UniformBuffer offset:0 atIndex:1];
-	[Encoder setDepthStencilState:Metal->DepthStencilState];
 	[Encoder setFragmentTexture:Metal->FontAtlasTexture atIndex:0];
 	[Encoder setFragmentSamplerState:Metal->SamplerState atIndex:0];
 	[Encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:Offset vertexCount:VertexCount];

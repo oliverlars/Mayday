@@ -22,11 +22,24 @@ vertex vertex_output VertexMain(uint VertexID [[vertex_id]])
 	return Output;
 }
 
+inline float3 TonemapToACESFilm(float3 X)
+{
+	const float A = 2.51;
+	const float B = 0.03;
+	const float C = 2.43;
+	const float D = 0.59;
+	const float E = 0.14;
+
+    return clamp((X * (A*X + B)) / (X * (C*X + D) + E), 0.0, 1.0);
+}
+
 fragment float4 FragmentMain(vertex_output Input [[stage_in]],
 							 texture2d<float> Base [[texture(0)]],
 							 texture2d<float> Bloom [[texture(1)]],
 							 sampler Sampler [[sampler(0)]])
 {
-	float4 Colour = float4(Base.sample(Sampler, Input.UV).rgb + Bloom.sample(Sampler, Input.UV).rgb*2.0, 1.0);
+	float4 Colour = float4(Base.sample(Sampler, Input.UV).rgb + Bloom.sample(Sampler, Input.UV).rgb*0.7, 1.0);
+
+	Colour.rgb = TonemapToACESFilm(Colour.rgb);
 	return Colour;
 }

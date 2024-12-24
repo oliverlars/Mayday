@@ -187,13 +187,14 @@ void OS_Event(const sapp_event *Event, void *Data)
 		}
 		else if(Event->mouse_button == SAPP_MOUSEBUTTON_LEFT)
 		{
+			M->Cursor.Next = Null;
 			int Index = E_IndexFromPosition(&M->Edit, &M->Draw, M->Font,
 											&M->Buffer, BufferPosition, M->UI.MousePosition);
 			
 			M->Cursor.Selection = v2i(Index, Index);
+			M->UI.MouseWasPressed = True;
+			M->UI.TimeStampWhenMousePressed = OS_TimeStampNow();
 		}
-		M->UI.MouseWasPressed = True;
-		M->UI.TimeStampWhenMousePressed = OS_TimeStampNow();
 	}
 	else if(Event->type == SAPP_EVENTTYPE_MOUSE_SCROLL)
 	{
@@ -205,6 +206,7 @@ void OS_Event(const sapp_event *Event, void *Data)
 	else if(Event->type == SAPP_EVENTTYPE_MOUSE_UP)
 	{
 		M->UI.MouseWasPressed = False;
+		M->UI.TimeStampWhenMousePressed = 0;
 	}
 	else if(Event->type == SAPP_EVENTTYPE_KEY_DOWN)
 	{

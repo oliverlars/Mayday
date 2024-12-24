@@ -54,8 +54,9 @@ void OS_Update(void *Data)
 
 	f32 LineHeight = D_LineHeightFromFont(M->Font, M->Buffer.HeightInPixels);
 
+	D_DrawQuad(&M->Draw, M->FrameArena, v2f(0, 0,),  WindowWidth, WindowHeight, v4f(0.02, 0.01, 0, 1.0));
 
-	UI_TextButton(&M->UI, &M->Draw, M->FrameArena, Str8("ABC"), 50, v2f(1500, WindowHeight - 1000), v4f(0.4, 0.2, 0.0, 1.0));
+	//UI_TextButton(&M->UI, &M->Draw, M->FrameArena, Str8("triangle.metal"), 100, v2f(1500, WindowHeight - 1000), v4f(0.4, 0.2, 0.0, 1.0));
 	// D_DrawStr8(&M->Draw,
 	// 		M->FrameArena, M->Font,
 	// 		v2f(50, WindowHeight - 70), v4f(1, 1, 1, 1),
@@ -234,7 +235,11 @@ void OS_Event(const sapp_event *Event, void *Data)
 
 		if(Event->key_code == SAPP_KEYCODE_RIGHT)
 		{
-			if(Event->modifiers & SAPP_MODIFIER_ALT)
+			if(Event->modifiers & SAPP_MODIFIER_SUPER)
+			{
+				E_MoveCursors(&M->Edit, &M->Draw, M->Font, &M->Cursor, &M->Buffer, E_MOVE_LINE_END, MoveType);
+			}
+			else if(Event->modifiers & SAPP_MODIFIER_ALT)
 			{
 				E_MoveCursors(&M->Edit, &M->Draw, M->Font, &M->Cursor, &M->Buffer, E_MOVE_WORD_RIGHT, MoveType);
 			}
@@ -261,7 +266,11 @@ void OS_Event(const sapp_event *Event, void *Data)
 
 		if(Event->key_code == SAPP_KEYCODE_LEFT)
 		{
-			if(Event->modifiers & SAPP_MODIFIER_ALT)
+			if(Event->modifiers & SAPP_MODIFIER_SUPER)
+			{
+				E_MoveCursors(&M->Edit, &M->Draw, M->Font, &M->Cursor, &M->Buffer, E_MOVE_LINE_START, MoveType);
+			}
+			else if(Event->modifiers & SAPP_MODIFIER_ALT)
 			{
 				E_MoveCursors(&M->Edit, &M->Draw, M->Font, &M->Cursor, &M->Buffer, E_MOVE_WORD_LEFT, MoveType);
 			}

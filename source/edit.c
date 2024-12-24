@@ -209,6 +209,18 @@ void E_MoveCursors(edit_context *Edit, draw_context *Draw,
 			}
 			Selection.X = Selection.Y;
 		}
+		else if(Movement == E_MOVE_LINE_END)
+		{
+			int LineEnd = E_LineEndFromIndex(Edit, Selection.Y, Buffer);
+			Selection.X = LineEnd;
+			Selection.Y = LineEnd;
+		}
+		else if(Movement == E_MOVE_LINE_START)
+		{
+			int LineStart = E_LineStartFromIndex(Edit, Selection.Y, Buffer);
+			Selection.X = LineStart;
+			Selection.Y = LineStart;
+		}
 
 
 		if(MoveType == E_MOVE_SELECTING)
@@ -316,6 +328,26 @@ int E_DistanceFromPreviousNewLine(edit_context *E, int Index, editable_buffer *B
 		}
 	}
 	return At - I;
+}
+
+int E_LineEndFromIndex(edit_context *Edit, int Index, editable_buffer *Buffer)
+{
+	if(Buffer->String.Bytes[Index] == '\n')
+	{
+		// NOTE(Oliver): We might be already on a newline, but that could be
+		// apart of the line, as it's inclusive of the newline. A newline
+		// only start when we are past the newline.
+		Index = Max(Index - 1, 0);
+	}
+
+	for(; Index < Buffer->String.Size; Index++)
+	{
+		if(Buffer->String.Bytes[Index] == '\n')
+		{
+			break;
+		}
+	}
+	return Index;
 }
 
 

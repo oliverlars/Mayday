@@ -50,30 +50,36 @@ b32 UI_TextButton(ui_context *UI, draw_context *Draw, memory_arena *Arena,
 	f32 Height = D_LineHeightFromFont(UI->Font, HeightInPixels);
 	f32 Width = E_GetTextWidth(UI, Draw, String, HeightInPixels);
 
+	v2f BoxPosition = AddV2F(Position, v2f(0, UI->Font.Descent * Scale));
 	if(UI->Hot == Hash)
 	{
 		Colour = MulV4F(Colour, V4FromF32(1.2));
 		UI->HotAnimation = LerpF32(UI->HotAnimation, 1.0, 0.1);
+		D_DrawQuad(Draw, Arena, BoxPosition, Width, Height, v4f(0.1, 0.05, 0.0, 1.0));
+		D_DrawStr8(Draw, Arena, UI->Font, Position, v4f(0, 0, 0, 1), HeightInPixels, String);
+	}
+	else
+	{
+		D_DrawQuad(Draw, Arena, BoxPosition, Width, Height, v4f(0, 0, 0, 1));
+		D_DrawStr8(Draw, Arena, UI->Font, Position, v4f(0.2, 0.1, 0.0, 1.0), HeightInPixels, String);
 	}
 
 	
-	if(UI->MousePosition.X >= Position.X && UI->MousePosition.X <= (Position.X + Width) &&
-			UI->MousePosition.Y >= Position.Y && UI->MousePosition.Y <= (Position.Y + Height))
+	
+	if(UI->MousePosition.X >= BoxPosition.X && UI->MousePosition.X <= (BoxPosition.X + Width) &&
+	   UI->MousePosition.Y >= BoxPosition.Y && UI->MousePosition.Y <= (BoxPosition.Y + Height))
 	{
 		UI->Hot = Hash;
 
 		v2f CornersPosition = AddV2F(Position, v2f(0, UI->Font.Descent * Scale));
 		CornersPosition = SubV2F(CornersPosition, v2f(UI->HotAnimation*5.0, UI->HotAnimation*5.0));
 		v2f Size = AddV2F(v2f(Width, Height), v2f(UI->HotAnimation*10.0, UI->HotAnimation*10.0));
-		UI_DrawBoxCorners(UI, Draw,Arena, CornersPosition, Size, 10);
 	}
 	else 
 	{
 		UI->HotAnimation = LerpF32(UI->HotAnimation, 0.0, 0.1);
 		UI->Hot = 0;
 	}
-
-	D_DrawStr8(Draw, Arena, UI->Font, Position, Colour, HeightInPixels, String);
 
 	return False;
 }

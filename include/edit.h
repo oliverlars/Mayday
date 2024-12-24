@@ -59,8 +59,8 @@ typedef struct edit_context
 
 typedef enum edit_movement
 {
-	E_MOVE_START,
-	E_MOVE_END,
+	E_MOVE_LINE_START,
+	E_MOVE_LINE_END,
 	E_MOVE_LEFT,
 	E_MOVE_RIGHT,
 	E_MOVE_UP,
@@ -108,6 +108,7 @@ v2f E_GetPositionFromEditableBuffer(edit_context *E,
 int E_DistanceFromPreviousNewLine(edit_context *E, int Index, editable_buffer *Buffer);
 int E_DistanceFromNextNewLine(edit_context *E, int Index, editable_buffer *Buffer);
 int E_LineStartFromIndex(edit_context *Edit, int Index, editable_buffer *Buffer);
+int E_LineEndFromIndex(edit_context *Edit, int Index, editable_buffer *Buffer);
 int E_IndexFromPosition(edit_context *Edit, draw_context *Draw, d_font Font,
 						editable_buffer *Buffer, v2f BufferPosition, v2i Position);
 

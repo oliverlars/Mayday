@@ -440,6 +440,7 @@ void R_Update(render_context *R, memory_arena *FrameArena)
 	Metal->Drawable = (__bridge id<CAMetalDrawable>)sapp_metal_get_current_drawable();
 
 	CAMetalLayer *MetalLayer = (CAMetalLayer *)Metal->Drawable.layer;
+	MetalLayer.pixelFormat = MTLPixelFormatBGRA8Unorm_sRGB;
 
 	if(!Metal->BaseFrameBuffer)
 	{

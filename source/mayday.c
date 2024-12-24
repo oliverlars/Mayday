@@ -191,7 +191,7 @@ void OS_Update(void *Data)
 
 	D_DrawStr8(&M->Draw,
 		M->FrameArena, M->LogoFont,
-		v2f(1500, 1500), v4f(0.4, 0.05, 0, 1), 300, Str8("MAYDAY!"));
+		v2f(1500, 1500), v4f(0.5, 0.03, 0, 1), 300, Str8("MAYDAY!"));
 
 	R_Update(&M->Render, M->FrameArena);
 

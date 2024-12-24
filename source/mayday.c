@@ -176,7 +176,16 @@ void OS_Event(const sapp_event *Event, void *Data)
 		int WindowHeight = OS_WindowHeight(&M->Window);
 
 		v2f BufferPosition = v2f(100, (f32)WindowHeight - 50);
-		if(Event->mouse_button == SAPP_MOUSEBUTTON_LEFT)
+		if(Event->mouse_button == SAPP_MOUSEBUTTON_LEFT && Event->modifiers & SAPP_MODIFIER_ALT)
+		{
+			int Index = E_IndexFromPosition(&M->Edit, &M->Draw, M->Font,
+											&M->Buffer, BufferPosition, M->UI.MousePosition);
+			cursor *LastCursor = E_LastCursor(&M->Edit, &M->Cursor);
+			cursor NextCursor = LastCursor[0];
+			NextCursor.Selection = v2i(Index, Index);
+			E_AppendCursor(&M->Edit, &M->Cursor, NextCursor);
+		}
+		else if(Event->mouse_button == SAPP_MOUSEBUTTON_LEFT)
 		{
 			int Index = E_IndexFromPosition(&M->Edit, &M->Draw, M->Font,
 											&M->Buffer, BufferPosition, M->UI.MousePosition);
@@ -258,7 +267,6 @@ void OS_Event(const sapp_event *Event, void *Data)
 			{
 				E_MoveCursors(&M->Edit, &M->Draw, M->Font, &M->Cursor, &M->Buffer, E_MOVE_LEFT, MoveType);
 			}
-			
 		}
 
 		if(Event->key_code == SAPP_KEYCODE_DOWN)

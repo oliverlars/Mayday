@@ -26,6 +26,8 @@ typedef struct ui_context
 	b32 MouseIsDragging;
 	v2i MousePosition;
 	b32 MouseWasPressed;
+
+	u8 MouseClicksWithin500Milliseconds;
 	u64 TimeStampWhenMousePressed;
 
 	ui_widget Widgets[UI_TABLE_SIZE];

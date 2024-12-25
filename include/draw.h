@@ -1,4 +1,5 @@
 #pragma once
+#include "memory.h"
 #include "render.h"
 #include "stb_truetype.h"
 
@@ -31,10 +32,8 @@ typedef struct d_atlas_glyph
 
 typedef struct draw_context
 {
-	memory_arena *Arena;
-	logger *Logger;
-
-	render_context *R;
+	m_arena *Arena;
+	render_context *Render;
 
 	d_atlas_glyph GlyphTable[D_GLYPH_TABLE_SIZE];
 
@@ -61,7 +60,7 @@ d_font D_LoadFontFromFile(draw_context *D_Context, str8 FileName);
 d_font D_LoadFontFromTTF(draw_context *D_Context, u8 *Data);
 void D_DrawGlyph(draw_context *D_Context, d_atlas_glyph *Glyph);
 void D_DrawStr8(draw_context *D_Context,
-				memory_arena *Arena,
+				m_arena *Arena,
 				d_font Font,
 				v2f Position,
 				v4f Colour,
@@ -69,7 +68,7 @@ void D_DrawStr8(draw_context *D_Context,
 				str8 String);
 
 void D_DrawSelectionRange(draw_context *D,
-						  memory_arena *Arena,
+						  m_arena *Arena,
 						  d_font Font,
 						  v2f Position,
 						  v4f Colour,
@@ -79,12 +78,12 @@ void D_DrawSelectionRange(draw_context *D,
 						  s32 End);
 
 void D_DrawQuad(draw_context *D_Context,
-				memory_arena *Arena, v2f Position,
+				m_arena *Arena, v2f Position,
 				f32 Width, f32 Height,
 				v4f Colour);
 
 void D_DrawCube(draw_context *D_Context,
-						memory_arena *Arena, v2f Position,
+						m_arena *Arena, v2f Position,
 						f32 Width, f32 Height,
 						v4f Colour);
 

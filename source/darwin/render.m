@@ -35,7 +35,7 @@ typedef struct gpu_vertex
 }
 gpu_vertex;
 
-void R_PushCommand(render_context *R, memory_arena *Arena, r_command Command)
+void R_PushCommand(render_context *R, m_arena *Arena, r_command Command)
 {
 	r_command *NextCommand = (r_command*)ArenaPushZero(Arena, sizeof(r_command));
 	NextCommand[0] = Command;
@@ -93,7 +93,7 @@ id<MTLTexture> ResizeDepthTexture(render_context *R, CGSize Size)
 
 		Metal->DepthTexture = MakeDepthTexture(R, Size);
 
-		LogInfo(R->Logger, "DepthTexture resized");
+		LogInfo("DepthTexture resized");
 	}
 	return Metal->DepthTexture;
 }
@@ -147,7 +147,8 @@ metal_shader R_GlyphShader(render_context *R)
 
 	if(!Shader.Library)
 	{
-		LogError(R->Logger, (char*)Error.localizedDescription.cString);
+		LogError((char*)[Error.localizedDescription
+						 cStringUsingEncoding:NSUTF8StringEncoding]);
 	}
 
 	MTLRenderPipelineDescriptor* PipelineDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
@@ -211,7 +212,8 @@ metal_shader R_TriangleShader(render_context *R)
 
 	if(!Shader.Library)
 	{
-		LogError(R->Logger, (char*)Error.localizedDescription.cString);
+		LogError((char*)[Error.localizedDescription
+						 cStringUsingEncoding:NSUTF8StringEncoding]);
 	}
 
 	MTLRenderPipelineDescriptor* PipelineDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
@@ -257,9 +259,9 @@ metal_shader R_TriangleShader(render_context *R)
 	return Shader;
 }
 
-void R_Init(render_context *R)
+void R_Init(render_context *R, m_arena *Arena)
 {
-	metal_context* Metal = ArenaPushTypeZero(R->Arena, metal_context);
+	metal_context* Metal = ArenaPushTypeZero(Arena, metal_context);
 	R->Backend = Metal;
 
 	Metal->Device = (__bridge id<MTLDevice>)sapp_metal_get_device();
@@ -279,7 +281,6 @@ void R_Init(render_context *R)
 	Metal->BloomShader = R_BloomShader(R);
 	Metal->GlyphShader = R_GlyphShader(R);
 	Metal->TriangleShader = R_TriangleShader(R);
-
 }
 
 f32 Angle = 0.0;
@@ -429,7 +430,7 @@ void R_ClearAllTextures(render_context *R, id<MTLCommandBuffer> CommandBuffer)
 	[Encoder endEncoding];
 }
 
-void R_Update(render_context *R, memory_arena *FrameArena)
+void R_Update(render_context *R, m_arena *FrameArena)
 {
 	metal_context *Metal = R->Backend;
 	Metal->Drawable = (__bridge id<CAMetalDrawable>)sapp_metal_get_current_drawable();

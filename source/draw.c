@@ -15,7 +15,7 @@ d_font D_LoadFontFromTTF(draw_context *D_Context, u8 *Data)
 	int Status = stbtt_InitFont(&Info, Data, 0);
 	if(!Status)
 	{
-		LogError(D_Context->Logger, "Internal font file is invalid");
+		LogError("Internal font file is invalid");
 	}
 	else
 	{
@@ -29,7 +29,7 @@ void D_GlyphsToAtlas(draw_context *D)
 {
 	if(!D->NewestGlyph)
 	{
-		LogInfo(D->Logger, "No glyphs to place in atlas");
+		LogInfo("No glyphs to place in atlas");
 		return;
 	}
 
@@ -45,7 +45,7 @@ void D_GlyphsToAtlas(draw_context *D)
 	if(HashOfNewestGlyph != D->HashOfNewestGlyph)
 	{
 		MemorySet(D->FontAtlas[D->WhichAtlas % 2],  0, D_FONT_ATLAS_SIZE*D_FONT_ATLAS_SIZE);
-		LogInfo(D->Logger, "Atlas will be updated");
+		LogInfo("Atlas will be updated");
 		D->HashOfNewestGlyph = HashOfNewestGlyph;
 
 		int TotalY = D_FONT_ATLAS_SIZE;
@@ -78,7 +78,7 @@ void D_GlyphsToAtlas(draw_context *D)
 				// from this glyph onwards.
 				D->OldestGlyph = Glyph->NextInLRU;
 				D->OldestGlyph->PreviousInLRU = Null;
-				LogInfo(D->Logger, "Evicted Glyphs");
+				LogInfo("Evicted Glyphs");
 			}
 			else
 			{
@@ -95,7 +95,7 @@ void D_GlyphsToAtlas(draw_context *D)
 			}
 			AtlasX += Width + Padding;
 		}
-		R_TextureFromBytes(D->R, D->FontAtlas[D->WhichAtlas++ % 2], D_FONT_ATLAS_SIZE, D_FONT_ATLAS_SIZE);
+		R_TextureFromBytes(D->Render, D->FontAtlas[D->WhichAtlas++ % 2], D_FONT_ATLAS_SIZE, D_FONT_ATLAS_SIZE);
 	}
 }
 
@@ -126,6 +126,7 @@ void PopGlyphOffLRU(draw_context *D_Context)
 
 d_atlas_glyph *D_GlyphFromCodePoint(draw_context *D, d_font Font, s32 HeightInPixels, u32 CodePoint)
 {
+	per_thread_context *ThreadContext = GetThreadContext();
 	u64 Hash = M_FNVHashBytes(M_FNV_HASH_START, (u8*)&Font, sizeof(d_font));
 	Hash = M_FNVHashBytes(Hash, (u8*)&HeightInPixels, sizeof(s32));
 	Hash = M_FNVHashBytes(Hash, (u8*)&CodePoint, sizeof(u32));
@@ -138,7 +139,7 @@ d_atlas_glyph *D_GlyphFromCodePoint(draw_context *D, d_font Font, s32 HeightInPi
 	
 	if(Glyph->Hash != 0 && Glyph->Hash != Hash)
 	{
-		LogInfo(D->Logger, "Glyph collision occured");
+		LogInfo("Glyph collision occured");
 		d_atlas_glyph *NextGlyph = ArenaPushTypeZero(D->Arena, d_atlas_glyph);
 		Glyph->NextInHashSlot = NextGlyph;
 
@@ -210,11 +211,11 @@ d_atlas_glyph *D_GlyphFromCodePoint(draw_context *D, d_font Font, s32 HeightInPi
 }
 
 void D_DrawQuad(draw_context *D,
-				memory_arena *Arena, v2f Position,
+				m_arena *Arena, v2f Position,
 				f32 Width, f32 Height,
 				v4f Colour)
 {
-	render_context *R = D->R;
+	render_context *R = D->Render;
 	r_command Command = {0};
 	Command.Vertices = (r_vertex*)ArenaPushZero(Arena, 6*sizeof(r_vertex));
 	Command.VerticesCount = 6;
@@ -247,14 +248,14 @@ void D_DrawQuad(draw_context *D,
 }
 
 void D_DrawStr8(draw_context *D,
-				memory_arena *Arena,
+				m_arena *Arena,
 				d_font Font,
 				v2f Position,
 				v4f Colour,
 				f32 HeightInPixels,
 				str8 String)
 {
-	render_context *R = D->R;
+	render_context *R = D->Render;
 
 	f32 Scale = stbtt_ScaleForPixelHeight(&Font.Info, HeightInPixels);
 	int TotalTriangleCount = String.Size*6;
@@ -296,7 +297,7 @@ void D_DrawStr8(draw_context *D,
 		
 		//if(NewLine) CodePoint = 'N';
 
-		d_atlas_glyph *Glyph  = D_GlyphFromCodePoint(D, Font, HeightInPixels, CodePoint);
+		d_atlas_glyph *Glyph  = D_GlyphFromCodePoint(D,  Font, HeightInPixels, CodePoint);
 
 		f32 GlyphWidth = ((f32)(Glyph->Box.Z - Glyph->Box.X)*Scale);
 		f32 GlyphHeight = ((f32)(Glyph->Box.W - Glyph->Box.Y)*Scale);
@@ -355,7 +356,7 @@ void D_DrawStr8(draw_context *D,
 }
 
 void D_DrawSelectionRange(draw_context *D,
-						  memory_arena *Arena,
+						  m_arena *Arena,
 						  d_font Font,
 						  v2f Position,
 						  v4f Colour,
@@ -366,7 +367,7 @@ void D_DrawSelectionRange(draw_context *D,
 {
 	if(Start == End) return;
 
-	render_context *R = D->R;
+	render_context *R = D->Render;
 
 	f32 Scale = stbtt_ScaleForPixelHeight(&Font.Info, HeightInPixels);
 
@@ -425,11 +426,11 @@ f32 D_LineHeightFromFont(d_font Font, f32 HeightInPixels)
 }
 
 void D_DrawCube(draw_context *D,
-				memory_arena *Arena, v2f Position,
+				m_arena *Arena, v2f Position,
 				f32 Width, f32 Height,
 				v4f Colour)
 {
-	render_context *R = D->R;
+	render_context *R = D->Render;
 	r_command Command = {0};
 	Command.Vertices = (r_vertex*)ArenaPushZero(Arena, 6*sizeof(r_vertex));
 	Command.VerticesCount = 6;

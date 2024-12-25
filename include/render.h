@@ -65,9 +65,6 @@ r_command;
 
 typedef struct render_context
 {
-	memory_arena *Arena;
-	logger *Logger;
-
 	r_command *CommandsFirst;
 	r_command *CommandsLast;
 
@@ -80,9 +77,9 @@ typedef struct r_options
 }
 r_options;
 
-void R_Init(render_context *R);
-void R_Update(render_context *R, memory_arena *FrameArena);
+void R_Init(render_context *R, m_arena *Arena);
+void R_Update(render_context *R, m_arena *FrameArena);
 
 void R_TextureFromBytes(render_context *R, u8 *Bytes, s32 Width, s32 Height);
 
-void R_PushCommand(render_context *R, memory_arena *Arena, r_command Command);
+void R_PushCommand(render_context *R, m_arena *Arena, r_command Command);

@@ -1,8 +1,17 @@
 #include "log.h"
+#include "memory.h"
 #include "strings.h"
 
-void LogInfoF(logger *Logger, char *FileName, char *FunctionName, u64 LineNumber, char *Format, ...)
+logger *LoggerInitialise(m_arena *Arena)
 {
+	return ArenaPushTypeZero(Arena, logger);
+}
+
+void LogInfoF(char *FileName, char *FunctionName, u64 LineNumber, char *Format, ...)
+{
+	per_thread_context *ThreadContext = GetThreadContext();
+	logger *Logger = ThreadContext->Logger;
+
 	if(Logger->Silent) return;
 
 	va_list args;
@@ -24,8 +33,11 @@ void LogInfoF(logger *Logger, char *FileName, char *FunctionName, u64 LineNumber
 	Print("?S\n\n", Result);
 }
 
-void LogWarnF(logger *Logger, char *FileName, char *FunctionName, u64 LineNumber, char *Format, ...)
+void LogWarnF(char *FileName, char *FunctionName, u64 LineNumber, char *Format, ...)
 {
+	per_thread_context *ThreadContext = GetThreadContext();
+	logger *Logger = ThreadContext->Logger;
+
 	if(Logger->Silent) return;
 
 	va_list args;
@@ -46,8 +58,11 @@ void LogWarnF(logger *Logger, char *FileName, char *FunctionName, u64 LineNumber
 	Print("?S\n\n", Result);
 }
 
-void LogErrorF(logger *Logger, char *FileName, char *FunctionName, u64 LineNumber, char *Format, ...)
+void LogErrorF(char *FileName, char *FunctionName, u64 LineNumber, char *Format, ...)
 {
+	per_thread_context *ThreadContext = GetThreadContext();
+	logger *Logger = ThreadContext->Logger;
+
 	if(Logger->Silent) return;
 
 	va_list args;

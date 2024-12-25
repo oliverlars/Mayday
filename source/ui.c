@@ -17,7 +17,7 @@ int UI_GetTextWidth(d_font Font, draw_context *Draw, str8 String, f32 HeightInPi
 	return Width;
 }
 
-void UI_DrawBoxCorners(ui_context *UI, draw_context *Draw, memory_arena *Arena, v2f Position, v2f Size, f32 LengthOfCornersInPixels)
+void UI_DrawBoxCorners(ui_context *UI, draw_context *Draw, m_arena *Arena, v2f Position, v2f Size, f32 LengthOfCornersInPixels)
 {
 	
 	f32 Width = Size.X;
@@ -42,7 +42,7 @@ void UI_DrawBoxCorners(ui_context *UI, draw_context *Draw, memory_arena *Arena, 
 	D_DrawQuad(Draw, Arena, SubV2F(Corners[3], v2f(0, LengthOfCornersInPixels)), 2, LengthOfCornersInPixels, v4f(0.5, 0.5, 0.5, 1.0));
 }
 
-b32 UI_TextButton(ui_context *UI, draw_context *Draw, memory_arena *Arena,
+b32 UI_TextButton(ui_context *UI, draw_context *Draw, m_arena *Arena,
 				  str8 String, f32 HeightInPixels, v2f Position, v4f Colour)
 {
 	u64 Hash = M_FNVHashString(M_FNV_HASH_START, String);

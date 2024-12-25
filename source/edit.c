@@ -95,10 +95,6 @@ void E_InsertTo(edit_context *Edit, cursor *Cursor, editable_buffer *Buffer, str
 
 void E_RemoveTextFromSelection(edit_context *Edit, editable_buffer *Buffer, v2i Selection)
 {
-	if(!Edit->Temp)
-	{
-		Edit->Temp = ArenaPushZero(&Edit->Arena, MegaBytes(1));;
-	}
 	Selection = E_GetSortedSelection(Selection);
 	MemoryCopy(Edit->Temp, Buffer->String.Bytes, Selection.X);
 	MemoryCopy(Edit->Temp + Selection.X, Buffer->String.Bytes + Selection.Y, Buffer->String.Size - Selection.Y);
@@ -237,11 +233,6 @@ void E_MoveCursors(edit_context *Edit, draw_context *Draw,
 
 void E_InsertTextAtIndex(edit_context *E, int Index, editable_buffer *Buffer, str8 TextToInsert)
 {
-	if(!E->Temp)
-	{
-		E->Temp = ArenaPushZero(&E->Arena, MegaBytes(1));
-	}
-
 	int At = Index;
 
 	//TODO(Oliver): Not implemented yet
@@ -382,8 +373,9 @@ int E_LineFromBufferIndex(edit_context *E_Context, int Index, editable_buffer *B
 	return Line;
 }
 
-int E_GetMaxTextWidthFromRange(edit_context *E, draw_context *D, d_font Font,
-							   editable_buffer *Buffer, int RangeStart, int RangeEnd)
+int E_GetMaxTextWidthFromRange(edit_context *E, draw_context *D,
+							   d_font Font, editable_buffer *Buffer,
+							   int RangeStart, int RangeEnd)
 {
 	f32 Scale = stbtt_ScaleForPixelHeight(&Font.Info, Buffer->HeightInPixels);
 	int MaxWidth = 0;
@@ -500,21 +492,21 @@ cursor *E_LastCursor(edit_context *Edit, cursor *Cursor)
 	return Cursor;
 }
 
-void E_AppendCursor(edit_context *Edit, cursor *Cursor, cursor NextCursor)
+void E_AppendCursor(edit_context *Edit, m_arena *Arena, cursor *Cursor, cursor NextCursor)
 {
 	assert(Cursor);
 	Cursor = E_LastCursor(Edit, Cursor);
 
-	Cursor->Next = ArenaPushTypeZero(&Edit->Arena, cursor);
+	Cursor->Next = ArenaPushTypeZero(Arena, cursor);
 	NextCursor.Previous = Cursor;
 	Cursor->Next[0] = NextCursor;
 }
 
-void PushUndoAction(edit_context *E, cursor *Cursor, undo_type Type, str8 InsertedOrRemovedText)
+void PushUndoAction(edit_context *E, m_arena *Arena, cursor *Cursor, undo_type Type, str8 InsertedOrRemovedText)
 {
-	undo_stack *Action = (undo_stack*)ArenaPushZero(&E->Arena, sizeof(undo_stack));
+	undo_stack *Action = (undo_stack*)ArenaPushZero(Arena, sizeof(undo_stack));
 	Action->Index = Cursor->Selection.X;
-	Action->String = Str8PushF(&E->Arena, "?S", InsertedOrRemovedText);
+	Action->String = Str8PushF(Arena, "?S", InsertedOrRemovedText);
 	Action->Type = Type;
 	if(!E->NewestAction)
 	{

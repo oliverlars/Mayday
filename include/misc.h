@@ -29,3 +29,10 @@ typedef uint64_t  b64;
 
 #define Min(a, b) ((a) < (b) ? (a) : (b))
 #define Max(a, b) ((a) > (b) ? (a) : (b))
+
+#define ArrayCount(Array) (sizeof(Array)/sizeof(Array[0]))
+
+#if defined(__APPLE__)
+#define per_thread_local __thread
+#elif(_WIN32)
+#endif

@@ -6,8 +6,6 @@
 
 #include "memory.h"
 
-static _Thread_local memory_arena G_ScratchArena;
-
 typedef struct str8
 {
     s64 Size;
@@ -46,25 +44,25 @@ str8_list;
 
 #define Str8(String) (str8){strlen(String), (u8*)String}
 
-str8 Str8PushFV(memory_arena *Arena, char *Format, va_list InputArgList);
+str8 Str8PushFV(m_arena *Arena, char *Format, va_list InputArgList);
 
-str8 Str8PushF(memory_arena *Arena, char *Format, ...);
+str8 Str8PushF(m_arena *Arena, char *Format, ...);
 
-char* CStrFromStr8(memory_arena *Arena, str8 String);
+char* CStrFromStr8(m_arena *Arena, str8 String);
 
-str8 Str8Copy(memory_arena *Arena, str8 String);
+str8 Str8Copy(m_arena *Arena, str8 String);
 
 b32 Str8Equal(str8 A, str8 B);
 
-void Str8ListAppend(memory_arena *Arena, str8_list *List, str8 String);
+void Str8ListAppend(m_arena *Arena, str8_list *List, str8 String);
 
-void Str8ListPrepend(memory_arena *Arena, str8_list *List, str8 String);
+void Str8ListPrepend(m_arena *Arena, str8_list *List, str8 String);
 
-void Str8ListInsertBefore(memory_arena *Arena, str8_list *List, str8_list_node* Node, str8 String);
+void Str8ListInsertBefore(m_arena *Arena, str8_list *List, str8_list_node* Node, str8 String);
 
-void Str8ListInsertAfter(memory_arena *Arena, str8_list *List, str8_list_node* Node, str8 String);
+void Str8ListInsertAfter(m_arena *Arena, str8_list *List, str8_list_node* Node, str8 String);
 
-str8 Str8ListJoin(memory_arena *Arena, str8_list *List);
+str8 Str8ListJoin(m_arena *Arena, str8_list *List);
 
 b32 NextInStr8List(str8_list_node **Node);
 

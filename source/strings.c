@@ -9,7 +9,7 @@
 
 
 
-str8 Str8PushFV(memory_arena *Arena, char *Format, va_list InputArgList)
+str8 Str8PushFV(m_arena *Arena, char *Format, va_list InputArgList)
 {
 	va_list ArgList;
 	va_copy(ArgList, InputArgList);
@@ -229,7 +229,7 @@ str8 Str8PushFV(memory_arena *Arena, char *Format, va_list InputArgList)
 	return Result;
 }
 
-str8 Str8PushF(memory_arena *Arena, char *Format, ...)
+str8 Str8PushF(m_arena *Arena, char *Format, ...)
 {
 	va_list args;
 	va_start(args, Format);
@@ -238,7 +238,7 @@ str8 Str8PushF(memory_arena *Arena, char *Format, ...)
 	return Result;
 }
 
-char* CStrFromStr8(memory_arena *Arena, str8 String)
+char* CStrFromStr8(m_arena *Arena, str8 String)
 {
 	s32 NullTerminated = 0;
 	if(String.Bytes[String.Size] == '\0')
@@ -251,7 +251,7 @@ char* CStrFromStr8(memory_arena *Arena, str8 String)
 	return Result;
 }
 
-str8 Str8Copy(memory_arena *Arena, str8 String)
+str8 Str8Copy(m_arena *Arena, str8 String)
 {
 	str8 Result = {0};
 	Result.Size = String.Size;
@@ -273,7 +273,7 @@ b32 Str8Equal(str8 A, str8 B)
 	return True;
 }
 
-void Str8ListAppend(memory_arena *Arena, str8_list *List, str8 String)
+void Str8ListAppend(m_arena *Arena, str8_list *List, str8 String)
 {
 	if(String.Size <= 0 ) return;
 	str8_list_node *Node = ArenaPushTypeZero(Arena, str8_list_node);
@@ -291,7 +291,7 @@ void Str8ListAppend(memory_arena *Arena, str8_list *List, str8 String)
 	}
 }
 
-void Str8ListPrepend(memory_arena *Arena, str8_list *List, str8 String)
+void Str8ListPrepend(m_arena *Arena, str8_list *List, str8 String)
 {
 	str8_list_node *Node = ArenaPushTypeZero(Arena, str8_list_node);
 	Node->String = Str8Copy(Arena, String);
@@ -308,7 +308,7 @@ void Str8ListPrepend(memory_arena *Arena, str8_list *List, str8 String)
 	}
 }
 
-void Str8ListInsertBefore(memory_arena *Arena, str8_list *List, str8_list_node* Node, str8 String)
+void Str8ListInsertBefore(m_arena *Arena, str8_list *List, str8_list_node* Node, str8 String)
 {
 	if(Node->Previous != Null)
 	{
@@ -325,7 +325,7 @@ void Str8ListInsertBefore(memory_arena *Arena, str8_list *List, str8_list_node* 
 	}
 }
 
-void Str8ListInsertAfter(memory_arena *Arena, str8_list *List, str8_list_node* Node, str8 String)
+void Str8ListInsertAfter(m_arena *Arena, str8_list *List, str8_list_node* Node, str8 String)
 {
 	if(Node->Next != Null)
 	{
@@ -342,7 +342,7 @@ void Str8ListInsertAfter(memory_arena *Arena, str8_list *List, str8_list_node* N
 	}
 }
 
-str8 Str8ListJoin(memory_arena *Arena, str8_list *List)
+str8 Str8ListJoin(m_arena *Arena, str8_list *List)
 {
 	u64 BytesToAllocate = 0;
 	for(str8_list_node *Node = List->First; Node != Null; Node = Node->Next)
@@ -376,24 +376,24 @@ void Print(char *Format, ...)
 {
 	va_list Args;
 	va_start(Args, Format);
-	u64 At = G_ScratchArena.At;
-	str8 Result = Str8PushFV(&G_ScratchArena, Format, Args);
+
+	m_scratch_arena Scratch = ScratchBegin(0, 0);
+
+	str8 Result = Str8PushFV(Scratch.Arena, Format, Args);
 	va_end(Args);
 	printf("%.*s", (int)Result.Size, Result.Bytes);
-	// for (u64 I = 0; I < Result.Size; I++)
-	// {
-	// 	printf("%02X ", (unsigned char)Result.Bytes[I]);
-	// }
-	G_ScratchArena.At = At;
+	ScratchEnd(Scratch);
 }
 
 void PrintLn(char *Format, ...)
 {
 	va_list args;
 	va_start(args, Format);
-	u64 At = G_ScratchArena.At;
-	str8 Result = Str8PushFV(&G_ScratchArena, Format, args);
+	m_scratch_arena Scratch = ScratchBegin(0, 0);
+
+	str8 Result = Str8PushFV(Scratch.Arena, Format, args);
 	va_end(args);
 	printf("%.*s\n", (int)Result.Size, Result.Bytes);
-	G_ScratchArena.At = At;
+	
+	ScratchEnd(Scratch);
 }

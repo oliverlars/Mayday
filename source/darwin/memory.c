@@ -1,8 +1,64 @@
 #include "memory.h"
 #include "misc.h"
 
+#include <assert.h>
+#include <string.h>
 #include <sys/mman.h>
 #include <unistd.h>
+
+per_thread_local per_thread_context __ThreadLocalContext;
+
+m_arena *ArenaInitialise(s64 NumberOfBytes)
+{
+	m_arena Arena = {0};
+	Arena.Start = MemoryReserve(NumberOfBytes + GetPageSize());
+	m_arena *Result = ArenaPushType(&Arena, m_arena);
+	Arena.Start += GetPageSize();
+	Arena.At = 0;
+	Arena.Committed = 0;
+
+	Result[0] = Arena;
+	return Result;
+}
+
+m_scratch_arena ScratchBegin(m_arena **Arenas, int ConflictCount)
+{
+	per_thread_context *ThreadContext = GetThreadContext();
+	m_scratch_arena Scratch = {0};
+	for(int ScratchIndex = 0;
+		ScratchIndex < ArrayCount(ThreadContext->ScratchArenas);
+		ScratchIndex++)
+	{
+		b32 Conflict = False;
+		for(m_arena **Conflicts = Arenas;
+			Conflicts < Conflicts + ConflictCount;
+			Conflicts++)
+		{
+			if(Conflicts[0] == ThreadContext->ScratchArenas[ScratchIndex])
+			{
+				Conflict = True;
+				break;
+			}
+		}
+		if(!Conflict)
+		{
+			Scratch.Arena = ThreadContext->ScratchArenas[ScratchIndex];
+			Scratch.At = Scratch.Arena->At;
+			break;
+		}
+	}
+	return Scratch;
+}
+
+void ScratchEnd(m_scratch_arena Scratch)
+{
+	Scratch.Arena->At = Scratch.At;
+}
+
+per_thread_context *GetThreadContext()
+{
+	return &__ThreadLocalContext;
+}
 
 u8* MemoryReserve(s64 NumberOfBytes)
 {
@@ -34,12 +90,8 @@ u64 GetPageSize()
 	return getpagesize();
 }
 
-u8* ArenaPush(memory_arena *Arena, s64 Bytes)
+u8* ArenaPush(m_arena *Arena, s64 Bytes)
 {
-	if(Arena->Start == Null)
-	{
-		Arena->Start = MemoryReserve(GigaBytes(16));
-	}
 	if(Arena->At + Bytes >= Arena->Committed)
 	{
 		s64 BytesNeeded = (Arena->At + Bytes - Arena->Committed);
@@ -53,14 +105,14 @@ u8* ArenaPush(memory_arena *Arena, s64 Bytes)
 	return Memory;
 }
 
-u8 *ArenaPushZero(memory_arena *Arena, s64 Bytes)
+u8 *ArenaPushZero(m_arena *Arena, s64 Bytes)
 {
 	u8 *Memory = ArenaPush(Arena, Bytes);
 	MemoryZero(Memory, Bytes);
 	return Memory;
 }
 
-void ArenaReset(memory_arena *Arena)
+void ArenaReset(m_arena *Arena)
 {
 	Arena->At = 0;
 }

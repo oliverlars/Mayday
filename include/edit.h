@@ -1,3 +1,4 @@
+#include "memory.h"
 #include "misc.h"
 #include "maths.h"
 #include "draw.h"
@@ -42,9 +43,7 @@ typedef struct editable_buffer
 
 typedef struct edit_context
 {
-	// NOTE(Oliver): This gets its own arena to just allocate all buffers from
-	memory_arena Arena;
-	logger *Logger;
+	m_arena *Arena;
 
 	draw_context *Draw;
 
@@ -120,14 +119,19 @@ int E_LineFromBufferIndex(edit_context *E_Context, int Index, editable_buffer *B
 int E_VisualXFromIndex(edit_context *Edit, draw_context *Draw,
 					   d_font Font, int Index, editable_buffer *Buffer);
 
-int E_GetMaxTextWidthFromRange(edit_context *E, draw_context *D, d_font Font,
-							   editable_buffer *Buffer, int RangeStart, int RangeEnd);
+int E_GetMaxTextWidthFromRange(edit_context *E, draw_context *D,
+							   d_font Font, editable_buffer *Buffer,
+							   int RangeStart, int RangeEnd);
 
 int E_IndexFromVisualXAndLineStart(edit_context *E, draw_context *D, d_font Font,
 								   editable_buffer *Buffer, int VisualX, int LineStart);
 
 cursor *E_LastCursor(edit_context *Edit, cursor *Cursor);
-void E_AppendCursor(edit_context *Edit, cursor *Cursor, cursor NextCursor);
+void E_AppendCursor(edit_context *Edit, m_arena *Arena, cursor *Cursor, cursor NextCursor);
 
-void PushUndoAction(edit_context *E, cursor *Cursor, undo_type Type, str8 InsertedOrRemovedText);
+void PushUndoAction(edit_context *E,
+					m_arena *Arena,
+					cursor *Cursor,
+					undo_type Type,
+					str8 InsertedOrRemovedText);
 undo_stack *PopOffUndoStack(edit_context *E);

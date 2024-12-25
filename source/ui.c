@@ -4,13 +4,13 @@
 #include "draw.h"
 #include <assert.h>
 
-int E_GetTextWidth(ui_context *UI, draw_context *Draw, str8 String, f32 HeightInPixels)
+int UI_GetTextWidth(d_font Font, draw_context *Draw, str8 String, f32 HeightInPixels)
 {
-	f32 Scale = stbtt_ScaleForPixelHeight(&UI->Font.Info, HeightInPixels);
+	f32 Scale = stbtt_ScaleForPixelHeight(&Font.Info, HeightInPixels);
 	f32 Width = 0;
 	for(int I = 0; I < String.Size; I++)
 	{
-		d_atlas_glyph *Glyph = D_GlyphFromCodePoint(Draw, UI->Font, 1.0, String.Bytes[I]);
+		d_atlas_glyph *Glyph = D_GlyphFromCodePoint(Draw, Font, 1.0, String.Bytes[I]);
 		Width += Glyph->AdvanceX * Scale;
 	}
 
@@ -48,7 +48,7 @@ b32 UI_TextButton(ui_context *UI, draw_context *Draw, memory_arena *Arena,
 	u64 Hash = M_FNVHashString(M_FNV_HASH_START, String);
 	f32 Scale = stbtt_ScaleForPixelHeight(&UI->Font.Info, HeightInPixels);
 	f32 Height = D_LineHeightFromFont(UI->Font, HeightInPixels);
-	f32 Width = E_GetTextWidth(UI, Draw, String, HeightInPixels);
+	f32 Width = UI_GetTextWidth(UI->Font, Draw, String, HeightInPixels);
 
 	v2f BoxPosition = AddV2F(Position, v2f(0, UI->Font.Descent * Scale));
 	if(UI->Hot == Hash)

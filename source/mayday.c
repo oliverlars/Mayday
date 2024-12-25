@@ -41,13 +41,15 @@ mayday_context;
 
 #include "shaders.h"
 
-void OS_Update(void *Data)
+
+
+void EditingWindow(mayday_context *M)
 {
-	mayday_context *M = Data;
 
 	//TODO(Oliver): Theres a better way to do this
 	int WindowHeight = OS_WindowHeight(&M->Window);
 	int WindowWidth = OS_WindowWidth(&M->Window);
+	D_DrawQuad(&M->Draw, M->FrameArena, v2f(0, 0),  WindowWidth, WindowHeight, v4f(0.009, 0.00, 0, 1.0));
 
 	v2f BufferPosition = v2f(100, (f32)WindowHeight - 50 + M->UI.ScrollOffset.Y*15);
 
@@ -55,21 +57,6 @@ void OS_Update(void *Data)
 
 	f32 LineHeight = D_LineHeightFromFont(M->CodeFont, M->Buffer.HeightInPixels);
 
-	D_DrawQuad(&M->Draw, M->FrameArena, v2f(0, 0),  WindowWidth, WindowHeight, v4f(0.009, 0.00, 0, 1.0));
-
-	//UI_TextButton(&M->UI, &M->Draw, M->FrameArena, Str8("triangle.metal"), 100, v2f(1500, WindowHeight - 1000), v4f(0.4, 0.2, 0.0, 1.0));
-	// D_DrawStr8(&M->Draw,
-	// 		M->FrameArena, M->Font,
-	// 		v2f(50, WindowHeight - 70), v4f(1, 1, 1, 1),
-	// 		M->Buffer.HeightInPixels, Str8PushF(M->FrameArena,
-	// 											"Line: ?u32 | StickyX: ?u32 | Start: ?u32 | End: ?u32 | VisualX: ?u32 | DistanceFromStart: ?u32 | DistanceFromEnd: ?u32",
-	// 											E_LineFromBufferIndex(&M->Edit, &M->Cursor, &M->Buffer),
-	// 											0,
-	// 											M->Cursor.Start,
-	// 											M->Cursor.End,
-	// 											M->Cursor.VisualX,
-	// 											E_DistanceFromPreviousNewLine(&M->Edit, &M->Cursor, &M->Buffer),
-	// 											E_DistanceFromNextNewLine(&M->Edit, &M->Cursor, &M->Buffer)));
 
 	f32 HeightOffset = 0;
 	for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
@@ -145,8 +132,28 @@ void OS_Update(void *Data)
 		}
 	}
 
+	if(M->UI.MouseIsDragging)
+	{
+		int Index = E_IndexFromPosition(&M->Edit, &M->Draw, M->CodeFont,
+											&M->Buffer, BufferPosition, M->UI.MousePosition);
+			
+		M->Cursor.Selection.Y = Index;
+	}
+}
+
+void OS_Update(void *Data)
+{
+	mayday_context *M = Data;
+
+	int WindowHeight = OS_WindowHeight(&M->Window);
+	int WindowWidth = OS_WindowWidth(&M->Window);
+
+	//D_DrawQuad(&M->Draw, M->FrameArena, v2f(0, 0),  WindowWidth, WindowHeight, v4f(0.008, 0.00, 0, 1.0));
+	
+	EditingWindow(M);
+
 	if(OS_MilliSecondsFromTimeStamp(OS_TimeStampNow() - M->UI.TimeStampWhenMousePressed) > 150.0 &&
-	   M->UI.MouseWasPressed)
+	   M->UI.MouseWasPressed && M->UI.MultiClickCount == 0)
 	{
 		M->UI.MouseIsDragging = True;
 	}
@@ -155,20 +162,23 @@ void OS_Update(void *Data)
 		M->UI.MouseIsDragging = False;
 	}
 
-	if(M->UI.MouseIsDragging)
+
+	if(0)
 	{
-		int Index = E_IndexFromPosition(&M->Edit, &M->Draw, M->CodeFont,
-											&M->Buffer, BufferPosition, M->UI.MousePosition);
-			
-		M->Cursor.Selection.Y = Index;
+		int LogoSize = 600;
+		int LogoTextWidth = UI_GetTextWidth(M->LogoFont, &M->Draw, Str8("MAYDAY!"), LogoSize);
+
+		int Padding = 200;
+		v4f Rect = v4f(Padding, Padding, WindowWidth - Padding*2, WindowHeight - Padding*2);
+		D_DrawQuad(&M->Draw, M->FrameArena, v2f(Rect.X, Rect.Y), Rect.Z, Rect.W, v4f(0.2, 0.06, 0, 1));
+		D_DrawQuad(&M->Draw, M->FrameArena, v2f(Rect.X + 5, Rect.Y + 5), Rect.Z - 10, Rect.W - 10, v4f(0.009, 0.00, 0, 1.0));
+
+		D_DrawQuad(&M->Draw, M->FrameArena, v2f(WindowWidth/2.0 - LogoTextWidth/2.0, WindowHeight/2.0 - LogoSize/5.0), LogoTextWidth, LogoSize, v4f(0.009, 0.00, 0, 1.0));
+		D_DrawStr8(&M->Draw,
+			M->FrameArena, M->LogoFont,
+			v2f(WindowWidth/2.0 - LogoTextWidth/2.0, WindowHeight/2.0), v4f(0.4, 0.02, 0, 1), LogoSize, Str8("MAYDAY!"));
 	}
 
-	D_DrawStr8(&M->Draw,
-		M->FrameArena, M->LogoFont,
-		v2f(1500, 1500), v4f(0.5, 0.03, 0, 1), 300, Str8("MAYDAY!"));
-	D_DrawStr8(&M->Draw,
-		M->FrameArena, M->LogoFont,
-		v2f(2300, 1450), v4f(0.5, 0.03, 0, 1), 50, Str8("NOMORETEXT LTD"));
 
 	R_Update(&M->Render, M->FrameArena);
 
@@ -186,48 +196,73 @@ void OS_Event(const sapp_event *Event, void *Data)
 		int WindowHeight = OS_WindowHeight(&M->Window);
 
 		v2f BufferPosition = v2f(100, (f32)WindowHeight - 50);
-		if(Event->mouse_button == SAPP_MOUSEBUTTON_LEFT && Event->modifiers & SAPP_MODIFIER_ALT)
+
+		if(Event->mouse_button == SAPP_MOUSEBUTTON_LEFT)
 		{
 			int Index = E_IndexFromPosition(&M->Edit, &M->Draw, M->CodeFont,
-											&M->Buffer, BufferPosition, M->UI.MousePosition);
+										&M->Buffer, BufferPosition,
+										M->UI.MousePosition);
+
 			cursor *LastCursor = E_LastCursor(&M->Edit, &M->Cursor);
-			cursor NextCursor = LastCursor[0];
-			NextCursor.Selection = v2i(Index, Index);
-			E_AppendCursor(&M->Edit, &M->Cursor, NextCursor);
-		}
-		else if(Event->mouse_button == SAPP_MOUSEBUTTON_LEFT)
-		{
-			M->Cursor.Next = Null;
-			int Index = E_IndexFromPosition(&M->Edit, &M->Draw, M->CodeFont,
-											&M->Buffer, BufferPosition, M->UI.MousePosition);
+			cursor *Cursor = LastCursor;
+			if(Event->modifiers & SAPP_MODIFIER_ALT)
+			{
+				cursor NextCursor = Cursor[0];
+				NextCursor.Selection = v2i(Index, Index);
+				E_AppendCursor(&M->Edit, &M->Cursor, NextCursor);
+				Cursor = Cursor->Next;
+			}
+			else
+			{
+				M->Cursor.Next = Null;
+				Cursor = &M->Cursor;
+			}
 
 			f32 MillisecondsSinceLastClick = OS_MilliSecondsFromTimeStamp(OS_TimeStampNow() - M->UI.TimeStampWhenMousePressed);
 			if(MillisecondsSinceLastClick < 400 &&
 			   M->UI.MultiClickCount == 0)
 			{
-				v2i InitialSelection = M->Cursor.Selection;
-				E_MoveCursors(&M->Edit, &M->Draw, M->CodeFont, &M->Cursor, &M->Buffer, E_MOVE_WORD_RIGHT, E_MOVE_SELECTING);
-				v2i Selection = M->Cursor.Selection;
-				M->Cursor.Selection = InitialSelection;
-				E_MoveCursors(&M->Edit, &M->Draw, M->CodeFont, &M->Cursor, &M->Buffer, E_MOVE_WORD_LEFT, E_MOVE_NOT_SELECTING);
-				M->Cursor.Selection = v2i(M->Cursor.Selection.X, Selection.Y);
+				v2i InitialSelection = Cursor->Selection;
+				E_MoveCursors(&M->Edit, &M->Draw, M->CodeFont, Cursor, &M->Buffer, E_MOVE_WORD_RIGHT, E_MOVE_SELECTING);
+				v2i Selection = Cursor->Selection;
+				Cursor->Selection = InitialSelection;
+				E_MoveCursors(&M->Edit, &M->Draw, M->CodeFont, Cursor, &M->Buffer, E_MOVE_WORD_LEFT, E_MOVE_NOT_SELECTING);
+				Cursor->Selection = v2i(Cursor->Selection.X, Selection.Y);
 				M->UI.MultiClickCount++;
+				
+				if(LastCursor != Cursor)
+				{
+					LastCursor[0] = Cursor[0];
+					LastCursor->Next = Null;
+				}
 			}
 			else if(MillisecondsSinceLastClick < 400 && M->UI.MultiClickCount == 1)
 			{
-				int LineStart = E_LineStartFromIndex(&M->Edit, M->Cursor.Selection.Y, &M->Buffer);
-				int LineEnd = E_LineEndFromIndex(&M->Edit, M->Cursor.Selection.Y, &M->Buffer);
-				M->Cursor.Selection = v2i(LineStart, LineEnd);
+				int LineStart = E_LineStartFromIndex(&M->Edit, Cursor->Selection.Y, &M->Buffer);
+				int LineEnd = E_LineEndFromIndex(&M->Edit, Cursor->Selection.Y, &M->Buffer);
+				Cursor->Selection = v2i(LineStart, LineEnd);
 				M->UI.MultiClickCount++;
+				
+				if(LastCursor != Cursor)
+				{
+					LastCursor[0] = Cursor[0];
+					LastCursor->Next = Null;
+				}
 			}
 			else if(MillisecondsSinceLastClick < 400 && M->UI.MultiClickCount == 2)
 			{
-				M->Cursor.Selection = v2i(0, M->Buffer.String.Size);
+				Cursor->Selection = v2i(0, M->Buffer.String.Size);
 				M->UI.MultiClickCount++;
+
+				if(LastCursor != Cursor)
+				{
+					LastCursor[0] = Cursor[0];
+					LastCursor->Next = Null;
+				}
 			}
-			else if(MillisecondsSinceLastClick > 400)
+			else if(MillisecondsSinceLastClick >= 400)
 			{
-				M->Cursor.Selection = v2i(Index, Index);
+				Cursor->Selection = v2i(Index, Index);	
 				M->UI.MultiClickCount = 0;
 			}
 
@@ -243,7 +278,6 @@ void OS_Event(const sapp_event *Event, void *Data)
 	else if(Event->type == SAPP_EVENTTYPE_MOUSE_UP)
 	{
 		M->UI.MouseWasPressed = False;
-		//M->UI.TimeStampWhenMousePressed = 0;
 	}
 	else if(Event->type == SAPP_EVENTTYPE_KEY_DOWN)
 	{

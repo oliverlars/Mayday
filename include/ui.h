@@ -37,3 +37,5 @@ b32 UI_TextButton(ui_context *UI, draw_context *Draw,
 				  memory_arena *Arena, str8 String,
 				  f32 HeightInPixels,
 				  v2f Position, v4f Colour);
+
+int UI_GetTextWidth(d_font Font, draw_context *Draw, str8 String, f32 HeightInPixels);

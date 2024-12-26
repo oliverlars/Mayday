@@ -692,6 +692,23 @@ m44f M44FOrthographic(f32 Left, f32 Right,
 	return Result;
 }
 
+/*
+matrix4_look_at_f32 :: proc "contextless" (eye, centre, up: Vector3f32, flip_z_axis := true) -> (m: Matrix4f32) {
+	f := normalize(centre - eye)
+	s := normalize(cross(f, up))
+	u := cross(s, f)
+
+	fe := dot(f, eye)
+
+	return {
+		+s.x, +s.y, +s.z, -dot(s, eye),
+		+u.x, +u.y, +u.z, -dot(u, eye),
+		-f.x, -f.y, -f.z, +fe if flip_z_axis else -fe,
+		   0,    0,    0, 1,
+	}
+}
+*/
+
 m44f M44FLookAt(v3f From, v3f To, v3f ArbitraryUp)
 {
 	v3f Forward = NormalizeV3F(SubV3F(From, To));
@@ -714,7 +731,7 @@ m44f M44FLookAt(v3f From, v3f To, v3f ArbitraryUp)
 		-Translation.X, -Translation.Y, -Translation.Z, 1,
 	};
 
-	return (Result);
+	return Result;
 }
 
 m44f M44FTranslate(v3f Translate)

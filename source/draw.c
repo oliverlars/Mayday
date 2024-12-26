@@ -434,7 +434,7 @@ void D_DrawCube(draw_context *D,
 	r_command Command = {0};
 	Command.Vertices = (r_vertex*)ArenaPushZero(Arena, 8*sizeof(r_vertex));
 	Command.VerticesCount = 8;
-	Command.VerticesFormat = R_VF_POSITION | R_VF_UV;
+	Command.VerticesFormat = R_VF_POSITION | R_VF_COLOUR;
 
 	r_vertex *R_Vertices = Command.Vertices;
 	

@@ -298,7 +298,7 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 		MTLTextureDescriptor *Desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatDepth32Float
 														width:Size.X
 														height:Size.Y mipmapped:NO];
-		Desc.usage = MTLTextureUsageShaderRead | MTLTextureUsageShaderWrite;
+		Desc.usage = MTLTextureUsageShaderRead | MTLTextureUsageShaderWrite | MTLTextureUsageRenderTarget;;
 		Desc.storageMode = MTLStorageModePrivate;
 
 		Metal->DepthTexture = [Metal->Device newTextureWithDescriptor:Desc];
@@ -328,12 +328,11 @@ void R_RenderPoints(render_context *R, id<MTLCommandBuffer> CommandBuffer, int V
 	PassDesc.depthAttachment.storeAction = MTLStoreActionStore;
 	
 
-	Angle += 0.01;
+	//Angle += 0.01;
 	uniforms Uniforms = {0};
-	Uniforms.ModelMatrix = M44FromZAngle(Angle);
-	Uniforms.ModelMatrix = M44F_IDENTITY;
-	Uniforms.ProjectionMatrix = M44FOrthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0);
-	Uniforms.ViewMatrix = M44FLookAt(v3f(0, 0, 0), v3f(0, 0, 10), v3f(0, 1, 0));
+	Uniforms.ModelMatrix = M44FromYAngle(Angle);
+	Uniforms.ProjectionMatrix = M44FPerspective(sapp_widthf()/sapp_heightf(), 30, 0.1, 100.0);
+	Uniforms.ViewMatrix = M44FLookAt(v3f(0, 0, 10), v3f(0, 0, 0), v3f(0, 1, 0));
 	MemoryCopy(Metal->UniformBuffers[R->Frame % FRAMES_IN_FLIGHT].contents, &Uniforms, sizeof(Uniforms));
 
 	MTLDepthStencilDescriptor *DepthStencilDescriptor = [MTLDepthStencilDescriptor new];
@@ -343,11 +342,8 @@ void R_RenderPoints(render_context *R, id<MTLCommandBuffer> CommandBuffer, int V
 
 	id<MTLRenderCommandEncoder> Encoder = [CommandBuffer renderCommandEncoderWithDescriptor:PassDesc];
 	[Encoder setRenderPipelineState:Metal->TriangleShader.PipelineState];
-	[Encoder setFrontFacingWinding:MTLWindingClockwise];
-	[Encoder setCullMode:(MTLCullModeNone)];
 	[Encoder setVertexBuffer:Metal->TriangleVertexBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:0 atIndex:0];
 	[Encoder setVertexBuffer:Metal->UniformBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:0 atIndex:1];
-	[Encoder setDepthStencilState:DepthStencilState];
 	[Encoder drawPrimitives:MTLPrimitiveTypePoint vertexStart:Offset vertexCount:VertexCount];
 
 

@@ -82,18 +82,23 @@ id<MTLTexture> MakeDepthTexture(render_context *R, CGSize Size)
 	return Result;
 }
 
-id<MTLTexture> ResizeDepthTexture(render_context *R, CGSize Size)
+id<MTLTexture> ResizeTexture(render_context *R, id<MTLTexture> Texture, CGSize Size)
 {
 	metal_context *Metal = R->Backend;
-	if(Size.width != [Metal->DepthTexture width] || Size.height != [Metal->DepthTexture height] || Metal->DepthTexture == nil)
+	id<MTLTexture> Result = Texture;
+	if(Size.width != [Metal->Drawable.texture width] || Size.height != [Metal->Drawable.texture height] || Texture == nil)
 	{
-		Metal->DepthTexture = nil;
+		MTLTextureDescriptor *Desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:Texture.pixelFormat
+														width:Size.width
+														height:Size.height mipmapped:NO];
+		Desc.usage = Texture.usage;
+		Desc.storageMode = Texture.storageMode;
 
-		Metal->DepthTexture = MakeDepthTexture(R, Size);
+		Result = [Metal->Device newTextureWithDescriptor:Desc];
 
-		LogInfo("DepthTexture resized");
+		LogInfo("Texture resized");
 	}
-	return Metal->DepthTexture;
+	return Result;
 }
 
 metal_shader R_BloomShader(render_context *R)
@@ -247,7 +252,7 @@ metal_shader R_TriangleShader(render_context *R)
 	return Shader;
 }
 
-void R_Init(render_context *R, m_arena *Arena)
+void R_Init(render_context *R, m_arena *Arena, v2i Size)
 {
 	metal_context* Metal = ArenaPushTypeZero(Arena, metal_context);
 	R->Backend = Metal;
@@ -266,6 +271,37 @@ void R_Init(render_context *R, m_arena *Arena)
 
 		Metal->UniformBuffers[ResourceIndex] = [Metal->Device newBufferWithLength:sizeof(uniforms)
 						options:MTLResourceStorageModeShared];
+	}
+
+	{
+		MTLTextureDescriptor *Desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm
+														width:Size.X
+														height:Size.Y mipmapped:NO];
+		Desc.usage = MTLTextureUsageShaderRead | MTLTextureUsageRenderTarget;
+		Desc.storageMode = MTLStorageModePrivate;
+
+
+		Metal->BaseFrameBuffer = [Metal->Device newTextureWithDescriptor:Desc];
+	}
+
+	{
+		MTLTextureDescriptor *Desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm
+														width:Size.X
+														height:Size.Y mipmapped:NO];
+		Desc.usage = MTLTextureUsageShaderRead | MTLTextureUsageShaderWrite | MTLTextureUsageRenderTarget;
+		Desc.storageMode = MTLStorageModePrivate;
+
+		Metal->BlurredFrameBuffer = [Metal->Device newTextureWithDescriptor:Desc];
+	}
+
+	{
+		MTLTextureDescriptor *Desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatDepth32Float
+														width:Size.X
+														height:Size.Y mipmapped:NO];
+		Desc.usage = MTLTextureUsageShaderRead | MTLTextureUsageShaderWrite;
+		Desc.storageMode = MTLStorageModePrivate;
+
+		Metal->DepthTexture = [Metal->Device newTextureWithDescriptor:Desc];
 	}
 
 	Metal->BloomShader = R_BloomShader(R);
@@ -287,7 +323,7 @@ void R_RenderPoints(render_context *R, id<MTLCommandBuffer> CommandBuffer, int V
 	PassDesc.colorAttachments[0].storeAction = MTLStoreActionStore;
 	PassDesc.colorAttachments[0].clearColor = MTLClearColorMake(0.0,0.0,0.0,1);
 
-	PassDesc.depthAttachment.texture = ResizeDepthTexture(R, CGSizeMake(Metal->Drawable.texture.width, Metal->Drawable.texture.height));
+	PassDesc.depthAttachment.texture = Metal->DepthTexture;
 	PassDesc.depthAttachment.loadAction = MTLLoadActionLoad;
 	PassDesc.depthAttachment.storeAction = MTLStoreActionStore;
 	
@@ -329,7 +365,7 @@ void R_RenderTriangles(render_context *R, id<MTLCommandBuffer> CommandBuffer, in
 	PassDesc.colorAttachments[0].storeAction = MTLStoreActionStore;
 	PassDesc.colorAttachments[0].clearColor = MTLClearColorMake(0.0,0.0,0.0,1);
 	
-	PassDesc.depthAttachment.texture = ResizeDepthTexture(R, CGSizeMake(Metal->Drawable.texture.width, Metal->Drawable.texture.height));
+	PassDesc.depthAttachment.texture = Metal->DepthTexture;
 	PassDesc.depthAttachment.loadAction = MTLLoadActionLoad;
 	PassDesc.depthAttachment.storeAction = MTLStoreActionStore;
 
@@ -432,7 +468,7 @@ void R_ClearAllTextures(render_context *R, id<MTLCommandBuffer> CommandBuffer)
 	PassDesc.colorAttachments[2].storeAction = MTLStoreActionStore;
 	PassDesc.colorAttachments[2].clearColor = MTLClearColorMake(0.0,0.0,0.0,1);
 
-	PassDesc.depthAttachment.texture = ResizeDepthTexture(R, CGSizeMake(Metal->Drawable.texture.width, Metal->Drawable.texture.height));
+	PassDesc.depthAttachment.texture = Metal->DepthTexture;
 	PassDesc.depthAttachment.loadAction = MTLLoadActionClear;
 	PassDesc.depthAttachment.storeAction = MTLStoreActionStore;
 	PassDesc.depthAttachment.clearDepth = 1.0;
@@ -448,30 +484,17 @@ void R_Update(render_context *R, m_arena *FrameArena)
 
 	dispatch_semaphore_wait(Metal->InFlightSemaphore, DISPATCH_TIME_FOREVER);
 
-	if(!Metal->BaseFrameBuffer)
-	{
-		MTLTextureDescriptor *Desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm
-														width:Metal->Drawable.texture.width
-														height:Metal->Drawable.texture.height mipmapped:NO];
-		Desc.usage = MTLTextureUsageShaderRead | MTLTextureUsageRenderTarget;
-		Desc.storageMode = MTLStorageModePrivate;
+	Metal->DepthTexture = ResizeTexture(R, Metal->DepthTexture,
+									CGSizeMake(Metal->Drawable.texture.width,
+												Metal->Drawable.texture.height));
 
+	Metal->BaseFrameBuffer = ResizeTexture(R, Metal->BaseFrameBuffer,
+									CGSizeMake(Metal->Drawable.texture.width,
+												Metal->Drawable.texture.height));
 
-		Metal->BaseFrameBuffer = [Metal->Device newTextureWithDescriptor:Desc];
-	}
-
-	if(!Metal->BlurredFrameBuffer)
-	{
-		MTLTextureDescriptor *Desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm
-														width:Metal->Drawable.texture.width
-														height:Metal->Drawable.texture.height mipmapped:NO];
-		Desc.usage = MTLTextureUsageShaderRead | MTLTextureUsageShaderWrite | MTLTextureUsageRenderTarget;
-		Desc.storageMode = MTLStorageModePrivate;
-
-
-		Metal->BlurredFrameBuffer = [Metal->Device newTextureWithDescriptor:Desc];
-	}
-
+	Metal->BlurredFrameBuffer = ResizeTexture(R, Metal->BlurredFrameBuffer,
+									CGSizeMake(Metal->Drawable.texture.width,
+												Metal->Drawable.texture.height));
 
 	id<MTLCommandBuffer> CommandBuffer = [Metal->CommandQueue commandBuffer];
 
@@ -487,13 +510,15 @@ void R_Update(render_context *R, m_arena *FrameArena)
 
 	int ResourceIndex = R->Frame % FRAMES_IN_FLIGHT;
 
+	m_scratch_arena Scratch = ScratchBegin(0, 0);
+
 	for(r_command *Command = R->CommandsFirst; Command != Null; Command = Command->Next)
 	{
 
 		if(0){}
 		else if(Command->Type == R_COMMAND_GLYPH)
 		{	
-			gpu_vertex *GPUVertices = (gpu_vertex*)ArenaPushZero(FrameArena,
+			gpu_vertex *GPUVertices = (gpu_vertex*)ArenaPushZero(Scratch.Arena,
 															 sizeof(gpu_vertex)*Command->VerticesCount);
 			for(int V = 0; V < Command->VerticesCount; V++)
 			{
@@ -510,7 +535,7 @@ void R_Update(render_context *R, m_arena *FrameArena)
 		}
 		else if(Command->Type == R_COMMAND_TRIANGLE)
 		{
-			gpu_vertex *GPUVertices = (gpu_vertex*)ArenaPushZero(FrameArena,
+			gpu_vertex *GPUVertices = (gpu_vertex*)ArenaPushZero(Scratch.Arena,
 															 sizeof(gpu_vertex)*Command->VerticesCount);
 			for(int V = 0; V < Command->VerticesCount; V++)
 			{
@@ -526,7 +551,7 @@ void R_Update(render_context *R, m_arena *FrameArena)
 		}
 		else if(Command->Type == R_COMMAND_POINTS)
 		{
-			gpu_vertex *GPUVertices = (gpu_vertex*)ArenaPushZero(FrameArena,
+			gpu_vertex *GPUVertices = (gpu_vertex*)ArenaPushZero(Scratch.Arena,
 															 sizeof(gpu_vertex)*Command->VerticesCount);
 			for(int V = 0; V < Command->VerticesCount; V++)
 			{
@@ -583,4 +608,6 @@ void R_Update(render_context *R, m_arena *FrameArena)
 	R->CommandsLast = Null;
 
 	R->Frame += 1;
+
+	ScratchEnd(Scratch);
 }

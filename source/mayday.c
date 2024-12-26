@@ -433,7 +433,7 @@ void OS_Initialise(void *Data)
 {
 	mayday_context *M = Data;
 	M->Buffer.HeightInPixels = 48;
-	R_Init(M->Render, M->PermanentArena);
+	R_Init(M->Render, M->PermanentArena, v2i(sapp_width() , sapp_height()));
 
 	M->Buffer.String.Bytes = ArenaPushZero(M->PermanentArena, MegaBytes(1));
 	M->Buffer.String.Size = sizeof(G_TriangleShader);

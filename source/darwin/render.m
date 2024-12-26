@@ -86,7 +86,7 @@ id<MTLTexture> ResizeTexture(render_context *R, id<MTLTexture> Texture, CGSize S
 {
 	metal_context *Metal = R->Backend;
 	id<MTLTexture> Result = Texture;
-	if(Size.width != [Metal->Drawable.texture width] || Size.height != [Metal->Drawable.texture height] || Texture == nil)
+	if(Size.width != [Texture width] || Size.height != [Texture height] || Texture == nil)
 	{
 		MTLTextureDescriptor *Desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:Texture.pixelFormat
 														width:Size.width

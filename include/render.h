@@ -68,7 +68,11 @@ typedef struct render_context
 	r_command *CommandsFirst;
 	r_command *CommandsLast;
 
+	int Frame;
+
 	void *Backend;
+
+	
 }
 render_context;
 

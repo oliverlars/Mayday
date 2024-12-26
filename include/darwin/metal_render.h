@@ -14,6 +14,8 @@ typedef struct metal_shader
 	id<MTLLibrary> Library;
 } metal_shader;
 
+#define FRAMES_IN_FLIGHT (3)
+
 typedef struct metal_context
 {
 	id<MTLCommandQueue>        CommandQueue;
@@ -23,17 +25,16 @@ typedef struct metal_context
 	metal_shader               TriangleShader;
 	metal_shader               GlyphShader;
 
-	id<MTLDepthStencilState>   DepthStencilState;
 	id<MTLTexture>             DepthTexture;
 	id<MTLTexture>             BaseFrameBuffer;
 	id<MTLTexture>             BlurredFrameBuffer;
 
 	id<MTLTexture>             FontAtlasTexture;
 
-	id<MTLBuffer>              TriangleVertexBuffer;
-	id<MTLBuffer>              GlyphVertexBuffer;
+	id<MTLBuffer>              TriangleVertexBuffers[FRAMES_IN_FLIGHT];
+	id<MTLBuffer>              GlyphVertexBuffers[FRAMES_IN_FLIGHT];
 	id<MTLBuffer>              IndexBuffer;
-	id<MTLBuffer>              UniformBuffer;
+	id<MTLBuffer>              UniformBuffers[FRAMES_IN_FLIGHT];
 	id<MTLSamplerState>        SamplerState;
 	id<MTLSamplerState>        BloomSamplerState;
 

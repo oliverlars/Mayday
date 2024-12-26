@@ -114,7 +114,7 @@ metal_shader R_BloomShader(render_context *R)
 	MTLRenderPipelineDescriptor* PipelineDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
 	PipelineDescriptor.vertexFunction = VertexFunction;
 	PipelineDescriptor.fragmentFunction = FragmentFunction;
-	PipelineDescriptor.colorAttachments[0].pixelFormat = MTLPixelFormatBGRA8Unorm_sRGB;
+	PipelineDescriptor.colorAttachments[0].pixelFormat = MTLPixelFormatBGRA8Unorm;
 
 	MTLSamplerDescriptor *SamplerDescriptor = [[MTLSamplerDescriptor alloc] init];
 	SamplerDescriptor.minFilter = MTLSamplerMinMagFilterLinear;
@@ -188,11 +188,6 @@ metal_shader R_GlyphShader(render_context *R)
 	SamplerDescriptor.normalizedCoordinates = YES;
 	Metal->SamplerState = [Metal->Device newSamplerStateWithDescriptor:SamplerDescriptor];
 
-	MTLDepthStencilDescriptor *DepthStencilDescriptor = [MTLDepthStencilDescriptor new];
-	DepthStencilDescriptor.depthCompareFunction = MTLCompareFunctionLess;
-	DepthStencilDescriptor.depthWriteEnabled = YES;
-	Metal->DepthStencilState = [Metal->Device newDepthStencilStateWithDescriptor:DepthStencilDescriptor];
-
 	Shader.PipelineState = [Metal->Device newRenderPipelineStateWithDescriptor:PipelineDescriptor error:&Error];
 	return Shader;
 }
@@ -225,7 +220,7 @@ metal_shader R_TriangleShader(render_context *R)
 	PipelineDescriptor.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
 	PipelineDescriptor.colorAttachments[0].sourceAlphaBlendFactor = MTLBlendFactorSourceAlpha;
 	PipelineDescriptor.colorAttachments[0].destinationAlphaBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
-
+	PipelineDescriptor.depthAttachmentPixelFormat = MTLPixelFormatDepth32Float;
 
 	MTLVertexDescriptor *VertexDescriptor = [[MTLVertexDescriptor alloc] init];
 	VertexDescriptor.attributes[0].format = MTLVertexFormatFloat4;
@@ -250,11 +245,6 @@ metal_shader R_TriangleShader(render_context *R)
 	SamplerDescriptor.normalizedCoordinates = YES;
 	Metal->SamplerState = [Metal->Device newSamplerStateWithDescriptor:SamplerDescriptor];
 
-	MTLDepthStencilDescriptor *DepthStencilDescriptor = [MTLDepthStencilDescriptor new];
-	DepthStencilDescriptor.depthCompareFunction = MTLCompareFunctionLess;
-	DepthStencilDescriptor.depthWriteEnabled = YES;
-	Metal->DepthStencilState = [Metal->Device newDepthStencilStateWithDescriptor:DepthStencilDescriptor];
-
 	Shader.PipelineState = [Metal->Device newRenderPipelineStateWithDescriptor:PipelineDescriptor error:&Error];
 	return Shader;
 }
@@ -268,15 +258,17 @@ void R_Init(render_context *R, m_arena *Arena)
 
 	Metal->CommandQueue = [Metal->Device newCommandQueue];
 
-	Metal->GlyphVertexBuffer = [Metal->Device newBufferWithLength:MegaBytes(16)
-					options:MTLResourceStorageModeShared];
+	for(int ResourceIndex = 0; ResourceIndex < FRAMES_IN_FLIGHT; ResourceIndex++)
+	{
+		Metal->GlyphVertexBuffers[ResourceIndex] = [Metal->Device newBufferWithLength:MegaBytes(16)
+						options:MTLResourceStorageModeShared];
 
-	Metal->TriangleVertexBuffer = [Metal->Device newBufferWithLength:MegaBytes(16)
-					options:MTLResourceStorageModeShared];
+		Metal->TriangleVertexBuffers[ResourceIndex] = [Metal->Device newBufferWithLength:MegaBytes(16)
+						options:MTLResourceStorageModeShared];
 
-	Metal->UniformBuffer = [Metal->Device newBufferWithLength:sizeof(Uniforms)
-					 options:MTLResourceStorageModeShared];
-
+		Metal->UniformBuffers[ResourceIndex] = [Metal->Device newBufferWithLength:sizeof(Uniforms)
+						options:MTLResourceStorageModeShared];
+	}
 
 	Metal->BloomShader = R_BloomShader(R);
 	Metal->GlyphShader = R_GlyphShader(R);
@@ -298,22 +290,34 @@ void R_RenderPoints(render_context *R, id<MTLCommandBuffer> CommandBuffer, int V
 	PassDesc.depthAttachment.texture = ResizeDepthTexture(R, CGSizeMake(Metal->Drawable.texture.width, Metal->Drawable.texture.height));
 	PassDesc.depthAttachment.loadAction = MTLLoadActionLoad;
 	PassDesc.depthAttachment.storeAction = MTLStoreActionStore;
-	PassDesc.depthAttachment.clearDepth = 1.0;
+	
 
-	Angle += 0.1;
+	Angle += 0.01;
 	Uniforms.ModelMatrix = M44FromZAngle(Angle);
+	Uniforms.ModelMatrix = M44F_IDENTITY;
 	Uniforms.ProjectionMatrix = M44FOrthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0);
-	Uniforms.ViewMatrix = M44FLookAt(v3f(0, 0, 10), v3f(0, 0, 0), v3f(0, 1, 0));
-	MemoryCopy(Metal->UniformBuffer.contents, &Uniforms, sizeof(Uniforms));
+	//Uniforms.ViewMatrix = M44FLookAt(v3f(0, 0, 0), v3f(0, 0, 10), v3f(0, 1, 0));
+	MemoryCopy(Metal->UniformBuffers[R->Frame % FRAMES_IN_FLIGHT].contents, &Uniforms, sizeof(Uniforms));
+	
+	
+	Uniforms.ModelMatrix = M44F_IDENTITY;
+	Uniforms.ProjectionMatrix = M44F_IDENTITY;
+	Uniforms.ViewMatrix = M44F_IDENTITY;
+
+	MTLDepthStencilDescriptor *DepthStencilDescriptor = [MTLDepthStencilDescriptor new];
+	DepthStencilDescriptor.depthCompareFunction = MTLCompareFunctionLess;
+	DepthStencilDescriptor.depthWriteEnabled = YES;
+	id<MTLDepthStencilState> DepthStencilState = [Metal->Device newDepthStencilStateWithDescriptor:DepthStencilDescriptor];
 
 	id<MTLRenderCommandEncoder> Encoder = [CommandBuffer renderCommandEncoderWithDescriptor:PassDesc];
 	[Encoder setRenderPipelineState:Metal->TriangleShader.PipelineState];
 	[Encoder setFrontFacingWinding:MTLWindingClockwise];
 	[Encoder setCullMode:(MTLCullModeNone)];
-	[Encoder setVertexBuffer:Metal->TriangleVertexBuffer offset:0 atIndex:0];
-	[Encoder setVertexBuffer:Metal->UniformBuffer offset:0 atIndex:1];
-	[Encoder setDepthStencilState:Metal->DepthStencilState];
+	[Encoder setVertexBuffer:Metal->TriangleVertexBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:0 atIndex:0];
+	[Encoder setVertexBuffer:Metal->UniformBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:0 atIndex:1];
+	[Encoder setDepthStencilState:DepthStencilState];
 	[Encoder drawPrimitives:MTLPrimitiveTypePoint vertexStart:Offset vertexCount:VertexCount];
+
 
 
 	[Encoder endEncoding];
@@ -328,18 +332,27 @@ void R_RenderTriangles(render_context *R, id<MTLCommandBuffer> CommandBuffer, in
 	PassDesc.colorAttachments[0].loadAction = MTLLoadActionLoad;
 	PassDesc.colorAttachments[0].storeAction = MTLStoreActionStore;
 	PassDesc.colorAttachments[0].clearColor = MTLClearColorMake(0.0,0.0,0.0,1);
+	
+	PassDesc.depthAttachment.texture = ResizeDepthTexture(R, CGSizeMake(Metal->Drawable.texture.width, Metal->Drawable.texture.height));
+	PassDesc.depthAttachment.loadAction = MTLLoadActionLoad;
+	PassDesc.depthAttachment.storeAction = MTLStoreActionStore;
 
 	Uniforms.ModelMatrix = M44F_IDENTITY;
 	Uniforms.ProjectionMatrix = M44FOrthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0);
-	Uniforms.ViewMatrix = M44FLookAt(v3f(0, 0, 10), v3f(0, 0, 0), v3f(0, 1, 0));
-	MemoryCopy(Metal->UniformBuffer.contents, &Uniforms, sizeof(Uniforms));
+	Uniforms.ViewMatrix = M44F_IDENTITY;
+
+	MemoryCopy(Metal->UniformBuffers[R->Frame % FRAMES_IN_FLIGHT].contents, &Uniforms, sizeof(Uniforms));
+
+	MTLDepthStencilDescriptor *DepthStencilDescriptor = [MTLDepthStencilDescriptor new];
+	id<MTLDepthStencilState> DepthStencilState = [Metal->Device newDepthStencilStateWithDescriptor:DepthStencilDescriptor];
 
 	id<MTLRenderCommandEncoder> Encoder = [CommandBuffer renderCommandEncoderWithDescriptor:PassDesc];
 	[Encoder setRenderPipelineState:Metal->TriangleShader.PipelineState];
 	[Encoder setFrontFacingWinding:MTLWindingClockwise];
 	[Encoder setCullMode:(MTLCullModeNone)];
-	[Encoder setVertexBuffer:Metal->TriangleVertexBuffer offset:0 atIndex:0];
-	[Encoder setVertexBuffer:Metal->UniformBuffer offset:0 atIndex:1];
+	[Encoder setVertexBuffer:Metal->TriangleVertexBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:0 atIndex:0];
+	[Encoder setVertexBuffer:Metal->UniformBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:0 atIndex:1];
+	[Encoder setDepthStencilState:DepthStencilState];
 	[Encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:Offset vertexCount:VertexCount];
 
 
@@ -359,14 +372,14 @@ void R_RenderGlyphs(render_context *R, id<MTLCommandBuffer> CommandBuffer, int V
 	Uniforms.ModelMatrix = M44F_IDENTITY;
 	Uniforms.ProjectionMatrix = M44FOrthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0);
 	Uniforms.ViewMatrix = M44FLookAt(v3f(0, 0, 10), v3f(0, 0, 0), v3f(0, 1, 0));
-	MemoryCopy(Metal->UniformBuffer.contents, &Uniforms, sizeof(Uniforms));
+	MemoryCopy(Metal->UniformBuffers[R->Frame % FRAMES_IN_FLIGHT].contents, &Uniforms, sizeof(Uniforms));
 
 	id<MTLRenderCommandEncoder> Encoder = [CommandBuffer renderCommandEncoderWithDescriptor:PassDesc];
 	[Encoder setRenderPipelineState:Metal->GlyphShader.PipelineState];
 	[Encoder setFrontFacingWinding:MTLWindingClockwise];
 	[Encoder setCullMode:(MTLCullModeNone)];
-	[Encoder setVertexBuffer:Metal->GlyphVertexBuffer offset:0 atIndex:0];
-	[Encoder setVertexBuffer:Metal->UniformBuffer offset:0 atIndex:1];
+	[Encoder setVertexBuffer:Metal->GlyphVertexBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:0 atIndex:0];
+	[Encoder setVertexBuffer:Metal->UniformBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:0 atIndex:1];
 	[Encoder setFragmentTexture:Metal->FontAtlasTexture atIndex:0];
 	[Encoder setFragmentSamplerState:Metal->SamplerState atIndex:0];
 	[Encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:Offset vertexCount:VertexCount];
@@ -435,12 +448,9 @@ void R_Update(render_context *R, m_arena *FrameArena)
 	metal_context *Metal = R->Backend;
 	Metal->Drawable = (__bridge id<CAMetalDrawable>)sapp_metal_get_current_drawable();
 
-	CAMetalLayer *MetalLayer = (CAMetalLayer *)Metal->Drawable.layer;
-	MetalLayer.pixelFormat = MTLPixelFormatBGRA8Unorm_sRGB;
-
 	if(!Metal->BaseFrameBuffer)
 	{
-		MTLTextureDescriptor *Desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:Metal->Drawable.texture.pixelFormat 
+		MTLTextureDescriptor *Desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm
 														width:Metal->Drawable.texture.width
 														height:Metal->Drawable.texture.height mipmapped:NO];
 		Desc.usage = MTLTextureUsageShaderRead | MTLTextureUsageRenderTarget;
@@ -452,7 +462,7 @@ void R_Update(render_context *R, m_arena *FrameArena)
 
 	if(!Metal->BlurredFrameBuffer)
 	{
-		MTLTextureDescriptor *Desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:Metal->Drawable.texture.pixelFormat 
+		MTLTextureDescriptor *Desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm
 														width:Metal->Drawable.texture.width
 														height:Metal->Drawable.texture.height mipmapped:NO];
 		Desc.usage = MTLTextureUsageShaderRead | MTLTextureUsageShaderWrite | MTLTextureUsageRenderTarget;
@@ -473,6 +483,9 @@ void R_Update(render_context *R, m_arena *FrameArena)
 
 	int TotalTriangleVertices = 0;
 	int TriangleVertexOffset = 0;
+
+	int ResourceIndex = R->Frame % FRAMES_IN_FLIGHT;
+
 	for(r_command *Command = R->CommandsFirst; Command != Null; Command = Command->Next)
 	{
 
@@ -490,7 +503,7 @@ void R_Update(render_context *R, m_arena *FrameArena)
 				GPUVertices[V].Colour = Colour;
 				GPUVertices[V].UV = v4f(UV.X, UV.Y, 0, 0);
 			}
-			MemoryCopy(Metal->GlyphVertexBuffer.contents + GlyphVertexOffset*sizeof(gpu_vertex) + TotalGlyphVertices*sizeof(gpu_vertex),
+			MemoryCopy(Metal->GlyphVertexBuffers[ResourceIndex].contents + GlyphVertexOffset*sizeof(gpu_vertex) + TotalGlyphVertices*sizeof(gpu_vertex),
 					GPUVertices, sizeof(gpu_vertex)*Command->VerticesCount);
 			TotalGlyphVertices += Command->VerticesCount;
 		}
@@ -506,7 +519,23 @@ void R_Update(render_context *R, m_arena *FrameArena)
 				GPUVertices[V].Position = P;
 				GPUVertices[V].Colour = Colour;
 			}
-			MemoryCopy(Metal->TriangleVertexBuffer.contents + TriangleVertexOffset*sizeof(gpu_vertex) + TotalTriangleVertices*sizeof(gpu_vertex),
+			MemoryCopy(Metal->TriangleVertexBuffers[ResourceIndex].contents + TriangleVertexOffset*sizeof(gpu_vertex) + TotalTriangleVertices*sizeof(gpu_vertex),
+					GPUVertices, sizeof(gpu_vertex)*Command->VerticesCount);
+			TotalTriangleVertices += Command->VerticesCount;
+		}
+		else if(Command->Type == R_COMMAND_POINTS)
+		{
+			gpu_vertex *GPUVertices = (gpu_vertex*)ArenaPushZero(FrameArena,
+															 sizeof(gpu_vertex)*Command->VerticesCount);
+			for(int V = 0; V < Command->VerticesCount; V++)
+			{
+				v4f P = Command->Vertices[V].Position;
+				v2f UV = Command->Vertices[V].UV;
+				v4f Colour = Command->Vertices[V].Colour;
+				GPUVertices[V].Position = P;
+				GPUVertices[V].Colour = Colour;
+			}
+			MemoryCopy(Metal->TriangleVertexBuffers[ResourceIndex].contents + TriangleVertexOffset*sizeof(gpu_vertex) + TotalTriangleVertices*sizeof(gpu_vertex),
 					GPUVertices, sizeof(gpu_vertex)*Command->VerticesCount);
 			TotalTriangleVertices += Command->VerticesCount;
 		}
@@ -525,6 +554,12 @@ void R_Update(render_context *R, m_arena *FrameArena)
 				TriangleVertexOffset += TotalTriangleVertices;
 				TotalTriangleVertices = 0;
 			}
+			else if(Command->Type == R_COMMAND_POINTS)
+			{
+				R_RenderPoints(R, CommandBuffer, TotalTriangleVertices, TriangleVertexOffset);
+				TriangleVertexOffset += TotalTriangleVertices;
+				TotalTriangleVertices = 0;
+			}
 		}
 	}
 
@@ -536,4 +571,6 @@ void R_Update(render_context *R, m_arena *FrameArena)
 
 	R->CommandsFirst = Null;
 	R->CommandsLast = Null;
+
+	R->Frame += 1;
 }

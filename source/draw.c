@@ -426,33 +426,43 @@ f32 D_LineHeightFromFont(d_font Font, f32 HeightInPixels)
 }
 
 void D_DrawCube(draw_context *D,
-				m_arena *Arena, v2f Position,
-				f32 Width, f32 Height,
+				m_arena *Arena, v3f Position,
+				v3f Size,
 				v4f Colour)
 {
 	render_context *R = D->Render;
 	r_command Command = {0};
-	Command.Vertices = (r_vertex*)ArenaPushZero(Arena, 6*sizeof(r_vertex));
-	Command.VerticesCount = 6;
+	Command.Vertices = (r_vertex*)ArenaPushZero(Arena, 8*sizeof(r_vertex));
+	Command.VerticesCount = 8;
 	Command.VerticesFormat = R_VF_POSITION | R_VF_UV;
 
 	r_vertex *R_Vertices = Command.Vertices;
 	
-	v2f Vertices[6] = 
-	{
-		v2f(Position.X, Position.Y),
-		v2f(Position.X + Width, Position.Y),
-		v2f(Position.X + Width, Position.Y + Height),
+	f32 Width = Size.X;
+	f32 Height = Size.Y;
+	f32 Depth = Size.Z;
 
-		v2f(Position.X, Position.Y),
-		v2f(Position.X, Position.Y + Height),
-		v2f(Position.X + Width, Position.Y + Height),
+	float HalfWidth = Width  * 0.5f;
+	float HalfHeight = Height * 0.5f;
+	float HalfDepth = Depth  * 0.5f;
+
+	v3f Vertices[8] =
+	{
+		v3f(Position.X - HalfWidth, Position.Y - HalfHeight, Position.Z - HalfDepth),
+		v3f(Position.X + HalfWidth, Position.Y - HalfHeight, Position.Z - HalfDepth),
+		v3f(Position.X + HalfWidth, Position.Y + HalfHeight, Position.Z - HalfDepth),
+		v3f(Position.X - HalfWidth, Position.Y + HalfHeight, Position.Z - HalfDepth),
+
+		v3f(Position.X - HalfWidth, Position.Y - HalfHeight, Position.Z + HalfDepth),
+		v3f(Position.X + HalfWidth, Position.Y - HalfHeight, Position.Z + HalfDepth),
+		v3f(Position.X + HalfWidth, Position.Y + HalfHeight, Position.Z + HalfDepth),
+		v3f(Position.X - HalfWidth, Position.Y + HalfHeight, Position.Z + HalfDepth)
 	};
 
-	for(int V = 0; V < 6; V++)
+	for(int V = 0; V < 8; V++)
 	{
 		r_vertex Vertex = {
-			.Position = v4f(Vertices[V].X, Vertices[V].Y, 0, 1),
+			.Position = v4f(Vertices[V].X, Vertices[V].Y, Vertices[V].Z, 1),
 			.Colour = Colour,
 		};
 

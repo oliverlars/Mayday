@@ -154,6 +154,8 @@ void OS_Update(void *Data)
 	
 	EditingWindow(M);
 
+	D_DrawCube(M->Draw, M->FrameArena, v3f(0, 0, 0), v3f(2, 2, 2), v4f(1, 0, 0, 1));
+
 	if(OS_MilliSecondsFromTimeStamp(OS_TimeStampNow() - M->UI->TimeStampWhenMousePressed) > 150.0 &&
 	   M->UI->MouseWasPressed && M->UI->MultiClickCount == 0)
 	{

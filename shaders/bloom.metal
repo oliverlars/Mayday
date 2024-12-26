@@ -22,6 +22,17 @@ vertex vertex_output VertexMain(uint VertexID [[vertex_id]])
 	return Output;
 }
 
+// HACK(Oliver): I wouldn't have to do this if sokol_app didn't forcibly set my framebuffers
+// to linear space.
+float4 ToSRGB(float4 LinearRGB)
+{
+	bool3 CutOff = LinearRGB.rgb < float3(0.0031308);
+	float3 Higher = float3(1.055)*pow(LinearRGB.rgb, float3(1.0/2.4)) - float3(0.055);
+	float3 Lower = LinearRGB.rgb * float3(12.92);
+
+	return float4(select(Higher, Lower, CutOff), LinearRGB.a);
+}
+
 inline float3 TonemapToACESFilm(float3 X)
 {
 	const float A = 2.51;
@@ -39,7 +50,8 @@ fragment float4 FragmentMain(vertex_output Input [[stage_in]],
 							 sampler Sampler [[sampler(0)]])
 {
 	float4 Colour = float4(Base.sample(Sampler, Input.UV).rgb + Bloom.sample(Sampler, Input.UV).rgb*0.7, 1.0);
-	
+
 	Colour.rgb = TonemapToACESFilm(Colour.rgb);
+	Colour = ToSRGB(Colour);
 	return Colour;
 }

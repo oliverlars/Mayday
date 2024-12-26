@@ -38,6 +38,8 @@ typedef struct editable_buffer
 
 	f32 HeightInPixels;
 
+	cursor *Cursors;
+
 	struct editable_buffer *NextInFreeList;
 } editable_buffer;
 

@@ -25,8 +25,6 @@ typedef struct uniforms
 	m44f ModelMatrix;
 } uniforms;
 
-uniforms Uniforms;
-
 typedef struct gpu_vertex
 {
 	v4f Position;
@@ -266,13 +264,15 @@ void R_Init(render_context *R, m_arena *Arena)
 		Metal->TriangleVertexBuffers[ResourceIndex] = [Metal->Device newBufferWithLength:MegaBytes(16)
 						options:MTLResourceStorageModeShared];
 
-		Metal->UniformBuffers[ResourceIndex] = [Metal->Device newBufferWithLength:sizeof(Uniforms)
+		Metal->UniformBuffers[ResourceIndex] = [Metal->Device newBufferWithLength:sizeof(uniforms)
 						options:MTLResourceStorageModeShared];
 	}
 
 	Metal->BloomShader = R_BloomShader(R);
 	Metal->GlyphShader = R_GlyphShader(R);
 	Metal->TriangleShader = R_TriangleShader(R);
+
+	Metal->InFlightSemaphore = dispatch_semaphore_create(FRAMES_IN_FLIGHT);
 }
 
 f32 Angle = 0.0;
@@ -293,16 +293,12 @@ void R_RenderPoints(render_context *R, id<MTLCommandBuffer> CommandBuffer, int V
 	
 
 	Angle += 0.01;
+	uniforms Uniforms = {0};
 	Uniforms.ModelMatrix = M44FromZAngle(Angle);
 	Uniforms.ModelMatrix = M44F_IDENTITY;
 	Uniforms.ProjectionMatrix = M44FOrthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0);
-	//Uniforms.ViewMatrix = M44FLookAt(v3f(0, 0, 0), v3f(0, 0, 10), v3f(0, 1, 0));
+	Uniforms.ViewMatrix = M44FLookAt(v3f(0, 0, 0), v3f(0, 0, 10), v3f(0, 1, 0));
 	MemoryCopy(Metal->UniformBuffers[R->Frame % FRAMES_IN_FLIGHT].contents, &Uniforms, sizeof(Uniforms));
-	
-	
-	Uniforms.ModelMatrix = M44F_IDENTITY;
-	Uniforms.ProjectionMatrix = M44F_IDENTITY;
-	Uniforms.ViewMatrix = M44F_IDENTITY;
 
 	MTLDepthStencilDescriptor *DepthStencilDescriptor = [MTLDepthStencilDescriptor new];
 	DepthStencilDescriptor.depthCompareFunction = MTLCompareFunctionLess;
@@ -337,6 +333,7 @@ void R_RenderTriangles(render_context *R, id<MTLCommandBuffer> CommandBuffer, in
 	PassDesc.depthAttachment.loadAction = MTLLoadActionLoad;
 	PassDesc.depthAttachment.storeAction = MTLStoreActionStore;
 
+	uniforms Uniforms = {0};
 	Uniforms.ModelMatrix = M44F_IDENTITY;
 	Uniforms.ProjectionMatrix = M44FOrthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0);
 	Uniforms.ViewMatrix = M44F_IDENTITY;
@@ -369,6 +366,7 @@ void R_RenderGlyphs(render_context *R, id<MTLCommandBuffer> CommandBuffer, int V
 	PassDesc.colorAttachments[0].storeAction = MTLStoreActionStore;
 	PassDesc.colorAttachments[0].clearColor = MTLClearColorMake(0.0,0.0,0.0,1);
 
+	uniforms Uniforms = {0};
 	Uniforms.ModelMatrix = M44F_IDENTITY;
 	Uniforms.ProjectionMatrix = M44FOrthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0);
 	Uniforms.ViewMatrix = M44FLookAt(v3f(0, 0, 10), v3f(0, 0, 0), v3f(0, 1, 0));
@@ -448,6 +446,8 @@ void R_Update(render_context *R, m_arena *FrameArena)
 	metal_context *Metal = R->Backend;
 	Metal->Drawable = (__bridge id<CAMetalDrawable>)sapp_metal_get_current_drawable();
 
+	dispatch_semaphore_wait(Metal->InFlightSemaphore, DISPATCH_TIME_FOREVER);
+
 	if(!Metal->BaseFrameBuffer)
 	{
 		MTLTextureDescriptor *Desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm
@@ -474,6 +474,7 @@ void R_Update(render_context *R, m_arena *FrameArena)
 
 
 	id<MTLCommandBuffer> CommandBuffer = [Metal->CommandQueue commandBuffer];
+
 	R_ClearAllTextures(R, CommandBuffer);
 
 	Angle += 0.01;
@@ -564,10 +565,19 @@ void R_Update(render_context *R, m_arena *FrameArena)
 	}
 
 	R_RenderFullscreenBloom(R, CommandBuffer);
-
 	[CommandBuffer presentDrawable:Metal->Drawable];
+
+
+
+	__block dispatch_semaphore_t BlockSemaphore = Metal->InFlightSemaphore;
+	[CommandBuffer addCompletedHandler:^(id<MTLCommandBuffer> buffer)
+	{
+		dispatch_semaphore_signal(BlockSemaphore);
+	}];
+
 	[CommandBuffer commit];
 	[CommandBuffer waitUntilCompleted];
+
 
 	R->CommandsFirst = Null;
 	R->CommandsLast = Null;

@@ -39,5 +39,6 @@ typedef struct metal_context
 	id<MTLSamplerState>        BloomSamplerState;
 
 	id<CAMetalDrawable>        Drawable;
+	dispatch_semaphore_t       InFlightSemaphore;
 }
 metal_context;

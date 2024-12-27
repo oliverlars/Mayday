@@ -34,6 +34,7 @@ m_scratch_arena ScratchBegin(m_arena **Arenas, int ConflictCount);
 void ScratchEnd(m_scratch_arena Scratch);
 
 void MemorySet(void *Destination, int Byte, s64 NumberOfBytes);
+b32 MemoryEqual(void *A, void *B, s64 NumberOfBytes);
 void MemoryCopy(void *Destination, void *Source, s64 NumberOfBytes);
 u8* MemoryReserve(s64 NumberOfBytes);
 void MemoryCommit(void *Address, s64 NumberOfBytes);

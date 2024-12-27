@@ -20,9 +20,7 @@
 
 typedef struct uniforms
 {
-	m44f ProjectionMatrix;
-	m44f ViewMatrix;
-	m44f ModelMatrix;
+	m44f PVMMatrix;
 } uniforms;
 
 typedef struct gpu_vertex
@@ -47,6 +45,21 @@ void R_PushCommand(render_context *R, m_arena *Arena, r_command Command)
 		R->CommandsLast->Next = NextCommand;
 		R->CommandsLast = NextCommand;
 	}
+	assert(R->TransformCount >= 1);
+	NextCommand->Transform = R->TransformStack[R->TransformCount - 1];
+}
+
+void R_PushTransform(render_context *Render, m44f Transform)
+{
+	assert(Render->TransformCount < MAX_TRANSFORMS);
+	Render->TransformStack[Render->TransformCount] = Transform;
+	Render->TransformCount += 1;
+}
+
+void R_PopTransform(render_context *Render)
+{
+	assert(Render->TransformCount >= 1);
+	--Render->TransformCount;
 }
 
 // Dumb hack
@@ -326,7 +339,7 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 		Metal->TriangleVertexBuffers[ResourceIndex] = [Metal->Device newBufferWithLength:MegaBytes(16)
 						options:MTLResourceStorageModeShared];
 
-		Metal->UniformBuffers[ResourceIndex] = [Metal->Device newBufferWithLength:sizeof(uniforms)
+		Metal->UniformBuffers[ResourceIndex] = [Metal->Device newBufferWithLength:MegaBytes(16)
 						options:MTLResourceStorageModeShared];
 	}
 
@@ -369,9 +382,7 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 	Metal->InFlightSemaphore = dispatch_semaphore_create(FRAMES_IN_FLIGHT);
 }
 
-f32 Angle = 0.0;
-
-void R_RenderPoints(render_context *R, id<MTLCommandBuffer> CommandBuffer, int VertexCount, int Offset)
+void R_RenderPoints(render_context *R, id<MTLCommandBuffer> CommandBuffer, int VertexCount, int VertexOffset, int UniformOffset)
 {
 	metal_context *Metal = R->Backend;
 
@@ -384,14 +395,6 @@ void R_RenderPoints(render_context *R, id<MTLCommandBuffer> CommandBuffer, int V
 	PassDesc.depthAttachment.texture = Metal->DepthTexture;
 	PassDesc.depthAttachment.loadAction = MTLLoadActionLoad;
 	PassDesc.depthAttachment.storeAction = MTLStoreActionStore;
-	
-
-	//Angle += 0.01;
-	uniforms Uniforms = {0};
-	Uniforms.ModelMatrix = M44FromYAngle(Angle);
-	Uniforms.ProjectionMatrix = M44FPerspective(sapp_widthf()/sapp_heightf(), 30, 0.1, 100.0);
-	Uniforms.ViewMatrix = M44FLookAt(v3f(0, 0, 10), v3f(0, 0, 0), v3f(0, 1, 0));
-	MemoryCopy(Metal->UniformBuffers[R->Frame % FRAMES_IN_FLIGHT].contents, &Uniforms, sizeof(Uniforms));
 
 	MTLDepthStencilDescriptor *DepthStencilDescriptor = [MTLDepthStencilDescriptor new];
 	DepthStencilDescriptor.depthCompareFunction = MTLCompareFunctionLess;
@@ -400,16 +403,16 @@ void R_RenderPoints(render_context *R, id<MTLCommandBuffer> CommandBuffer, int V
 
 	id<MTLRenderCommandEncoder> Encoder = [CommandBuffer renderCommandEncoderWithDescriptor:PassDesc];
 	[Encoder setRenderPipelineState:Metal->PointShader.PipelineState];
-	[Encoder setVertexBuffer:Metal->TriangleVertexBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:0 atIndex:0];
-	[Encoder setVertexBuffer:Metal->UniformBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:0 atIndex:1];
-	[Encoder drawPrimitives:MTLPrimitiveTypePoint vertexStart:Offset vertexCount:VertexCount];
+	[Encoder setVertexBuffer:Metal->TriangleVertexBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:VertexOffset atIndex:0];
+	[Encoder setVertexBuffer:Metal->UniformBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:UniformOffset atIndex:1];
+	[Encoder drawPrimitives:MTLPrimitiveTypePoint vertexStart:0 vertexCount:VertexCount];
 
 
 
 	[Encoder endEncoding];
 }
 
-void R_RenderTriangles(render_context *R, id<MTLCommandBuffer> CommandBuffer, int VertexCount, int Offset)
+void R_RenderTriangles(render_context *R, id<MTLCommandBuffer> CommandBuffer, int VertexCount, int VertexOffset, int UniformOffset)
 {
 	metal_context *Metal = R->Backend;
 
@@ -423,13 +426,6 @@ void R_RenderTriangles(render_context *R, id<MTLCommandBuffer> CommandBuffer, in
 	PassDesc.depthAttachment.loadAction = MTLLoadActionLoad;
 	PassDesc.depthAttachment.storeAction = MTLStoreActionStore;
 
-	uniforms Uniforms = {0};
-	Uniforms.ModelMatrix = M44F_IDENTITY;
-	Uniforms.ProjectionMatrix = M44FOrthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0);
-	Uniforms.ViewMatrix = M44F_IDENTITY;
-
-	MemoryCopy(Metal->UniformBuffers[R->Frame % FRAMES_IN_FLIGHT].contents, &Uniforms, sizeof(Uniforms));
-
 	MTLDepthStencilDescriptor *DepthStencilDescriptor = [MTLDepthStencilDescriptor new];
 	id<MTLDepthStencilState> DepthStencilState = [Metal->Device newDepthStencilStateWithDescriptor:DepthStencilDescriptor];
 
@@ -437,16 +433,16 @@ void R_RenderTriangles(render_context *R, id<MTLCommandBuffer> CommandBuffer, in
 	[Encoder setRenderPipelineState:Metal->TriangleShader.PipelineState];
 	[Encoder setFrontFacingWinding:MTLWindingClockwise];
 	[Encoder setCullMode:(MTLCullModeNone)];
-	[Encoder setVertexBuffer:Metal->TriangleVertexBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:0 atIndex:0];
-	[Encoder setVertexBuffer:Metal->UniformBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:0 atIndex:1];
+	[Encoder setVertexBuffer:Metal->TriangleVertexBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:VertexOffset atIndex:0];
+	[Encoder setVertexBuffer:Metal->UniformBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:UniformOffset atIndex:1];
 	[Encoder setDepthStencilState:DepthStencilState];
-	[Encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:Offset vertexCount:VertexCount];
+	[Encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:VertexCount];
 
 
 	[Encoder endEncoding];
 }
 
-void R_RenderGlyphs(render_context *R, id<MTLCommandBuffer> CommandBuffer, int VertexCount, int Offset)
+void R_RenderGlyphs(render_context *R, id<MTLCommandBuffer> CommandBuffer, int VertexCount, int VertexOffset, int UniformOffset)
 {
 	metal_context *Metal = R->Backend;
 
@@ -456,21 +452,15 @@ void R_RenderGlyphs(render_context *R, id<MTLCommandBuffer> CommandBuffer, int V
 	PassDesc.colorAttachments[0].storeAction = MTLStoreActionStore;
 	PassDesc.colorAttachments[0].clearColor = MTLClearColorMake(0.0,0.0,0.0,1);
 
-	uniforms Uniforms = {0};
-	Uniforms.ModelMatrix = M44F_IDENTITY;
-	Uniforms.ProjectionMatrix = M44FOrthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0);
-	Uniforms.ViewMatrix = M44FLookAt(v3f(0, 0, 10), v3f(0, 0, 0), v3f(0, 1, 0));
-	MemoryCopy(Metal->UniformBuffers[R->Frame % FRAMES_IN_FLIGHT].contents, &Uniforms, sizeof(Uniforms));
-
 	id<MTLRenderCommandEncoder> Encoder = [CommandBuffer renderCommandEncoderWithDescriptor:PassDesc];
 	[Encoder setRenderPipelineState:Metal->GlyphShader.PipelineState];
 	[Encoder setFrontFacingWinding:MTLWindingClockwise];
 	[Encoder setCullMode:(MTLCullModeNone)];
-	[Encoder setVertexBuffer:Metal->GlyphVertexBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:0 atIndex:0];
-	[Encoder setVertexBuffer:Metal->UniformBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:0 atIndex:1];
+	[Encoder setVertexBuffer:Metal->GlyphVertexBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:VertexOffset atIndex:0];
+	[Encoder setVertexBuffer:Metal->UniformBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:UniformOffset atIndex:1];
 	[Encoder setFragmentTexture:Metal->FontAtlasTexture atIndex:0];
 	[Encoder setFragmentSamplerState:Metal->SamplerState atIndex:0];
-	[Encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:Offset vertexCount:VertexCount];
+	[Encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:VertexCount];
 
 
 	[Encoder endEncoding];
@@ -554,8 +544,6 @@ void R_Update(render_context *R, m_arena *FrameArena)
 
 	R_ClearAllTextures(R, CommandBuffer);
 
-	Angle += 0.01;
-
 	int TotalGlyphVertices = 0;
 	int GlyphVertexOffset = 0;
 
@@ -563,6 +551,8 @@ void R_Update(render_context *R, m_arena *FrameArena)
 	int TriangleVertexOffset = 0;
 
 	int ResourceIndex = R->Frame % FRAMES_IN_FLIGHT;
+
+	int UniformCount = 0;
 
 	m_scratch_arena Scratch = ScratchBegin(0, 0);
 
@@ -620,26 +610,33 @@ void R_Update(render_context *R, m_arena *FrameArena)
 			TotalTriangleVertices += Command->VerticesCount;
 		}
 
-		if((Command->Next && Command->Next->Type != Command->Type) || (!Command->Next))
+		if((Command->Next && Command->Next->Type != Command->Type) ||
+		   (Command->Next && !MemoryEqual(&Command->Transform, &Command->Next->Transform, sizeof(m44f))) ||
+		   (!Command->Next))
 		{
+			uniforms Uniforms = { Command->Transform };
+			MemoryCopy(Metal->UniformBuffers[R->Frame % FRAMES_IN_FLIGHT].contents + sizeof(Uniforms)*UniformCount,
+					   &Uniforms, sizeof(Uniforms));
+			
 			if(Command->Type == R_COMMAND_GLYPH)
 			{
-				R_RenderGlyphs(R, CommandBuffer, TotalGlyphVertices, GlyphVertexOffset);
+				R_RenderGlyphs(R, CommandBuffer, TotalGlyphVertices, GlyphVertexOffset*sizeof(gpu_vertex), UniformCount*sizeof(m44f));
 				GlyphVertexOffset += TotalGlyphVertices;
 				TotalGlyphVertices = 0;
 			}
 			else if(Command->Type == R_COMMAND_TRIANGLE)
 			{
-				R_RenderTriangles(R, CommandBuffer, TotalTriangleVertices, TriangleVertexOffset);
+				R_RenderTriangles(R, CommandBuffer, TotalTriangleVertices, TriangleVertexOffset*sizeof(gpu_vertex), UniformCount*sizeof(m44f));
 				TriangleVertexOffset += TotalTriangleVertices;
 				TotalTriangleVertices = 0;
 			}
 			else if(Command->Type == R_COMMAND_POINTS)
 			{
-				R_RenderPoints(R, CommandBuffer, TotalTriangleVertices, TriangleVertexOffset);
+				R_RenderPoints(R, CommandBuffer, TotalTriangleVertices, TriangleVertexOffset*sizeof(gpu_vertex), UniformCount*sizeof(m44f));
 				TriangleVertexOffset += TotalTriangleVertices;
 				TotalTriangleVertices = 0;
 			}
+			UniformCount += 1;
 		}
 	}
 
@@ -662,6 +659,8 @@ void R_Update(render_context *R, m_arena *FrameArena)
 	R->CommandsLast = Null;
 
 	R->Frame += 1;
+
+	R->TransformCount = 0;
 
 	ScratchEnd(Scratch);
 }

@@ -18,9 +18,7 @@ struct vertex_input
 
 struct uniforms
 {
-	float4x4 ProjectionMatrix;
-	float4x4 ViewMatrix;
-	float4x4 ModelMatrix;
+	float4x4 PVMMatrix;
 };
 
 vertex vertex_output VertexMain(constant vertex_input *Vertices [[buffer(0)]],
@@ -28,7 +26,7 @@ vertex vertex_output VertexMain(constant vertex_input *Vertices [[buffer(0)]],
 								uint VertexID [[vertex_id]])
 {
 	vertex_output Output;
-	Output.Position = Uniforms.ProjectionMatrix * Vertices[VertexID].Position;
+	Output.Position = Uniforms.PVMMatrix * Vertices[VertexID].Position;
 	Output.Colour = Vertices[VertexID].Colour;
 	Output.UV = Vertices[VertexID].UV.xy;
 	return Output;

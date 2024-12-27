@@ -97,8 +97,6 @@ void EditingWindow(mayday_context *M)
 							M->Buffer.String,
 							Selection.X,
 							Selection.Y);
-							
-		
 	}
 	
 	D_DrawStr8(M->Draw,
@@ -143,6 +141,8 @@ void EditingWindow(mayday_context *M)
 	}
 }
 
+f32 Angle = 0.0f;
+
 void OS_Update(void *Data)
 {
 	mayday_context *M = Data;
@@ -152,10 +152,19 @@ void OS_Update(void *Data)
 
 	//D_DrawQuad(M->Draw, M->FrameArena, v2f(0, 0),  WindowWidth, WindowHeight, v4f(0.008, 0.00, 0, 1.0));
 	
+	m44f Transform = M44FOrthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0);
+	R_PushTransform(M->Render, Transform);
 	EditingWindow(M);
 
-	D_DrawCube(M->Draw, M->FrameArena, v3f(0, 0, 0.0), v3f(2.0, 2.0, 2.0), v4f(1, 0, 0, 1));
+	Angle += 0.03;
+	m44f ModelMatrix = M44FromYAngle(Angle);
+	m44f ProjectionMatrix = M44FPerspective(sapp_widthf()/sapp_heightf(), 30, 0.1, 100.0);
+	m44f ViewMatrix = M44FLookAt(v3f(0, 0, 10), v3f(0, 0, 0), v3f(0, 1, 0));
 
+	m44f PVM = MulM44FM44F(MulM44FM44F(ModelMatrix, ViewMatrix), ProjectionMatrix);
+	R_PushTransform(M->Render, PVM);
+
+	D_DrawCube(M->Draw, M->FrameArena, v3f(0, 0, 0.0), v3f(2.0, 2.0, 2.0), v4f(1, 0, 0, 1));
 	if(OS_MilliSecondsFromTimeStamp(OS_TimeStampNow() - M->UI->TimeStampWhenMousePressed) > 150.0 &&
 	   M->UI->MouseWasPressed && M->UI->MultiClickCount == 0)
 	{

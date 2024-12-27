@@ -43,6 +43,8 @@ typedef enum r_command_type
 	R_COMMAND_POINTS,
 } r_command_type;
 
+
+
 typedef struct r_command
 {
 	//NOTE(Oliver): not sure this is really necessary
@@ -63,6 +65,8 @@ typedef struct r_command
 }
 r_command;
 
+#define MAX_TRANSFORMS (4096)
+
 typedef struct render_context
 {
 	r_command *CommandsFirst;
@@ -72,14 +76,11 @@ typedef struct render_context
 
 	void *Backend;
 
-	
+	m44f TransformStack[MAX_TRANSFORMS];
+	int TransformCount;
 }
 render_context;
 
-typedef struct r_options
-{
-}
-r_options;
 
 void R_Init(render_context *R, m_arena *Arena, v2i Size);
 void R_Update(render_context *R, m_arena *FrameArena);
@@ -87,3 +88,6 @@ void R_Update(render_context *R, m_arena *FrameArena);
 void R_TextureFromBytes(render_context *R, u8 *Bytes, s32 Width, s32 Height);
 
 void R_PushCommand(render_context *R, m_arena *Arena, r_command Command);
+
+void R_PushTransform(render_context *Render, m44f Transform);
+void R_PopTransform(render_context *Render);

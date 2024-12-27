@@ -85,6 +85,13 @@ void MemorySet(void *Destination, int Byte, s64 NumberOfBytes)
 	memset(Destination, Byte, NumberOfBytes);
 }
 
+b32 MemoryEqual(void *A, void *B, s64 NumberOfBytes)
+{
+	return memcmp(A, B, NumberOfBytes) == 0;
+}
+
+
+
 u64 GetPageSize()
 {
 	return getpagesize();

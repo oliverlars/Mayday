@@ -25,6 +25,27 @@ str8 Str8PushFV(m_arena *Arena, char *Format, va_list InputArgList)
 			Str8ListAppend(Arena, &Builder, UpTo);
 
 			if(0) {}
+			else if(Str8Equal((str8){4, Iter}, Str8("m44f")))
+			{
+				m44f M = va_arg(ArgList, m44f);
+				int BytesNeeded = snprintf(0, 0, "[%f, %f, %f, %f]\n[%f, %f, %f, %f]\n[%f, %f, %f, %f]\n[%f, %f, %f, %f]",
+												  M.E[0][0], M.E[0][1], M.E[0][2], M.E[0][3],
+												  M.E[1][0], M.E[1][1], M.E[1][2], M.E[1][3],
+												  M.E[2][0], M.E[2][1], M.E[2][2], M.E[2][3],
+												  M.E[3][0], M.E[3][1], M.E[3][2], M.E[3][3]) + 1;
+				str8 Value = {0};
+				Value.Bytes = ArenaPush(Arena, BytesNeeded);
+				Value.Size = snprintf((char*)Value.Bytes, BytesNeeded, 
+									  "[%f, %f, %f, %f]\n[%f, %f, %f, %f]\n[%f, %f, %f, %f]\n[%f, %f, %f, %f]",
+										M.E[0][0], M.E[0][1], M.E[0][2], M.E[0][3],
+										M.E[1][0], M.E[1][1], M.E[1][2], M.E[1][3],
+										M.E[2][0], M.E[2][1], M.E[2][2], M.E[2][3],
+										M.E[3][0], M.E[3][1], M.E[3][2], M.E[3][3]);
+				Str8ListAppend(Arena, &Builder, Value);
+
+				Iter += 4;
+				Start = Iter;
+			}
 			else if(Str8Equal((str8){3, Iter}, Str8("v3f")))
 			{
 				v3f V = va_arg(ArgList, v3f);

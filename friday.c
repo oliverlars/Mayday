@@ -159,8 +159,8 @@ Entry(InputWaveInfo)
 			b32 FailedToExecute = False;
 			// NOTE(Oliver): I need a space for some stupid reason
 			ExecuteCommand(&Arena, Str8PushF(&Arena, "%.*s/%.*s ",
-								   BuildOptions.OutputPath,
-								   BuildOptions.OutputName),
+								   Str8ToPrintfArgs(BuildOptions.OutputPath),
+								   Str8ToPrintfArgs(BuildOptions.OutputName)),
 								   &FailedToExecute);
 		}
 	}

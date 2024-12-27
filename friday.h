@@ -1704,6 +1704,11 @@ void Build(wave_info *WaveInfo, memory_arena *Arena, build_options BuildOptions)
 
     if(WaveIsFirstLane(WaveInfo) && AnyFailedToBuild)
     {
+		str8 OutputPathAndName = Str8PushF(Arena, "%.*s/%.*s",
+								   Str8ToPrintfArgs(BuildOptions.OutputPath),
+								   Str8ToPrintfArgs(BuildOptions.OutputName));
+		DeleteFileFromDisk(Arena, OutputPathAndName);
+
         printf(STR_COLOUR_RED "\nERROR\n" STR_COLOUR_RESET);
     }
     

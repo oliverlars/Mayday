@@ -1,4 +1,5 @@
 #include "friday.h"
+#include "strings.h"
 
 Entry(InputWaveInfo)
 {
@@ -12,6 +13,7 @@ Entry(InputWaveInfo)
 	operating_system OS = GetOperatingSystem();
 	build_options BuildOptions = {0};
 	b32 PrintHelpMenu = False;
+	b32 ShouldRun = False;
 	if(WaveIsFirstLane(WaveInfo))
 	{
 		b32 OptimisedBuild = False;
@@ -23,6 +25,7 @@ Entry(InputWaveInfo)
 			if(0) {}
 			else if(Str8Equal(Arg, Str8("release"))) { OptimisedBuild = True; }
 			else if(Str8Equal(Arg, Str8("rebuild"))) { Rebuild = True; }
+			else if(Str8Equal(Arg, Str8("run"))) { ShouldRun = True; }
 			else if(Str8Equal(Arg, Str8("msvc")))
 			{
 				if(OS == OS_WINDOWS)
@@ -142,11 +145,24 @@ Entry(InputWaveInfo)
 
 	BroadcastToAllLanes(WaveInfo, BuildOptions);
 	BroadcastToAllLanes(WaveInfo, PrintHelpMenu);
+	BroadcastToAllLanes(WaveInfo, ShouldRun);
 
 	if(!PrintHelpMenu)
 	{
 		Build(WaveInfo, &Arena, BuildOptions);
 	}
+
+	if(WaveIsFirstLane(WaveInfo))
+	{
+		if(ShouldRun)
+		{
+			b32 FailedToExecute = False;
+			// NOTE(Oliver): I need a space for some stupid reason
+			ExecuteCommand(&Arena, Str8("build/mayday "), &FailedToExecute);
+		}
+	}
+
+	WaveBarrier(WaveInfo->Shared->Barrier);
 
 	return 0;
 }

@@ -425,10 +425,10 @@ f32 D_LineHeightFromFont(d_font Font, f32 HeightInPixels)
 	return (Font.Ascent - Font.Descent + Font.LineGap)*Scale;
 }
 
-void D_DrawCube(draw_context *D,
-				m_arena *Arena, v3f Position,
-				v3f Size,
-				v4f Colour)
+void D_DrawCubePoints(draw_context *D,
+					  m_arena *Arena, v3f Position,
+					  v3f Size,
+					  v4f Colour)
 {
 	render_context *R = D->Render;
 	r_command Command = {0};

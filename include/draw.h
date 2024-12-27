@@ -82,9 +82,9 @@ void D_DrawQuad(draw_context *D_Context,
 				f32 Width, f32 Height,
 				v4f Colour);
 
-void D_DrawCube(draw_context *D,
-				m_arena *Arena, v3f Position,
-				v3f Size,
-				v4f Colour);
+void D_DrawCubePoints(draw_context *D,
+					  m_arena *Arena, v3f Position,
+					  v3f Size,
+					  v4f Colour);
 
 f32 D_LineHeightFromFont(d_font Font, f32 HeightInPixels);

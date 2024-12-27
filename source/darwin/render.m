@@ -252,6 +252,63 @@ metal_shader R_TriangleShader(render_context *R)
 	return Shader;
 }
 
+metal_shader R_PointShader(render_context *R)
+{
+	metal_context *Metal = R->Backend;
+	metal_shader Shader = {0};
+
+	NSError* Error = nil;
+	NSString* Source = [[NSString alloc] initWithBytes:(const void*)G_PointShader
+											length:sizeof(G_PointShader)
+											encoding:NSUTF8StringEncoding];
+	Shader.Library                    = [Metal->Device newLibraryWithSource:Source options:nil error:&Error];
+	id<MTLFunction> VertexFunction    = [Shader.Library newFunctionWithName:@"VertexMain"];
+	id<MTLFunction> FragmentFunction  = [Shader.Library newFunctionWithName:@"FragmentMain"];
+
+	if(!Shader.Library)
+	{
+		LogError((char*)[Error.localizedDescription
+						 cStringUsingEncoding:NSUTF8StringEncoding]);
+	}
+
+	MTLRenderPipelineDescriptor* PipelineDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
+	PipelineDescriptor.vertexFunction = VertexFunction;
+	PipelineDescriptor.fragmentFunction = FragmentFunction;
+	PipelineDescriptor.colorAttachments[0].pixelFormat = MTLPixelFormatBGRA8Unorm;
+	PipelineDescriptor.colorAttachments[0].blendingEnabled = true;
+	PipelineDescriptor.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactorSourceAlpha;
+	PipelineDescriptor.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
+	PipelineDescriptor.colorAttachments[0].sourceAlphaBlendFactor = MTLBlendFactorSourceAlpha;
+	PipelineDescriptor.colorAttachments[0].destinationAlphaBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
+	PipelineDescriptor.depthAttachmentPixelFormat = MTLPixelFormatDepth32Float;
+
+	MTLVertexDescriptor *VertexDescriptor = [[MTLVertexDescriptor alloc] init];
+	VertexDescriptor.attributes[0].format = MTLVertexFormatFloat4;
+	VertexDescriptor.attributes[0].offset = 0;
+	VertexDescriptor.attributes[0].bufferIndex = 0;
+	VertexDescriptor.attributes[1].format = MTLVertexFormatFloat4;
+	VertexDescriptor.attributes[1].offset = sizeof(v4f);
+	VertexDescriptor.attributes[1].bufferIndex = 0;
+	VertexDescriptor.layouts[0].stride = sizeof(gpu_vertex); 
+
+	PipelineDescriptor.vertexDescriptor = VertexDescriptor;
+
+	MTLSamplerDescriptor *SamplerDescriptor = [[MTLSamplerDescriptor alloc] init];
+	SamplerDescriptor.minFilter = MTLSamplerMinMagFilterLinear;
+	SamplerDescriptor.magFilter = MTLSamplerMinMagFilterLinear;
+	SamplerDescriptor.sAddressMode = MTLSamplerAddressModeClampToEdge;
+	SamplerDescriptor.tAddressMode = MTLSamplerAddressModeClampToEdge;
+	SamplerDescriptor.rAddressMode = MTLSamplerAddressModeClampToEdge;
+	SamplerDescriptor.mipFilter = MTLSamplerMipFilterNearest;
+	SamplerDescriptor.lodMinClamp = 0.0;
+	SamplerDescriptor.lodMaxClamp = FLT_MAX;
+	SamplerDescriptor.normalizedCoordinates = YES;
+	Metal->SamplerState = [Metal->Device newSamplerStateWithDescriptor:SamplerDescriptor];
+
+	Shader.PipelineState = [Metal->Device newRenderPipelineStateWithDescriptor:PipelineDescriptor error:&Error];
+	return Shader;
+}
+
 void R_Init(render_context *R, m_arena *Arena, v2i Size)
 {
 	metal_context* Metal = ArenaPushTypeZero(Arena, metal_context);
@@ -307,6 +364,7 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 	Metal->BloomShader = R_BloomShader(R);
 	Metal->GlyphShader = R_GlyphShader(R);
 	Metal->TriangleShader = R_TriangleShader(R);
+	Metal->PointShader = R_PointShader(R);
 
 	Metal->InFlightSemaphore = dispatch_semaphore_create(FRAMES_IN_FLIGHT);
 }
@@ -341,7 +399,7 @@ void R_RenderPoints(render_context *R, id<MTLCommandBuffer> CommandBuffer, int V
 	id<MTLDepthStencilState> DepthStencilState = [Metal->Device newDepthStencilStateWithDescriptor:DepthStencilDescriptor];
 
 	id<MTLRenderCommandEncoder> Encoder = [CommandBuffer renderCommandEncoderWithDescriptor:PassDesc];
-	[Encoder setRenderPipelineState:Metal->TriangleShader.PipelineState];
+	[Encoder setRenderPipelineState:Metal->PointShader.PipelineState];
 	[Encoder setVertexBuffer:Metal->TriangleVertexBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:0 atIndex:0];
 	[Encoder setVertexBuffer:Metal->UniformBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:0 atIndex:1];
 	[Encoder drawPrimitives:MTLPrimitiveTypePoint vertexStart:Offset vertexCount:VertexCount];

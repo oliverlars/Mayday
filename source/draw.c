@@ -480,7 +480,7 @@ void D_DrawPointsArray(draw_context *D,
 {
 	render_context *R = D->Render;
 	r_command Command = {0};
-	Command.Vertices = (r_vertex*)ArenaPushZero(Arena, 8*sizeof(r_vertex));
+	Command.Vertices = (r_vertex*)ArenaPushZero(Arena, PositionsCount*sizeof(r_vertex));
 	Command.VerticesCount = PositionsCount;
 	Command.VerticesFormat = R_VF_POSITION | R_VF_COLOUR;
 
@@ -496,5 +496,33 @@ void D_DrawPointsArray(draw_context *D,
 		*R_Vertices++ = Vertex;
 	}
 	Command.Type = R_COMMAND_POINTS;
+	R_PushCommand(R, Arena, Command);
+}
+
+
+void D_DrawLinesArray(draw_context *D,
+					  m_arena *Arena,
+					  v3f *Positions,
+					  int PositionsCount,
+					  v4f Colour)
+{
+	render_context *R = D->Render;
+	r_command Command = {0};
+	Command.Vertices = (r_vertex*)ArenaPushZero(Arena, PositionsCount*sizeof(r_vertex));
+	Command.VerticesCount = PositionsCount;
+	Command.VerticesFormat = R_VF_POSITION | R_VF_COLOUR;
+
+	r_vertex *R_Vertices = Command.Vertices;
+
+	for(int V = 0; V < PositionsCount; V++)
+	{
+		r_vertex Vertex = {
+			.Position = v4f(Positions[V].X, Positions[V].Y, Positions[V].Z, 1),
+			.Colour = Colour,
+		};
+
+		*R_Vertices++ = Vertex;
+	}
+	Command.Type = R_COMMAND_LINES;
 	R_PushCommand(R, Arena, Command);
 }

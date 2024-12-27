@@ -161,7 +161,7 @@ M4
 */
 
 typedef struct m44f { f32 E[4][4]; } m44f;
-m44f MulM44FV3F(m44f A, v3f B);
+v4f MulM44FV4F(m44f A, v4f B);
 m44f MulM44FM44F(m44f A, m44f B);
 
 m44f M44FTranspose(m44f M);

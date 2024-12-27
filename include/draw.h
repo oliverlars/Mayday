@@ -93,4 +93,10 @@ void D_DrawPointsArray(draw_context *D,
 					  int PositionsCount,
 					  v4f Colour);
 
+void D_DrawLinesArray(draw_context *D,
+					  m_arena *Arena,
+					  v3f *Positions,
+					  int PositionsCount,
+					  v4f Colour);
+
 f32 D_LineHeightFromFont(d_font Font, f32 HeightInPixels);

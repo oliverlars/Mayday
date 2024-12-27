@@ -78,9 +78,9 @@ v2f SubV2F(v2f A, v2f B)
 
 v2f MulV2F(v2f A, v2f B)
 {
-	v2f Result = A;
-	Result.X *= B.X;
-	Result.Y *= B.Y;
+	v2f Result;
+	Result.X = A.X * B.X;
+	Result.Y = A.Y * B.Y;
 	return Result;
 }
 
@@ -564,29 +564,14 @@ m44f M44F_IDENTITY = (m44f){1, 0, 0, 0,
 					   0, 0, 1, 0,
 					   0, 0, 0, 1};
 
-m44f MulM44FV4F(m44f A, v4f B)
+v4f MulM44FV4F(m44f A, v4f B)
 {
-	m44f Result;
+	v4f Result;
 
-	Result.E[0][0] = A.E[0][0]*1.0f + A.E[0][1]*0.0f + A.E[0][2]*0.0f + A.E[0][3]*0.0f;
-	Result.E[0][1] = A.E[0][0]*0.0f + A.E[0][1]*1.0f + A.E[0][2]*0.0f + A.E[0][3]*0.0f;
-	Result.E[0][2] = A.E[0][0]*0.0f + A.E[0][1]*0.0f + A.E[0][2]*1.0f + A.E[0][3]*0.0f;
-	Result.E[0][3] = A.E[0][0]*B.X  + A.E[0][1]*B.Y  + A.E[0][2]*B.Z  + A.E[0][3]*B.W;
-
-	Result.E[1][0] = A.E[1][0]*1.0f + A.E[1][1]*0.0f + A.E[1][2]*0.0f + A.E[1][3]*0.0f;
-	Result.E[1][1] = A.E[1][0]*0.0f + A.E[1][1]*1.0f + A.E[1][2]*0.0f + A.E[1][3]*0.0f;
-	Result.E[1][2] = A.E[1][0]*0.0f + A.E[1][1]*0.0f + A.E[1][2]*1.0f + A.E[1][3]*0.0f;
-	Result.E[1][3] = A.E[1][0]*B.X  + A.E[1][1]*B.Y  + A.E[1][2]*B.Z  + A.E[1][3]*B.W;
-
-	Result.E[2][0] = A.E[2][0]*1.0f + A.E[2][1]*0.0f + A.E[2][2]*0.0f + A.E[2][3]*0.0f;
-	Result.E[2][1] = A.E[2][0]*0.0f + A.E[2][1]*1.0f + A.E[2][2]*0.0f + A.E[2][3]*0.0f;
-	Result.E[2][2] = A.E[2][0]*0.0f + A.E[2][1]*0.0f + A.E[2][2]*1.0f + A.E[2][3]*0.0f;
-	Result.E[2][3] = A.E[2][0]*B.X  + A.E[2][1]*B.Y  + A.E[2][2]*B.Z  + A.E[2][3]*B.W;
-
-	Result.E[3][0] = A.E[3][0]*1.0f + A.E[3][1]*0.0f + A.E[3][2]*0.0f + A.E[3][3]*0.0f;
-	Result.E[3][1] = A.E[3][0]*0.0f + A.E[3][1]*1.0f + A.E[3][2]*0.0f + A.E[3][3]*0.0f;
-	Result.E[3][2] = A.E[3][0]*0.0f + A.E[3][1]*0.0f + A.E[3][2]*1.0f + A.E[3][3]*0.0f;
-	Result.E[3][3] = A.E[3][0]*B.X  + A.E[3][1]*B.Y  + A.E[3][2]*B.Z  + A.E[3][3]*B.W;
+	Result.X = A.E[0][0] * B.X + A.E[0][1] * B.Y + A.E[0][2] * B.Z + A.E[0][3] * B.W;
+	Result.Y = A.E[1][0] * B.X + A.E[1][1] * B.Y + A.E[1][2] * B.Z + A.E[1][3] * B.W;
+	Result.Z = A.E[2][0] * B.X + A.E[2][1] * B.Y + A.E[2][2] * B.Z + A.E[2][3] * B.W;
+	Result.W = A.E[3][0] * B.X + A.E[3][1] * B.Y + A.E[3][2] * B.Z + A.E[3][3] * B.W;
 
 	return Result;
 }

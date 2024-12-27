@@ -322,6 +322,63 @@ metal_shader R_PointShader(render_context *R)
 	return Shader;
 }
 
+metal_shader R_LineShader(render_context *R)
+{
+	metal_context *Metal = R->Backend;
+	metal_shader Shader = {0};
+
+	NSError* Error = nil;
+	NSString* Source = [[NSString alloc] initWithBytes:(const void*)G_LineShader
+											length:sizeof(G_LineShader)
+											encoding:NSUTF8StringEncoding];
+	Shader.Library                    = [Metal->Device newLibraryWithSource:Source options:nil error:&Error];
+	id<MTLFunction> VertexFunction    = [Shader.Library newFunctionWithName:@"VertexMain"];
+	id<MTLFunction> FragmentFunction  = [Shader.Library newFunctionWithName:@"FragmentMain"];
+
+	if(!Shader.Library)
+	{
+		LogError((char*)[Error.localizedDescription
+						 cStringUsingEncoding:NSUTF8StringEncoding]);
+	}
+
+	MTLRenderPipelineDescriptor* PipelineDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
+	PipelineDescriptor.vertexFunction = VertexFunction;
+	PipelineDescriptor.fragmentFunction = FragmentFunction;
+	PipelineDescriptor.colorAttachments[0].pixelFormat = MTLPixelFormatBGRA8Unorm;
+	PipelineDescriptor.colorAttachments[0].blendingEnabled = true;
+	PipelineDescriptor.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactorSourceAlpha;
+	PipelineDescriptor.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
+	PipelineDescriptor.colorAttachments[0].sourceAlphaBlendFactor = MTLBlendFactorSourceAlpha;
+	PipelineDescriptor.colorAttachments[0].destinationAlphaBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
+	PipelineDescriptor.depthAttachmentPixelFormat = MTLPixelFormatDepth32Float;
+
+	MTLVertexDescriptor *VertexDescriptor = [[MTLVertexDescriptor alloc] init];
+	VertexDescriptor.attributes[0].format = MTLVertexFormatFloat4;
+	VertexDescriptor.attributes[0].offset = 0;
+	VertexDescriptor.attributes[0].bufferIndex = 0;
+	VertexDescriptor.attributes[1].format = MTLVertexFormatFloat4;
+	VertexDescriptor.attributes[1].offset = sizeof(v4f);
+	VertexDescriptor.attributes[1].bufferIndex = 0;
+	VertexDescriptor.layouts[0].stride = sizeof(gpu_vertex); 
+
+	PipelineDescriptor.vertexDescriptor = VertexDescriptor;
+
+	MTLSamplerDescriptor *SamplerDescriptor = [[MTLSamplerDescriptor alloc] init];
+	SamplerDescriptor.minFilter = MTLSamplerMinMagFilterLinear;
+	SamplerDescriptor.magFilter = MTLSamplerMinMagFilterLinear;
+	SamplerDescriptor.sAddressMode = MTLSamplerAddressModeClampToEdge;
+	SamplerDescriptor.tAddressMode = MTLSamplerAddressModeClampToEdge;
+	SamplerDescriptor.rAddressMode = MTLSamplerAddressModeClampToEdge;
+	SamplerDescriptor.mipFilter = MTLSamplerMipFilterNearest;
+	SamplerDescriptor.lodMinClamp = 0.0;
+	SamplerDescriptor.lodMaxClamp = FLT_MAX;
+	SamplerDescriptor.normalizedCoordinates = YES;
+	Metal->SamplerState = [Metal->Device newSamplerStateWithDescriptor:SamplerDescriptor];
+
+	Shader.PipelineState = [Metal->Device newRenderPipelineStateWithDescriptor:PipelineDescriptor error:&Error];
+	return Shader;
+}
+
 void R_Init(render_context *R, m_arena *Arena, v2i Size)
 {
 	metal_context* Metal = ArenaPushTypeZero(Arena, metal_context);
@@ -378,6 +435,7 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 	Metal->GlyphShader = R_GlyphShader(R);
 	Metal->TriangleShader = R_TriangleShader(R);
 	Metal->PointShader = R_PointShader(R);
+	Metal->LineShader = R_LineShader(R);
 
 	Metal->InFlightSemaphore = dispatch_semaphore_create(FRAMES_IN_FLIGHT);
 }
@@ -406,6 +464,36 @@ void R_RenderPoints(render_context *R, id<MTLCommandBuffer> CommandBuffer, int V
 	[Encoder setVertexBuffer:Metal->TriangleVertexBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:VertexOffset atIndex:0];
 	[Encoder setVertexBuffer:Metal->UniformBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:UniformOffset atIndex:1];
 	[Encoder drawPrimitives:MTLPrimitiveTypePoint vertexStart:0 vertexCount:VertexCount];
+
+
+
+	[Encoder endEncoding];
+}
+
+void R_RenderLines(render_context *R, id<MTLCommandBuffer> CommandBuffer, int VertexCount, int VertexOffset, int UniformOffset)
+{
+	metal_context *Metal = R->Backend;
+
+	MTLRenderPassDescriptor* PassDesc = [MTLRenderPassDescriptor renderPassDescriptor];
+	PassDesc.colorAttachments[0].texture = Metal->BaseFrameBuffer;
+	PassDesc.colorAttachments[0].loadAction = MTLLoadActionLoad;
+	PassDesc.colorAttachments[0].storeAction = MTLStoreActionStore;
+	PassDesc.colorAttachments[0].clearColor = MTLClearColorMake(0.0,0.0,0.0,1);
+
+	PassDesc.depthAttachment.texture = Metal->DepthTexture;
+	PassDesc.depthAttachment.loadAction = MTLLoadActionLoad;
+	PassDesc.depthAttachment.storeAction = MTLStoreActionStore;
+
+	MTLDepthStencilDescriptor *DepthStencilDescriptor = [MTLDepthStencilDescriptor new];
+	DepthStencilDescriptor.depthCompareFunction = MTLCompareFunctionLess;
+	DepthStencilDescriptor.depthWriteEnabled = YES;
+	id<MTLDepthStencilState> DepthStencilState = [Metal->Device newDepthStencilStateWithDescriptor:DepthStencilDescriptor];
+
+	id<MTLRenderCommandEncoder> Encoder = [CommandBuffer renderCommandEncoderWithDescriptor:PassDesc];
+	[Encoder setRenderPipelineState:Metal->LineShader.PipelineState];
+	[Encoder setVertexBuffer:Metal->TriangleVertexBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:VertexOffset atIndex:0];
+	[Encoder setVertexBuffer:Metal->UniformBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:UniformOffset atIndex:1];
+	[Encoder drawPrimitives:MTLPrimitiveTypeLine vertexStart:0 vertexCount:VertexCount];
 
 
 
@@ -609,6 +697,22 @@ void R_Update(render_context *R, m_arena *FrameArena)
 					GPUVertices, sizeof(gpu_vertex)*Command->VerticesCount);
 			TotalTriangleVertices += Command->VerticesCount;
 		}
+		else if(Command->Type == R_COMMAND_LINES)
+		{
+			gpu_vertex *GPUVertices = (gpu_vertex*)ArenaPushZero(Scratch.Arena,
+															 sizeof(gpu_vertex)*Command->VerticesCount);
+			for(int V = 0; V < Command->VerticesCount; V++)
+			{
+				v4f P = Command->Vertices[V].Position;
+				v2f UV = Command->Vertices[V].UV;
+				v4f Colour = Command->Vertices[V].Colour;
+				GPUVertices[V].Position = P;
+				GPUVertices[V].Colour = Colour;
+			}
+			MemoryCopy(Metal->TriangleVertexBuffers[ResourceIndex].contents + TriangleVertexOffset*sizeof(gpu_vertex) + TotalTriangleVertices*sizeof(gpu_vertex),
+					GPUVertices, sizeof(gpu_vertex)*Command->VerticesCount);
+			TotalTriangleVertices += Command->VerticesCount;
+		}
 
 		if((Command->Next && Command->Next->Type != Command->Type) ||
 		   (Command->Next && !MemoryEqual(&Command->Transform, &Command->Next->Transform, sizeof(m44f))) ||
@@ -633,6 +737,12 @@ void R_Update(render_context *R, m_arena *FrameArena)
 			else if(Command->Type == R_COMMAND_POINTS)
 			{
 				R_RenderPoints(R, CommandBuffer, TotalTriangleVertices, TriangleVertexOffset*sizeof(gpu_vertex), UniformCount*sizeof(m44f));
+				TriangleVertexOffset += TotalTriangleVertices;
+				TotalTriangleVertices = 0;
+			}
+			else if(Command->Type == R_COMMAND_LINES)
+			{
+				R_RenderLines(R, CommandBuffer, TotalTriangleVertices, TriangleVertexOffset*sizeof(gpu_vertex), UniformCount*sizeof(m44f));
 				TriangleVertexOffset += TotalTriangleVertices;
 				TotalTriangleVertices = 0;
 			}

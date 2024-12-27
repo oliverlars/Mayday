@@ -41,6 +41,7 @@ typedef enum r_command_type
 	R_COMMAND_TRIANGLE,
 	R_COMMAND_BLOOM,
 	R_COMMAND_POINTS,
+	R_COMMAND_LINES,
 } r_command_type;
 
 

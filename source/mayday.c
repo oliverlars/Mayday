@@ -153,7 +153,7 @@ void OS_Update(void *Data)
 	//D_DrawQuad(M->Draw, M->FrameArena, v2f(0, 0),  WindowWidth, WindowHeight, v4f(0.008, 0.00, 0, 1.0));
 	
 	m44f Transform = M44FOrthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0);
-	//R_PushTransform(M->Render, Transform);
+	R_PushTransform(M->Render, Transform);
 	//EditingWindow(M);
 
 	Angle += 0.03;
@@ -169,10 +169,34 @@ void OS_Update(void *Data)
 	v3f Positions[3] =
 	{
 		v3f(0, 0, 0),
-		v3f(1, 1, 1),
-		v3f(0, 1, 0),
+		v3f(3, 0, 1),
 	};
-	D_DrawPointsArray(M->Draw, M->FrameArena, Positions, 3, v4f(1, 0, 0, 1));
+	D_DrawPointsArray(M->Draw, M->FrameArena, Positions, 2, v4f(1, 0, 0, 1));
+
+	v3f LinePoints[4] =
+	{
+		v3f(0, 0, 0),
+		v3f(0, 1, 0),
+		v3f(0, 0, 0),
+		v3f(3, 0, 1),
+	};
+	D_DrawLinesArray(M->Draw, M->FrameArena, LinePoints + 2, 2, v4f(1.0, 0.5, 0, 1));
+
+	v4f ProjectedPoint = MulM44FV4F(M44FTranspose(PVM), v4f(3, 0, 1, 1));
+	ProjectedPoint.X /= ProjectedPoint.W;
+	ProjectedPoint.Y /= ProjectedPoint.W;
+	ProjectedPoint.Z /= ProjectedPoint.W;
+	ProjectedPoint.W /= ProjectedPoint.W;
+
+	ProjectedPoint.X = ProjectedPoint.X*0.5 + 0.5;
+	ProjectedPoint.Y = ProjectedPoint.Y*0.5 + 0.5;
+
+	v2f WindowSpacePoint = MulV2F(v2f(ProjectedPoint.X, ProjectedPoint.Y), v2f(sapp_widthf(), sapp_heightf()));
+
+	R_PopTransform(M->Render);
+	
+	D_DrawStr8(M->Draw, M->FrameArena, M->LogoFont, WindowSpacePoint, v4f(1, 1, 1, 1), 50, Str8("Mayday/"));
+	//D_DrawQuad(M->Draw, M->FrameArena, WindowSpacePoint, 10, 10, v4f(0, 0, 1, 1));
 	if(OS_MilliSecondsFromTimeStamp(OS_TimeStampNow() - M->UI->TimeStampWhenMousePressed) > 150.0 &&
 	   M->UI->MouseWasPressed && M->UI->MultiClickCount == 0)
 	{

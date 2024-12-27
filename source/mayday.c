@@ -153,8 +153,8 @@ void OS_Update(void *Data)
 	//D_DrawQuad(M->Draw, M->FrameArena, v2f(0, 0),  WindowWidth, WindowHeight, v4f(0.008, 0.00, 0, 1.0));
 	
 	m44f Transform = M44FOrthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0);
-	R_PushTransform(M->Render, Transform);
-	EditingWindow(M);
+	//R_PushTransform(M->Render, Transform);
+	//EditingWindow(M);
 
 	Angle += 0.03;
 	m44f ModelMatrix = M44FromYAngle(Angle);
@@ -164,7 +164,15 @@ void OS_Update(void *Data)
 	m44f PVM = MulM44FM44F(MulM44FM44F(ModelMatrix, ViewMatrix), ProjectionMatrix);
 	R_PushTransform(M->Render, PVM);
 
-	D_DrawCubePoints(M->Draw, M->FrameArena, v3f(0, 0, 0.0), v3f(2.0, 2.0, 2.0), v4f(1, 0, 0, 1));
+	//D_DrawCubePoints(M->Draw, M->FrameArena, v3f(0, 0, 0.0), v3f(2.0, 2.0, 2.0), v4f(1, 0, 0, 1));
+	
+	v3f Positions[3] =
+	{
+		v3f(0, 0, 0),
+		v3f(1, 1, 1),
+		v3f(0, 1, 0),
+	};
+	D_DrawPointsArray(M->Draw, M->FrameArena, Positions, 3, v4f(1, 0, 0, 1));
 	if(OS_MilliSecondsFromTimeStamp(OS_TimeStampNow() - M->UI->TimeStampWhenMousePressed) > 150.0 &&
 	   M->UI->MouseWasPressed && M->UI->MultiClickCount == 0)
 	{

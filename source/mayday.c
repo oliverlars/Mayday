@@ -185,7 +185,7 @@ void OS_Update(void *Data)
 	m44f ModelMatrix = M44FromYAngle(Angle);
 	//ModelMatrix = MulM44FM44F(M44FromZAngle(Angle*0.1), ModelMatrix);
 	m44f ProjectionMatrix = M44FPerspective(sapp_widthf()/sapp_heightf(), 30, 0.1, 100.0);
-	m44f ViewMatrix = M44FLookAt(v3f(0, 0, 10), v3f(0, 0, 0), v3f(0, 1, 0));
+	m44f ViewMatrix = M44FLookAt(v3f(0, 0, 5), v3f(0, 0, 0), v3f(0, 1, 0));
 
 	m44f VP = MulM44FM44F(ViewMatrix, ProjectionMatrix);
 	m44f PVM = MulM44FM44F(ModelMatrix, VP);
@@ -194,30 +194,12 @@ void OS_Update(void *Data)
 	R_PushTransform(M->Render, VP);
 	D_DrawGrid(M->Draw, M->FrameArena, 4.0, 25);
 	R_PopTransform(M->Render);
-	//D_DrawCubePoints(M->Draw, M->FrameArena, v3f(0, 0, 0.0), v3f(2.0, 2.0, 2.0), v4f(1, 0, 0, 1));
-	
-	// v3f Positions[3] =
-	// {
-	// 	v3f(0, 0, 0),
-	// 	v3f(3, 0, 1),
-	// 	v3f
-	// };
-	// D_DrawPointsArray(M->Draw, M->FrameArena, Positions, 2, v4f(1, 0, 0, 1));
-
-	// v3f LinePoints[4] =
-	// {
-	// 	v3f(0, 0, 0),
-	// 	v3f(0, 1, 0),
-	// 	v3f(0, 0, 0),
-	// 	v3f(3, 0, 1),
-	// };
-	// D_DrawLinesArray(M->Draw, M->FrameArena, LinePoints + 2, 2, v4f(1.0, 0.5, 0, 1));
 
 	for(int I = 0; I < M->NodeCount; I++)
 	{
 		M->Nodes[I].Position = LerpV3f(M->Nodes[I].Position, M->Nodes[I].TargetPosition, 0.1);
 	}
-	
+
 	R_PushTransform(M->Render, Transform);
 	for(int I = 0; I < M->NodeCount; I++)
 	{
@@ -586,7 +568,7 @@ int main()
 	M.UI->Font = M.CodeFont;
 
 
-	os_directory_tree Tree = OS_DirectoryTreeFromPath(M.PermanentArena, Str8("/Users/olivercruickshank/Mayday"));
+	os_directory_tree Tree = OS_DirectoryTreeFromPath(M.PermanentArena, Str8PushF(Arena, "/Users/olivercruickshank/Mayday"));
 
 	os_directory_entry *Entry = Tree.Root;
 
@@ -608,8 +590,10 @@ int main()
 		M.Nodes[Index].TargetPosition = v3f(RandomBilateral()*0.5, RandomBilateral()*0.5, RandomBilateral()*0.5);
 		M.Nodes[Index].Position = M.Nodes[Index].TargetPosition;
 		M.Nodes[Index].Name = Iter.Current->Name;
-		//LogInfo("?S", Iter.Current->Name);
+		Index++;
 	}
+
+
 
 	Iter.Current = Tree.Root;
 	int From = 0;

@@ -182,10 +182,10 @@ void OS_Update(void *Data)
 	//EditingWindow(M);
 
 	Angle += 0.0005;
-	m44f ModelMatrix = M44FromYAngle(Angle);
+	m44f ModelMatrix = M44FromYAngle(-Angle);
 	//ModelMatrix = MulM44FM44F(M44FromZAngle(Angle*0.1), ModelMatrix);
-	m44f ProjectionMatrix = M44FPerspective(sapp_widthf()/sapp_heightf(), 30, 0.01, 100.0);
-	m44f ViewMatrix = M44FLookAt(v3f(0, 0, 4), v3f(0, 0, 0), v3f(0, 1, 0));
+	m44f ProjectionMatrix = M44FPerspective(sapp_widthf()/sapp_heightf(), 70, 0.01, 1000.0);
+	m44f ViewMatrix = M44FLookAt(v3f(0, 0, 6), v3f(0, 0, 0), v3f(0, 1, 0));
 
 	m44f VP = MulM44FM44F(ViewMatrix, ProjectionMatrix);
 	m44f PVM = MulM44FM44F(ModelMatrix, VP);

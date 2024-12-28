@@ -661,12 +661,14 @@ m44f M44FromZAngle(f32 Angle)
 
 m44f M44FPerspective(f32 Aspect, f32 FOV, f32 Near, f32 Far)
 {
+	FOV = (FOV/360.0)*2*M_PI;
 	m44f Result = M44F_IDENTITY;
-	Result.E[0][0] = 1.0f/(Aspect*tanf(FOV/2.0f));
-	Result.E[1][1] = 1.0f/(tanf(FOV/2.0f));
-	Result.E[2][2] = -(Far + Near)/(Far - Near);
-	Result.E[3][2] = - 2.0f * (Far * Near) / (Far - Near);
-	Result.E[2][3] = - 1.0f;	
+	Result.E[0][0] = 1.0f / (Aspect * tanf(FOV / 2.0f));
+	Result.E[1][1] = 1.0f / tanf(FOV / 2.0f);
+	Result.E[2][2] = -(Far + Near) / (Far - Near);
+	Result.E[2][3] = -1.0f;
+	Result.E[3][2] = -2.0f * (Far * Near) / (Far - Near);
+	Result.E[3][3] = 0.0f;
 
 	return Result;
 }

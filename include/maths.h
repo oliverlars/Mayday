@@ -73,6 +73,7 @@ v3f AddV3F(v3f A, v3f B);
 v3f SubV3F(v3f A, v3f B);
 v3f MulV3F(v3f A, v3f B);
 v3f DivV3F(v3f A, v3f B);
+v3f LerpV3f(v3f Source, v3f Target, float T);
 f32 LengthV3F(v3f V);
 v3f NormalizeV3F(v3f V);
 v3f CrossV3F(v3f A, v3f B);

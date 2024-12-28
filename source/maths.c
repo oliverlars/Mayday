@@ -244,6 +244,15 @@ v3f DivV3F(v3f A, v3f B)
 	return Result;
 }
 
+v3f LerpV3f(v3f Source, v3f Target, float T)
+{
+	v3f Result;
+	Result.X = Source.X + T * (Target.X - Source.X);
+	Result.Y = Source.Y + T * (Target.Y - Source.Y);
+	Result.Z = Source.Z + T * (Target.Z - Source.Z);
+	return Result;
+}
+
 f32 LengthV3F(v3f V)
 {
 	return sqrtf(DotV3F(V, V));

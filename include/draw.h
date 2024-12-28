@@ -99,4 +99,6 @@ void D_DrawLinesArray(draw_context *D,
 					  int PositionsCount,
 					  v4f Colour);
 
+void D_DrawGrid(draw_context *Draw, m_arena *Arena, f32 Size, s32 Count);
+
 f32 D_LineHeightFromFont(d_font Font, f32 HeightInPixels);

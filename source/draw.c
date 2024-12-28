@@ -526,3 +526,30 @@ void D_DrawLinesArray(draw_context *D,
 	Command.Type = R_COMMAND_LINES;
 	R_PushCommand(R, Arena, Command);
 }
+
+
+void D_DrawGrid(draw_context *Draw, m_arena *Arena, f32 Size, s32 Count)
+{
+	s32 LineCount = (Count + 1) * 2; 
+	v3f *Lines = (v3f*)ArenaPushZero(Arena, LineCount * 2 * sizeof(v3f)); // Each line has 2 vertices
+
+	int Index = 0;
+
+	f32 HalfSize = (Count * Size) / 2.0f;
+
+	for (s32 I = 0; I <= Count; I++)
+	{
+		f32 Z = -HalfSize + (I * Size);
+		Lines[Index++] = v3f(-HalfSize, 15, Z);
+		Lines[Index++] = v3f(HalfSize,  15, Z);
+	}
+
+	for (s32 I = 0; I <= Count; I++)
+	{
+		f32 X = -HalfSize + (I * Size);
+		Lines[Index++] = v3f(X, 15, -HalfSize);
+		Lines[Index++] = v3f(X, 15, HalfSize);
+	}
+
+	D_DrawLinesArray(Draw, Arena, Lines, LineCount * 2, v4f(1.0, .2, 0, 1));
+}

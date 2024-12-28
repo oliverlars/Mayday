@@ -31,6 +31,11 @@
     },
     {
         "directory": "/Users/olivercruickshank/Mayday",
+        "command": "clang  -c source/fdg.c -g -O0 -obuild/source/fdg.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "file": "source/fdg.c"
+    },
+    {
+        "directory": "/Users/olivercruickshank/Mayday",
         "command": "clang  -c source/ui.c -g -O0 -obuild/source/ui.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/ui.c"
     },

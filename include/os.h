@@ -2,6 +2,8 @@
 
 #include "sokol_app.h"
 
+ #include <dirent.h>
+
 typedef void* os_handle;
 
 typedef struct os_window
@@ -13,6 +15,21 @@ typedef struct os_window
 	str8 Title;
 }
 os_window;
+
+typedef enum os_directory_entry_type
+{
+	OS_DIR_ENTRY_UNKNOWN,
+	OS_DIR_ENTRY_FILE,
+	OS_DIR_ENTRY_FOLDER,
+} os_directory_entry_type;
+
+typedef struct os_directory_entry
+{
+	str8 Name;
+	os_directory_entry_type Type;
+	struct os_directory_entry *Next;
+}
+os_directory_entry;
 
 os_window OS_MakeWindow(str8 Name, int Width, int Height);
 void OS_Run(os_window Window, void *Data);
@@ -30,3 +47,6 @@ void OS_Event(const sapp_event *Event, void *Data);
 os_handle OS_GetWindowHandle();
 int OS_WindowWidth(os_window *Window);
 int OS_WindowHeight(os_window *Window);
+
+
+str8_list OS_ListOfDirectoryEntriesFromPath(m_arena *Arena, str8 Path);

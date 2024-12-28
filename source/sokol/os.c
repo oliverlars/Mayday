@@ -62,3 +62,18 @@ f32 OS_MilliSecondsFromTimeStamp(u64 TimeStamp)
 
 	return (f32)((TimeStamp) * Info.numer / Info.denom) / 1000000.0;
 }
+
+str8_list OS_ListOfDirectoryEntriesFromPath(m_arena *Arena, str8 Path)
+{
+	str8_list Entries = { 0 };
+	DIR *Directory = opendir(CStrFromStr8(Arena, Path));
+	struct dirent *Entry;
+	while((Entry = readdir(Directory)))
+	{
+		if(Entry->d_name[0] != '.')
+		{
+			Str8ListAppend(Arena, &Entries, Str8PushF(Arena, "%s", Entry->d_name));
+		}
+	}
+	return Entries;
+}

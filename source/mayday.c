@@ -14,11 +14,14 @@
 
 #include "ui.h"
 
+#include "fdg.h"
+
 // TODO(Oliver): Remove platform specific code from here
 #include "darwin/menu_bar.h"
 
 #include <assert.h>
 #include <math.h>
+#include <stdint.h>
 
 typedef struct mayday_context
 {
@@ -143,6 +146,22 @@ void EditingWindow(mayday_context *M)
 
 f32 Angle = 0.0f;
 
+
+static u32 XORSHIFT_STATE = 2463534242;
+
+u32 XorShift32() {
+	XORSHIFT_STATE ^= XORSHIFT_STATE << 13;
+	XORSHIFT_STATE ^= XORSHIFT_STATE >> 17;
+	XORSHIFT_STATE ^= XORSHIFT_STATE << 5;
+	return XORSHIFT_STATE;
+}
+
+float RandomBilateral() {
+	float Result = (XorShift32() / (float)UINT32_MAX);
+
+	return Result * 2.0f - 1.0f;
+}
+
 void OS_Update(void *Data)
 {
 	mayday_context *M = Data;
@@ -156,46 +175,100 @@ void OS_Update(void *Data)
 	R_PushTransform(M->Render, Transform);
 	//EditingWindow(M);
 
-	Angle += 0.03;
+	Angle += 0.003;
 	m44f ModelMatrix = M44FromYAngle(Angle);
+	//ModelMatrix = MulM44FM44F(M44FromZAngle(Angle*0.1), ModelMatrix);
 	m44f ProjectionMatrix = M44FPerspective(sapp_widthf()/sapp_heightf(), 30, 0.1, 100.0);
 	m44f ViewMatrix = M44FLookAt(v3f(0, 0, 10), v3f(0, 0, 0), v3f(0, 1, 0));
 
-	m44f PVM = MulM44FM44F(MulM44FM44F(ModelMatrix, ViewMatrix), ProjectionMatrix);
+	m44f VP = MulM44FM44F(ViewMatrix, ProjectionMatrix);
+	m44f PVM = MulM44FM44F(ModelMatrix, VP);
 	R_PushTransform(M->Render, PVM);
 
+	R_PushTransform(M->Render, VP);
+	D_DrawGrid(M->Draw, M->FrameArena, 4.0, 25);
+	R_PopTransform(M->Render);
 	//D_DrawCubePoints(M->Draw, M->FrameArena, v3f(0, 0, 0.0), v3f(2.0, 2.0, 2.0), v4f(1, 0, 0, 1));
 	
-	v3f Positions[3] =
+	// v3f Positions[3] =
+	// {
+	// 	v3f(0, 0, 0),
+	// 	v3f(3, 0, 1),
+	// 	v3f
+	// };
+	// D_DrawPointsArray(M->Draw, M->FrameArena, Positions, 2, v4f(1, 0, 0, 1));
+
+	// v3f LinePoints[4] =
+	// {
+	// 	v3f(0, 0, 0),
+	// 	v3f(0, 1, 0),
+	// 	v3f(0, 0, 0),
+	// 	v3f(3, 0, 1),
+	// };
+	// D_DrawLinesArray(M->Draw, M->FrameArena, LinePoints + 2, 2, v4f(1.0, 0.5, 0, 1));
+
+	// v4f ProjectedPoint = MulM44FV4F(M44FTranspose(PVM), v4f(3, 0, 1, 1));
+	// ProjectedPoint.X /= ProjectedPoint.W;
+	// ProjectedPoint.Y /= ProjectedPoint.W;
+	// ProjectedPoint.Z /= ProjectedPoint.W;
+	// ProjectedPoint.W /= ProjectedPoint.W;
+
+	// ProjectedPoint.X = ProjectedPoint.X*0.5 + 0.5;
+	// ProjectedPoint.Y = ProjectedPoint.Y*0.5 + 0.5;
+
+	// v2f WindowSpacePoint = MulV2F(v2f(ProjectedPoint.X, ProjectedPoint.Y), v2f(sapp_widthf(), sapp_heightf()));
+
+	static fdg_node Nodes[6] = {0};
+	if(M->Render->Frame == 0)
 	{
-		v3f(0, 0, 0),
-		v3f(3, 0, 1),
-	};
-	D_DrawPointsArray(M->Draw, M->FrameArena, Positions, 2, v4f(1, 0, 0, 1));
-
-	v3f LinePoints[4] =
+		Nodes[0] = (fdg_node){ v3f(RandomBilateral(), RandomBilateral(), RandomBilateral()), v3f(0) };
+		Nodes[1] = (fdg_node){ v3f(RandomBilateral(), RandomBilateral(), RandomBilateral()), v3f(0) };
+		Nodes[2] = (fdg_node){ v3f(RandomBilateral(), RandomBilateral(), RandomBilateral()), v3f(0) };
+		Nodes[3] = (fdg_node){ v3f(RandomBilateral(), RandomBilateral(), RandomBilateral()), v3f(0) };
+		Nodes[4] = (fdg_node){ v3f(RandomBilateral(), RandomBilateral(), RandomBilateral()), v3f(0) };
+		Nodes[5] = (fdg_node){ v3f(RandomBilateral(), RandomBilateral(), RandomBilateral()), v3f(0) };
+	}
+	else
 	{
-		v3f(0, 0, 0),
-		v3f(0, 1, 0),
-		v3f(0, 0, 0),
-		v3f(3, 0, 1),
+		for(int I = 0; I < 6; I++)
+		{
+			Nodes[I].Position = LerpV3f(Nodes[I].Position, Nodes[I].TargetPosition, 0.1);
+		}
+	}
+
+	fdg_link Links[6] =
+	{
+		{0, 1},
+		{0, 2},
+		{0, 3},
+		{3, 4},
+		{3, 5},
 	};
-	D_DrawLinesArray(M->Draw, M->FrameArena, LinePoints + 2, 2, v4f(1.0, 0.5, 0, 1));
 
-	v4f ProjectedPoint = MulM44FV4F(M44FTranspose(PVM), v4f(3, 0, 1, 1));
-	ProjectedPoint.X /= ProjectedPoint.W;
-	ProjectedPoint.Y /= ProjectedPoint.W;
-	ProjectedPoint.Z /= ProjectedPoint.W;
-	ProjectedPoint.W /= ProjectedPoint.W;
+	static f32 Temperature = 5.0;
+	SimulateForceDirectedGraph(M->FrameArena, Nodes, 6, Links, 6, &Temperature);
 
-	ProjectedPoint.X = ProjectedPoint.X*0.5 + 0.5;
-	ProjectedPoint.Y = ProjectedPoint.Y*0.5 + 0.5;
+	v3f Positions[6] = {0};
+	for(int I = 0; I < 6; I++)
+	{
+		Positions[I] = Nodes[I].Position;
+	}
 
-	v2f WindowSpacePoint = MulV2F(v2f(ProjectedPoint.X, ProjectedPoint.Y), v2f(sapp_widthf(), sapp_heightf()));
+	v3f LinePositions[12] = {0};
+	int LineIndex = 0;
+	for(int I = 0; I < 6; I++)
+	{
+		LinePositions[LineIndex + 0] = Nodes[Links[I].From].Position;
+		LinePositions[LineIndex + 1] = Nodes[Links[I].To].Position;
+		LineIndex += 2;
+	}
+
+	D_DrawPointsArray(M->Draw, M->FrameArena, Positions, 6, v4f(1, 0, 0, 1));
+	D_DrawLinesArray(M->Draw, M->FrameArena, LinePositions, 12, v4f(0, 1, 0, 1));
 
 	R_PopTransform(M->Render);
 	
-	D_DrawStr8(M->Draw, M->FrameArena, M->LogoFont, WindowSpacePoint, v4f(1, 1, 1, 1), 50, Str8("Mayday/"));
+	//D_DrawStr8(M->Draw, M->FrameArena, M->LogoFont, WindowSpacePoint, v4f(0.8, 0.3, 0.0, 1), 50, Str8("Mayday/"));
 	//D_DrawQuad(M->Draw, M->FrameArena, WindowSpacePoint, 10, 10, v4f(0, 0, 1, 1));
 	if(OS_MilliSecondsFromTimeStamp(OS_TimeStampNow() - M->UI->TimeStampWhenMousePressed) > 150.0 &&
 	   M->UI->MouseWasPressed && M->UI->MultiClickCount == 0)

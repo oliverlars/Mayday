@@ -2,7 +2,40 @@
 #include "maths.h"
 
 #include "draw.h"
+#include "strings.h"
 #include <assert.h>
+
+
+str8 UI_DisplayString(m_arena *Arena, str8 String)
+{
+	str8 Result = {0};
+	for(int I = 1; I < String.Size; I++)
+	{
+		if(String.Bytes[I] == '#' && 
+		   I + 1 < String.Size && String.Bytes[I+1] == '#')
+		{
+			Result = Str8PushF(Arena, "?S", (str8){I, String.Bytes});
+			break;
+		}
+	}
+	return Result;
+}
+
+str8 UI_HashString(m_arena *Arena, str8 String)
+{
+	str8 Result = {0};
+	for(int I = 1; I < String.Size; I++)
+	{
+		if(String.Bytes[I] == '#' && 
+		   I + 1 < String.Size && String.Bytes[I+1] == '#' &&
+		   I + 2 < String.Size && String.Bytes[I+2] == '#')
+		{
+			Result = Str8PushF(Arena, "?S", (str8){ String.Size - (I + 3), String.Bytes});
+			break;
+		}
+	}
+	return Result;
+}
 
 int UI_GetTextWidth(d_font Font, draw_context *Draw, str8 String, f32 HeightInPixels)
 {
@@ -50,18 +83,20 @@ b32 UI_TextButton(ui_context *UI, draw_context *Draw, m_arena *Arena,
 	f32 Height = D_LineHeightFromFont(UI->Font, HeightInPixels);
 	f32 Width = UI_GetTextWidth(UI->Font, Draw, String, HeightInPixels);
 
+	str8 DisplayString = UI_DisplayString(Arena, String);
+
 	v2f BoxPosition = AddV2F(Position, v2f(0, UI->Font.Descent * Scale));
 	if(UI->Hot == Hash)
 	{
 		Colour = MulV4F(Colour, V4FromF32(1.2));
 		UI->HotAnimation = LerpF32(UI->HotAnimation, 1.0, 0.1);
-		D_DrawQuad(Draw, Arena, BoxPosition, Width, Height, v4f(0.1, 0.05, 0.0, 1.0));
-		D_DrawStr8(Draw, Arena, UI->Font, Position, v4f(0, 0, 0, 1), HeightInPixels, String);
+		//D_DrawQuad(Draw, Arena, BoxPosition, Width, Height, v4f(0.1, 0.05, 0.0, 1.0));
+		D_DrawStr8(Draw, Arena, UI->Font, Position, v4f(1, 1, 1, 1), HeightInPixels, DisplayString);
 	}
 	else
 	{
-		D_DrawQuad(Draw, Arena, BoxPosition, Width, Height, v4f(0, 0, 0, 1));
-		D_DrawStr8(Draw, Arena, UI->Font, Position, v4f(0.2, 0.1, 0.0, 1.0), HeightInPixels, String);
+		//D_DrawQuad(Draw, Arena, BoxPosition, Width, Height, v4f(0, 0, 0, 1));
+		D_DrawStr8(Draw, Arena, UI->Font, Position, v4f(0.2, 0.1, 0.0, 1.0), HeightInPixels, DisplayString);
 	}
 
 	
@@ -70,15 +105,11 @@ b32 UI_TextButton(ui_context *UI, draw_context *Draw, m_arena *Arena,
 	   UI->MousePosition.Y >= BoxPosition.Y && UI->MousePosition.Y <= (BoxPosition.Y + Height))
 	{
 		UI->Hot = Hash;
-
-		v2f CornersPosition = AddV2F(Position, v2f(0, UI->Font.Descent * Scale));
-		CornersPosition = SubV2F(CornersPosition, v2f(UI->HotAnimation*5.0, UI->HotAnimation*5.0));
-		v2f Size = AddV2F(v2f(Width, Height), v2f(UI->HotAnimation*10.0, UI->HotAnimation*10.0));
 	}
 	else 
 	{
 		UI->HotAnimation = LerpF32(UI->HotAnimation, 0.0, 0.1);
-		UI->Hot = 0;
+		//UI->Hot = 0;
 	}
 
 	return False;

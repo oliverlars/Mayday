@@ -1,6 +1,5 @@
 #include "maths.h"
 #include "memory.h"
-#include <math.h>
 
 
 // Force directed graph node
@@ -8,7 +7,9 @@ typedef struct fdg_node
 {
 	v3f TargetPosition;
 	v3f Position;
+	// These should probably not be stored here
 	str8 Name;
+	b32 IsFolder;
 } fdg_node;
 
 typedef struct fdg_link

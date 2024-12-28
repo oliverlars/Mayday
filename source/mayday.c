@@ -175,24 +175,26 @@ void OS_Update(void *Data)
 	int WindowHeight = OS_WindowHeight(&M->Window);
 	int WindowWidth = OS_WindowWidth(&M->Window);
 
-	//D_DrawQuad(M->Draw, M->FrameArena, v2f(0, 0),  WindowWidth, WindowHeight, v4f(0.008, 0.00, 0, 1.0));
 	
 	m44f Transform = M44FOrthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0);
 	R_PushTransform(M->Render, Transform);
+
+	D_DrawQuad(M->Draw, M->FrameArena, v2f(0, 0),  WindowWidth, WindowHeight, v4f(0.008, 0.00, 0, 1.0));
 	//EditingWindow(M);
 
 	Angle += 0.0005;
 	m44f ModelMatrix = M44FromYAngle(-Angle);
 	//ModelMatrix = MulM44FM44F(M44FromZAngle(Angle*0.1), ModelMatrix);
 	m44f ProjectionMatrix = M44FPerspective(sapp_widthf()/sapp_heightf(), 70, 0.01, 1000.0);
-	m44f ViewMatrix = M44FLookAt(v3f(0, 0, 6), v3f(0, 0, 0), v3f(0, 1, 0));
+	ProjectionMatrix = M44FOrthographic(-10.0, 10.0, 5.0, -5.0, -1000.0, 1000.0);
+	m44f ViewMatrix = M44FLookAt(v3f(0, 5, 0), v3f(0, 0, 0), v3f(0, 0, 1));
 
 	m44f VP = MulM44FM44F(ViewMatrix, ProjectionMatrix);
 	m44f PVM = MulM44FM44F(ModelMatrix, VP);
 	R_PushTransform(M->Render, PVM);
 
 	R_PushTransform(M->Render, VP);
-	D_DrawGrid(M->Draw, M->FrameArena, 4.0, 25);
+	//D_DrawGrid(M->Draw, M->FrameArena, 0.5, 10);
 	R_PopTransform(M->Render);
 
 	for(int I = 0; I < M->NodeCount; I++)
@@ -217,7 +219,14 @@ void OS_Update(void *Data)
 
 		WindowSpacePoint = AddV2F(WindowSpacePoint, v2f(20, 10));
 
-		D_DrawStr8(M->Draw, M->FrameArena, M->LogoFont, WindowSpacePoint, v4f(0.5, 0.1, 0.0, 1), 25, M->Nodes[I].Name);
+		if(M->Nodes[I].IsFolder)
+		{
+			UI_TextButton(M->UI, M->Draw,
+				  M->FrameArena, Str8PushF(M->FrameArena, "?S##?u32", M->Nodes[I].Name, I),
+				  35,
+				  WindowSpacePoint, v4f(0.5, 0.1, 0.0, 1));
+			//D_DrawStr8(M->Draw, M->FrameArena, M->LogoFont, WindowSpacePoint, v4f(0.5, 0.1, 0.0, 1), 25, M->Nodes[I].Name);
+		}
 	}
 
 	D_DrawStr8(M->Draw, M->FrameArena, M->LogoFont, v2f(50, 50), v4f(1.0, 0.05, 0.0, 1), 100, Str8("MAYDAY!"));
@@ -589,12 +598,14 @@ int main()
 	M.Nodes[0].TargetPosition = v3f(0, 0, 0);
 	M.Nodes[0].Position = v3f(0.0);
 	M.Nodes[0].Name = Tree.Root->Name;
+	M.Nodes[0].IsFolder = True;
 	int Index = 1;
 	for(;OS_DirectoryTreeIterate(&Iter);)
 	{
 		M.Nodes[Index].TargetPosition = v3f(RandomBilateral()*0.5, RandomBilateral()*0.5, RandomBilateral()*0.5);
 		M.Nodes[Index].Position = M.Nodes[Index].TargetPosition;
 		M.Nodes[Index].Name = Iter.Current->Name;
+		M.Nodes[Index].IsFolder = Iter.Current->Type == OS_DIR_ENTRY_FOLDER;
 		Index++;
 	}
 

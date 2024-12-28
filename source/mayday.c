@@ -201,7 +201,7 @@ void OS_Update(void *Data)
 	}
 	if(!ZoomedIn)
 	{
-		Angle += 0.0005;
+		Angle += 0.002;
 	}
 	else
 	{

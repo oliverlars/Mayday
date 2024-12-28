@@ -13,7 +13,7 @@ void SimulateForceDirectedGraph(m_arena *Arena, fdg_node *Nodes, int NodeCount,
 								fdg_link *Links, int LinkCount,
 								f32 *Temperature)
 {
-	f32 Area = 15.0;
+	f32 Area = 5.0;
 	f32 K = sqrtf(5.0 / NodeCount);
 
 	v2f *Displacements = (v2f*)ArenaPushZero(Arena, sizeof(v2f) * NodeCount);

@@ -540,16 +540,16 @@ void D_DrawGrid(draw_context *Draw, m_arena *Arena, f32 Size, s32 Count)
 	for (s32 I = 0; I <= Count; I++)
 	{
 		f32 Z = -HalfSize + (I * Size);
-		Lines[Index++] = v3f(-HalfSize, 15, Z);
-		Lines[Index++] = v3f(HalfSize,  15, Z);
+		Lines[Index++] = v3f(-HalfSize, 10, Z);
+		Lines[Index++] = v3f(HalfSize,  10, Z);
 	}
 
 	for (s32 I = 0; I <= Count; I++)
 	{
 		f32 X = -HalfSize + (I * Size);
-		Lines[Index++] = v3f(X, 15, -HalfSize);
-		Lines[Index++] = v3f(X, 15, HalfSize);
+		Lines[Index++] = v3f(X, 10, -HalfSize);
+		Lines[Index++] = v3f(X, 10, HalfSize);
 	}
 
-	D_DrawLinesArray(Draw, Arena, Lines, LineCount * 2, v4f(1.0, .2, 0, 1));
+	D_DrawLinesArray(Draw, Arena, Lines, LineCount * 2, v4f(1.0, .05, 0, 1));
 }

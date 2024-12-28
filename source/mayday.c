@@ -181,7 +181,7 @@ void OS_Update(void *Data)
 	R_PushTransform(M->Render, Transform);
 	//EditingWindow(M);
 
-	Angle += 0.003;
+	Angle += 0.0005;
 	m44f ModelMatrix = M44FromYAngle(Angle);
 	//ModelMatrix = MulM44FM44F(M44FromZAngle(Angle*0.1), ModelMatrix);
 	m44f ProjectionMatrix = M44FPerspective(sapp_widthf()/sapp_heightf(), 30, 0.1, 100.0);
@@ -215,7 +215,9 @@ void OS_Update(void *Data)
 
 		v2f WindowSpacePoint = MulV2F(v2f(ProjectedPoint.X, ProjectedPoint.Y), v2f(sapp_widthf(), sapp_heightf()));
 
-		D_DrawStr8(M->Draw, M->FrameArena, M->LogoFont, WindowSpacePoint, v4f(0.8, 0.3, 0.0, 1), 20, M->Nodes[I].Name);
+		WindowSpacePoint = AddV2F(WindowSpacePoint, v2f(20, 10));
+
+		D_DrawStr8(M->Draw, M->FrameArena, M->LogoFont, WindowSpacePoint, v4f(0.8, 0.3, 0.0, 1), 25, M->Nodes[I].Name);
 	}
 	R_PopTransform(M->Render);
 
@@ -240,7 +242,7 @@ void OS_Update(void *Data)
 	}
 
 	D_DrawPointsArray(M->Draw, M->FrameArena, Positions, M->NodeCount, v4f(1, 0, 0, 1));
-	D_DrawLinesArray(M->Draw, M->FrameArena, LinePositions, M->LinkCount*2, v4f(0, 1, 0, 1));
+	D_DrawLinesArray(M->Draw, M->FrameArena, LinePositions, M->LinkCount*2, v4f(0.5, 0.1, 0, 1));
 
 	R_PopTransform(M->Render);
 

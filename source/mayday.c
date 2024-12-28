@@ -217,8 +217,11 @@ void OS_Update(void *Data)
 
 		WindowSpacePoint = AddV2F(WindowSpacePoint, v2f(20, 10));
 
-		D_DrawStr8(M->Draw, M->FrameArena, M->LogoFont, WindowSpacePoint, v4f(0.8, 0.3, 0.0, 1), 25, M->Nodes[I].Name);
+		D_DrawStr8(M->Draw, M->FrameArena, M->LogoFont, WindowSpacePoint, v4f(0.5, 0.1, 0.0, 1), 25, M->Nodes[I].Name);
 	}
+
+	D_DrawStr8(M->Draw, M->FrameArena, M->LogoFont, v2f(50, 50), v4f(1.0, 0.05, 0.0, 1), 100, Str8("MAYDAY!"));
+
 	R_PopTransform(M->Render);
 
 	static f32 Temperature = 5.0;

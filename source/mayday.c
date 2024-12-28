@@ -63,7 +63,36 @@ mayday_context;
 
 #include "shaders.h"
 
+void StatusBar(mayday_context *M)
+{
+	D_DrawQuad(M->Draw, M->FrameArena, v2f(0, 0), sapp_widthf(), 50, v4f(0.3, 0.08, 0, 1));
 
+	D_DrawStr8(M->Draw, M->FrameArena, M->LogoFont, v2f(sapp_widthf() - 200, 10), v4f(0.009, 0.00, 0, 1.0), 45, Str8("LF"));
+
+	cursor *Cursor = &M->Cursor;
+	if(!Cursor->Next)
+	{
+		int Line = E_LineFromBufferIndex(M->Edit, Cursor->Selection.Y, &M->Buffer);
+		int LineStart = E_LineStartFromIndex(M->Edit, Cursor->Selection.Y, &M->Buffer);
+		int Column = Cursor->Selection.Y - LineStart;
+		D_DrawStr8(M->Draw, M->FrameArena,
+				   M->LogoFont, v2f(sapp_widthf() - 1000, 10),
+				   v4f(0.009, 0.00, 0, 1.0),
+				   45, Str8PushF(M->FrameArena, "LINE ?u32 | COLUMN ?u32", Line, Column));
+	}
+	else
+	{
+		int Count = 0;
+		for(;Cursor;Cursor = Cursor->Next)
+		{
+			Count += 1;
+		}
+		D_DrawStr8(M->Draw, M->FrameArena,
+			M->LogoFont, v2f(sapp_widthf() - 1000, 10),
+			v4f(0.009, 0.00, 0, 1.0),
+			45, Str8PushF(M->FrameArena, "?u32 SELECTIONS", Count));
+	}
+}
 
 void EditingWindow(mayday_context *M)
 {
@@ -83,9 +112,9 @@ void EditingWindow(mayday_context *M)
 	f32 HeightOffset = 0;
 	for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
 	{
-		D_DrawStr8(M->Draw, M->FrameArena, M->CodeFont, v2f(1600, WindowHeight - 500 + HeightOffset), v4f(1, 1, 1, 1),
-			M->Buffer.HeightInPixels, Str8PushF(M->FrameArena, "Start: ?u32 | End: ?u32 | VisualX: ?u32",
-			Cursor->Selection.X, Cursor->Selection.Y, Cursor->VisualX));
+		// D_DrawStr8(M->Draw, M->FrameArena, M->CodeFont, v2f(1600, WindowHeight - 500 + HeightOffset), v4f(1, 1, 1, 1),
+		// 	M->Buffer.HeightInPixels, Str8PushF(M->FrameArena, "Start: ?u32 | End: ?u32 | VisualX: ?u32",
+		// 	Cursor->Selection.X, Cursor->Selection.Y, Cursor->VisualX));
 		HeightOffset -= M->Buffer.HeightInPixels;
 	}
 
@@ -198,6 +227,8 @@ void OS_Update(void *Data)
 	if(M->ShowEditor)
 	{
 		EditingWindow(M);
+
+		StatusBar(M);
 	}
 	if(!ZoomedIn)
 	{

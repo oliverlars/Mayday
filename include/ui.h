@@ -23,6 +23,8 @@ typedef struct ui_context
 
 	v2f ScrollOffset;
 
+	b32 MouseClicked;
+
 	b32 MouseIsDragging;
 	v2i MousePosition;
 	b32 MouseWasPressed;

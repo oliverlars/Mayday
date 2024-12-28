@@ -47,6 +47,14 @@ typedef struct mayday_context
 
 	fdg_link *Links;
 	int LinkCount;
+
+
+	v3f LookAt;
+	v3f LookFrom;
+	v3f LookAtTarget;
+	v3f LookFromTarget;
+	f32 ViewSize;
+	f32 ViewSizeTarget;
 }
 mayday_context;
 
@@ -172,6 +180,8 @@ void OS_Update(void *Data)
 {
 	mayday_context *M = Data;
 
+	M->UI->Hot = 0;
+
 	int WindowHeight = OS_WindowHeight(&M->Window);
 	int WindowWidth = OS_WindowWidth(&M->Window);
 
@@ -186,8 +196,8 @@ void OS_Update(void *Data)
 	m44f ModelMatrix = M44FromYAngle(-Angle);
 	//ModelMatrix = MulM44FM44F(M44FromZAngle(Angle*0.1), ModelMatrix);
 	m44f ProjectionMatrix = M44FPerspective(sapp_widthf()/sapp_heightf(), 70, 0.01, 1000.0);
-	ProjectionMatrix = M44FOrthographic(-10.0, 10.0, 5.0, -5.0, -1000.0, 1000.0);
-	m44f ViewMatrix = M44FLookAt(v3f(0, 5, 0), v3f(0, 0, 0), v3f(0, 0, 1));
+	ProjectionMatrix = M44FOrthographic(-M->ViewSize, M->ViewSize, M->ViewSize, -M->ViewSize, -1000.0, 1000.0);
+	m44f ViewMatrix = M44FLookAt(M->LookFrom, M->LookAt, v3f(0, 0, 1));
 
 	m44f VP = MulM44FM44F(ViewMatrix, ProjectionMatrix);
 	m44f PVM = MulM44FM44F(ModelMatrix, VP);
@@ -203,6 +213,8 @@ void OS_Update(void *Data)
 	}
 
 	R_PushTransform(M->Render, Transform);
+
+	fdg_node *ClickedNode = Null;
 	for(int I = 0; I < M->NodeCount; I++)
 	{
 		v3f P = M->Nodes[I].Position;
@@ -221,13 +233,27 @@ void OS_Update(void *Data)
 
 		if(M->Nodes[I].IsFolder)
 		{
-			UI_TextButton(M->UI, M->Draw,
+			b32 Clicked = UI_TextButton(M->UI, M->Draw,
 				  M->FrameArena, Str8PushF(M->FrameArena, "?S##?u32", M->Nodes[I].Name, I),
 				  35,
 				  WindowSpacePoint, v4f(0.5, 0.1, 0.0, 1));
+			
+			if(Clicked)
+			{
+				ClickedNode = M->Nodes + I;
+			}
 			//D_DrawStr8(M->Draw, M->FrameArena, M->LogoFont, WindowSpacePoint, v4f(0.5, 0.1, 0.0, 1), 25, M->Nodes[I].Name);
 		}
 	}
+
+	if(ClickedNode)
+	{
+		M->ViewSizeTarget = 2.0;
+		M->LookAtTarget = ClickedNode->Position;
+	}
+
+	M->LookAt = LerpV3f(M->LookAt, M->LookAtTarget, 0.1);
+	M->ViewSize = LerpF32(M->ViewSize, M->ViewSizeTarget, 0.1);
 
 	D_DrawStr8(M->Draw, M->FrameArena, M->LogoFont, v2f(50, 50), v4f(1.0, 0.05, 0.0, 1), 100, Str8("MAYDAY!"));
 
@@ -629,6 +655,14 @@ int main()
 	}
 	// M.NodeCount = 5;
 	M.LinkCount = Index;
+
+	M.LookFrom = v3f(0, 5, 0);
+	M.LookFromTarget = M.LookFrom;
+	M.LookAt = v3f(0, 0, 0);
+	M.LookAtTarget = M.LookAt;
+
+	M.ViewSize = 10.0;
+	M.ViewSizeTarget = M.ViewSize;
 
 	OS_Run(M.Window, &M);
 }

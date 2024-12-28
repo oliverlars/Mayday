@@ -80,26 +80,12 @@ b32 UI_TextButton(ui_context *UI, draw_context *Draw, m_arena *Arena,
 {
 	u64 Hash = M_FNVHashString(M_FNV_HASH_START, String);
 	f32 Scale = stbtt_ScaleForPixelHeight(&UI->Font.Info, HeightInPixels);
-	f32 Height = D_LineHeightFromFont(UI->Font, HeightInPixels);
-	f32 Width = UI_GetTextWidth(UI->Font, Draw, String, HeightInPixels);
-
 	str8 DisplayString = UI_DisplayString(Arena, String);
 
-	v2f BoxPosition = AddV2F(Position, v2f(0, UI->Font.Descent * Scale));
-	if(UI->Hot == Hash)
-	{
-		Colour = MulV4F(Colour, V4FromF32(1.2));
-		UI->HotAnimation = LerpF32(UI->HotAnimation, 1.0, 0.1);
-		//D_DrawQuad(Draw, Arena, BoxPosition, Width, Height, v4f(0.1, 0.05, 0.0, 1.0));
-		D_DrawStr8(Draw, Arena, UI->Font, Position, v4f(1, 1, 1, 1), HeightInPixels, DisplayString);
-	}
-	else
-	{
-		//D_DrawQuad(Draw, Arena, BoxPosition, Width, Height, v4f(0, 0, 0, 1));
-		D_DrawStr8(Draw, Arena, UI->Font, Position, v4f(0.2, 0.1, 0.0, 1.0), HeightInPixels, DisplayString);
-	}
+	f32 Height = D_LineHeightFromFont(UI->Font, HeightInPixels);
+	f32 Width = UI_GetTextWidth(UI->Font, Draw, DisplayString, HeightInPixels);
 
-	
+	v2f BoxPosition = AddV2F(Position, v2f(0, UI->Font.Descent * Scale));
 	
 	if(UI->MousePosition.X >= BoxPosition.X && UI->MousePosition.X <= (BoxPosition.X + Width) &&
 	   UI->MousePosition.Y >= BoxPosition.Y && UI->MousePosition.Y <= (BoxPosition.Y + Height))
@@ -109,8 +95,25 @@ b32 UI_TextButton(ui_context *UI, draw_context *Draw, m_arena *Arena,
 	else 
 	{
 		UI->HotAnimation = LerpF32(UI->HotAnimation, 0.0, 0.1);
-		//UI->Hot = 0;
 	}
 
-	return False;
+	b32 Clicked = False;
+	if(UI->Hot == Hash)
+	{
+		if(UI->MouseWasPressed)
+		{
+			Clicked = True;
+		}
+		Colour = MulV4F(Colour, V4FromF32(1.2));
+		UI->HotAnimation = LerpF32(UI->HotAnimation, 1.0, 0.1);
+		D_DrawStr8(Draw, Arena, UI->Font, Position, v4f(1, 1, 1, 1), HeightInPixels, DisplayString);
+	}
+	else
+	{
+		//D_DrawQuad(Draw, Arena, BoxPosition, Width, Height, v4f(0, 0, 0, 1));
+		D_DrawStr8(Draw, Arena, UI->Font, Position, v4f(0.2, 0.1, 0.0, 1.0), HeightInPixels, DisplayString);
+	}
+
+
+	return Clicked;
 }

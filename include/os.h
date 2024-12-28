@@ -27,9 +27,22 @@ typedef struct os_directory_entry
 {
 	str8 Name;
 	os_directory_entry_type Type;
+	struct os_directory_entry *First;
 	struct os_directory_entry *Next;
+	struct os_directory_entry *Parent;
 }
 os_directory_entry;
+
+typedef struct os_directory_tree
+{
+	os_directory_entry *Root;
+} os_directory_tree;
+
+typedef struct os_directory_tree_iterator
+{
+	os_directory_tree Tree;
+	os_directory_entry *Current;
+} os_directory_tree_iterator;
 
 os_window OS_MakeWindow(str8 Name, int Width, int Height);
 void OS_Run(os_window Window, void *Data);
@@ -49,4 +62,6 @@ int OS_WindowWidth(os_window *Window);
 int OS_WindowHeight(os_window *Window);
 
 
-str8_list OS_ListOfDirectoryEntriesFromPath(m_arena *Arena, str8 Path);
+b32 OS_DirectoryTreeIterate(os_directory_tree_iterator *Iterator);
+int OS_CountAllEntriesInDirectoryTree(os_directory_tree Tree);
+os_directory_tree OS_DirectoryTreeFromPath(m_arena *Arena, str8 Path);

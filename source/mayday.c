@@ -41,6 +41,9 @@ typedef struct mayday_context
 
 	editable_buffer Buffer;
 	cursor Cursor;
+
+	fdg_node *Nodes;
+	fdg_link *Links;
 }
 mayday_context;
 
@@ -588,6 +591,22 @@ int main()
 	M.LogoFont = D_LoadFontFromTTF(M.Draw, G_BasementGrotesque);
 
 	M.UI->Font = M.CodeFont;
+
+
+	os_directory_tree Tree = OS_DirectoryTreeFromPath(M.PermanentArena, Str8("/Users/olivercruickshank/Mayday"));
+
+	os_directory_entry *Entry = Tree.Root;
+
+	int TotalCount = OS_CountAllEntriesInDirectoryTree(Tree);
+
+	M.Nodes = (fdg_node*)ArenaPushZero(M.PermanentArena, sizeof(fdg_node)*TotalCount);
+
+	os_directory_tree_iterator Iter = {.Tree = Tree, .Current = Tree.Root };
+
+	for(;OS_DirectoryTreeIterate(&Iter);)
+	{
+		LogInfo("?S", Iter.Current->Name);
+	}
 
 	OS_Run(M.Window, &M);
 }

@@ -29,7 +29,7 @@ void D_GlyphsToAtlas(draw_context *D)
 {
 	if(!D->NewestGlyph)
 	{
-		LogInfo("No glyphs to place in atlas");
+		//LogInfo("No glyphs to place in atlas");
 		return;
 	}
 

@@ -1,3 +1,6 @@
+#include "log.h"
+#include "memory.h"
+#include <assert.h>
 #define SOKOL_NO_ENTRY
 #define SOKOL_METAL
 #include "sokol_app.h"
@@ -6,6 +9,9 @@
 
 #include "strings.h"
 #include "os.h"
+
+#include <sys/stat.h>
+#include <sys/types.h>
 
 
 
@@ -63,17 +69,148 @@ f32 OS_MilliSecondsFromTimeStamp(u64 TimeStamp)
 	return (f32)((TimeStamp) * Info.numer / Info.denom) / 1000000.0;
 }
 
-str8_list OS_ListOfDirectoryEntriesFromPath(m_arena *Arena, str8 Path)
+void AppendDirectoryEntry(m_arena *Arena, os_directory_entry *Entries, os_directory_entry Entry)
 {
-	str8_list Entries = { 0 };
+	if(Entries)
+	{
+		Entry.Parent = Entries->Parent;
+		os_directory_entry *LastEntry = Entries;
+		for(;LastEntry->Next; LastEntry = LastEntry->Next);
+		LastEntry->Next = ArenaPushType(Arena, os_directory_entry);
+		LastEntry->Next[0] = Entry;
+	}
+	else
+	{
+		assert(False);
+	}
+}
+
+void InsertDirectoryEntryAsChild(m_arena *Arena, os_directory_entry *At, os_directory_entry Entry)
+{
+	Entry.Parent = At;
+	if(At->First)
+	{
+		AppendDirectoryEntry(Arena, At->First, Entry);
+	}
+	else
+	{
+		At->First = ArenaPushType(Arena, os_directory_entry);
+		At->First[0] = Entry;
+	}
+}
+
+b32 OS_IsPathDirectory(str8 Path)
+{
+	m_scratch_arena Scratch = ScratchBegin(0, 0);
+	struct stat StatBuf;
+	b32 Result = False;
+	if (stat(CStrFromStr8(Scratch.Arena, Path), &StatBuf) == 0) {
+		Result = S_ISDIR(StatBuf.st_mode);
+	}
+	ScratchEnd(Scratch);
+	return Result;
+}
+
+void OS_DirectoryTreeFromPathHelper(m_arena *Arena, str8 Path, os_directory_entry *Entries)
+{
 	DIR *Directory = opendir(CStrFromStr8(Arena, Path));
 	struct dirent *Entry;
 	while((Entry = readdir(Directory)))
 	{
 		if(Entry->d_name[0] != '.')
 		{
-			Str8ListAppend(Arena, &Entries, Str8PushF(Arena, "%s", Entry->d_name));
+			os_directory_entry DirectoryEntry = {0};
+			str8 Name = Str8PushF(Arena, "?cstr", Entry->d_name);
+			str8 FullPath = Str8PushF(Arena, "?S/?cstr", Path, Entry->d_name);
+			if(OS_IsPathDirectory(FullPath))
+			{
+				DirectoryEntry.Name = Name;
+				DirectoryEntry.Type = OS_DIR_ENTRY_FOLDER;
+				InsertDirectoryEntryAsChild(Arena, Entries, DirectoryEntry);
+				OS_DirectoryTreeFromPathHelper(Arena, FullPath, Entries);
+			}
+			else
+			{
+				DirectoryEntry.Type = OS_DIR_ENTRY_FILE;
+				DirectoryEntry.Name = Name;
+				InsertDirectoryEntryAsChild(Arena, Entries, DirectoryEntry);
+			}
 		}
 	}
-	return Entries;
+}
+
+os_directory_tree OS_DirectoryTreeFromPath(m_arena *Arena, str8 Path)
+{
+	os_directory_entry *EntryRoot = ArenaPushType(Arena, os_directory_entry);
+	EntryRoot->Name = Str8PushF(Arena, "?S", Path);
+	EntryRoot->Type = OS_DIR_ENTRY_FOLDER;
+	OS_DirectoryTreeFromPathHelper(Arena, Path, EntryRoot);
+	os_directory_tree Result = { EntryRoot };
+	return Result;
+}
+
+void OS_CountAllEntriesInDirectoryTreeHelper(os_directory_entry *Entry, int *Count)
+{
+	for(; Entry; Entry = Entry->Next)
+	{
+		if(Entry->Type == OS_DIR_ENTRY_FOLDER)
+		{
+			Count[0] = Count[0] + 1;
+			OS_CountAllEntriesInDirectoryTreeHelper(Entry->First, Count);
+		}
+		else
+		{
+			Count[0] = Count[0] + 1;
+		}
+	}
+}
+
+int OS_CountAllEntriesInDirectoryTree(os_directory_tree Tree)
+{
+	int Result = 0;
+	OS_CountAllEntriesInDirectoryTreeHelper(Tree.Root, &Result);
+	return Result;
+}
+
+b32 OS_DirectoryTreeIterate(os_directory_tree_iterator *Iterator)
+{
+	b32 Result = True;
+	if(!Iterator->Current)
+	{
+		Result = False;
+	}
+	else
+	{
+		os_directory_entry *Next = Iterator->Current->Next;
+		os_directory_entry *First = Iterator->Current->First;
+
+		if(First)
+		{
+			Iterator->Current = First;
+		}
+		else if(Next)
+		{
+			Iterator->Current = Next;
+		}
+		else
+		{
+			os_directory_entry *Parent = Iterator->Current->Parent;
+
+			for(;Parent; Parent = Parent->Parent)
+			{
+				if(Parent->Next)
+				{
+					Iterator->Current = Parent->Next;
+					break;
+				}
+			}
+			if(!Parent)
+			{
+				Iterator->Current = Null;
+				Result = False;
+			}
+		}
+
+	}
+	return Result;
 }

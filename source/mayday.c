@@ -43,7 +43,10 @@ typedef struct mayday_context
 	cursor Cursor;
 
 	fdg_node *Nodes;
+	int NodeCount;
+
 	fdg_link *Links;
+	int LinkCount;
 }
 mayday_context;
 
@@ -210,66 +213,56 @@ void OS_Update(void *Data)
 	// };
 	// D_DrawLinesArray(M->Draw, M->FrameArena, LinePoints + 2, 2, v4f(1.0, 0.5, 0, 1));
 
-	// v4f ProjectedPoint = MulM44FV4F(M44FTranspose(PVM), v4f(3, 0, 1, 1));
-	// ProjectedPoint.X /= ProjectedPoint.W;
-	// ProjectedPoint.Y /= ProjectedPoint.W;
-	// ProjectedPoint.Z /= ProjectedPoint.W;
-	// ProjectedPoint.W /= ProjectedPoint.W;
-
-	// ProjectedPoint.X = ProjectedPoint.X*0.5 + 0.5;
-	// ProjectedPoint.Y = ProjectedPoint.Y*0.5 + 0.5;
-
-	// v2f WindowSpacePoint = MulV2F(v2f(ProjectedPoint.X, ProjectedPoint.Y), v2f(sapp_widthf(), sapp_heightf()));
-
-	static fdg_node Nodes[6] = {0};
-	if(M->Render->Frame == 0)
+	for(int I = 0; I < M->NodeCount; I++)
 	{
-		Nodes[0] = (fdg_node){ v3f(RandomBilateral(), RandomBilateral(), RandomBilateral()), v3f(0) };
-		Nodes[1] = (fdg_node){ v3f(RandomBilateral(), RandomBilateral(), RandomBilateral()), v3f(0) };
-		Nodes[2] = (fdg_node){ v3f(RandomBilateral(), RandomBilateral(), RandomBilateral()), v3f(0) };
-		Nodes[3] = (fdg_node){ v3f(RandomBilateral(), RandomBilateral(), RandomBilateral()), v3f(0) };
-		Nodes[4] = (fdg_node){ v3f(RandomBilateral(), RandomBilateral(), RandomBilateral()), v3f(0) };
-		Nodes[5] = (fdg_node){ v3f(RandomBilateral(), RandomBilateral(), RandomBilateral()), v3f(0) };
+		M->Nodes[I].Position = LerpV3f(M->Nodes[I].Position, M->Nodes[I].TargetPosition, 0.1);
 	}
-	else
+	
+	R_PushTransform(M->Render, Transform);
+	for(int I = 0; I < M->NodeCount; I++)
 	{
-		for(int I = 0; I < 6; I++)
-		{
-			Nodes[I].Position = LerpV3f(Nodes[I].Position, Nodes[I].TargetPosition, 0.1);
-		}
-	}
+		v3f P = M->Nodes[I].Position;
+		v4f ProjectedPoint = MulM44FV4F(M44FTranspose(PVM), v4f(P.X, P.Y, P.Z, 1.0));
+		ProjectedPoint.X /= ProjectedPoint.W;
+		ProjectedPoint.Y /= ProjectedPoint.W;
+		ProjectedPoint.Z /= ProjectedPoint.W;
+		ProjectedPoint.W /= ProjectedPoint.W;
 
-	fdg_link Links[6] =
-	{
-		{0, 1},
-		{0, 2},
-		{0, 3},
-		{3, 4},
-		{3, 5},
-	};
+		ProjectedPoint.X = ProjectedPoint.X*0.5 + 0.5;
+		ProjectedPoint.Y = ProjectedPoint.Y*0.5 + 0.5;
+
+		v2f WindowSpacePoint = MulV2F(v2f(ProjectedPoint.X, ProjectedPoint.Y), v2f(sapp_widthf(), sapp_heightf()));
+
+		D_DrawStr8(M->Draw, M->FrameArena, M->LogoFont, WindowSpacePoint, v4f(0.8, 0.3, 0.0, 1), 20, M->Nodes[I].Name);
+	}
+	R_PopTransform(M->Render);
 
 	static f32 Temperature = 5.0;
-	SimulateForceDirectedGraph(M->FrameArena, Nodes, 6, Links, 6, &Temperature);
+	SimulateForceDirectedGraph(M->FrameArena, M->Nodes, M->NodeCount, M->Links, M->LinkCount, &Temperature);
 
-	v3f Positions[6] = {0};
-	for(int I = 0; I < 6; I++)
+	m_scratch_arena Scratch = ScratchBegin(0, 0);
+
+	v3f *Positions = (v3f*)ArenaPushZero(Scratch.Arena, sizeof(v3f)*M->NodeCount);
+	for(int I = 0; I < M->NodeCount; I++)
 	{
-		Positions[I] = Nodes[I].Position;
+		Positions[I] = M->Nodes[I].Position;
 	}
 
-	v3f LinePositions[12] = {0};
+	v3f *LinePositions = (v3f*)ArenaPushZero(Scratch.Arena, sizeof(v3f)*M->LinkCount*2);
 	int LineIndex = 0;
-	for(int I = 0; I < 6; I++)
+	for(int I = 0; I < M->LinkCount; I++)
 	{
-		LinePositions[LineIndex + 0] = Nodes[Links[I].From].Position;
-		LinePositions[LineIndex + 1] = Nodes[Links[I].To].Position;
+		LinePositions[LineIndex + 0] = M->Nodes[M->Links[I].From].Position;
+		LinePositions[LineIndex + 1] = M->Nodes[M->Links[I].To].Position;
 		LineIndex += 2;
 	}
 
-	D_DrawPointsArray(M->Draw, M->FrameArena, Positions, 6, v4f(1, 0, 0, 1));
-	D_DrawLinesArray(M->Draw, M->FrameArena, LinePositions, 12, v4f(0, 1, 0, 1));
+	D_DrawPointsArray(M->Draw, M->FrameArena, Positions, M->NodeCount, v4f(1, 0, 0, 1));
+	D_DrawLinesArray(M->Draw, M->FrameArena, LinePositions, M->LinkCount*2, v4f(0, 1, 0, 1));
 
 	R_PopTransform(M->Render);
+
+	ScratchEnd(Scratch);
 	
 	//D_DrawStr8(M->Draw, M->FrameArena, M->LogoFont, WindowSpacePoint, v4f(0.8, 0.3, 0.0, 1), 50, Str8("Mayday/"));
 	//D_DrawQuad(M->Draw, M->FrameArena, WindowSpacePoint, 10, 10, v4f(0, 0, 1, 1));
@@ -598,15 +591,44 @@ int main()
 	os_directory_entry *Entry = Tree.Root;
 
 	int TotalCount = OS_CountAllEntriesInDirectoryTree(Tree);
+	LogInfo("Total ?s32", TotalCount);
 
 	M.Nodes = (fdg_node*)ArenaPushZero(M.PermanentArena, sizeof(fdg_node)*TotalCount);
+	M.Links = (fdg_link*)ArenaPushZero(M.PermanentArena, sizeof(fdg_link)*TotalCount);
 
 	os_directory_tree_iterator Iter = {.Tree = Tree, .Current = Tree.Root };
 
+	M.NodeCount = TotalCount;
+	M.Nodes[0].TargetPosition = v3f(0, 0, 0);
+	M.Nodes[0].Position = v3f(0.0);
+	M.Nodes[0].Name = Tree.Root->Name;
+	int Index = 1;
 	for(;OS_DirectoryTreeIterate(&Iter);)
 	{
-		LogInfo("?S", Iter.Current->Name);
+		M.Nodes[Index].TargetPosition = v3f(RandomBilateral()*0.5, RandomBilateral()*0.5, RandomBilateral()*0.5);
+		M.Nodes[Index].Position = M.Nodes[Index].TargetPosition;
+		M.Nodes[Index].Name = Iter.Current->Name;
+		//LogInfo("?S", Iter.Current->Name);
 	}
+
+	Iter.Current = Tree.Root;
+	int From = 0;
+	int To = 1;
+	Index = 0;
+	for(;OS_DirectoryTreeIterate(&Iter);)
+	{
+		//if(Index >= 5) break;
+		M.Links[Index].From = From;
+		M.Links[Index].To = To;
+		if(Iter.Current->Type == OS_DIR_ENTRY_FOLDER)
+		{
+			From = To;
+		}
+		To++;
+		Index++;
+	}
+	// M.NodeCount = 5;
+	M.LinkCount = Index;
 
 	OS_Run(M.Window, &M);
 }

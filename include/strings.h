@@ -66,6 +66,9 @@ str8 Str8ListJoin(m_arena *Arena, str8_list *List);
 
 b32 NextInStr8List(str8_list_node **Node);
 
+str8 Str8UpToLastCharacter(m_arena *Arena, str8 InputPath, u8 Character);
+
+str8 Str8FromLastCharacter(m_arena *Arena, str8 InputPath, u8 Character);
 
 void Print(char *Format, ...);
 void PrintLn(char *Format, ...);

@@ -25,7 +25,7 @@ typedef enum os_directory_entry_type
 
 typedef struct os_directory_entry
 {
-	str8 Name;
+	str8 PathAndName;
 	os_directory_entry_type Type;
 	struct os_directory_entry *First;
 	struct os_directory_entry *Next;
@@ -60,6 +60,9 @@ void OS_Event(const sapp_event *Event, void *Data);
 os_handle OS_GetWindowHandle();
 int OS_WindowWidth(os_window *Window);
 int OS_WindowHeight(os_window *Window);
+
+
+str8 OS_LoadEntireFileIntoMemory(m_arena *Arena, str8 Filename);
 
 
 b32 OS_DirectoryTreeIterate(os_directory_tree_iterator *Iterator);

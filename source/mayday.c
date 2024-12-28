@@ -55,6 +55,9 @@ typedef struct mayday_context
 	v3f LookFromTarget;
 	f32 ViewSize;
 	f32 ViewSizeTarget;
+
+
+	b32 ShowEditor;
 }
 mayday_context;
 
@@ -176,6 +179,8 @@ float RandomBilateral() {
 	return Result * 2.0f - 1.0f;
 }
 
+b32 ZoomedIn = False;
+
 void OS_Update(void *Data)
 {
 	mayday_context *M = Data;
@@ -190,9 +195,18 @@ void OS_Update(void *Data)
 	R_PushTransform(M->Render, Transform);
 
 	D_DrawQuad(M->Draw, M->FrameArena, v2f(0, 0),  WindowWidth, WindowHeight, v4f(0.008, 0.00, 0, 1.0));
-	//EditingWindow(M);
-
-	Angle += 0.0005;
+	if(M->ShowEditor)
+	{
+		EditingWindow(M);
+	}
+	if(!ZoomedIn)
+	{
+		Angle += 0.0005;
+	}
+	else
+	{
+		Angle += 0.0001;
+	}
 	m44f ModelMatrix = M44FromYAngle(-Angle);
 	//ModelMatrix = MulM44FM44F(M44FromZAngle(Angle*0.1), ModelMatrix);
 	m44f ProjectionMatrix = M44FPerspective(sapp_widthf()/sapp_heightf(), 70, 0.01, 1000.0);
@@ -215,7 +229,7 @@ void OS_Update(void *Data)
 	R_PushTransform(M->Render, Transform);
 
 	fdg_node *ClickedNode = Null;
-	for(int I = 0; I < M->NodeCount; I++)
+	for(int I = 0; !M->ShowEditor && I < M->NodeCount; I++)
 	{
 		v3f P = M->Nodes[I].Position;
 		v4f ProjectedPoint = MulM44FV4F(M44FTranspose(PVM), v4f(P.X, P.Y, P.Z, 1.0));
@@ -234,28 +248,52 @@ void OS_Update(void *Data)
 		if(M->Nodes[I].IsFolder)
 		{
 			b32 Clicked = UI_TextButton(M->UI, M->Draw,
-				  M->FrameArena, Str8PushF(M->FrameArena, "?S##?u32", M->Nodes[I].Name, I),
+				  M->FrameArena, Str8PushF(M->FrameArena, "?S##?u32", Str8FromLastCharacter(M->FrameArena, M->Nodes[I].Name, '/'), I),
 				  35,
 				  WindowSpacePoint, v4f(0.5, 0.1, 0.0, 1));
 			
-			if(Clicked)
+			if(Clicked && !ZoomedIn)
 			{
+				M->UI->MouseWasPressed = False;
 				ClickedNode = M->Nodes + I;
 			}
 			//D_DrawStr8(M->Draw, M->FrameArena, M->LogoFont, WindowSpacePoint, v4f(0.5, 0.1, 0.0, 1), 25, M->Nodes[I].Name);
+		}
+		
+		if(ZoomedIn && !M->Nodes[I].IsFolder && !ClickedNode)
+		{
+			b32 Clicked = UI_TextButton(M->UI, M->Draw,
+				  M->FrameArena, Str8PushF(M->FrameArena, "?S##?u32", Str8FromLastCharacter(M->FrameArena, M->Nodes[I].Name, '/'), I),
+				  35,
+				  WindowSpacePoint, v4f(0.5, 0.1, 0.0, 1));
+			if(Clicked && !M->ShowEditor)
+			{
+				m_scratch_arena Scratch = ScratchBegin(0, 0);
+				str8 Temp = OS_LoadEntireFileIntoMemory(Scratch.Arena, M->Nodes[I].Name);
+				MemoryCopy(M->Buffer.String.Bytes, Temp.Bytes, Temp.Size);
+				M->Buffer.String.Size = Temp.Size;
+				M->ShowEditor = True;
+				ScratchEnd(Scratch);
+				ZoomedIn = False;
+				M->UI->MouseWasPressed = False;
+			}
 		}
 	}
 
 	if(ClickedNode)
 	{
-		M->ViewSizeTarget = 2.0;
+		M->ViewSizeTarget = 1.0;
 		M->LookAtTarget = ClickedNode->Position;
+		ZoomedIn = True;
 	}
 
 	M->LookAt = LerpV3f(M->LookAt, M->LookAtTarget, 0.1);
 	M->ViewSize = LerpF32(M->ViewSize, M->ViewSizeTarget, 0.1);
 
-	D_DrawStr8(M->Draw, M->FrameArena, M->LogoFont, v2f(50, 50), v4f(1.0, 0.05, 0.0, 1), 100, Str8("MAYDAY!"));
+	if(!M->ShowEditor)
+	{
+		D_DrawStr8(M->Draw, M->FrameArena, M->LogoFont, v2f(50, 50), v4f(1.0, 0.05, 0.0, 1), 100, Str8("MAYDAY!"));
+	}
 
 	R_PopTransform(M->Render);
 
@@ -279,8 +317,11 @@ void OS_Update(void *Data)
 		LineIndex += 2;
 	}
 
-	D_DrawPointsArray(M->Draw, M->FrameArena, Positions, M->NodeCount, v4f(1, 0, 0, 1));
-	D_DrawLinesArray(M->Draw, M->FrameArena, LinePositions, M->LinkCount*2, v4f(0.5, 0.1, 0, 1));
+	if(!M->ShowEditor)
+	{
+		D_DrawPointsArray(M->Draw, M->FrameArena, Positions, M->NodeCount, v4f(1, 0, 0, 1));
+		D_DrawLinesArray(M->Draw, M->FrameArena, LinePositions, M->LinkCount*2, v4f(0.5, 0.1, 0, 1));
+	}
 
 	R_PopTransform(M->Render);
 
@@ -623,14 +664,14 @@ int main()
 	M.NodeCount = TotalCount;
 	M.Nodes[0].TargetPosition = v3f(0, 0, 0);
 	M.Nodes[0].Position = v3f(0.0);
-	M.Nodes[0].Name = Tree.Root->Name;
+	M.Nodes[0].Name = Tree.Root->PathAndName;
 	M.Nodes[0].IsFolder = True;
 	int Index = 1;
 	for(;OS_DirectoryTreeIterate(&Iter);)
 	{
 		M.Nodes[Index].TargetPosition = v3f(RandomBilateral()*0.5, RandomBilateral()*0.5, RandomBilateral()*0.5);
 		M.Nodes[Index].Position = M.Nodes[Index].TargetPosition;
-		M.Nodes[Index].Name = Iter.Current->Name;
+		M.Nodes[Index].Name = Iter.Current->PathAndName;
 		M.Nodes[Index].IsFolder = Iter.Current->Type == OS_DIR_ENTRY_FOLDER;
 		Index++;
 	}
@@ -661,7 +702,7 @@ int main()
 	M.LookAt = v3f(0, 0, 0);
 	M.LookAtTarget = M.LookAt;
 
-	M.ViewSize = 10.0;
+	M.ViewSize = 5.0;
 	M.ViewSizeTarget = M.ViewSize;
 
 	OS_Run(M.Window, &M);

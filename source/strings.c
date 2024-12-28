@@ -418,3 +418,49 @@ void PrintLn(char *Format, ...)
 	
 	ScratchEnd(Scratch);
 }
+
+str8 Str8UpToLastCharacter(m_arena *Arena, str8 InputPath, u8 Character)
+{
+	s64 SizeUptoLastCharacter = InputPath.Size - 1;
+	b32 FoundCharacter = False;
+	for (; SizeUptoLastCharacter >= 0; SizeUptoLastCharacter--)
+	{
+		if (InputPath.Bytes[SizeUptoLastCharacter] == Character)
+		{
+			FoundCharacter = True;
+			break;
+		}
+	}
+	str8 Path = {0};
+	if (FoundCharacter)
+	{
+		Path.Size = SizeUptoLastCharacter;
+		Path.Bytes = (s8*)ArenaPush(Arena, SizeUptoLastCharacter);
+		MemoryCopy(Path.Bytes, InputPath.Bytes, SizeUptoLastCharacter);
+	}
+	return Path;
+}
+
+str8 Str8FromLastCharacter(m_arena *Arena, str8 InputPath, u8 Character)
+{
+	s64 StartIndex = 0;
+	b32 FoundCharacter = False;
+	for (int I = InputPath.Size; I > 0; I--)
+	{
+		if (InputPath.Bytes[I-1] == Character)
+		{
+			FoundCharacter = True;
+			StartIndex = I;
+			break;
+		}
+	}
+
+	str8 Result = {0};
+	if (FoundCharacter)
+	{
+		Result.Size = InputPath.Size - StartIndex;
+		Result.Bytes = ArenaPushZero(Arena, Result.Size);
+		MemoryCopy(Result.Bytes, InputPath.Bytes + StartIndex, Result.Size);
+	}
+	return Result;
+}

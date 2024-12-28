@@ -12,6 +12,8 @@
 
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 
 
@@ -124,7 +126,7 @@ void OS_DirectoryTreeFromPathHelper(m_arena *Arena, str8 Path, os_directory_entr
 			str8 FullPath = Str8PushF(Arena, "?S/?cstr", Path, Entry->d_name);
 			if(OS_IsPathDirectory(FullPath))
 			{
-				DirectoryEntry.Name = Name;
+				DirectoryEntry.PathAndName = FullPath;
 				DirectoryEntry.Type = OS_DIR_ENTRY_FOLDER;
 				InsertDirectoryEntryAsChild(Arena, Entries, DirectoryEntry);
 				OS_DirectoryTreeFromPathHelper(Arena, FullPath, Entries);
@@ -132,7 +134,7 @@ void OS_DirectoryTreeFromPathHelper(m_arena *Arena, str8 Path, os_directory_entr
 			else
 			{
 				DirectoryEntry.Type = OS_DIR_ENTRY_FILE;
-				DirectoryEntry.Name = Name;
+				DirectoryEntry.PathAndName = FullPath;
 				InsertDirectoryEntryAsChild(Arena, Entries, DirectoryEntry);
 			}
 		}
@@ -142,7 +144,7 @@ void OS_DirectoryTreeFromPathHelper(m_arena *Arena, str8 Path, os_directory_entr
 os_directory_tree OS_DirectoryTreeFromPath(m_arena *Arena, str8 Path)
 {
 	os_directory_entry *EntryRoot = ArenaPushType(Arena, os_directory_entry);
-	EntryRoot->Name = Str8PushF(Arena, "?S", Path);
+	EntryRoot->PathAndName = Str8PushF(Arena, "?S", Path);
 	EntryRoot->Type = OS_DIR_ENTRY_FOLDER;
 	OS_DirectoryTreeFromPathHelper(Arena, Path, EntryRoot);
 	os_directory_tree Result = { EntryRoot };
@@ -212,5 +214,29 @@ b32 OS_DirectoryTreeIterate(os_directory_tree_iterator *Iterator)
 		}
 
 	}
+	return Result;
+}
+
+str8 OS_LoadEntireFileIntoMemory(m_arena *Arena, str8 Filename)
+{
+	s32 FileHandle = open(CStrFromStr8(Arena, Filename), O_RDONLY);
+	if (FileHandle == -1)
+	{
+		LogError("File not found");
+		return (str8){0};
+	}
+
+	struct stat FileStat;
+	fstat(FileHandle, &FileStat);
+
+	u8 *BackingMemory = ArenaPush(Arena, (u64)FileStat.st_size + 1);
+	BackingMemory[FileStat.st_size] = 0;
+
+	str8 Result = {0};
+	Result.Bytes = (s8*)BackingMemory;
+	Result.Size = FileStat.st_size;
+
+	ssize_t BytesRead = read(FileHandle, BackingMemory, FileStat.st_size);
+
 	return Result;
 }

@@ -65,9 +65,9 @@ mayday_context;
 
 void StatusBar(mayday_context *M)
 {
-	D_DrawQuad(M->Draw, M->FrameArena, v2f(0, 0), sapp_widthf(), 50, v4f(0.3, 0.08, 0, 1));
+	D_DrawQuad(M->Draw, M->FrameArena, v2f(0, 0), sapp_widthf(), 40, v4f(0.3, 0.08, 0, 1));
 
-	D_DrawStr8(M->Draw, M->FrameArena, M->LogoFont, v2f(sapp_widthf() - 200, 10), v4f(0.009, 0.00, 0, 1.0), 45, Str8("LF"));
+	D_DrawStr8(M->Draw, M->FrameArena, M->CodeFont, v2f(sapp_widthf() - 200, 10), v4f(0.009, 0.00, 0, 1.0), 35, Str8("LF"));
 
 	cursor *Cursor = &M->Cursor;
 	if(!Cursor->Next)
@@ -76,9 +76,9 @@ void StatusBar(mayday_context *M)
 		int LineStart = E_LineStartFromIndex(M->Edit, Cursor->Selection.Y, &M->Buffer);
 		int Column = Cursor->Selection.Y - LineStart;
 		D_DrawStr8(M->Draw, M->FrameArena,
-				   M->LogoFont, v2f(sapp_widthf() - 1000, 10),
+				   M->CodeFont, v2f(sapp_widthf() - 1000, 10),
 				   v4f(0.009, 0.00, 0, 1.0),
-				   45, Str8PushF(M->FrameArena, "LINE ?u32 | COLUMN ?u32", Line, Column));
+				   35, Str8PushF(M->FrameArena, "LINE ?u32 | COLUMN ?u32", Line, Column));
 	}
 	else
 	{
@@ -88,9 +88,9 @@ void StatusBar(mayday_context *M)
 			Count += 1;
 		}
 		D_DrawStr8(M->Draw, M->FrameArena,
-			M->LogoFont, v2f(sapp_widthf() - 1000, 10),
+			M->CodeFont, v2f(sapp_widthf() - 1000, 10),
 			v4f(0.009, 0.00, 0, 1.0),
-			45, Str8PushF(M->FrameArena, "?u32 SELECTIONS", Count));
+			35, Str8PushF(M->FrameArena, "?u32 SELECTIONS", Count));
 	}
 }
 

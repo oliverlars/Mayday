@@ -315,6 +315,7 @@ void OS_Update(void *Data)
 	{
 		M->ViewSizeTarget = 1.0;
 		M->LookAtTarget = ClickedNode->Position;
+		M->LookFromTarget = SubV3F(ClickedNode->Position, v3f(0, 0, 5));
 		ZoomedIn = True;
 	}
 

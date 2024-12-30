@@ -331,7 +331,8 @@ void OS_Update(void *Data)
 	R_PopTransform(M->Render);
 
 	static f32 Temperature = 5.0;
-	SimulateForceDirectedGraph(M->FrameArena, M->Nodes, M->NodeCount, M->Links, M->LinkCount, &Temperature);
+
+	SimulateForceDirectedGraphFast(M->FrameArena, M->Nodes, M->NodeCount, M->Links, M->LinkCount, &Temperature);
 
 	m_scratch_arena Scratch = ScratchBegin(0, 0);
 

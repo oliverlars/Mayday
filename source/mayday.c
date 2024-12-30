@@ -276,11 +276,12 @@ void OS_Update(void *Data)
 
 		WindowSpacePoint = AddV2F(WindowSpacePoint, v2f(20, 10));
 
+		f32 FontSize = ZoomedIn ? 50 : 35;
 		if(M->Nodes[I].IsFolder)
 		{
 			b32 Clicked = UI_TextButton(M->UI, M->Draw,
 				  M->FrameArena, Str8PushF(M->FrameArena, "?S##?u32", Str8FromLastCharacter(M->FrameArena, M->Nodes[I].Name, '/'), I),
-				  35,
+				  FontSize,
 				  WindowSpacePoint, v4f(0.5, 0.1, 0.0, 1));
 			
 			if(Clicked && !ZoomedIn)
@@ -295,7 +296,7 @@ void OS_Update(void *Data)
 		{
 			b32 Clicked = UI_TextButton(M->UI, M->Draw,
 				  M->FrameArena, Str8PushF(M->FrameArena, "?S##?u32", Str8FromLastCharacter(M->FrameArena, M->Nodes[I].Name, '/'), I),
-				  35,
+				  FontSize,
 				  WindowSpacePoint, v4f(0.5, 0.1, 0.0, 1));
 			if(Clicked && !M->ShowEditor)
 			{
@@ -681,7 +682,7 @@ int main()
 	M.UI->Font = M.CodeFont;
 
 
-	os_directory_tree Tree = OS_DirectoryTreeFromPath(M.PermanentArena, Str8PushF(Arena, "/Users/olivercruickshank/Mayday"));
+	os_directory_tree Tree = OS_DirectoryTreeFromPath(M.PermanentArena, Str8PushF(Arena, "/Users/olivercruickshank/Embergen/liquigen"));
 
 	os_directory_entry *Entry = Tree.Root;
 

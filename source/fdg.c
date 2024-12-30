@@ -26,14 +26,13 @@ void SimulateForceDirectedGraph(m_arena *Arena, fdg_node *Nodes, int NodeCount,
 			f32 DX = Nodes[I].TargetPosition.X - Nodes[J].TargetPosition.X;
 			f32 DY = Nodes[I].TargetPosition.Y - Nodes[J].TargetPosition.Y;
 			f32 DZ = Nodes[I].TargetPosition.Z - Nodes[J].TargetPosition.Z;
-			f32 Distance = sqrtf(DX * DX + DY * DY + DZ * DZ);
+			f32 DistanceSquared = sqrtf(DX * DX + DY * DY + DZ * DZ);
 
-			if(Distance > 0)
+			if(DistanceSquared > 0)
 			{
-				f32 RepulsiveForce = Fr(Distance, K);
-				Displacements[I].X += (DX / Distance) * RepulsiveForce;
-				Displacements[I].Y += (DY / Distance) * RepulsiveForce;
-				Displacements[I].Z += (DZ / Distance) * RepulsiveForce;
+				Displacements[I].X += (K * K ) * DX / DistanceSquared;
+				Displacements[I].Y += (K * K ) * DY / DistanceSquared;
+				Displacements[I].Z += (K * K ) * DZ / DistanceSquared;
 			}
 		}
 	}

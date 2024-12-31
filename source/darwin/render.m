@@ -390,13 +390,13 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 
 	for(int ResourceIndex = 0; ResourceIndex < FRAMES_IN_FLIGHT; ResourceIndex++)
 	{
-		Metal->GlyphVertexBuffers[ResourceIndex] = [Metal->Device newBufferWithLength:MegaBytes(16)
+		Metal->GlyphVertexBuffers[ResourceIndex] = [Metal->Device newBufferWithLength:MegaBytes(128)
 						options:MTLResourceStorageModeShared];
 
-		Metal->TriangleVertexBuffers[ResourceIndex] = [Metal->Device newBufferWithLength:MegaBytes(16)
+		Metal->TriangleVertexBuffers[ResourceIndex] = [Metal->Device newBufferWithLength:MegaBytes(128)
 						options:MTLResourceStorageModeShared];
 
-		Metal->UniformBuffers[ResourceIndex] = [Metal->Device newBufferWithLength:MegaBytes(16)
+		Metal->UniformBuffers[ResourceIndex] = [Metal->Device newBufferWithLength:MegaBytes(128)
 						options:MTLResourceStorageModeShared];
 	}
 

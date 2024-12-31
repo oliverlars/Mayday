@@ -279,6 +279,7 @@ void OS_Update(void *Data)
 		f32 FontSize = ZoomedIn ? 50 : 35;
 		if(M->Nodes[I].IsFolder)
 		{
+			
 			b32 Clicked = UI_TextButton(M->UI, M->Draw,
 				  M->FrameArena, Str8PushF(M->FrameArena, "?S##?u32", Str8FromLastCharacter(M->FrameArena, M->Nodes[I].Name, '/'), I),
 				  FontSize,
@@ -294,6 +295,7 @@ void OS_Update(void *Data)
 		
 		if(ZoomedIn && !M->Nodes[I].IsFolder && !ClickedNode)
 		{
+			break;
 			b32 Clicked = UI_TextButton(M->UI, M->Draw,
 				  M->FrameArena, Str8PushF(M->FrameArena, "?S##?u32", Str8FromLastCharacter(M->FrameArena, M->Nodes[I].Name, '/'), I),
 				  FontSize,
@@ -332,7 +334,15 @@ void OS_Update(void *Data)
 
 	static f32 Temperature = 5.0;
 
-	SimulateForceDirectedGraphFast(M->FrameArena, M->Nodes, M->NodeCount, M->Links, M->LinkCount, &Temperature);
+	octree Octant = {0};
+	Octant.Bounds = GetBounds(M->Nodes, M->NodeCount);
+
+	for(int I = 0; I < M->NodeCount; I++)
+	{
+		OctreeBuild(M->FrameArena, &Octant, &M->Nodes[I], 0);
+	}
+
+	SimulateForceDirectedGraphFast(M->FrameArena, M->Nodes, M->NodeCount, M->Links, M->LinkCount, &Temperature, &Octant);
 
 	m_scratch_arena Scratch = ScratchBegin(0, 0);
 
@@ -351,21 +361,13 @@ void OS_Update(void *Data)
 		LineIndex += 2;
 	}
 
-	octree Octant = {0};
-	Octant.Bounds = GetBounds(M->Nodes, M->NodeCount);
-
-	for(int I = 0; I < M->NodeCount; I++)
-	{
-		OctreeBuild(M->FrameArena, &Octant, &M->Nodes[I]);
-	}
-
 	if(!M->ShowEditor)
 	{
 		D_DrawPointsArray(M->Draw, M->FrameArena, Positions, M->NodeCount, v4f(1, 0, 0, 1));
 		D_DrawLinesArray(M->Draw, M->FrameArena, LinePositions, M->LinkCount*2, v4f(0.5, 0.1, 0, 1));
 
 		
-		DrawOctant(M->Draw, M->FrameArena, &Octant);
+		//DrawOctant(M->Draw, M->FrameArena, &Octant);
 	}
 
 	//DrawBounds(M->Draw, M->FrameArena, (bounds){v3f(0, 0, 0), v3f(2, 2, 2)});
@@ -696,7 +698,7 @@ int main()
 	M.UI->Font = M.CodeFont;
 
 
-	os_directory_tree Tree = OS_DirectoryTreeFromPath(M.PermanentArena, Str8PushF(Arena, "/Users/olivercruickshank/Mayday"));
+	os_directory_tree Tree = OS_DirectoryTreeFromPath(M.PermanentArena, Str8PushF(Arena, "/Users/olivercruickshank/fdg"));
 
 	os_directory_entry *Entry = Tree.Root;
 

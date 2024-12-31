@@ -1,72 +1,72 @@
 [
     {
         "directory": "/Users/olivercruickshank/Mayday",
-        "command": "clang  -c source/log.c -g -O0 -obuild/source/log.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "command": "clang  -c source/log.c -O2 -obuild/source/log.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/log.c"
     },
     {
         "directory": "/Users/olivercruickshank/Mayday",
-        "command": "clang  -c source/maths.c -g -O0 -obuild/source/maths.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "command": "clang  -c source/maths.c -O2 -obuild/source/maths.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/maths.c"
     },
     {
         "directory": "/Users/olivercruickshank/Mayday",
-        "command": "clang  -c source/strings.c -g -O0 -obuild/source/strings.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "command": "clang  -c source/strings.c -O2 -obuild/source/strings.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/strings.c"
     },
     {
         "directory": "/Users/olivercruickshank/Mayday",
-        "command": "clang  -c source/draw.c -g -O0 -obuild/source/draw.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "command": "clang  -c source/draw.c -O2 -obuild/source/draw.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/draw.c"
     },
     {
         "directory": "/Users/olivercruickshank/Mayday",
-        "command": "clang  -c source/edit.c -g -O0 -obuild/source/edit.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "command": "clang  -c source/edit.c -O2 -obuild/source/edit.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/edit.c"
     },
     {
         "directory": "/Users/olivercruickshank/Mayday",
-        "command": "clang  -c source/mayday.c -g -O0 -obuild/source/mayday.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "command": "clang  -c source/mayday.c -O2 -obuild/source/mayday.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/mayday.c"
     },
     {
         "directory": "/Users/olivercruickshank/Mayday",
-        "command": "clang  -c source/fdg.c -g -O0 -obuild/source/fdg.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "command": "clang  -c source/fdg.c -O2 -obuild/source/fdg.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/fdg.c"
     },
     {
         "directory": "/Users/olivercruickshank/Mayday",
-        "command": "clang  -c source/ui.c -g -O0 -obuild/source/ui.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "command": "clang  -c source/ui.c -O2 -obuild/source/ui.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/ui.c"
     },
     {
         "directory": "/Users/olivercruickshank/Mayday",
-        "command": "clang -ObjC -fobjc-arc -c source/darwin/menu_bar.m -g -O0 -obuild/source/darwin/menu_bar.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "command": "clang -ObjC -fobjc-arc -c source/darwin/menu_bar.m -O2 -obuild/source/darwin/menu_bar.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/darwin/menu_bar.m"
     },
     {
         "directory": "/Users/olivercruickshank/Mayday",
-        "command": "clang  -c source/darwin/memory.c -g -O0 -obuild/source/darwin/memory.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "command": "clang  -c source/darwin/memory.c -O2 -obuild/source/darwin/memory.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/darwin/memory.c"
     },
     {
         "directory": "/Users/olivercruickshank/Mayday",
-        "command": "clang -ObjC -fobjc-arc -c source/darwin/render.m -g -O0 -obuild/source/darwin/render.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "command": "clang -ObjC -fobjc-arc -c source/darwin/render.m -O2 -obuild/source/darwin/render.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/darwin/render.m"
     },
     {
         "directory": "/Users/olivercruickshank/Mayday",
-        "command": "clang  -c source/sokol/os.c -g -O0 -obuild/source/sokol/os.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "command": "clang  -c source/sokol/os.c -O2 -obuild/source/sokol/os.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/sokol/os.c"
     },
     {
         "directory": "/Users/olivercruickshank/Mayday",
-        "command": "clang -ObjC -fobjc-arc -c external/sokol_app.m -g -O0 -obuild/external/sokol_app.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "command": "clang -ObjC -fobjc-arc -c external/sokol_app.m -O2 -obuild/external/sokol_app.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "external/sokol_app.m"
     },
     {
         "directory": "/Users/olivercruickshank/Mayday",
-        "command": "clang  -c external/stb_truetype.c -g -O0 -obuild/external/stb_truetype.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "command": "clang  -c external/stb_truetype.c -O2 -obuild/external/stb_truetype.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "external/stb_truetype.c"
     }
 ]

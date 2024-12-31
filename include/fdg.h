@@ -29,15 +29,18 @@ typedef struct bounds
 
 typedef struct octree
 {
-	struct octree  *Children[8];
+	struct octree *Children[8];
 	fdg_node *Node;
+	v3f CentreOfMass;
+	int ChildrenCount;
 	bounds Bounds;
 }
 octree;
 
 void SimulateForceDirectedGraphFast(m_arena *Arena, fdg_node *Nodes, int NodeCount,
 								fdg_link *Links, int LinkCount,
-								f32 *Temperature);
+								f32 *Temperature,
+								octree *Octant);
 
 void SimulateForceDirectedGraphSIMD(m_arena *Arena, fdg_node *Nodes, int NodeCount,
 								fdg_link *Links, int LinkCount,
@@ -45,7 +48,7 @@ void SimulateForceDirectedGraphSIMD(m_arena *Arena, fdg_node *Nodes, int NodeCou
 
 bounds GetBounds(fdg_node *Nodes, int NodeCount);
 
-void OctreeBuild(m_arena *Arena, octree *Octant, fdg_node *Node);
+void OctreeBuild(m_arena *Arena, octree *Octant, fdg_node *Node, int Depth);
 
 void DrawBounds(draw_context *Draw, m_arena *Arena, bounds Bounds);
 

@@ -28,6 +28,8 @@ typedef struct os_directory_entry
 	str8 PathAndName;
 	os_directory_entry_type Type;
 	struct os_directory_entry *First;
+	struct os_directory_entry *Last;
+	
 	struct os_directory_entry *Next;
 	struct os_directory_entry *Parent;
 }

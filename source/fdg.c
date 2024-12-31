@@ -54,7 +54,7 @@ void DrawBounds(draw_context *Draw, m_arena *Arena, bounds Bounds)
 	Lines[22] = v3f(Min.X, Min.Y, Max.Z);
 	Lines[23] = v3f(Max.X, Min.Y, Max.Z);
 
-	D_DrawLinesArray(Draw, Arena, Lines, 24, v4f(0, 1, 0, 1));
+	D_DrawLinesArray(Draw, Arena, Lines, 24, v4f(0, 0.1, 0, 1));
 }
 
 void DrawOctant(draw_context *Draw, m_arena *Arena, octree *Octant)
@@ -71,7 +71,7 @@ void DrawOctant(draw_context *Draw, m_arena *Arena, octree *Octant)
 bounds GetBounds(fdg_node *Nodes, int NodeCount)
 {
 	v3f Min = v3f(FLT_MAX, FLT_MAX, FLT_MAX);
-	v3f Max = v3f(FLT_MIN, FLT_MIN, FLT_MIN);
+	v3f Max = v3f(-FLT_MAX, -FLT_MAX, -FLT_MAX);
 	for(int I = 0; I < NodeCount; I++)
 	{
 		if(Nodes[I].TargetPosition.X < Min.X)
@@ -161,16 +161,16 @@ v3f ForceDisplacementFromPosition(octree *Octant, v3f Position, f32 K)
 	OctantSize /= 1.7;
 
 	f32 Distance = LengthV3F(SubV3F(Position, Centre));
-	if(OctantSize/Distance < 0.5)
+	if(OctantSize/Distance < 1.0)
 	{
 		f32 DX = Position.X - Centre.X;
 		f32 DY = Position.Y - Centre.Y;
 		f32 DZ = Position.Z - Centre.Z;
 		f32 DistanceSquared = DX * DX + DY * DY + DZ * DZ;
 
-		Result.X += Octant->ChildrenCount * (K * K ) * DX / Max(DistanceSquared, 0.01);
-		Result.Y += Octant->ChildrenCount * (K * K ) * DY / Max(DistanceSquared, 0.01);
-		Result.Z += Octant->ChildrenCount * (K * K ) * DZ / Max(DistanceSquared, 0.01);
+		Result.X = Octant->ChildrenCount * (K * K ) * DX / Max(DistanceSquared, 0.01);
+		Result.Y = Octant->ChildrenCount * (K * K ) * DY / Max(DistanceSquared, 0.01);
+		Result.Z = Octant->ChildrenCount * (K * K ) * DZ / Max(DistanceSquared, 0.01);
 	}
 	else
 	{

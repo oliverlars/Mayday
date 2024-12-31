@@ -76,10 +76,11 @@ void AppendDirectoryEntry(m_arena *Arena, os_directory_entry *Entries, os_direct
 	if(Entries)
 	{
 		Entry.Parent = Entries->Parent;
-		os_directory_entry *LastEntry = Entries;
-		for(;LastEntry->Next; LastEntry = LastEntry->Next);
+		os_directory_entry *LastEntry = Entries->Parent->Last;
+		
 		LastEntry->Next = ArenaPushType(Arena, os_directory_entry);
 		LastEntry->Next[0] = Entry;
+		Entries->Parent->Last = LastEntry->Next;
 	}
 	else
 	{
@@ -98,6 +99,7 @@ void InsertDirectoryEntryAsChild(m_arena *Arena, os_directory_entry *At, os_dire
 	{
 		At->First = ArenaPushType(Arena, os_directory_entry);
 		At->First[0] = Entry;
+		At->Last = At->First;
 	}
 }
 

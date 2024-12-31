@@ -698,7 +698,7 @@ int main()
 	M.UI->Font = M.CodeFont;
 
 
-	os_directory_tree Tree = OS_DirectoryTreeFromPath(M.PermanentArena, Str8PushF(Arena, "/Users/olivercruickshank/fdg"));
+	os_directory_tree Tree = OS_DirectoryTreeFromPath(M.PermanentArena, Str8PushF(Arena, "/Users/olivercruickshank/Mayday"));
 
 	os_directory_entry *Entry = Tree.Root;
 
@@ -749,7 +749,6 @@ int main()
 
 	M.ViewSize = 5.0;
 	M.ViewSizeTarget = M.ViewSize;
-	
 
 	OS_Run(M.Window, &M);
 }

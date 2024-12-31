@@ -241,7 +241,7 @@ void OS_Update(void *Data)
 	m44f ModelMatrix = M44FromYAngle(-Angle);
 	//ModelMatrix = MulM44FM44F(M44FromZAngle(Angle*0.1), ModelMatrix);
 	m44f ProjectionMatrix = M44FPerspective(sapp_widthf()/sapp_heightf(), 70, 0.01, 1000.0);
-	ProjectionMatrix = M44FOrthographic(-M->ViewSize, M->ViewSize, M->ViewSize, -M->ViewSize, -1000.0, 1000.0);
+	//ProjectionMatrix = M44FOrthographic(-M->ViewSize, M->ViewSize, M->ViewSize, -M->ViewSize, -1000.0, 1000.0);
 	m44f ViewMatrix = M44FLookAt(M->LookFrom, M->LookAt, v3f(0, 0, 1));
 
 	m44f VP = MulM44FM44F(ViewMatrix, ProjectionMatrix);
@@ -367,6 +367,8 @@ void OS_Update(void *Data)
 		
 		DrawOctant(M->Draw, M->FrameArena, &Octant);
 	}
+
+	//DrawBounds(M->Draw, M->FrameArena, (bounds){v3f(0, 0, 0), v3f(2, 2, 2)});
 
 	R_PopTransform(M->Render);
 
@@ -738,7 +740,7 @@ int main()
 	}
 	M.LinkCount = Index;
 
-	M.LookFrom = v3f(0, 5, 0);
+	M.LookFrom = v3f(0, -2, 8);
 	M.LookFromTarget = M.LookFrom;
 	M.LookAt = v3f(0, 0, 0);
 	M.LookAtTarget = M.LookAt;

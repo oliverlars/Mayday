@@ -31,6 +31,7 @@ void LogInfoF(char *FileName, char *FunctionName, u64 LineNumber, char *Format, 
 
 	str8 Result = Str8ListJoin(Logger->Arena, &List);
 	Print("?S\n\n", Result);
+	ArenaReset(Logger->Arena);
 }
 
 void LogWarnF(char *FileName, char *FunctionName, u64 LineNumber, char *Format, ...)
@@ -56,6 +57,7 @@ void LogWarnF(char *FileName, char *FunctionName, u64 LineNumber, char *Format, 
 	
 	str8 Result = Str8ListJoin(Logger->Arena, &List);
 	Print("?S\n\n", Result);
+	ArenaReset(Logger->Arena);
 }
 
 void LogErrorF(char *FileName, char *FunctionName, u64 LineNumber, char *Format, ...)
@@ -81,4 +83,5 @@ void LogErrorF(char *FileName, char *FunctionName, u64 LineNumber, char *Format,
 
 	str8 Result = Str8ListJoin(Logger->Arena, &List);
 	Print("?S\n\n", Result);
+	ArenaReset(Logger->Arena);
 }

@@ -97,17 +97,20 @@ u64 GetPageSize()
 	return getpagesize();
 }
 
+#define AlignPow2(x,b) (((x) + (b) - 1)&(~((b) - 1)))
+
 u8* ArenaPush(m_arena *Arena, s64 Bytes)
 {
-	if(Arena->At + Bytes >= Arena->Committed)
+	s64 AlignedBytes = AlignPow2(Bytes, 16);
+	if(Arena->At + AlignedBytes >= Arena->Committed)
 	{
-		s64 BytesNeeded = (Arena->At + Bytes - Arena->Committed);
+		s64 BytesNeeded = (Arena->At + AlignedBytes - Arena->Committed);
 		u64 BytesToCommit = BytesNeeded + GetPageSize() - (BytesNeeded % GetPageSize());
 		MemoryCommit(Arena->Start + Arena->Committed, BytesToCommit);
 		Arena->Committed += BytesToCommit;
 	}
 	u8* Memory = Arena->Start + Arena->At;
-	Arena->At += Bytes;
+	Arena->At += AlignedBytes;
 	
 	return Memory;
 }

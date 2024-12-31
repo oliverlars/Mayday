@@ -351,10 +351,21 @@ void OS_Update(void *Data)
 		LineIndex += 2;
 	}
 
+	octree Octant = {0};
+	Octant.Bounds = GetBounds(M->Nodes, M->NodeCount);
+
+	for(int I = 0; I < M->NodeCount; I++)
+	{
+		OctreeBuild(M->FrameArena, &Octant, &M->Nodes[I]);
+	}
+
 	if(!M->ShowEditor)
 	{
 		D_DrawPointsArray(M->Draw, M->FrameArena, Positions, M->NodeCount, v4f(1, 0, 0, 1));
 		D_DrawLinesArray(M->Draw, M->FrameArena, LinePositions, M->LinkCount*2, v4f(0.5, 0.1, 0, 1));
+
+		
+		DrawOctant(M->Draw, M->FrameArena, &Octant);
 	}
 
 	R_PopTransform(M->Render);
@@ -683,15 +694,15 @@ int main()
 	M.UI->Font = M.CodeFont;
 
 
-	os_directory_tree Tree = OS_DirectoryTreeFromPath(M.PermanentArena, Str8PushF(Arena, "/Users/olivercruickshank/Embergen/liquigen"));
+	os_directory_tree Tree = OS_DirectoryTreeFromPath(M.PermanentArena, Str8PushF(Arena, "/Users/olivercruickshank/Mayday"));
 
 	os_directory_entry *Entry = Tree.Root;
 
 	int TotalCount = OS_CountAllEntriesInDirectoryTree(Tree);
 	LogInfo("Total ?s32", TotalCount);
 
-	M.Nodes = (fdg_node*)ArenaPushZero(M.PermanentArena, sizeof(fdg_node)*TotalCount);
-	M.Links = (fdg_link*)ArenaPushZero(M.PermanentArena, sizeof(fdg_link)*TotalCount);
+	M.Nodes = (fdg_node*)ArenaPushZero(M.PermanentArena, sizeof(fdg_node)*((TotalCount + 3) & ~0x3));
+	M.Links = (fdg_link*)ArenaPushZero(M.PermanentArena, sizeof(fdg_link)*((TotalCount + 3) & ~0x3));
 
 	os_directory_tree_iterator Iter = {.Tree = Tree, .Current = Tree.Root };
 
@@ -710,15 +721,12 @@ int main()
 		Index++;
 	}
 
-
-
 	Iter.Current = Tree.Root;
 	int From = 0;
 	int To = 1;
 	Index = 0;
 	for(;OS_DirectoryTreeIterate(&Iter);)
 	{
-		//if(Index >= 5) break;
 		M.Links[Index].From = From;
 		M.Links[Index].To = To;
 		if(Iter.Current->Type == OS_DIR_ENTRY_FOLDER)
@@ -728,7 +736,6 @@ int main()
 		To++;
 		Index++;
 	}
-	// M.NodeCount = 5;
 	M.LinkCount = Index;
 
 	M.LookFrom = v3f(0, 5, 0);
@@ -738,6 +745,7 @@ int main()
 
 	M.ViewSize = 5.0;
 	M.ViewSizeTarget = M.ViewSize;
+	
 
 	OS_Run(M.Window, &M);
 }

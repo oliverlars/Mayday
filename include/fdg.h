@@ -2,6 +2,9 @@
 #include "memory.h"
 
 
+#include "draw.h"
+
+
 // Force directed graph node
 typedef struct fdg_node
 {
@@ -18,14 +21,19 @@ typedef struct fdg_link
 	int To;
 } fdg_link;
 
-f32 Fr(f32 X, f32 K);
+typedef struct bounds
+{
+	v3f Min;
+	v3f Max;
+} bounds;
 
-f32 Fa(f32 X, f32 K);
-
-
-void SimulateForceDirectedGraph(m_arena *Arena, fdg_node *Nodes, int NodeCount,
-												fdg_link *Links, int LinkCount,
-												f32 *Temperature);
+typedef struct octree
+{
+	struct octree  *Children[8];
+	fdg_node *Node;
+	bounds Bounds;
+}
+octree;
 
 void SimulateForceDirectedGraphFast(m_arena *Arena, fdg_node *Nodes, int NodeCount,
 								fdg_link *Links, int LinkCount,
@@ -34,3 +42,11 @@ void SimulateForceDirectedGraphFast(m_arena *Arena, fdg_node *Nodes, int NodeCou
 void SimulateForceDirectedGraphSIMD(m_arena *Arena, fdg_node *Nodes, int NodeCount,
 								fdg_link *Links, int LinkCount,
 								f32 *Temperature);
+
+bounds GetBounds(fdg_node *Nodes, int NodeCount);
+
+void OctreeBuild(m_arena *Arena, octree *Octant, fdg_node *Node);
+
+void DrawBounds(draw_context *Draw, m_arena *Arena, bounds Bounds);
+
+void DrawOctant(draw_context *Draw, m_arena *Arena, octree *Octant);

@@ -320,7 +320,7 @@ void OS_Update(void *Data)
 	{
 		M->ViewSizeTarget = 1.0;
 		M->LookAtTarget = ClickedNode->Position;
-		M->LookFromTarget = AddV3F(ClickedNode->Position, v3f(0, 0, 1));
+		M->LookFromTarget = AddV3F(ClickedNode->Position, v3f(0, 0, 1.0));
 		ZoomedIn = True;
 	}
 
@@ -345,7 +345,9 @@ void OS_Update(void *Data)
 		OctreeBuild(M->FrameArena, &Octant, &M->Nodes[I], 0);
 	}
 
-	SimulateForceDirectedGraphFast(M->FrameArena, M->Nodes, M->NodeCount, M->Links, M->LinkCount, &Temperature, &Octant);
+	Octant.CentreOfMass = OctreeCalculateAttributes(&Octant);
+
+	SimulateForceDirectedGraphOctree(M->FrameArena, M->Nodes, M->NodeCount, M->Links, M->LinkCount, &Temperature, &Octant);
 
 	m_scratch_arena Scratch = ScratchBegin(0, 0);
 

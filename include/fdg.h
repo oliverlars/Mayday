@@ -37,10 +37,14 @@ typedef struct octree
 }
 octree;
 
-void SimulateForceDirectedGraphFast(m_arena *Arena, fdg_node *Nodes, int NodeCount,
+void SimulateForceDirectedGraphOctree(m_arena *Arena, fdg_node *Nodes, int NodeCount,
 								fdg_link *Links, int LinkCount,
 								f32 *Temperature,
 								octree *Octant);
+
+void SimulateForceDirectedGraphFast(m_arena *Arena, fdg_node *Nodes, int NodeCount,
+								fdg_link *Links, int LinkCount,
+								f32 *Temperature);
 
 void SimulateForceDirectedGraphSIMD(m_arena *Arena, fdg_node *Nodes, int NodeCount,
 								fdg_link *Links, int LinkCount,
@@ -49,6 +53,7 @@ void SimulateForceDirectedGraphSIMD(m_arena *Arena, fdg_node *Nodes, int NodeCou
 bounds GetBounds(fdg_node *Nodes, int NodeCount);
 
 void OctreeBuild(m_arena *Arena, octree *Octant, fdg_node *Node, int Depth);
+v3f OctreeCalculateAttributes(octree *Octant);
 
 void DrawBounds(draw_context *Draw, m_arena *Arena, bounds Bounds);
 

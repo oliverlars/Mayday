@@ -105,7 +105,7 @@ bounds GetBounds(fdg_node *Nodes, int NodeCount)
 
 void OctreeBuild(m_arena *Arena, octree *Octant, fdg_node *Node, int Depth)
 {
-	if(Depth > 8) return;
+	if(Depth > 12) return;
 	v3f Min = Octant->Bounds.Min;
 	v3f Max = Octant->Bounds.Max;
 
@@ -141,7 +141,6 @@ void OctreeBuild(m_arena *Arena, octree *Octant, fdg_node *Node, int Depth)
 	}
 	else
 	{
-		Octant->ChildrenCount++;
 		fdg_node *Existing = Octant->Children[Index]->Node;
 		Octant->Children[Index]->Node = Null;
 		OctreeBuild(Arena, Octant->Children[Index], Existing, Depth + 1);
@@ -149,16 +148,64 @@ void OctreeBuild(m_arena *Arena, octree *Octant, fdg_node *Node, int Depth)
 	}
 }
 
+v3f OctreeCalculateAttributes(octree *Octant)
+{
+	if(!Octant) return v3f(0.0);
+	int ChildrenInThisOctant = 0;
+	for(int I = 0; I < 8; I++)
+	{
+		if(Octant->Children[I])
+		{
+			ChildrenInThisOctant++;
+		}
+	}
+
+	v3f CentreOfMass = v3f(0.0);
+	if(ChildrenInThisOctant == 0)
+	{
+		if(Octant->Node)
+		{
+			Octant->ChildrenCount = 1;
+			CentreOfMass = Octant->Node->TargetPosition;
+		}
+		else
+		{
+			Octant->ChildrenCount = 0;
+		}
+	}
+	else
+	{
+		int TotalChildren = 0;
+		for(int I = 0; I < 8; I++)
+		{
+			if(Octant->Children[I])
+			{
+				v3f ChildCentreOfMass = OctreeCalculateAttributes(Octant->Children[I]);
+				int ChildrenCount = Octant->Children[I]->ChildrenCount;
+				TotalChildren += ChildrenCount;
+
+
+				CentreOfMass.X += ChildCentreOfMass.X * (f32)ChildrenCount;
+				CentreOfMass.Y += ChildCentreOfMass.Y * (f32)ChildrenCount;
+				CentreOfMass.Z += ChildCentreOfMass.Z * (f32)ChildrenCount;
+
+			}
+		}
+		CentreOfMass = DivV3F(CentreOfMass, V3FromF32((f32)TotalChildren));
+		Octant->ChildrenCount = TotalChildren;
+	}
+	Octant->CentreOfMass = CentreOfMass;
+	return CentreOfMass;
+}
+
 v3f ForceDisplacementFromPosition(octree *Octant, v3f Position, f32 K)
 {
 	v3f Result = v3f(0.0);
 	if(!Octant) return Result;
 
-	v3f Centre = AddV3F(Octant->Bounds.Min, Octant->Bounds.Max);
-	Centre = DivV3F(Centre, V3FromF32(2.0));
+	v3f Centre = Octant->CentreOfMass;
 
 	f32 OctantSize = LengthV3F(SubV3F(Octant->Bounds.Min, Octant->Bounds.Max));
-	OctantSize /= 1.7;
 
 	f32 Distance = LengthV3F(SubV3F(Position, Centre));
 	if(OctantSize/Distance < 1.0)
@@ -185,7 +232,7 @@ v3f ForceDisplacementFromPosition(octree *Octant, v3f Position, f32 K)
 	return Result;
 }
 
-void SimulateForceDirectedGraphFast(m_arena *Arena, fdg_node *Nodes, int NodeCount,
+void SimulateForceDirectedGraphOctree(m_arena *Arena, fdg_node *Nodes, int NodeCount,
 								fdg_link *Links, int LinkCount,
 								f32 *Temperature,
 								octree *Octant)
@@ -197,6 +244,77 @@ void SimulateForceDirectedGraphFast(m_arena *Arena, fdg_node *Nodes, int NodeCou
 	for(int I = 0; I < NodeCount; I++)
 	{
 		Displacements[I] = ForceDisplacementFromPosition(Octant, Nodes[I].TargetPosition, K);
+	}
+
+	for(int I = 0; I < LinkCount; I++)
+	{
+		int A = Links[I].From;
+		int B = Links[I].To;
+
+		f32 DX = Nodes[A].TargetPosition.X - Nodes[B].TargetPosition.X;
+		f32 DY = Nodes[A].TargetPosition.Y - Nodes[B].TargetPosition.Y;
+		f32 DZ = Nodes[A].TargetPosition.Z - Nodes[B].TargetPosition.Z;
+		f32 Distance = sqrtf(DX * DX + DY * DY + DZ * DZ);
+
+		if(Distance > 0)
+		{
+			f32 AttractiveForce = Distance * Distance / K;
+			f32 NormDX = DX / Distance;
+			f32 NormDY = DY / Distance;
+			f32 NormDZ = DZ / Distance;
+
+			Displacements[A].X -= NormDX * AttractiveForce;
+			Displacements[A].Y -= NormDY * AttractiveForce;
+			Displacements[A].Z -= NormDZ * AttractiveForce;
+
+			Displacements[B].X += NormDX * AttractiveForce;
+			Displacements[B].Y += NormDY * AttractiveForce;
+			Displacements[B].Z += NormDZ * AttractiveForce;
+		}
+	}
+
+	for(int I = 0; I < NodeCount; I++)
+	{
+		f32 Norm = sqrtf(Displacements[I].X * Displacements[I].X + Displacements[I].Y * Displacements[I].Y + Displacements[I].Z * Displacements[I].Z);
+		if(Norm > 0)
+		{
+			Nodes[I].TargetPosition.X += (Displacements[I].X / Norm) * fmin(Norm, Temperature[0]);
+			Nodes[I].TargetPosition.Y += (Displacements[I].Y / Norm) * fmin(Norm, Temperature[0]);
+			Nodes[I].TargetPosition.Z += (Displacements[I].Z / Norm) * fmin(Norm, Temperature[0]);
+		}
+	}
+
+	Temperature[0] *= 0.95;
+
+	LogInfo("Time to simulate: ?f32", OS_MilliSecondsFromTimeStamp(OS_TimeStampNow() - Start));
+}
+
+void SimulateForceDirectedGraphFast(m_arena *Arena, fdg_node *Nodes, int NodeCount,
+								fdg_link *Links, int LinkCount,
+								f32 *Temperature)
+{
+	u64 Start = OS_TimeStampNow();
+	f32 K = sqrtf(2.0 / NodeCount);
+
+	v3f *Displacements = (v3f*)ArenaPushZero(Arena, sizeof(v3f) * NodeCount);
+	for(int I = 0; I < NodeCount; I++)
+	{
+		for(int J = I + 1; J < NodeCount; J++)
+		{
+			f32 DX = Nodes[I].TargetPosition.X - Nodes[J].TargetPosition.X;
+			f32 DY = Nodes[I].TargetPosition.Y - Nodes[J].TargetPosition.Y;
+			f32 DZ = Nodes[I].TargetPosition.Z - Nodes[J].TargetPosition.Z;
+			f32 DistanceSquared = DX * DX + DY * DY + DZ * DZ;
+
+			Displacements[I].X += (K * K) * DX / Max(DistanceSquared, 0.01);
+			Displacements[I].Y += (K * K) * DY / Max(DistanceSquared, 0.01);
+			Displacements[I].Z += (K * K) * DZ / Max(DistanceSquared, 0.01);
+
+			Displacements[J].X -= (K * K) * DX / Max(DistanceSquared, 0.01);
+			Displacements[J].Y -= (K * K) * DY / Max(DistanceSquared, 0.01);
+			Displacements[J].Z -= (K * K) * DZ / Max(DistanceSquared, 0.01);
+		}
+		
 	}
 
 	for(int I = 0; I < LinkCount; I++)

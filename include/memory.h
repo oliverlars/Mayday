@@ -46,6 +46,9 @@ void MemoryZero(void *Destination, s64 NumberOfBytes);
 u8* ArenaPush(m_arena *Arena, s64 Bytes);
 u8* ArenaPushZero(m_arena *Arena, s64 Bytes);
 
+u8 *ArenaPushAlignZero(m_arena *Arena, s64 Bytes, u64 Alignment);
+u8 *ArenaPushAlign(m_arena *Arena, s64 Bytes, u64 Alignment);
+
 m_arena *ArenaInitialise(s64 NumberOfBytes);
 
 u64 GetPageSize();

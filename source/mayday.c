@@ -289,7 +289,7 @@ void OS_Update(void *Data)
 
 		WindowSpacePoint = AddV2F(WindowSpacePoint, v2f(20, 10));
 
-		f32 FontSize = ZoomedIn ? 50 : 35;
+		f32 FontSize = ZoomedIn ? 60 : 35;
 		if(M->Nodes[I].IsFolder)
 		{
 			
@@ -331,7 +331,7 @@ void OS_Update(void *Data)
 		M->ViewSizeTarget = 1.0;
 		M->LookAtTarget = ClickedNode->TargetPosition;
 		M->LookFromTarget = ClickedNode->TargetPosition;
-		M->LookFromTarget.Z += 1;
+		M->LookFromTarget.Z += 0.5;
 		ZoomedIn = True;
 	}
 
@@ -355,7 +355,7 @@ void OS_Update(void *Data)
 	{
 		OctreeBuild(M->FrameArena, &Octant, &M->Nodes[I], 0);
 	}
-
+	
 	Octant.CentreOfMass = OctreeCalculateAttributes(&Octant);
 
 	SimulateForceDirectedGraphOctree(M->FrameArena, M->Nodes, M->NodeCount, M->Links, M->LinkCount, &Temperature, &Octant);
@@ -392,9 +392,9 @@ void OS_Update(void *Data)
 		if(!ZoomedIn)
 		{
 			M->LookAtTarget = Centre;
-			M->LookFromTarget = v3f(Centre.X, Centre.Y, 6);
+			M->LookFromTarget = v3f(Centre.X, Centre.Y, 5);
 		}
-		DrawOctant(M->Draw, M->FrameArena, &Octant);
+		//DrawOctant(M->Draw, M->FrameArena, &Octant);
 	}
 
 	R_PopTransform(M->Render);
@@ -723,7 +723,7 @@ int main()
 	M.UI->Font = M.CodeFont;
 
 
-	os_directory_tree Tree = OS_DirectoryTreeFromPath(M.PermanentArena, Str8PushF(Arena, "/Users/olivercruickshank/Mayday"));
+	os_directory_tree Tree = OS_DirectoryTreeFromPath(M.PermanentArena, Str8PushF(Arena, "/Users/olivercruickshank/EmberGen/liquigen"));
 
 	os_directory_entry *Entry = Tree.Root;
 

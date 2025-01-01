@@ -74,38 +74,21 @@ bounds GetBounds(fdg_node *Nodes, int NodeCount)
 	v3f Max = v3f(-FLT_MAX, -FLT_MAX, -FLT_MAX);
 	for(int I = 0; I < NodeCount; I++)
 	{
-		if(Nodes[I].TargetPosition.X < Min.X)
-		{
-			Min.X = Nodes[I].TargetPosition.X;
-		}
-		if(Nodes[I].TargetPosition.Y < Min.Y)
-		{
-			Min.Y = Nodes[I].TargetPosition.Y;
-		}
-		if(Nodes[I].TargetPosition.Z < Min.Z)
-		{
-			Min.Z = Nodes[I].TargetPosition.Z;
-		}
+		Min.X = Min(Min.X, Nodes[I].TargetPosition.X);
+		Min.Y = Min(Min.Y, Nodes[I].TargetPosition.Y);
+		Min.Z = Min(Min.Z, Nodes[I].TargetPosition.Z);
 
-		if(Nodes[I].TargetPosition.X > Max.X)
-		{
-			Max.X = Nodes[I].TargetPosition.X;
-		}
-		if(Nodes[I].TargetPosition.Y > Max.Y)
-		{
-			Max.Y = Nodes[I].TargetPosition.Y;
-		}
-		if(Nodes[I].TargetPosition.Z > Max.Z)
-		{
-			Max.Z = Nodes[I].TargetPosition.Z;
-		}
+		Max.X = Max(Max.X, Nodes[I].TargetPosition.X);
+		Max.Y = Max(Max.Y, Nodes[I].TargetPosition.Y);
+		Max.Z = Max(Max.Z, Nodes[I].TargetPosition.Z);
+		
 	}
 	return (bounds){Min, Max};
 }
 
 void OctreeBuild(m_arena *Arena, octree *Octant, fdg_node *Node, int Depth)
 {
-	if(Depth > 12) return;
+	if(Depth > 8) return;
 	v3f Min = Octant->Bounds.Min;
 	v3f Max = Octant->Bounds.Max;
 
@@ -150,7 +133,6 @@ void OctreeBuild(m_arena *Arena, octree *Octant, fdg_node *Node, int Depth)
 
 v3f OctreeCalculateAttributes(octree *Octant)
 {
-	if(!Octant) return v3f(0.0);
 	int ChildrenInThisOctant = 0;
 	for(int I = 0; I < 8; I++)
 	{
@@ -201,14 +183,13 @@ v3f OctreeCalculateAttributes(octree *Octant)
 v3f ForceDisplacementFromPosition(octree *Octant, v3f Position, f32 K)
 {
 	v3f Result = v3f(0.0);
-	if(!Octant) return Result;
 
 	v3f Centre = Octant->CentreOfMass;
 
 	f32 OctantSize = LengthV3F(SubV3F(Octant->Bounds.Min, Octant->Bounds.Max));
 
 	f32 Distance = LengthV3F(SubV3F(Position, Centre));
-	if(OctantSize/Distance < 2.0)
+	if(OctantSize/Distance < 1.0)
 	{
 		f32 DX = Position.X - Centre.X;
 		f32 DY = Position.Y - Centre.Y;
@@ -223,9 +204,12 @@ v3f ForceDisplacementFromPosition(octree *Octant, v3f Position, f32 K)
 	{
 		for(int I = 0; I < 8; I++)
 		{
-			Result = AddV3F(Result,
-							ForceDisplacementFromPosition(Octant->Children[I],
-														  Position, K));
+			if(Octant->Children[I])
+			{
+				Result = AddV3F(Result,
+								ForceDisplacementFromPosition(Octant->Children[I],
+															Position, K));
+			}
 		}
 	}
 
@@ -233,9 +217,9 @@ v3f ForceDisplacementFromPosition(octree *Octant, v3f Position, f32 K)
 }
 
 void SimulateForceDirectedGraphOctree(m_arena *Arena, fdg_node *Nodes, int NodeCount,
-								fdg_link *Links, int LinkCount,
-								f32 *Temperature,
-								octree *Octant)
+									  fdg_link *Links, int LinkCount,
+									  f32 *Temperature,
+									  octree *Octant)
 {
 	u64 Start = OS_TimeStampNow();
 	f32 K = sqrtf(2.0 / NodeCount);

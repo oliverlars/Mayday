@@ -504,7 +504,7 @@ void E_AppendCursor(edit_context *Edit, m_arena *Arena, cursor *Cursor, cursor N
 
 void PushUndoAction(edit_context *E, m_arena *Arena, cursor *Cursor, undo_type Type, str8 InsertedOrRemovedText)
 {
-	undo_stack *Action = (undo_stack*)ArenaPushZero(Arena, sizeof(undo_stack));
+	undo_stack *Action = ArenaPushArrayZero(Arena, undo_stack, 1);
 	Action->Index = Cursor->Selection.X;
 	Action->String = Str8PushF(Arena, "?S", InsertedOrRemovedText);
 	Action->Type = Type;

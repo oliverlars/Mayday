@@ -13,7 +13,7 @@
 
 void DrawBounds(draw_context *Draw, m_arena *Arena, bounds Bounds)
 {
-	v3f *Lines = (v3f*)ArenaPushZero(Arena, 12*2*sizeof(v3f));
+	v3f *Lines = (v3f*)ArenaPushArrayZero(Arena, v3f, 12*2);
 
 	v3f Min = Bounds.Min;
 	v3f Max = Bounds.Max;
@@ -224,7 +224,7 @@ void SimulateForceDirectedGraphOctree(m_arena *Arena, fdg_node *Nodes, int NodeC
 	u64 Start = OS_TimeStampNow();
 	f32 K = sqrtf(2.0 / NodeCount);
 
-	v3f *Displacements = (v3f*)ArenaPushZero(Arena, sizeof(v3f) * NodeCount);
+	v3f *Displacements = ArenaPushArrayZero(Arena, v3f, NodeCount);
 	for(int I = 0; I < NodeCount; I++)
 	{
 		Displacements[I] = ForceDisplacementFromPosition(Octant, Nodes[I].TargetPosition, K);
@@ -280,7 +280,7 @@ void SimulateForceDirectedGraphFast(m_arena *Arena, fdg_node *Nodes, int NodeCou
 	u64 Start = OS_TimeStampNow();
 	f32 K = sqrtf(2.0 / NodeCount);
 
-	v3f *Displacements = (v3f*)ArenaPushZero(Arena, sizeof(v3f) * NodeCount);
+	v3f *Displacements = ArenaPushArrayZero(Arena, v3f, NodeCount);
 	for(int I = 0; I < NodeCount; I++)
 	{
 		for(int J = I + 1; J < NodeCount; J++)

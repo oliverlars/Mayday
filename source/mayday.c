@@ -730,8 +730,8 @@ int main()
 	int TotalCount = OS_CountAllEntriesInDirectoryTree(Tree);
 	LogInfo("Total ?s32", TotalCount);
 
-	M.Nodes = (fdg_node*)ArenaPushZero(M.PermanentArena, sizeof(fdg_node)*TotalCount);
-	M.Links = (fdg_link*)ArenaPushZero(M.PermanentArena, sizeof(fdg_link)*TotalCount);
+	M.Nodes = (fdg_node*)ArenaPushArrayZero(M.PermanentArena, fdg_node, TotalCount);
+	M.Links = (fdg_link*)ArenaPushArrayZero(M.PermanentArena, fdg_link, TotalCount);
 
 	os_directory_tree_iterator Iter = {.Tree = Tree, .Current = Tree.Root };
 

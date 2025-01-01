@@ -217,7 +217,7 @@ void D_DrawQuad(draw_context *D,
 {
 	render_context *R = D->Render;
 	r_command Command = {0};
-	Command.Vertices = (r_vertex*)ArenaPushZero(Arena, 6*sizeof(r_vertex));
+	Command.Vertices = ArenaPushArrayZero(Arena, r_vertex, 6);
 	Command.VerticesCount = 6;
 	Command.VerticesFormat = R_VF_POSITION | R_VF_UV;
 
@@ -432,7 +432,7 @@ void D_DrawCubePoints(draw_context *D,
 {
 	render_context *R = D->Render;
 	r_command Command = {0};
-	Command.Vertices = (r_vertex*)ArenaPushZero(Arena, 8*sizeof(r_vertex));
+	Command.Vertices = ArenaPushArrayZero(Arena, r_vertex, 8);
 	Command.VerticesCount = 8;
 	Command.VerticesFormat = R_VF_POSITION | R_VF_COLOUR;
 
@@ -480,7 +480,7 @@ void D_DrawPointsArray(draw_context *D,
 {
 	render_context *R = D->Render;
 	r_command Command = {0};
-	Command.Vertices = (r_vertex*)ArenaPushZero(Arena, PositionsCount*sizeof(r_vertex));
+	Command.Vertices = (r_vertex*)ArenaPushArrayZero(Arena, r_vertex, PositionsCount);
 	Command.VerticesCount = PositionsCount;
 	Command.VerticesFormat = R_VF_POSITION | R_VF_COLOUR;
 
@@ -508,7 +508,7 @@ void D_DrawLinesArray(draw_context *D,
 {
 	render_context *R = D->Render;
 	r_command Command = {0};
-	Command.Vertices = (r_vertex*)ArenaPushZero(Arena, PositionsCount*sizeof(r_vertex));
+	Command.Vertices = (r_vertex*)ArenaPushArrayZero(Arena, r_vertex, PositionsCount);
 	Command.VerticesCount = PositionsCount;
 	Command.VerticesFormat = R_VF_POSITION | R_VF_COLOUR;
 
@@ -531,7 +531,7 @@ void D_DrawLinesArray(draw_context *D,
 void D_DrawGrid(draw_context *Draw, m_arena *Arena, f32 Size, s32 Count)
 {
 	s32 LineCount = (Count + 1) * 2; 
-	v3f *Lines = (v3f*)ArenaPushZero(Arena, LineCount * 2 * sizeof(v3f)); // Each line has 2 vertices
+	v3f *Lines = (v3f*)ArenaPushArrayZero(Arena, v3f, LineCount * 2); // Each line has 2 vertices
 
 	int Index = 0;
 

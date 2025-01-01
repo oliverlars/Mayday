@@ -230,18 +230,28 @@ void OS_Update(void *Data)
 
 		StatusBar(M);
 	}
-	if(!ZoomedIn)
+
+	Angle += M->UI->ScrollOffset.X/1000.0;
+
+
+	Angle = LerpF32(Angle, 0.0, 0.05);
+
+	m44f ModelMatrix = M44F_IDENTITY;
+
+	if(ZoomedIn)
 	{
-		Angle += 0.002;
+		ModelMatrix = M44FTranslate(MulV3F(M->LookAt, V3FromF32(1.0)));
+		ModelMatrix = MulM44FM44F(M44FromYAngle(-Angle), ModelMatrix);
+		ModelMatrix = MulM44FM44F(M44FTranslate(MulV3F(M->LookAt, V3FromF32(-1.0))), ModelMatrix);
 	}
 	else
 	{
-		Angle += 0.0001;
+		ModelMatrix = M44FromYAngle(-Angle);
 	}
-	m44f ModelMatrix = M44FromYAngle(-Angle);
+
 	//ModelMatrix = MulM44FM44F(M44FromZAngle(Angle*0.1), ModelMatrix);
 	m44f ProjectionMatrix = M44FPerspective(sapp_widthf()/sapp_heightf(), 70, 0.01, 1000.0);
-	//ProjectionMatrix = M44FOrthographic(-M->ViewSize, M->ViewSize, M->ViewSize, -M->ViewSize, -1000.0, 1000.0);
+	ProjectionMatrix = M44FOrthographic(-M->ViewSize, M->ViewSize, M->ViewSize, -M->ViewSize, -1000.0, 1000.0);
 	m44f ViewMatrix = M44FLookAt(M->LookFrom, M->LookAt, v3f(0, 1, 0));
 
 	m44f VP = MulM44FM44F(ViewMatrix, ProjectionMatrix);
@@ -319,8 +329,9 @@ void OS_Update(void *Data)
 	if(ClickedNode)
 	{
 		M->ViewSizeTarget = 1.0;
-		M->LookAtTarget = ClickedNode->Position;
-		M->LookFromTarget = AddV3F(ClickedNode->Position, v3f(0, 0, 1.0));
+		M->LookAtTarget = ClickedNode->TargetPosition;
+		M->LookFromTarget = ClickedNode->TargetPosition;
+		M->LookFromTarget.Z += 1;
 		ZoomedIn = True;
 	}
 
@@ -373,7 +384,7 @@ void OS_Update(void *Data)
 
 		bounds TotalBounds = GetBounds(M->Nodes, M->NodeCount);
 
-		DrawBounds(M->Draw, M->FrameArena, TotalBounds);
+		//DrawBounds(M->Draw, M->FrameArena, TotalBounds);
 
 		v3f Centre = DivV3F(AddV3F(TotalBounds.Min, TotalBounds.Max), V3FromF32(2.0));
 
@@ -383,7 +394,7 @@ void OS_Update(void *Data)
 			M->LookAtTarget = Centre;
 			M->LookFromTarget = v3f(Centre.X, Centre.Y, 6);
 		}
-		//DrawOctant(M->Draw, M->FrameArena, &Octant);
+		DrawOctant(M->Draw, M->FrameArena, &Octant);
 	}
 
 	R_PopTransform(M->Render);

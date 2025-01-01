@@ -208,7 +208,7 @@ v3f ForceDisplacementFromPosition(octree *Octant, v3f Position, f32 K)
 	f32 OctantSize = LengthV3F(SubV3F(Octant->Bounds.Min, Octant->Bounds.Max));
 
 	f32 Distance = LengthV3F(SubV3F(Position, Centre));
-	if(OctantSize/Distance < 1.0)
+	if(OctantSize/Distance < 2.0)
 	{
 		f32 DX = Position.X - Centre.X;
 		f32 DY = Position.Y - Centre.Y;

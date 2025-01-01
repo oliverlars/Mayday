@@ -347,18 +347,24 @@ void OS_Update(void *Data)
 	R_PopTransform(M->Render);
 
 	static f32 Temperature = 5.0;
+	octree_header Octree = {0};
+	Octree.Bounds = ArenaPushArrayZero(M->FrameArena, bounds, M->NodeCount);
+	Octree.ChildrenCounts = ArenaPushArrayZero(M->FrameArena, int, M->NodeCount);
+	Octree.Nodes = ArenaPushArrayZero(M->FrameArena, fdg_node*, M->NodeCount);
+	Octree.Masses = ArenaPushArrayZero(M->FrameArena, v3f, M->NodeCount);
+	Octree.Octants = ArenaPushArrayZero(M->FrameArena, octant, M->NodeCount);
+	Octree.NextOctantIndex = 0;
 
-	octree Octant = {0};
-	Octant.Bounds = GetBounds(M->Nodes, M->NodeCount);
+	Octree.Bounds[0] = GetBounds(M->Nodes, M->NodeCount);
 
 	for(int I = 0; I < M->NodeCount; I++)
 	{
-		OctreeBuild(M->FrameArena, &Octant, &M->Nodes[I], 0);
+		OctreeBuild(M->FrameArena, &Octree, 0, &M->Nodes[I], 0);
 	}
 	
-	Octant.CentreOfMass = OctreeCalculateAttributes(&Octant);
+	Octree.Masses[0] = OctreeCalculateAttributes(&Octree, 0);
 
-	SimulateForceDirectedGraphOctree(M->FrameArena, M->Nodes, M->NodeCount, M->Links, M->LinkCount, &Temperature, &Octant);
+	SimulateForceDirectedGraphOctree(M->FrameArena, M->Nodes, M->NodeCount, M->Links, M->LinkCount, &Temperature, &Octree);
 
 	m_scratch_arena Scratch = ScratchBegin(0, 0);
 
@@ -721,7 +727,6 @@ int main()
 	M.LogoFont = D_LoadFontFromTTF(M.Draw, G_BasementGrotesque);
 
 	M.UI->Font = M.CodeFont;
-
 
 	os_directory_tree Tree = OS_DirectoryTreeFromPath(M.PermanentArena, Str8PushF(Arena, "/Users/olivercruickshank/EmberGen/liquigen"));
 

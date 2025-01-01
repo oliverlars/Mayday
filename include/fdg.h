@@ -27,20 +27,30 @@ typedef struct bounds
 	v3f Max;
 } bounds;
 
-typedef struct octree
+
+typedef u32 octree_index;
+
+typedef struct octant
 {
-	struct octree *Children[8];
-	fdg_node *Node;
-	v3f CentreOfMass;
-	int ChildrenCount;
-	bounds Bounds;
+	octree_index Children[8];
 }
-octree;
+octant;
+
+typedef struct octree_header
+{
+	v3f       *Masses;
+	int       *ChildrenCounts;
+	fdg_node **Nodes;
+	bounds    *Bounds;
+	octant    *Octants;
+	int        Count;
+	int        NextOctantIndex;
+} octree_header;
 
 void SimulateForceDirectedGraphOctree(m_arena *Arena, fdg_node *Nodes, int NodeCount,
 								fdg_link *Links, int LinkCount,
 								f32 *Temperature,
-								octree *Octant);
+								octree_header *Octree);
 
 void SimulateForceDirectedGraphFast(m_arena *Arena, fdg_node *Nodes, int NodeCount,
 								fdg_link *Links, int LinkCount,
@@ -52,9 +62,9 @@ void SimulateForceDirectedGraphSIMD(m_arena *Arena, fdg_node *Nodes, int NodeCou
 
 bounds GetBounds(fdg_node *Nodes, int NodeCount);
 
-void OctreeBuild(m_arena *Arena, octree *Octant, fdg_node *Node, int Depth);
-v3f OctreeCalculateAttributes(octree *Octant);
+void OctreeBuild(m_arena *Arena, octree_header *Octree, octree_index OctantIndex, fdg_node *Node, int Depth);
+v3f OctreeCalculateAttributes(octree_header *Octree, int OctantIndex);
 
 void DrawBounds(draw_context *Draw, m_arena *Arena, bounds Bounds);
 
-void DrawOctant(draw_context *Draw, m_arena *Arena, octree *Octant);
+void DrawOctree(draw_context *Draw, m_arena *Arena, octree_header *Octree, int OctreeIndex);

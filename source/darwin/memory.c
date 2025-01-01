@@ -12,7 +12,7 @@ m_arena *ArenaInitialise(s64 NumberOfBytes)
 {
 	m_arena Arena = {0};
 	Arena.Start = MemoryReserve(NumberOfBytes + GetPageSize());
-	m_arena *Result = ArenaPushType(&Arena, m_arena);
+	m_arena *Result = ArenaPushArray(&Arena, m_arena, 1);
 	Arena.Start += GetPageSize();
 	Arena.At = 0;
 	Arena.Committed = 0;
@@ -97,8 +97,6 @@ u64 GetPageSize()
 	return getpagesize();
 }
 
-#define AlignPow2(x,b) (((x) + (b) - 1)&(~((b) - 1)))
-
 b32 IsPowerOfTwo(u64 Value)
 {
 	b32 Result = False;
@@ -126,7 +124,7 @@ u64 AlignUp(u64 Pointer, u64 Alignment)
 u8* ArenaPushAlign(m_arena *Arena, s64 Bytes, u64 Alignment)
 {
 	u64 AlignedPointer = AlignUp((u64)Arena->At, Alignment);
-	s64 Offset = AlignedPointer - (u64)Arena->At;
+	s64 Offset = (s64)AlignedPointer - (s64)Arena->At;
 	if(Arena->At + Offset + Bytes >= Arena->Committed)
 	{
 		s64 BytesNeeded = (Arena->At + Offset + Bytes - Arena->Committed);
@@ -142,10 +140,8 @@ u8* ArenaPushAlign(m_arena *Arena, s64 Bytes, u64 Alignment)
 
 u8 *ArenaPushAlignZero(m_arena *Arena, s64 Bytes, u64 Alignment)
 {
-	u64 Start = Arena->At;
 	u8 *Memory = ArenaPushAlign(Arena, Bytes, Alignment);
-	u64 End = Arena->At;
-	MemoryZero(Memory, End - Start);
+	MemoryZero(Memory, Bytes);
 	return Memory;
 }
 

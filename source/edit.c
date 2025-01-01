@@ -497,7 +497,7 @@ void E_AppendCursor(edit_context *Edit, m_arena *Arena, cursor *Cursor, cursor N
 	assert(Cursor);
 	Cursor = E_LastCursor(Edit, Cursor);
 
-	Cursor->Next = ArenaPushTypeZero(Arena, cursor);
+	Cursor->Next = ArenaPushArrayZero(Arena, cursor, 1);
 	NextCursor.Previous = Cursor;
 	Cursor->Next[0] = NextCursor;
 }

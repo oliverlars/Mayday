@@ -140,7 +140,7 @@ d_atlas_glyph *D_GlyphFromCodePoint(draw_context *D, d_font Font, s32 HeightInPi
 	if(Glyph->Hash != 0 && Glyph->Hash != Hash)
 	{
 		LogInfo("Glyph collision occured");
-		d_atlas_glyph *NextGlyph = ArenaPushTypeZero(D->Arena, d_atlas_glyph);
+		d_atlas_glyph *NextGlyph = ArenaPushArrayZero(D->Arena, d_atlas_glyph, 1);
 		Glyph->NextInHashSlot = NextGlyph;
 
 		int AdvanceX;

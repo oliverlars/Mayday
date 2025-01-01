@@ -4,7 +4,7 @@
 
 logger *LoggerInitialise(m_arena *Arena)
 {
-	return ArenaPushTypeZero(Arena, logger);
+	return ArenaPushArrayZero(Arena, logger, 1);
 }
 
 void LogInfoF(char *FileName, char *FunctionName, u64 LineNumber, char *Format, ...)

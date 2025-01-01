@@ -297,7 +297,7 @@ b32 Str8Equal(str8 A, str8 B)
 void Str8ListAppend(m_arena *Arena, str8_list *List, str8 String)
 {
 	if(String.Size <= 0 ) return;
-	str8_list_node *Node = ArenaPushTypeZero(Arena, str8_list_node);
+	str8_list_node *Node = ArenaPushArrayZero(Arena, str8_list_node, 1);
 	Node->String = Str8Copy(Arena, String);
 	if(List->First == Null)
 	{
@@ -314,7 +314,7 @@ void Str8ListAppend(m_arena *Arena, str8_list *List, str8 String)
 
 void Str8ListPrepend(m_arena *Arena, str8_list *List, str8 String)
 {
-	str8_list_node *Node = ArenaPushTypeZero(Arena, str8_list_node);
+	str8_list_node *Node = ArenaPushArrayZero(Arena, str8_list_node, 1);
 	Node->String = Str8Copy(Arena, String);
 	if(List->First == Null)
 	{
@@ -333,7 +333,7 @@ void Str8ListInsertBefore(m_arena *Arena, str8_list *List, str8_list_node* Node,
 {
 	if(Node->Previous != Null)
 	{
-		str8_list_node *Insert = ArenaPushTypeZero(Arena, str8_list_node);
+		str8_list_node *Insert = ArenaPushArrayZero(Arena, str8_list_node, 1);
 		Insert->String = Str8Copy(Arena, String);
 		Insert->Next = Node;
 		Insert->Previous = Node->Previous;
@@ -350,7 +350,7 @@ void Str8ListInsertAfter(m_arena *Arena, str8_list *List, str8_list_node* Node, 
 {
 	if(Node->Next != Null)
 	{
-		str8_list_node *Insert = ArenaPushTypeZero(Arena, str8_list_node);
+		str8_list_node *Insert = ArenaPushArrayZero(Arena, str8_list_node, 1);
 		Insert->String = Str8Copy(Arena, String);
 		Insert->Previous = Node;
 		Insert->Next = Node->Next;

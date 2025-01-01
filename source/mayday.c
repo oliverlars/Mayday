@@ -362,13 +362,13 @@ void OS_Update(void *Data)
 
 	m_scratch_arena Scratch = ScratchBegin(0, 0);
 
-	v3f *Positions = (v3f*)ArenaPushZero(Scratch.Arena, sizeof(v3f)*M->NodeCount);
+	v3f *Positions = (v3f*)ArenaPushArrayZero(Scratch.Arena, v3f, M->NodeCount);
 	for(int I = 0; I < M->NodeCount; I++)
 	{
 		Positions[I] = M->Nodes[I].Position;
 	}
 
-	v3f *LinePositions = (v3f*)ArenaPushZero(Scratch.Arena, sizeof(v3f)*M->LinkCount*2);
+	v3f *LinePositions = ArenaPushArrayZero(Scratch.Arena, v3f, M->LinkCount*2);
 	int LineIndex = 0;
 	for(int I = 0; I < M->LinkCount; I++)
 	{
@@ -706,10 +706,10 @@ int main()
 	M.PermanentArena = Arena;
 	M.FrameArena = FrameArena;
 
-	M.Draw = ArenaPushTypeZero(Arena, draw_context);
-	M.Render = ArenaPushTypeZero(Arena, render_context);
-	M.Edit = ArenaPushTypeZero(Arena, edit_context);
-	M.UI = ArenaPushTypeZero(Arena, ui_context);
+	M.Draw = ArenaPushArrayZero(Arena, draw_context, 1);
+	M.Render = ArenaPushArrayZero(Arena, render_context, 1);
+	M.Edit = ArenaPushArrayZero(Arena, edit_context, 1);
+	M.UI = ArenaPushArrayZero(Arena, ui_context, 1);
 	M.Draw->Render = M.Render;
 	M.Draw->Arena = Arena;
 	M.Edit->Arena = Arena;

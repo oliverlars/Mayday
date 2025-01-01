@@ -114,7 +114,7 @@ void OctreeBuild(m_arena *Arena, octree *Octant, fdg_node *Node, int Depth)
 
 	if(!Octant->Children[Index])
 	{
-		Octant->Children[Index] = (octree*)ArenaPushTypeZero(Arena, octree);
+		Octant->Children[Index] = (octree*)ArenaPushArrayZero(Arena, octree, 1);
 		Octant->Children[Index]->Bounds = ChildBounds[Index];
 	}
 

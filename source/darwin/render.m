@@ -381,7 +381,7 @@ metal_shader R_LineShader(render_context *R)
 
 void R_Init(render_context *R, m_arena *Arena, v2i Size)
 {
-	metal_context* Metal = ArenaPushTypeZero(Arena, metal_context);
+	metal_context* Metal = ArenaPushArrayZero(Arena, metal_context, 1);
 	R->Backend = Metal;
 
 	Metal->Device = (__bridge id<MTLDevice>)sapp_metal_get_device();
@@ -650,8 +650,8 @@ void R_Update(render_context *R, m_arena *FrameArena)
 		if(0){}
 		else if(Command->Type == R_COMMAND_GLYPH)
 		{	
-			gpu_vertex *GPUVertices = (gpu_vertex*)ArenaPushZero(Scratch.Arena,
-															 sizeof(gpu_vertex)*Command->VerticesCount);
+			gpu_vertex *GPUVertices = (gpu_vertex*)ArenaPushArrayZero(Scratch.Arena,
+																	  gpu_vertex, Command->VerticesCount);
 			for(int V = 0; V < Command->VerticesCount; V++)
 			{
 				v4f P = Command->Vertices[V].Position;
@@ -667,8 +667,8 @@ void R_Update(render_context *R, m_arena *FrameArena)
 		}
 		else if(Command->Type == R_COMMAND_TRIANGLE)
 		{
-			gpu_vertex *GPUVertices = (gpu_vertex*)ArenaPushZero(Scratch.Arena,
-															 sizeof(gpu_vertex)*Command->VerticesCount);
+			gpu_vertex *GPUVertices = (gpu_vertex*)ArenaPushArrayZero(Scratch.Arena,
+															 	 	  gpu_vertex, Command->VerticesCount);
 			for(int V = 0; V < Command->VerticesCount; V++)
 			{
 				v4f P = Command->Vertices[V].Position;
@@ -683,8 +683,8 @@ void R_Update(render_context *R, m_arena *FrameArena)
 		}
 		else if(Command->Type == R_COMMAND_POINTS)
 		{
-			gpu_vertex *GPUVertices = (gpu_vertex*)ArenaPushZero(Scratch.Arena,
-															 sizeof(gpu_vertex)*Command->VerticesCount);
+			gpu_vertex *GPUVertices = (gpu_vertex*)ArenaPushArrayZero(Scratch.Arena,
+																	  gpu_vertex, Command->VerticesCount);
 			for(int V = 0; V < Command->VerticesCount; V++)
 			{
 				v4f P = Command->Vertices[V].Position;
@@ -699,8 +699,8 @@ void R_Update(render_context *R, m_arena *FrameArena)
 		}
 		else if(Command->Type == R_COMMAND_LINES)
 		{
-			gpu_vertex *GPUVertices = (gpu_vertex*)ArenaPushZero(Scratch.Arena,
-															 sizeof(gpu_vertex)*Command->VerticesCount);
+			gpu_vertex *GPUVertices = (gpu_vertex*)ArenaPushArrayZero(Scratch.Arena,
+															 		  gpu_vertex, Command->VerticesCount);
 			for(int V = 0; V < Command->VerticesCount; V++)
 			{
 				v4f P = Command->Vertices[V].Position;

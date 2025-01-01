@@ -40,8 +40,8 @@ u8* MemoryReserve(s64 NumberOfBytes);
 void MemoryCommit(void *Address, s64 NumberOfBytes);
 void MemoryZero(void *Destination, s64 NumberOfBytes);
 
-#define ArenaPushType(Arena, Type) (Type*)ArenaPush(Arena, sizeof(Type))
-#define ArenaPushTypeZero(Arena, Type) (Type*)ArenaPushZero(Arena, sizeof(Type))
+#define ArenaPushArray(Arena, Type, Count) (Type*)ArenaPushAlign(Arena, sizeof(Type)*Count, _Alignof(Type))
+#define ArenaPushArrayZero(Arena, Type, Count) (Type*)ArenaPushAlignZero(Arena, sizeof(Type)*Count, _Alignof(Type))
 
 u8* ArenaPush(m_arena *Arena, s64 Bytes);
 u8* ArenaPushZero(m_arena *Arena, s64 Bytes);

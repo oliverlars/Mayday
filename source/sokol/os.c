@@ -78,7 +78,7 @@ void AppendDirectoryEntry(m_arena *Arena, os_directory_entry *Entries, os_direct
 		Entry.Parent = Entries->Parent;
 		os_directory_entry *LastEntry = Entries->Parent->Last;
 		
-		LastEntry->Next = ArenaPushType(Arena, os_directory_entry);
+		LastEntry->Next = ArenaPushArray(Arena, os_directory_entry, 1);
 		LastEntry->Next[0] = Entry;
 		Entries->Parent->Last = LastEntry->Next;
 	}
@@ -97,7 +97,7 @@ void InsertDirectoryEntryAsChild(m_arena *Arena, os_directory_entry *At, os_dire
 	}
 	else
 	{
-		At->First = ArenaPushType(Arena, os_directory_entry);
+		At->First = ArenaPushArray(Arena, os_directory_entry, 1);
 		At->First[0] = Entry;
 		At->Last = At->First;
 	}
@@ -145,7 +145,7 @@ void OS_DirectoryTreeFromPathHelper(m_arena *Arena, str8 Path, os_directory_entr
 
 os_directory_tree OS_DirectoryTreeFromPath(m_arena *Arena, str8 Path)
 {
-	os_directory_entry *EntryRoot = ArenaPushType(Arena, os_directory_entry);
+	os_directory_entry *EntryRoot = ArenaPushArrayZero(Arena, os_directory_entry, 1);
 	EntryRoot->PathAndName = Str8PushF(Arena, "?S", Path);
 	EntryRoot->Type = OS_DIR_ENTRY_FOLDER;
 	OS_DirectoryTreeFromPathHelper(Arena, Path, EntryRoot);

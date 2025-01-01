@@ -242,14 +242,14 @@ void OS_Update(void *Data)
 	//ModelMatrix = MulM44FM44F(M44FromZAngle(Angle*0.1), ModelMatrix);
 	m44f ProjectionMatrix = M44FPerspective(sapp_widthf()/sapp_heightf(), 70, 0.01, 1000.0);
 	//ProjectionMatrix = M44FOrthographic(-M->ViewSize, M->ViewSize, M->ViewSize, -M->ViewSize, -1000.0, 1000.0);
-	m44f ViewMatrix = M44FLookAt(M->LookFrom, M->LookAt, v3f(0, 0, 1));
+	m44f ViewMatrix = M44FLookAt(M->LookFrom, M->LookAt, v3f(0, 1, 0));
 
 	m44f VP = MulM44FM44F(ViewMatrix, ProjectionMatrix);
 	m44f PVM = MulM44FM44F(ModelMatrix, VP);
 	R_PushTransform(M->Render, PVM);
 
 	R_PushTransform(M->Render, VP);
-	//D_DrawGrid(M->Draw, M->FrameArena, 0.5, 10);
+	D_DrawGrid(M->Draw, M->FrameArena, 0.5, 20);
 	R_PopTransform(M->Render);
 
 	for(int I = 0; I < M->NodeCount; I++)
@@ -295,7 +295,6 @@ void OS_Update(void *Data)
 		
 		if(ZoomedIn && !M->Nodes[I].IsFolder && !ClickedNode)
 		{
-			break;
 			b32 Clicked = UI_TextButton(M->UI, M->Draw,
 				  M->FrameArena, Str8PushF(M->FrameArena, "?S##?u32", Str8FromLastCharacter(M->FrameArena, M->Nodes[I].Name, '/'), I),
 				  FontSize,
@@ -318,11 +317,12 @@ void OS_Update(void *Data)
 	{
 		M->ViewSizeTarget = 1.0;
 		M->LookAtTarget = ClickedNode->Position;
-		M->LookFromTarget = SubV3F(ClickedNode->Position, v3f(0, 0, 5));
+		M->LookFromTarget = AddV3F(ClickedNode->Position, v3f(0, 0, 2));
 		ZoomedIn = True;
 	}
 
 	M->LookAt = LerpV3f(M->LookAt, M->LookAtTarget, 0.1);
+	M->LookFrom = LerpV3f(M->LookFrom, M->LookFromTarget, 0.1);
 	M->ViewSize = LerpF32(M->ViewSize, M->ViewSizeTarget, 0.1);
 
 	if(!M->ShowEditor)
@@ -367,10 +367,8 @@ void OS_Update(void *Data)
 		D_DrawLinesArray(M->Draw, M->FrameArena, LinePositions, M->LinkCount*2, v4f(0.5, 0.1, 0, 1));
 
 		
-		//DrawOctant(M->Draw, M->FrameArena, &Octant);
+		DrawOctant(M->Draw, M->FrameArena, &Octant);
 	}
-
-	//DrawBounds(M->Draw, M->FrameArena, (bounds){v3f(0, 0, 0), v3f(2, 2, 2)});
 
 	R_PopTransform(M->Render);
 
@@ -705,8 +703,8 @@ int main()
 	int TotalCount = OS_CountAllEntriesInDirectoryTree(Tree);
 	LogInfo("Total ?s32", TotalCount);
 
-	M.Nodes = (fdg_node*)ArenaPushZero(M.PermanentArena, sizeof(fdg_node)*((TotalCount + 3) & ~0x3));
-	M.Links = (fdg_link*)ArenaPushZero(M.PermanentArena, sizeof(fdg_link)*((TotalCount + 3) & ~0x3));
+	M.Nodes = (fdg_node*)ArenaPushZero(M.PermanentArena, sizeof(fdg_node)*TotalCount);
+	M.Links = (fdg_link*)ArenaPushZero(M.PermanentArena, sizeof(fdg_link)*TotalCount);
 
 	os_directory_tree_iterator Iter = {.Tree = Tree, .Current = Tree.Root };
 
@@ -742,9 +740,14 @@ int main()
 	}
 	M.LinkCount = Index;
 
-	M.LookFrom = v3f(0, -2, 8);
+
+	bounds TotalBounds = GetBounds(M.Nodes, M.NodeCount);
+	v3f Centre = DivV3F(AddV3F(TotalBounds.Min, TotalBounds.Max), V3FromF32(2.0));
+
+
+	M.LookFrom = v3f(Centre.X, Centre.Y, 6);
 	M.LookFromTarget = M.LookFrom;
-	M.LookAt = v3f(0, 0, 0);
+	M.LookAt = Centre;
 	M.LookAtTarget = M.LookAt;
 
 	M.ViewSize = 5.0;

@@ -168,9 +168,9 @@ v3f ForceDisplacementFromPosition(octree *Octant, v3f Position, f32 K)
 		f32 DZ = Position.Z - Centre.Z;
 		f32 DistanceSquared = DX * DX + DY * DY + DZ * DZ;
 
-		Result.X = Octant->ChildrenCount * (K * K ) * DX / Max(DistanceSquared, 0.01);
-		Result.Y = Octant->ChildrenCount * (K * K ) * DY / Max(DistanceSquared, 0.01);
-		Result.Z = Octant->ChildrenCount * (K * K ) * DZ / Max(DistanceSquared, 0.01);
+		Result.X = Octant->ChildrenCount * (K * K) * DX / Max(DistanceSquared, 0.01);
+		Result.Y = Octant->ChildrenCount * (K * K) * DY / Max(DistanceSquared, 0.01);
+		Result.Z = Octant->ChildrenCount * (K * K) * DZ / Max(DistanceSquared, 0.01);
 	}
 	else
 	{

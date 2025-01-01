@@ -249,7 +249,10 @@ void OS_Update(void *Data)
 	R_PushTransform(M->Render, PVM);
 
 	R_PushTransform(M->Render, VP);
-	D_DrawGrid(M->Draw, M->FrameArena, 0.5, 20);
+	if(!M->ShowEditor)
+	{
+		//D_DrawGrid(M->Draw, M->FrameArena, 0.5, 20);
+	}
 	R_PopTransform(M->Render);
 
 	for(int I = 0; I < M->NodeCount; I++)
@@ -317,7 +320,7 @@ void OS_Update(void *Data)
 	{
 		M->ViewSizeTarget = 1.0;
 		M->LookAtTarget = ClickedNode->Position;
-		M->LookFromTarget = AddV3F(ClickedNode->Position, v3f(0, 0, 2));
+		M->LookFromTarget = AddV3F(ClickedNode->Position, v3f(0, 0, 1));
 		ZoomedIn = True;
 	}
 
@@ -366,8 +369,19 @@ void OS_Update(void *Data)
 		D_DrawPointsArray(M->Draw, M->FrameArena, Positions, M->NodeCount, v4f(1, 0, 0, 1));
 		D_DrawLinesArray(M->Draw, M->FrameArena, LinePositions, M->LinkCount*2, v4f(0.5, 0.1, 0, 1));
 
-		
-		DrawOctant(M->Draw, M->FrameArena, &Octant);
+		bounds TotalBounds = GetBounds(M->Nodes, M->NodeCount);
+
+		DrawBounds(M->Draw, M->FrameArena, TotalBounds);
+
+		v3f Centre = DivV3F(AddV3F(TotalBounds.Min, TotalBounds.Max), V3FromF32(2.0));
+
+
+		if(!ZoomedIn)
+		{
+			M->LookAtTarget = Centre;
+			M->LookFromTarget = v3f(Centre.X, Centre.Y, 6);
+		}
+		//DrawOctant(M->Draw, M->FrameArena, &Octant);
 	}
 
 	R_PopTransform(M->Render);
@@ -745,10 +759,8 @@ int main()
 	v3f Centre = DivV3F(AddV3F(TotalBounds.Min, TotalBounds.Max), V3FromF32(2.0));
 
 
-	M.LookFrom = v3f(Centre.X, Centre.Y, 6);
-	M.LookFromTarget = M.LookFrom;
-	M.LookAt = Centre;
-	M.LookAtTarget = M.LookAt;
+	M.LookFrom = v3f(0.0);
+	M.LookAt = v3f(0.0);
 
 	M.ViewSize = 5.0;
 	M.ViewSizeTarget = M.ViewSize;

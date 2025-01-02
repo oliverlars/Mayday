@@ -63,8 +63,10 @@ void DrawOctree(draw_context *Draw, m_arena *Arena, octree_header *Octree, int O
 	
 	for(int I = 0; I < 8; I++)
 	{
-
-		DrawOctree(Draw, Arena, Octree, Octree->Octants->Children[I]);
+		if(Octree->Octants[OctreeIndex].Children[I])
+		{
+			DrawOctree(Draw, Arena, Octree, Octree->Octants[OctreeIndex].Children[I]);
+		}
 	}
 }
 
@@ -117,6 +119,7 @@ void OctreeBuild(m_arena *Arena, octree_header *Octree, octree_index OctantIndex
 	if(!ChildIndex)
 	{
 		Octree->Octants[OctantIndex].Children[Index] = Octree->NextOctantIndex++;
+		ChildIndex = Octree->Octants[OctantIndex].Children[Index];
 		Octree->Bounds[ChildIndex] = ChildBounds[Index];
 	}
 
@@ -184,36 +187,52 @@ v3f OctreeCalculateAttributes(octree_header *Octree, int OctantIndex)
 	return CentreOfMass;
 }
 
+// https://patterns.eecs.berkeley.edu/?page_id=193
 v3f ForceDisplacementFromPosition(octree_header *Octree, int OctantIndex, v3f Position, f32 K)
-{
+{	
 	v3f Result = v3f(0.0);
 
-	v3f Centre = Octree->Masses[OctantIndex];
+	int OctantStack[1024];
+	int StackTop = 0;
+	OctantStack[StackTop++] = OctantIndex;
 
-	f32 OctantSize = LengthV3F(SubV3F(Octree->Bounds[OctantIndex].Min, Octree->Bounds[OctantIndex].Max));
-
-	f32 Distance = LengthV3F(SubV3F(Position, Centre));
-	if(OctantSize/Distance < 1.0)
+	for(;StackTop;)
 	{
-		f32 DX = Position.X - Centre.X;
-		f32 DY = Position.Y - Centre.Y;
-		f32 DZ = Position.Z - Centre.Z;
-		f32 DistanceSquared = DX * DX + DY * DY + DZ * DZ;
+		OctantIndex = OctantStack[--StackTop];
+		v3f Centre = Octree->Masses[OctantIndex];
 
-		Result.X = Octree->ChildrenCounts[OctantIndex] * (K * K) * DX / Max(DistanceSquared, 0.01);
-		Result.Y = Octree->ChildrenCounts[OctantIndex] * (K * K) * DY / Max(DistanceSquared, 0.01);
-		Result.Z = Octree->ChildrenCounts[OctantIndex] * (K * K) * DZ / Max(DistanceSquared, 0.01);
-	}
-	else
-	{
-		for(int I = 0; I < 8; I++)
+		f32 OctantSize = fabs(Octree->Bounds[OctantIndex].Max.X - Octree->Bounds[OctantIndex].Min.X);
+
+		v3f PositionToCentre = SubV3F(Position, Centre); 
+		f32 DistanceSquared = DotV3F(PositionToCentre, PositionToCentre);
+		f32 Distance = sqrtf(DistanceSquared);
+		if(Octree->ChildrenCounts[OctantIndex] == 1)
 		{
-			if(Octree->Octants[OctantIndex].Children[I])
+			f32 Scale = Octree->ChildrenCounts[OctantIndex] * (K * K) / (DistanceSquared + 0.01);
+
+			Result.X += Scale * PositionToCentre.X;
+			Result.Y += Scale * PositionToCentre.Y;
+			Result.Z += Scale * PositionToCentre.Z;
+		}
+		else
+		{
+			if(OctantSize/Distance < 0.05)
 			{
-				Result = AddV3F(Result,
-								ForceDisplacementFromPosition(Octree,
-															Octree->Octants[OctantIndex].Children[I],
-															Position, K));
+				f32 Scale = Octree->ChildrenCounts[OctantIndex] * (K * K) / (DistanceSquared + 0.01);
+
+				Result.X += Scale * PositionToCentre.X;
+				Result.Y += Scale * PositionToCentre.Y;
+				Result.Z += Scale * PositionToCentre.Z;
+			}
+			else
+			{			
+				for(int I = 0; I < 8; I++)
+				{
+					if(Octree->Octants[OctantIndex].Children[I])
+					{
+						OctantStack[StackTop++] = Octree->Octants[OctantIndex].Children[I];
+					}
+				}
 			}
 		}
 	}
@@ -273,7 +292,7 @@ void SimulateForceDirectedGraphOctree(m_arena *Arena, fdg_node *Nodes, int NodeC
 		}
 	}
 
-	Temperature[0] *= 0.95;
+	Temperature[0] *= 0.9;
 
 	LogInfo("Time to simulate: ?f32", OS_MilliSecondsFromTimeStamp(OS_TimeStampNow() - Start));
 }

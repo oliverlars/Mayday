@@ -1,4 +1,5 @@
 #include "fdg.h"
+#include <assert.h>
 #include <float.h>
 #include <math.h>
 
@@ -90,7 +91,6 @@ bounds GetBounds(fdg_node *Nodes, int NodeCount)
 
 void OctreeBuild(m_arena *Arena, octree_header *Octree, octree_index OctantIndex, fdg_node *Node, int Depth)
 {
-	if(Depth > 8) return;
 	v3f Min = Octree->Bounds[OctantIndex].Min;
 	v3f Max = Octree->Bounds[OctantIndex].Max;
 
@@ -125,14 +125,28 @@ void OctreeBuild(m_arena *Arena, octree_header *Octree, octree_index OctantIndex
 
 	if(Octree->Nodes[ChildIndex] == Null)
 	{
-		Octree->Nodes[ChildIndex] = Node;
+		Octree->Nodes[ChildIndex] = ArenaPushArrayZero(Arena, octant_node, 1);
+		Octree->Nodes[ChildIndex]->Node = Node;
 	}
 	else
 	{
-		fdg_node *Existing = Octree->Nodes[ChildIndex];
-		Octree->Nodes[ChildIndex] = Null;
-		OctreeBuild(Arena, Octree, ChildIndex, Existing, Depth + 1);
-		OctreeBuild(Arena, Octree, ChildIndex, Node, Depth + 1);
+		if(Octree->Nodes[ChildIndex] && (Depth >= 32 ||
+		   (LengthV3F(SubV3F(Octree->Nodes[ChildIndex]->Node->TargetPosition,
+					 Node->TargetPosition)) < 0.01)))
+		{
+			octant_node *LastNode = Octree->Nodes[ChildIndex];
+			for(;LastNode->Next; LastNode = LastNode->Next);
+
+			LastNode->Next = ArenaPushArrayZero(Arena, octant_node, 1);
+			LastNode->Next->Node = Node;
+		}
+		else
+		{
+			octant_node *Existing = Octree->Nodes[ChildIndex];
+			Octree->Nodes[ChildIndex] = Null;
+			OctreeBuild(Arena, Octree, ChildIndex, Existing->Node, Depth + 1);
+			OctreeBuild(Arena, Octree, ChildIndex, Node, Depth + 1);
+		}
 	}
 }
 
@@ -153,7 +167,14 @@ v3f OctreeCalculateAttributes(octree_header *Octree, int OctantIndex)
 		if(Octree->Nodes[OctantIndex])
 		{
 			Octree->ChildrenCounts[OctantIndex] = 1;
-			CentreOfMass = Octree->Nodes[OctantIndex]->TargetPosition;
+			octant_node *Node = Octree->Nodes[OctantIndex];
+			int Count = 0;
+			for(;Node; Node = Node->Next)
+			{
+				CentreOfMass = AddV3F(Node->Node->TargetPosition, CentreOfMass);
+				Count++;
+			}
+			CentreOfMass = DivV3F(CentreOfMass, V3FromF32((f32)Count));
 		}
 		else
 		{
@@ -188,27 +209,29 @@ v3f OctreeCalculateAttributes(octree_header *Octree, int OctantIndex)
 }
 
 // https://patterns.eecs.berkeley.edu/?page_id=193
-v3f ForceDisplacementFromPosition(octree_header *Octree, int OctantIndex, v3f Position, f32 K)
+v3f ForceDisplacementFromPosition(octree_header *Octree, int OctantIndex, v3f Position, f32 K, int *Count)
 {	
 	v3f Result = v3f(0.0);
 
 	int OctantStack[1024];
 	int StackTop = 0;
 	OctantStack[StackTop++] = OctantIndex;
+	Count[0] = 0;
 
 	for(;StackTop;)
 	{
+		Count[0] += 1;
 		OctantIndex = OctantStack[--StackTop];
 		v3f Centre = Octree->Masses[OctantIndex];
 
-		f32 OctantSize = fabs(Octree->Bounds[OctantIndex].Max.X - Octree->Bounds[OctantIndex].Min.X);
+		f32 OctantRadius = 0.5*LengthV3F(SubV3F(Octree->Bounds[OctantIndex].Max, Octree->Bounds[OctantIndex].Min));
 
 		v3f PositionToCentre = SubV3F(Position, Centre); 
 		f32 DistanceSquared = DotV3F(PositionToCentre, PositionToCentre);
 		f32 Distance = sqrtf(DistanceSquared);
 		if(Octree->ChildrenCounts[OctantIndex] == 1)
 		{
-			f32 Scale = Octree->ChildrenCounts[OctantIndex] * (K * K) / (DistanceSquared + 0.01);
+			f32 Scale = (K * K) / (DistanceSquared + 0.01);
 
 			Result.X += Scale * PositionToCentre.X;
 			Result.Y += Scale * PositionToCentre.Y;
@@ -216,7 +239,7 @@ v3f ForceDisplacementFromPosition(octree_header *Octree, int OctantIndex, v3f Po
 		}
 		else
 		{
-			if(OctantSize/Distance < 0.05)
+			if(OctantRadius/Distance < 1.0)
 			{
 				f32 Scale = Octree->ChildrenCounts[OctantIndex] * (K * K) / (DistanceSquared + 0.01);
 
@@ -251,7 +274,9 @@ void SimulateForceDirectedGraphOctree(m_arena *Arena, fdg_node *Nodes, int NodeC
 	v3f *Displacements = ArenaPushArrayZero(Arena, v3f, NodeCount);
 	for(int I = 0; I < NodeCount; I++)
 	{
-		Displacements[I] = ForceDisplacementFromPosition(Octree, 0, Nodes[I].TargetPosition, K);
+		int Count = 0;
+		Displacements[I] = ForceDisplacementFromPosition(Octree, 0, Nodes[I].TargetPosition, K, &Count);
+		//LogInfo("Nodes visited: ?u32", Count);
 	}
 
 	for(int I = 0; I < LinkCount; I++)

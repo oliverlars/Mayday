@@ -14,6 +14,12 @@ typedef struct ui_widget
 	u64 Hash;
 } ui_widget;
 
+typedef enum ui_view
+{
+	UI_VIEW_TREE,
+	UI_VIEW_EDIT,
+} ui_view;
+
 typedef struct ui_context
 {
 	u64 Hot;

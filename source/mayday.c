@@ -277,7 +277,7 @@ void OS_Update(void *Data)
 	octree_header Octree = {0};
 	Octree.Bounds = ArenaPushArrayZero(M->FrameArena, bounds, M->NodeCount*4);
 	Octree.ChildrenCounts = ArenaPushArrayZero(M->FrameArena, int, M->NodeCount*4);
-	Octree.Nodes = ArenaPushArrayZero(M->FrameArena, fdg_node*, M->NodeCount*4);
+	Octree.Nodes = ArenaPushArrayZero(M->FrameArena, octant_node*, M->NodeCount*4);
 	Octree.Masses = ArenaPushArrayZero(M->FrameArena, v3f, M->NodeCount*4);
 	Octree.Octants = ArenaPushArrayZero(M->FrameArena, octant, M->NodeCount*4);
 
@@ -291,7 +291,7 @@ void OS_Update(void *Data)
 	
 	Octree.Masses[0] = OctreeCalculateAttributes(&Octree, 0);
 
-	SimulateForceDirectedGraphFast(M->FrameArena, M->Nodes, M->NodeCount, M->Links, M->LinkCount, &Temperature);
+	SimulateForceDirectedGraphOctree(M->FrameArena, M->Nodes, M->NodeCount, M->Links, M->LinkCount, &Temperature, &Octree);
 
 	m_scratch_arena Scratch = ScratchBegin(0, 0);
 
@@ -327,7 +327,7 @@ void OS_Update(void *Data)
 			M->LookAtTarget = Centre;
 			M->LookFromTarget = v3f(Centre.X, Centre.Y, 5);
 		}
-		//DrawOctree(M->Draw, M->FrameArena, &Octree, 0);
+		DrawOctree(M->Draw, M->FrameArena, &Octree, 0);
 	}
 
 	R_PopTransform(M->Render);
@@ -655,14 +655,16 @@ int main()
 
 	M.UI->Font = M.CodeFont;
 
-	M.Tree = OS_DirectoryTreeFromPath(M.PermanentArena, Str8PushF(Arena, "/Users/olivercruickshank/fdg"));
+	M.Tree = OS_DirectoryTreeFromPath(M.PermanentArena, Str8PushF(Arena, "/Users/olivercruickshank/EmberGen/liquigen"));
 
 	M.RandomState = XorShiftInit();
 
 	bounds TotalBounds = GetBounds(M.Nodes, M.NodeCount);
 	M.LookFrom = v3f(0.0);
+	M.LookFromTarget = v3f(0.0);
 	M.LookAt = v3f(0.0);
-	M.ViewSize = 4.0;
+	M.LookAtTarget = v3f(0.0);
+	M.ViewSize = 5.0;
 	M.ViewSizeTarget = M.ViewSize;
 
 	OS_Run(M.Window, &M);

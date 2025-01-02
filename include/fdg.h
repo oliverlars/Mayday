@@ -36,15 +36,21 @@ typedef struct octant
 }
 octant;
 
+typedef struct octant_node
+{
+	fdg_node *Node;
+	struct octant_node *Next;
+} octant_node;
+
 typedef struct octree_header
 {
-	v3f       *Masses;
-	int       *ChildrenCounts;
-	fdg_node **Nodes;
-	bounds    *Bounds;
-	octant    *Octants;
-	int        Count;
-	int        NextOctantIndex;
+	v3f          *Masses;
+	int          *ChildrenCounts;
+	octant_node **Nodes;
+	bounds       *Bounds;
+	octant       *Octants;
+	int           Count;
+	int           NextOctantIndex;
 } octree_header;
 
 void SimulateForceDirectedGraphOctree(m_arena *Arena, fdg_node *Nodes, int NodeCount,

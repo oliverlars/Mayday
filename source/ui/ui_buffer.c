@@ -1,4 +1,6 @@
 #include "draw.h"
+#include "edit.h"
+#include "memory.h"
 #include "ui.h"
 
 void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
@@ -100,4 +102,37 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 	}
 
 
+}
+
+void UI_StatusBar(ui_context *UI, draw_context *Draw, edit_context *Edit,
+			   m_arena *Arena, d_font Font,
+			   cursor *Cursors, editable_buffer *Buffer,
+			   v2i Size)
+{
+	D_DrawQuad(Draw, Arena, v2f(0, 0), (f32)Size.X, 40, v4f(0.3, 0.08, 0, 1));
+
+	D_DrawStr8(Draw, Arena, Font, v2f((f32)Size.X - 200, 10), v4f(0.009, 0.00, 0, 1.0), 35, Str8("LF"));
+
+	cursor *Cursor = Cursors;
+	if(!Cursor->Next)
+	{
+		int Line = E_LineFromBufferIndex(Edit, Cursor->Selection.Y, Buffer);
+		int LineStart = E_LineStartFromIndex(Edit, Cursor->Selection.Y, Buffer);
+		int Column = Cursor->Selection.Y - LineStart;
+		D_DrawStr8(Draw, Arena,
+				   Font, v2f((f32)Size.X - 1000, 10),
+				   v4f(0.009, 0.00, 0, 1.0),
+				   35, Str8PushF(Arena, "LINE ?u32 | COLUMN ?u32", Line, Column));
+	}
+	else
+	{
+		int Count = 0;
+		for(;Cursor;Cursor = Cursor->Next)
+		{
+			Count += 1;
+		}
+		D_DrawStr8(Draw, Arena, Font, v2f((f32)Size.X - 1000, 10),
+				   v4f(0.009, 0.00, 0, 1.0), 35,
+				   Str8PushF(Arena, "?u32 SELECTIONS", Count));
+	}
 }

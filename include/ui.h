@@ -50,3 +50,11 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 			   editable_buffer *Buffer,
 			   cursor *Cursors,
 			   v2i Size);
+
+void UI_TreeView(ui_context *UI, draw_context *Draw,
+				 m_arena *Arena, d_font Font, v2i Size);
+
+void UI_StatusBar(ui_context *UI, draw_context *Draw, edit_context *Edit,
+				  m_arena *Arena, d_font Font,
+				  cursor *Cursors, editable_buffer *Buffer,
+				  v2i Size);

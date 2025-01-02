@@ -114,36 +114,6 @@ void TreeData(mayday_context *M)
 	M->LinkCount = Index;
 }
 
-void StatusBar(mayday_context *M)
-{
-	D_DrawQuad(M->Draw, M->FrameArena, v2f(0, 0), sapp_widthf(), 40, v4f(0.3, 0.08, 0, 1));
-
-	D_DrawStr8(M->Draw, M->FrameArena, M->CodeFont, v2f(sapp_widthf() - 200, 10), v4f(0.009, 0.00, 0, 1.0), 35, Str8("LF"));
-
-	cursor *Cursor = &M->Cursor;
-	if(!Cursor->Next)
-	{
-		int Line = E_LineFromBufferIndex(M->Edit, Cursor->Selection.Y, &M->Buffer);
-		int LineStart = E_LineStartFromIndex(M->Edit, Cursor->Selection.Y, &M->Buffer);
-		int Column = Cursor->Selection.Y - LineStart;
-		D_DrawStr8(M->Draw, M->FrameArena,
-				   M->CodeFont, v2f(sapp_widthf() - 1000, 10),
-				   v4f(0.009, 0.00, 0, 1.0),
-				   35, Str8PushF(M->FrameArena, "LINE ?u32 | COLUMN ?u32", Line, Column));
-	}
-	else
-	{
-		int Count = 0;
-		for(;Cursor;Cursor = Cursor->Next)
-		{
-			Count += 1;
-		}
-		D_DrawStr8(M->Draw, M->FrameArena,
-			M->CodeFont, v2f(sapp_widthf() - 1000, 10),
-			v4f(0.009, 0.00, 0, 1.0),
-			35, Str8PushF(M->FrameArena, "?u32 SELECTIONS", Count));
-	}
-}
 
 f32 Angle = 0.0f;
 
@@ -176,7 +146,9 @@ void OS_Update(void *Data)
 			   &M->Cursor,
 			   v2i(WindowWidth, WindowHeight));
 
-		StatusBar(M);
+		UI_StatusBar(M->UI, M->Draw, M->Edit, M->FrameArena, M->CodeFont,
+					 &M->Cursor, &M->Buffer,
+					 v2i(WindowWidth, WindowHeight));
 	}
 
 	Angle += M->UI->ScrollOffset.X/1000.0;

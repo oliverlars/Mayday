@@ -87,6 +87,7 @@ Entry(InputWaveInfo)
 		Str8ListAppend(&Arena, &IncludePaths, Str8("external/"));
 		Str8ListAppend(&Arena, &IncludePaths, Str8("embed/"));
 		AppendSourceFilesInFolder(&Arena, &SourceFiles, Str8("source"));
+		AppendSourceFilesInFolder(&Arena, &SourceFiles, Str8("source/ui"));
 
 		if(OS == OS_WINDOWS)
 		{

@@ -3,6 +3,25 @@
 
 #include <math.h>
 
+random32_state XorShiftInit()
+{
+	return (random32_state){ .State = XORSHIFT_STATE };
+}
+
+u32 XorShift32(random32_state *State)
+{
+	State->State ^= State->State << 13;
+	State->State ^= State->State >> 17;
+	State->State ^= State->State << 5;
+	return State->State;
+}
+
+float RandomBilateral(random32_state *State)
+{
+	float Result = (XorShift32(State) / (float)UINT32_MAX);
+
+	return Result * 2.0f - 1.0f;
+}
 
 u64 M_FNVHashString(u64 Hash, str8 String)
 {

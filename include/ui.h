@@ -4,6 +4,8 @@
 
 #include "draw.h"
 
+#include "edit.h"
+
 #define UI_TABLE_SIZE (4096)
 
 
@@ -41,3 +43,10 @@ b32 UI_TextButton(ui_context *UI, draw_context *Draw,
 				  v2f Position, v4f Colour);
 
 int UI_GetTextWidth(d_font Font, draw_context *Draw, str8 String, f32 HeightInPixels);
+
+
+void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
+			   m_arena *Arena, d_font Font,
+			   editable_buffer *Buffer,
+			   cursor *Cursors,
+			   v2i Size);

@@ -56,12 +56,63 @@ typedef struct mayday_context
 	f32 ViewSize;
 	f32 ViewSizeTarget;
 
+	random32_state RandomState;
+
+	os_directory_tree Tree;
 
 	b32 ShowEditor;
 }
 mayday_context;
 
 #include "shaders.h"
+
+void TreeData(mayday_context *M)
+{
+	os_directory_entry *Entry = M->Tree.Root;
+
+	int TotalCount = OS_CountAllEntriesInDirectoryTree(M->Tree);
+	LogInfo("Total ?s32", TotalCount);
+
+	M->Nodes = (fdg_node*)ArenaPushArrayZero(M->PermanentArena, fdg_node, TotalCount);
+	M->Links = (fdg_link*)ArenaPushArrayZero(M->PermanentArena, fdg_link, TotalCount);
+
+	os_directory_tree_iterator Iter = {.Tree = M->Tree, .Current = M->Tree.Root };
+
+	M->NodeCount = TotalCount;
+	M->Nodes[0].TargetPosition = v3f(0, 0, 0);
+	M->Nodes[0].Position = v3f(0.0);
+	M->Nodes[0].Name = M->Tree.Root->PathAndName;
+	M->Nodes[0].IsFolder = True;
+	int Index = 1;
+	for(;OS_DirectoryTreeIterate(&Iter);)
+	{
+		M->Nodes[Index].TargetPosition = v3f(RandomBilateral(&M->RandomState),
+											RandomBilateral(&M->RandomState),
+											RandomBilateral(&M->RandomState));
+		M->Nodes[Index].TargetPosition = NormalizeV3F(M->Nodes[Index].TargetPosition);
+		M->Nodes[Index].Position = M->Nodes[Index].TargetPosition;
+		M->Nodes[Index].Name = Iter.Current->PathAndName;
+		M->Nodes[Index].IsFolder = Iter.Current->Type == OS_DIR_ENTRY_FOLDER;
+		Index++;
+	}
+
+	Iter.Current = M->Tree.Root;
+	int From = 0;
+	int To = 1;
+	Index = 0;
+	for(;OS_DirectoryTreeIterate(&Iter);)
+	{
+		M->Links[Index].From = From;
+		M->Links[Index].To = To;
+		if(Iter.Current->Type == OS_DIR_ENTRY_FOLDER)
+		{
+			From = To;
+		}
+		To++;
+		Index++;
+	}
+	M->LinkCount = Index;
+}
 
 void StatusBar(mayday_context *M)
 {
@@ -94,119 +145,8 @@ void StatusBar(mayday_context *M)
 	}
 }
 
-void EditingWindow(mayday_context *M)
-{
-
-	//TODO(Oliver): Theres a better way to do this
-	int WindowHeight = OS_WindowHeight(&M->Window);
-	int WindowWidth = OS_WindowWidth(&M->Window);
-	D_DrawQuad(M->Draw, M->FrameArena, v2f(0, 0),  WindowWidth, WindowHeight, v4f(0.009, 0.00, 0, 1.0));
-
-	v2f BufferPosition = v2f(100, (f32)WindowHeight - 50 + M->UI->ScrollOffset.Y*15);
-
-	v2f NumbersPosition = v2f(10, (f32)WindowHeight - 50 + M->UI->ScrollOffset.Y*15);
-
-	f32 LineHeight = D_LineHeightFromFont(M->CodeFont, M->Buffer.HeightInPixels);
-
-
-	f32 HeightOffset = 0;
-	for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
-	{
-		// D_DrawStr8(M->Draw, M->FrameArena, M->CodeFont, v2f(1600, WindowHeight - 500 + HeightOffset), v4f(1, 1, 1, 1),
-		// 	M->Buffer.HeightInPixels, Str8PushF(M->FrameArena, "Start: ?u32 | End: ?u32 | VisualX: ?u32",
-		// 	Cursor->Selection.X, Cursor->Selection.Y, Cursor->VisualX));
-		HeightOffset -= M->Buffer.HeightInPixels;
-	}
-
-	int MainCursorLine = E_LineFromBufferIndex(M->Edit, M->Cursor.Selection.Y, &M->Buffer);
-	for(int I = 0; I < 50; I++)
-	{
-		if(MainCursorLine == I)
-		{
-			D_DrawStr8(M->Draw, M->FrameArena, M->CodeFont, NumbersPosition,
-				v4f(0.8, 0.3, 0, 1), LineHeight, Str8PushF(M->FrameArena, "?u32", I + 1));
-		}
-		else
-		{
-			D_DrawStr8(M->Draw, M->FrameArena, M->CodeFont, NumbersPosition,
-					v4f(0.1, 0.04, 0, 1), LineHeight, Str8PushF(M->FrameArena, "?u32", I + 1));
-		}
-		NumbersPosition.Y -= LineHeight;
-	}
-
-	for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
-	{
-		v2i Selection = E_GetSortedSelection(Cursor->Selection);
-		D_DrawSelectionRange(M->Draw,
-							M->FrameArena,
-							M->CodeFont,
-							BufferPosition,
-							v4f(0.04, 0.01, 0, 0.1),
-							M->Buffer.HeightInPixels,
-							M->Buffer.String,
-							Selection.X,
-							Selection.Y);
-	}
-	
-	D_DrawStr8(M->Draw,
-			M->FrameArena, M->CodeFont,
-			BufferPosition, v4f(0.8, 0.3, 0, 1),
-			M->Buffer.HeightInPixels, M->Buffer.String);
-
-
-	if(M->UI->MouseIsDragging || M->UI->MouseWasPressed)
-	{
-		M->Cursor.TargetPosition = E_GetPositionFromEditableBuffer(M->Edit,
-																	M->Draw,
-																	M->Cursor.Selection.Y,
-																	M->Buffer,
-																	M->CodeFont,
-																	BufferPosition);
-		M->Cursor.Position = M->Cursor.TargetPosition;
-		D_DrawQuad(M->Draw, M->FrameArena, M->Cursor.Position, 5, LineHeight, v4f(0.3, 0.7, 0, 1));
-	}
-	else
-	{	
-		for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
-		{
-			Cursor->TargetPosition = E_GetPositionFromEditableBuffer(M->Edit,
-																	M->Draw,
-																	Cursor->Selection.Y,
-																	M->Buffer,
-																	M->CodeFont,
-																	BufferPosition);
-
-			Cursor->Position = LerpV2f(Cursor->Position, Cursor->TargetPosition, 0.3);
-			D_DrawQuad(M->Draw, M->FrameArena, Cursor->Position, 5, LineHeight, v4f(0.3, 0.7, 0, 1));
-		}
-	}
-
-	if(M->UI->MouseIsDragging)
-	{
-		int Index = E_IndexFromPosition(M->Edit, M->Draw, M->CodeFont,
-											&M->Buffer, BufferPosition, M->UI->MousePosition);
-			
-		M->Cursor.Selection.Y = Index;
-	}
-}
-
 f32 Angle = 0.0f;
 
-
-static u32 XORSHIFT_STATE = 2463534242;
-
-u32 XorShift32() {
-	XORSHIFT_STATE ^= XORSHIFT_STATE << 13;
-	XORSHIFT_STATE ^= XORSHIFT_STATE >> 17;
-	XORSHIFT_STATE ^= XORSHIFT_STATE << 5;
-	return XORSHIFT_STATE;
-}
-
-float RandomBilateral() {
-	float Result = (XorShift32() / (float)UINT32_MAX);
-
-	return Result * 2.0f - 1.0f;
-}
 
 b32 ZoomedIn = False;
 
@@ -219,14 +159,22 @@ void OS_Update(void *Data)
 	int WindowHeight = OS_WindowHeight(&M->Window);
 	int WindowWidth = OS_WindowWidth(&M->Window);
 
-	
+	if(!M->Nodes)
+	{
+		TreeData(M);
+	}
+
 	m44f Transform = M44FOrthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0);
 	R_PushTransform(M->Render, Transform);
 
 	D_DrawQuad(M->Draw, M->FrameArena, v2f(0, 0),  WindowWidth, WindowHeight, v4f(0.008, 0.00, 0, 1.0));
 	if(M->ShowEditor)
 	{
-		EditingWindow(M);
+		UI_Buffer(M->UI, M->Draw, M->Edit,
+			   M->FrameArena, M->CodeFont,
+			   &M->Buffer,
+			   &M->Cursor,
+			   v2i(WindowWidth, WindowHeight));
 
 		StatusBar(M);
 	}
@@ -289,7 +237,8 @@ void OS_Update(void *Data)
 
 		WindowSpacePoint = AddV2F(WindowSpacePoint, v2f(20, 10));
 
-		f32 FontSize = ZoomedIn ? 60 : 35;
+
+		f32 FontSize = ZoomedIn ? 40 : 35;
 		if(M->Nodes[I].IsFolder)
 		{
 			
@@ -302,6 +251,12 @@ void OS_Update(void *Data)
 			{
 				M->UI->MouseWasPressed = False;
 				ClickedNode = M->Nodes + I;
+
+				M->Tree = OS_DirectoryTreeFromPath(M->PermanentArena, Str8PushF(M->PermanentArena, "?S", ClickedNode->Name));
+				TreeData(M);
+				M->LookFromTarget = v3f(0.0);
+				M->LookAtTarget = v3f(0.0);
+				M->ViewSizeTarget = M->ViewSize;
 			}
 			//D_DrawStr8(M->Draw, M->FrameArena, M->LogoFont, WindowSpacePoint, v4f(0.5, 0.1, 0.0, 1), 25, M->Nodes[I].Name);
 		}
@@ -326,14 +281,14 @@ void OS_Update(void *Data)
 		}
 	}
 
-	if(ClickedNode)
-	{
-		M->ViewSizeTarget = 1.0;
-		M->LookAtTarget = ClickedNode->TargetPosition;
-		M->LookFromTarget = ClickedNode->TargetPosition;
-		M->LookFromTarget.Z += 0.5;
-		ZoomedIn = True;
-	}
+	// if(ClickedNode)
+	// {
+	// 	M->ViewSizeTarget = 1.0;
+	// 	M->LookAtTarget = ClickedNode->TargetPosition;
+	// 	M->LookFromTarget = ClickedNode->TargetPosition;
+	// 	M->LookFromTarget.Z += 0.5;
+	// 	ZoomedIn = True;
+	// }
 
 	M->LookAt = LerpV3f(M->LookAt, M->LookAtTarget, 0.1);
 	M->LookFrom = LerpV3f(M->LookFrom, M->LookFromTarget, 0.1);
@@ -346,16 +301,16 @@ void OS_Update(void *Data)
 
 	R_PopTransform(M->Render);
 
-	static f32 Temperature = 5.0;
+	static f32 Temperature = 10.0;
 	octree_header Octree = {0};
-	Octree.Bounds = ArenaPushArrayZero(M->FrameArena, bounds, M->NodeCount);
-	Octree.ChildrenCounts = ArenaPushArrayZero(M->FrameArena, int, M->NodeCount);
-	Octree.Nodes = ArenaPushArrayZero(M->FrameArena, fdg_node*, M->NodeCount);
-	Octree.Masses = ArenaPushArrayZero(M->FrameArena, v3f, M->NodeCount);
-	Octree.Octants = ArenaPushArrayZero(M->FrameArena, octant, M->NodeCount);
-	Octree.NextOctantIndex = 0;
+	Octree.Bounds = ArenaPushArrayZero(M->FrameArena, bounds, M->NodeCount*4);
+	Octree.ChildrenCounts = ArenaPushArrayZero(M->FrameArena, int, M->NodeCount*4);
+	Octree.Nodes = ArenaPushArrayZero(M->FrameArena, fdg_node*, M->NodeCount*4);
+	Octree.Masses = ArenaPushArrayZero(M->FrameArena, v3f, M->NodeCount*4);
+	Octree.Octants = ArenaPushArrayZero(M->FrameArena, octant, M->NodeCount*4);
 
 	Octree.Bounds[0] = GetBounds(M->Nodes, M->NodeCount);
+	Octree.NextOctantIndex = 1;
 
 	for(int I = 0; I < M->NodeCount; I++)
 	{
@@ -364,7 +319,7 @@ void OS_Update(void *Data)
 	
 	Octree.Masses[0] = OctreeCalculateAttributes(&Octree, 0);
 
-	SimulateForceDirectedGraphOctree(M->FrameArena, M->Nodes, M->NodeCount, M->Links, M->LinkCount, &Temperature, &Octree);
+	SimulateForceDirectedGraphFast(M->FrameArena, M->Nodes, M->NodeCount, M->Links, M->LinkCount, &Temperature);
 
 	m_scratch_arena Scratch = ScratchBegin(0, 0);
 
@@ -390,7 +345,7 @@ void OS_Update(void *Data)
 
 		bounds TotalBounds = GetBounds(M->Nodes, M->NodeCount);
 
-		//DrawBounds(M->Draw, M->FrameArena, TotalBounds);
+		//DrawBounds(M->Draw, M->FrameArena, Octree.Bounds[0]);
 
 		v3f Centre = DivV3F(AddV3F(TotalBounds.Min, TotalBounds.Max), V3FromF32(2.0));
 
@@ -400,7 +355,7 @@ void OS_Update(void *Data)
 			M->LookAtTarget = Centre;
 			M->LookFromTarget = v3f(Centre.X, Centre.Y, 5);
 		}
-		//DrawOctant(M->Draw, M->FrameArena, &Octant);
+		//DrawOctree(M->Draw, M->FrameArena, &Octree, 0);
 	}
 
 	R_PopTransform(M->Render);
@@ -728,59 +683,14 @@ int main()
 
 	M.UI->Font = M.CodeFont;
 
-	os_directory_tree Tree = OS_DirectoryTreeFromPath(M.PermanentArena, Str8PushF(Arena, "/Users/olivercruickshank/EmberGen/liquigen"));
+	M.Tree = OS_DirectoryTreeFromPath(M.PermanentArena, Str8PushF(Arena, "/Users/olivercruickshank/fdg"));
 
-	os_directory_entry *Entry = Tree.Root;
-
-	int TotalCount = OS_CountAllEntriesInDirectoryTree(Tree);
-	LogInfo("Total ?s32", TotalCount);
-
-	M.Nodes = (fdg_node*)ArenaPushArrayZero(M.PermanentArena, fdg_node, TotalCount);
-	M.Links = (fdg_link*)ArenaPushArrayZero(M.PermanentArena, fdg_link, TotalCount);
-
-	os_directory_tree_iterator Iter = {.Tree = Tree, .Current = Tree.Root };
-
-	M.NodeCount = TotalCount;
-	M.Nodes[0].TargetPosition = v3f(0, 0, 0);
-	M.Nodes[0].Position = v3f(0.0);
-	M.Nodes[0].Name = Tree.Root->PathAndName;
-	M.Nodes[0].IsFolder = True;
-	int Index = 1;
-	for(;OS_DirectoryTreeIterate(&Iter);)
-	{
-		M.Nodes[Index].TargetPosition = v3f(RandomBilateral()*0.5, RandomBilateral()*0.5, RandomBilateral()*0.5);
-		M.Nodes[Index].Position = M.Nodes[Index].TargetPosition;
-		M.Nodes[Index].Name = Iter.Current->PathAndName;
-		M.Nodes[Index].IsFolder = Iter.Current->Type == OS_DIR_ENTRY_FOLDER;
-		Index++;
-	}
-
-	Iter.Current = Tree.Root;
-	int From = 0;
-	int To = 1;
-	Index = 0;
-	for(;OS_DirectoryTreeIterate(&Iter);)
-	{
-		M.Links[Index].From = From;
-		M.Links[Index].To = To;
-		if(Iter.Current->Type == OS_DIR_ENTRY_FOLDER)
-		{
-			From = To;
-		}
-		To++;
-		Index++;
-	}
-	M.LinkCount = Index;
-
+	M.RandomState = XorShiftInit();
 
 	bounds TotalBounds = GetBounds(M.Nodes, M.NodeCount);
-	v3f Centre = DivV3F(AddV3F(TotalBounds.Min, TotalBounds.Max), V3FromF32(2.0));
-
-
 	M.LookFrom = v3f(0.0);
 	M.LookAt = v3f(0.0);
-
-	M.ViewSize = 5.0;
+	M.ViewSize = 4.0;
 	M.ViewSizeTarget = M.ViewSize;
 
 	OS_Run(M.Window, &M);

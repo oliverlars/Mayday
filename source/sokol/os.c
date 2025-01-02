@@ -178,6 +178,22 @@ int OS_CountAllEntriesInDirectoryTree(os_directory_tree Tree)
 
 b32 OS_DirectoryTreeIterate(os_directory_tree_iterator *Iterator)
 {
+	b32 Result = False;
+	if(Iterator->Current->Next)
+	{
+		Result = True;
+		Iterator->Current = Iterator->Current->Next;
+	}
+	else if(Iterator->Current->First)
+	{
+		Result = True;
+		Iterator->Current = Iterator->Current->First;
+	}
+	return Result;
+}
+
+b32 OS_DirectoryTreeIterate2(os_directory_tree_iterator *Iterator)
+{
 	b32 Result = True;
 	if(!Iterator->Current)
 	{

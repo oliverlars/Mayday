@@ -21,6 +21,17 @@ typedef struct range_s32
 }
 range_s32;
 
+static u32 XORSHIFT_STATE = 2463534242;
+
+typedef struct random32_state
+{
+	u32 State;
+} random32_state;
+
+f32 RandomBilateral(random32_state *State);
+u32 XorShift32(random32_state *State);
+random32_state XorShiftInit();
+
 /*
 
 V2

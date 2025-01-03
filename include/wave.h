@@ -4,9 +4,7 @@
 #include "memory.h"
 #include "misc.h"
 
-#define Entry(Data) void *Entry(void *Data)
-
-Entry(Data);
+#define DispatchFunction(Name, Data) void *DispatchFunction(void *Data)
 
 typedef struct barrier
 {
@@ -26,7 +24,7 @@ typedef struct shared_wave_info
 
 	m_arena *Arena;
 
-	s64 Data[4096];
+	atomic_llong Data[4096];
 }
 shared_wave_info;
 
@@ -37,7 +35,7 @@ typedef struct wave_info
 }
 wave_info;
 
-void Dispatch(shared_wave_info *Shared, s64 LaneCount);
+void Dispatch(shared_wave_info *Shared, s64 LaneCount, void *(*Entry)(void*));
 
 b32 WaveIsFirstLane(wave_info *WaveInfo);
 
@@ -49,7 +47,8 @@ s64 WaveGetLaneIndex(wave_info *WaveInfo);
 
 u64 NearestPowerOfTwo(u64 Value);
 
-u64 WavePrefixSum(wave_info *WaveInfo, u64 Value);
+u64 InclusiveWavePrefixSum(wave_info *WaveInfo, u64 Value);
+u64 ExclusiveWavePrefixSum(wave_info *WaveInfo, u64 Value);
 
 u64 WaveSum(wave_info *WaveInfo, u64 Value);
 

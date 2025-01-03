@@ -5,6 +5,7 @@
 #include <os/os_sync_wait_on_address.h>
 #include <os/lock.h>
 #include <pthread.h>
+#include <stdatomic.h>
 
 s64 AtomicAdd(s64 *Value, s64 Addend)
 {
@@ -49,28 +50,28 @@ s64 LaneValueFromTotal(wave_info *WaveInfo, s64 Count)
 	return Result;
 }
 
-// void Dispatch(shared_wave_info *Shared, s64 LaneCount)
-// {
-// 	wave_info *Entries = (wave_info*)ArenaPush(Shared->Arena, LaneCount*sizeof(wave_info));
-// 	pthread_t *Waves = (pthread_t*)ArenaPush(Shared->Arena, LaneCount*sizeof(pthread_t));
+void Dispatch(shared_wave_info *Shared, s64 LaneCount, void *(*Entry)(void*))
+{
+	wave_info *Entries = (wave_info*)ArenaPushZero(Shared->Arena, LaneCount*sizeof(wave_info));
+	pthread_t *Waves = (pthread_t*)ArenaPushZero(Shared->Arena, LaneCount*sizeof(pthread_t));
 	
-// 	barrier Barrier = {0};
+	barrier Barrier = {0};
 
-// 	Shared->LaneCount = LaneCount;
-// 	Barrier.LaneCount = LaneCount;
-// 	for (s64 Lane = 0; Lane < LaneCount; Lane++)
-// 	{
-// 		Entries[Lane].Shared = Shared;
-// 		Entries[Lane].Lane = Lane;
-// 		Entries[Lane].Shared->Barrier = &Barrier;
-// 		pthread_create(Waves + Lane, Null, Entry, Entries + Lane);
-// 	}
+	Shared->LaneCount = LaneCount;
+	Barrier.LaneCount = LaneCount;
+	for (s64 Lane = 0; Lane < LaneCount; Lane++)
+	{
+		Entries[Lane].Shared = Shared;
+		Entries[Lane].Lane = Lane;
+		Entries[Lane].Shared->Barrier = &Barrier;
+		pthread_create(Waves + Lane, Null, Entry, Entries + Lane);
+	}
 
-// 	for (s64 Lane = 0; Lane < LaneCount; Lane++)
-// 	{
-// 		pthread_join(Waves[Lane], Null);
-// 	} 
-// }
+	for (s64 Lane = 0; Lane < LaneCount; Lane++)
+	{
+		pthread_join(Waves[Lane], Null);
+	} 
+}
 
 b32 WaveIsFirstLane(wave_info *WaveInfo)
 {
@@ -83,7 +84,7 @@ void BroadcastBytes(wave_info *WaveInfo, void *Bytes, s64 ByteCount)
 	if(WaveIsFirstLane(WaveInfo))
 	{
 		m_scratch_arena Scratch = ScratchBegin(0, 0);
-		Result = ArenaPush(Scratch.Arena, ByteCount);
+		Result = ArenaPushZero(Scratch.Arena, ByteCount);
 		MemoryCopy(Result, Bytes, ByteCount);
 		ScratchEnd(Scratch);
 	}
@@ -114,66 +115,77 @@ u64 NearestPowerOfTwo(u64 Value)
 }
 
 /*
+This could be faster probably but it's fine and works,
+I don't own a threadripper so this will be fine for
+32 core computers...
+
+The following link shows a faster version that would work better.
+
 GPU Gems 3
 https://www.youtube.com/watch?v=1G8CZioSjnM
 */
-u64 WavePrefixSum(wave_info *WaveInfo, u64 Value)
+u64 InclusiveWavePrefixSum(wave_info *WaveInfo, u64 Value)
 {
+	WaveBarrier(WaveInfo->Shared->Barrier);
 	WaveInfo->Shared->Data[WaveInfo->Lane] = Value;
 	WaveInfo->Shared->Data[0] = 0;
 	WaveBarrier(WaveInfo->Shared->Barrier);
-	int Offset = 1;
 
-	for(int D = NearestPowerOfTwo(WaveInfo->Shared->LaneCount)/2; D > 0; D >>= 1)
+	int PerLaneSum = 0;
+	for(int I = 0; I <= WaveInfo->Lane; I++)
 	{
-		WaveBarrier(WaveInfo->Shared->Barrier);
-		if(WaveInfo->Lane < D)
-		{
-			int AI = Offset * (2 * WaveInfo->Lane + 1)-1;
-			int BI = Offset * (2 * WaveInfo->Lane + 2)-1;
-			WaveInfo->Shared->Data[BI] += WaveInfo->Shared->Data[AI];
-		}
-		Offset *= 2;
+		PerLaneSum += WaveInfo->Shared->Data[WaveInfo->Lane];
 	}
+	WaveBarrier(WaveInfo->Shared->Barrier);
+	WaveInfo->Shared->Data[WaveInfo->Lane] = PerLaneSum;
+	WaveBarrier(WaveInfo->Shared->Barrier);
+	return WaveInfo->Shared->Data[WaveInfo->Lane];
+}
 
-	for(int D = 2; D < NearestPowerOfTwo(WaveInfo->Shared->LaneCount); D *= 2)
+u64 ExclusiveWavePrefixSum(wave_info *WaveInfo, u64 Value)
+{
+	WaveBarrier(WaveInfo->Shared->Barrier);
+	WaveInfo->Shared->Data[WaveInfo->Lane] = Value;
+	WaveInfo->Shared->Data[0] = 0;
+	WaveBarrier(WaveInfo->Shared->Barrier);
+
+	int PerLaneSum = 0;
+	for(int I = 0; I <= WaveInfo->Lane; I++)
 	{
-		Offset >>= 1;
-		WaveBarrier(WaveInfo->Shared->Barrier);
-		if(WaveInfo->Lane < D-1)
-		{
-			int AI = Offset*(WaveInfo->Lane + 1) - 1;
-			int BI = Offset*(WaveInfo->Lane + 1) + (Offset/2) - 1;
-			WaveInfo->Shared->Data[BI] += WaveInfo->Shared->Data[AI];
-		}
+		PerLaneSum += WaveInfo->Shared->Data[WaveInfo->Lane];
 	}
+	WaveBarrier(WaveInfo->Shared->Barrier);
+	WaveInfo->Shared->Data[WaveInfo->Lane] = PerLaneSum;
 	WaveBarrier(WaveInfo->Shared->Barrier);
 	return WaveInfo->Shared->Data[WaveInfo->Lane];
 }
 
 u64 WaveSum(wave_info *WaveInfo, u64 Value)
 {
-	WaveInfo->Shared->Data[0] = 0;
 	WaveBarrier(WaveInfo->Shared->Barrier);
-	AtomicAdd(WaveInfo->Shared->Data + 0, Value);
+	atomic_store_explicit(WaveInfo->Shared->Data + 0, 0, memory_order_release);
 	WaveBarrier(WaveInfo->Shared->Barrier);
-	return WaveInfo->Shared->Data[0];
+	atomic_fetch_add_explicit(WaveInfo->Shared->Data + 0, Value, memory_order_consume);
+	WaveBarrier(WaveInfo->Shared->Barrier);
+	return atomic_load_explicit(WaveInfo->Shared->Data + 0, memory_order_acquire);
 }
 
 b32 WaveAnyTrue(wave_info *WaveInfo, b32 Expression)
 {
-	WaveInfo->Shared->Data[0] = 0;
 	WaveBarrier(WaveInfo->Shared->Barrier);
-	AtomicAdd(WaveInfo->Shared->Data + 0, Expression);
+	atomic_store_explicit(WaveInfo->Shared->Data + 0, 0, memory_order_release);
 	WaveBarrier(WaveInfo->Shared->Barrier);
-	return WaveInfo->Shared->Data[0] > 0;
+	atomic_fetch_add_explicit(WaveInfo->Shared->Data + 0, Expression, memory_order_consume);
+	WaveBarrier(WaveInfo->Shared->Barrier);
+	return atomic_load_explicit(WaveInfo->Shared->Data + 0, memory_order_acquire) > 0;
 }
 
 b32 WaveAllTrue(wave_info *WaveInfo, b32 Expression)
 {
-	WaveInfo->Shared->Data[0] = 0;
 	WaveBarrier(WaveInfo->Shared->Barrier);
-	AtomicAdd(WaveInfo->Shared->Data + 0, Expression);
+	atomic_store_explicit(WaveInfo->Shared->Data + 0, 0, memory_order_release);
 	WaveBarrier(WaveInfo->Shared->Barrier);
-	return WaveInfo->Shared->Data[0] == WaveInfo->Shared->LaneCount;
+	atomic_fetch_add_explicit(WaveInfo->Shared->Data + 0, Expression, memory_order_acq_rel);
+	WaveBarrier(WaveInfo->Shared->Barrier);
+	return atomic_load_explicit(WaveInfo->Shared->Data + 0, memory_order_acquire) == WaveInfo->Shared->LaneCount;
 }

@@ -61,6 +61,11 @@
     },
     {
         "directory": "/Users/olivercruickshank/Mayday",
+        "command": "clang  -c source/darwin/wave.c -O2 -obuild/source/darwin/wave.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "file": "source/darwin/wave.c"
+    },
+    {
+        "directory": "/Users/olivercruickshank/Mayday",
         "command": "clang -ObjC -fobjc-arc -c source/darwin/render.m -O2 -obuild/source/darwin/render.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/darwin/render.m"
     },

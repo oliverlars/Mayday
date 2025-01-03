@@ -63,36 +63,36 @@ u8 *SharedArenaPush(struct wave_info *WaveInfo, s64 Bytes);
 
 typedef enum operating_system
 {
-    OS_WINDOWS,
-    OS_DARWIN,
-    OS_LINUX,
+	OS_WINDOWS,
+	OS_DARWIN,
+	OS_LINUX,
 }
 operating_system;
 
 typedef struct memory_arena
 {
-    u8 *Start;
-    s64 Committed;
-    s64 At;
+	u8 *Start;
+	s64 Committed;
+	s64 At;
 } memory_arena;
 
 typedef struct str8
 {
-    s64 Size;
-    s8 *Bytes;
+	s64 Size;
+	s8 *Bytes;
 } str8;
 
 typedef struct str8_list_node
 {
-    struct str8_list_node *Next;
-    struct str8_list_node *Previous;
-    str8 String;
+	struct str8_list_node *Next;
+	struct str8_list_node *Previous;
+	str8 String;
 } str8_list_node;
 
 typedef struct str8_list
 {
-    str8_list_node *First;
-    str8_list_node *Last;
+	str8_list_node *First;
+	str8_list_node *Last;
 } str8_list;
 
 #define array(T) struct { T *Items; s64 Count; }
@@ -102,53 +102,53 @@ typedef array(str8) str8_array;
 #if defined(__APPLE__)
 typedef enum compiler
 {
-    COMPILER_PLATFORM_DEFAULT = 0,
-    COMPILER_CLANG = 0,
-    COMPILER_GCC = 1,
+	COMPILER_PLATFORM_DEFAULT = 0,
+	COMPILER_CLANG = 0,
+	COMPILER_GCC = 1,
 
-    COMPILER_MSVC = COMPILER_PLATFORM_DEFAULT,
+	COMPILER_MSVC = COMPILER_PLATFORM_DEFAULT,
 
-    COMPILER_COUNT,
+	COMPILER_COUNT,
 } compiler;
 #elif defined(_WIN32)
 typedef enum compiler
 {
-    COMPILER_PLATFORM_DEFAULT = 0,
-    COMPILER_MSVC = 0,
-    COMPILER_CLANG = 1,
+	COMPILER_PLATFORM_DEFAULT = 0,
+	COMPILER_MSVC = 0,
+	COMPILER_CLANG = 1,
 
-    COMPILER_GCC = COMPILER_PLATFORM_DEFAULT,
-    COMPILER_COUNT,
+	COMPILER_GCC = COMPILER_PLATFORM_DEFAULT,
+	COMPILER_COUNT,
 } compiler;
 #endif
 
 typedef enum output_type
 {
-    OUTPUT_EXECUTABLE,
-    OUTPUT_STATIC_LIBRARY,
-    OUTPUT_DYNAMIC_LIBRARY,
-    OUTPUT_COUNT,
+	OUTPUT_EXECUTABLE,
+	OUTPUT_STATIC_LIBRARY,
+	OUTPUT_DYNAMIC_LIBRARY,
+	OUTPUT_COUNT,
 } output_type;
 
 typedef struct build_options
 {
-    compiler Compiler;
+	compiler Compiler;
 
-    output_type OutputType;
-    str8 OutputName;
-    str8 OutputPath;
+	output_type OutputType;
+	str8 OutputName;
+	str8 OutputPath;
 
-    str8 WorkingDirectory;
+	str8 WorkingDirectory;
 
-    str8_list IncludePaths;
-    str8_list SourceFiles;
-    str8_list ExtraLinkFlags;
-    str8_list ExtraCompileFlags;
+	str8_list IncludePaths;
+	str8_list SourceFiles;
+	str8_list ExtraLinkFlags;
+	str8_list ExtraCompileFlags;
 
-    b32 Optimise;
-    b32 FullRebuild;
-    b32 GenerateDebugInfo;
-    b32 PrintHelpMenu;
+	b32 Optimise;
+	b32 FullRebuild;
+	b32 GenerateDebugInfo;
+	b32 PrintHelpMenu;
 } build_options;
 
 
@@ -199,242 +199,242 @@ extern char **environ;
 
 operating_system GetOperatingSystem()
 {
-    return OS_DARWIN;
+	return OS_DARWIN;
 }
 
 u64 GetPageSize()
 {
-    return getpagesize();
+	return getpagesize();
 }
 
 str8 LoadEntireFileIntoMemory(memory_arena *Arena, str8 Filename)
 {
-    s32 FileHandle = open(CStrFromStr8(Arena, Filename), O_RDONLY);
-    if (FileHandle == -1)
-    {
-        printf("File not found");
-        return (str8){0};
-    }
+	s32 FileHandle = open(CStrFromStr8(Arena, Filename), O_RDONLY);
+	if (FileHandle == -1)
+	{
+		printf("File not found");
+		return (str8){0};
+	}
 
-    struct stat FileStat;
-    fstat(FileHandle, &FileStat);
+	struct stat FileStat;
+	fstat(FileHandle, &FileStat);
 
-    u8 *BackingMemory = ArenaPush(Arena, (u64)FileStat.st_size + 1);
-    BackingMemory[FileStat.st_size] = 0;
+	u8 *BackingMemory = ArenaPush(Arena, (u64)FileStat.st_size + 1);
+	BackingMemory[FileStat.st_size] = 0;
 
-    str8 Result = {0};
-    Result.Bytes = (s8*)BackingMemory;
-    Result.Size = FileStat.st_size;
+	str8 Result = {0};
+	Result.Bytes = (s8*)BackingMemory;
+	Result.Size = FileStat.st_size;
 
-    ssize_t BytesRead = read(FileHandle, BackingMemory, FileStat.st_size);
+	ssize_t BytesRead = read(FileHandle, BackingMemory, FileStat.st_size);
 
-    return Result;
+	return Result;
 }
 
 void WriteStringToDisk(memory_arena *Arena, str8 DestinationPath, str8 StringToWrite)
 {
-    s32 FileDescriptor = creat(CStrFromStr8(Arena, DestinationPath), S_IRUSR | S_IWUSR );
-    s64 BytesWritten = write(FileDescriptor, StringToWrite.Bytes, StringToWrite.Size);
+	s32 FileDescriptor = creat(CStrFromStr8(Arena, DestinationPath), S_IRUSR | S_IWUSR );
+	s64 BytesWritten = write(FileDescriptor, StringToWrite.Bytes, StringToWrite.Size);
 }
 
 str8 GetExecutableDirectory(memory_arena *Arena)
 {
-    s32 NumberOfBytes = PATH_MAX;
-    u8 *BackingMemory = ArenaPushZero(Arena, NumberOfBytes);
+	s32 NumberOfBytes = PATH_MAX;
+	u8 *BackingMemory = ArenaPushZero(Arena, NumberOfBytes);
 
-    getcwd((char*)BackingMemory, PATH_MAX);
+	getcwd((char*)BackingMemory, PATH_MAX);
 
-    str8 Result = {0};
-    Result.Size = NumberOfBytes;
-    Result.Bytes = (s8*)BackingMemory;
+	str8 Result = {0};
+	Result.Size = NumberOfBytes;
+	Result.Bytes = (s8*)BackingMemory;
 
-    return Result;
+	return Result;
 }
 
 void AppendSourceFilesInFolder(memory_arena *Arena, str8_list *SourceFilesFromFolder, str8 Path)
 {
-    str8 SourceFilesInDirectory = Str8PushF(Arena, "%.*s/", Str8ToPrintfArgs(Path));
-    
-    DIR *Directory = opendir((char*)SourceFilesInDirectory.Bytes);
-    struct dirent *Entry;
-    while((Entry = readdir(Directory))) 
-    {
-        if (Entry->d_name[0] != '.' && (Str8EndsWith(Str8(Entry->d_name), Str8(".c")) ||
-                                        Str8EndsWith(Str8(Entry->d_name), Str8(".m"))))
-        {
-            struct stat FileStat;
-            stat(Entry->d_name, &FileStat);
-            if (!S_ISDIR(FileStat.st_mode))
-            {
-                str8 SourceFilepath = Str8PushF(Arena, "%.*s/%s", Str8ToPrintfArgs(Path), Entry->d_name);
-                Str8ListAppend(Arena, SourceFilesFromFolder, SourceFilepath);
-            }
-        }
-    }
+	str8 SourceFilesInDirectory = Str8PushF(Arena, "%.*s/", Str8ToPrintfArgs(Path));
+	
+	DIR *Directory = opendir((char*)SourceFilesInDirectory.Bytes);
+	struct dirent *Entry;
+	while((Entry = readdir(Directory))) 
+	{
+		if (Entry->d_name[0] != '.' && (Str8EndsWith(Str8(Entry->d_name), Str8(".c")) ||
+										Str8EndsWith(Str8(Entry->d_name), Str8(".m"))))
+		{
+			struct stat FileStat;
+			stat(Entry->d_name, &FileStat);
+			if (!S_ISDIR(FileStat.st_mode))
+			{
+				str8 SourceFilepath = Str8PushF(Arena, "%.*s/%s", Str8ToPrintfArgs(Path), Entry->d_name);
+				Str8ListAppend(Arena, SourceFilesFromFolder, SourceFilepath);
+			}
+		}
+	}
 }
 
 void MakeDirectoryFromPath(memory_arena *Arena, str8 Path)
 {
-    mkdir(CStrFromStr8(Arena, Path), 0755);
+	mkdir(CStrFromStr8(Arena, Path), 0755);
 }
 
 b32 FileExists(memory_arena *Arena, str8 Filename)
 {
-    return access(CStrFromStr8(Arena, Filename), F_OK) == 0;
+	return access(CStrFromStr8(Arena, Filename), F_OK) == 0;
 }
 
 s64 AtomicAdd(s64 *Value, s64 Addend)
 {
-    return __sync_fetch_and_add(Value, Addend);
+	return __sync_fetch_and_add(Value, Addend);
 }
 
 u64 TimeStampNow()
 {
-    return mach_absolute_time();
+	return mach_absolute_time();
 }
 
 f32 MilliSecondsFromTimeStamp(u64 TimeStamp)
 {
-    mach_timebase_info_data_t Info;
-    mach_timebase_info(&Info);
+	mach_timebase_info_data_t Info;
+	mach_timebase_info(&Info);
 
-    return (f32)((TimeStamp) * Info.numer / Info.denom) / 1000000.0;
+	return (f32)((TimeStamp) * Info.numer / Info.denom) / 1000000.0;
 
 }
 
 s64 GetNumberOfCPUs()
 {
-    s32 NumberOfCPUs;
-    size_t len = sizeof(NumberOfCPUs);
+	s32 NumberOfCPUs;
+	size_t len = sizeof(NumberOfCPUs);
 
-    sysctlbyname("hw.ncpu", &NumberOfCPUs, &len, NULL, 0);
+	sysctlbyname("hw.ncpu", &NumberOfCPUs, &len, NULL, 0);
 
-    return NumberOfCPUs;
+	return NumberOfCPUs;
 }
 
 str8_list ListOfDirectoryEntriesFromPath(memory_arena *Arena, str8 Path)
 {
-    str8_list Entries = { 0 };
-    DIR *Directory = opendir(CStrFromStr8(Arena, Path));
-    struct dirent *Entry;
-    while((Entry = readdir(Directory)))
-    {
-        if(Entry->d_name[0] != '.')
-        {
-            Str8ListAppend(Arena, &Entries, Str8PushF(Arena, "%s", Entry->d_name));
-        }
-    }
-    return Entries;
+	str8_list Entries = { 0 };
+	DIR *Directory = opendir(CStrFromStr8(Arena, Path));
+	struct dirent *Entry;
+	while((Entry = readdir(Directory)))
+	{
+		if(Entry->d_name[0] != '.')
+		{
+			Str8ListAppend(Arena, &Entries, Str8PushF(Arena, "%s", Entry->d_name));
+		}
+	}
+	return Entries;
 }
 
 void DeleteFileFromDisk(memory_arena *Arena, str8 Filename)
 {
-    remove(CStrFromStr8(Arena, Filename));    
+	remove(CStrFromStr8(Arena, Filename));    
 }
 
 b32 ExecuteCommand(memory_arena *Arena, str8 EntireCommandAndArguments, b32 *FailedToExecute)
 {
-    s32 Pipes[2];
-    pid_t ProcessID;
-    posix_spawn_file_actions_t SpawnActions;
+	s32 Pipes[2];
+	pid_t ProcessID;
+	posix_spawn_file_actions_t SpawnActions;
 
-    pipe(Pipes);
+	pipe(Pipes);
 
-    posix_spawn_file_actions_init(&SpawnActions);
-    posix_spawn_file_actions_adddup2(&SpawnActions, Pipes[1], STDOUT_FILENO);
-    posix_spawn_file_actions_addclose(&SpawnActions, Pipes[0]);
+	posix_spawn_file_actions_init(&SpawnActions);
+	posix_spawn_file_actions_adddup2(&SpawnActions, Pipes[1], STDOUT_FILENO);
+	posix_spawn_file_actions_addclose(&SpawnActions, Pipes[0]);
 
-    char** CompilerArguments = (char**)ArenaPushZero(Arena, 1024);
-    u64 ArgumentIndex = 0;
-    for(u64 Index = 0; Index < EntireCommandAndArguments.Size; Index++, ArgumentIndex++)
-    {
-        GobbleWhitespace(EntireCommandAndArguments, &Index);
-        u64 IndexUpToWhitespace = Index;
-        GobbleUpToWhitespace(EntireCommandAndArguments, &IndexUpToWhitespace);
-        str8 Argument = { 0 };
-        Argument.Bytes = EntireCommandAndArguments.Bytes + Index;
-        Argument.Size = IndexUpToWhitespace - Index;
-        CompilerArguments[ArgumentIndex] = CStrFromStr8(Arena, Argument);
-        Index += Argument.Size;
-    }
+	char** CompilerArguments = (char**)ArenaPushZero(Arena, 1024);
+	u64 ArgumentIndex = 0;
+	for(u64 Index = 0; Index < EntireCommandAndArguments.Size; Index++, ArgumentIndex++)
+	{
+		GobbleWhitespace(EntireCommandAndArguments, &Index);
+		u64 IndexUpToWhitespace = Index;
+		GobbleUpToWhitespace(EntireCommandAndArguments, &IndexUpToWhitespace);
+		str8 Argument = { 0 };
+		Argument.Bytes = EntireCommandAndArguments.Bytes + Index;
+		Argument.Size = IndexUpToWhitespace - Index;
+		CompilerArguments[ArgumentIndex] = CStrFromStr8(Arena, Argument);
+		Index += Argument.Size;
+	}
 
-    s32 ProcessStatus = posix_spawnp(&ProcessID, CompilerArguments[0], &SpawnActions, Null, CompilerArguments, environ);
-    if (ProcessStatus == 0)
-    {
-        close(Pipes[1]);
+	s32 ProcessStatus = posix_spawnp(&ProcessID, CompilerArguments[0], &SpawnActions, Null, CompilerArguments, environ);
+	if (ProcessStatus == 0)
+	{
+		close(Pipes[1]);
 
-        s32 ExitCode;
-        waitpid(ProcessID, &ExitCode, 0);
+		s32 ExitCode;
+		waitpid(ProcessID, &ExitCode, 0);
 
-        FailedToExecute[0] = WEXITSTATUS(ExitCode) != 0;
-        
-        s64 NumberOfBytesRead = 0;
-        str8_list StdOutList = {0};
+		FailedToExecute[0] = WEXITSTATUS(ExitCode) != 0;
+		
+		s64 NumberOfBytesRead = 0;
+		str8_list StdOutList = {0};
 
-        u8 *BackingMemory = ArenaPushZero(Arena, 4096);
-        while ((NumberOfBytesRead = read(Pipes[0], BackingMemory, 4096)) > 0) 
-        {
-            str8 String = {.Bytes = (s8*)BackingMemory, .Size = NumberOfBytesRead};
-            Str8ListAppend(Arena, &StdOutList, String);
-        }
-        str8 OutputString = Str8ListJoin(Arena, StdOutList);
-        printf("%.*s", Str8ToPrintfArgs(OutputString));   
-    }
+		u8 *BackingMemory = ArenaPushZero(Arena, 4096);
+		while ((NumberOfBytesRead = read(Pipes[0], BackingMemory, 4096)) > 0) 
+		{
+			str8 String = {.Bytes = (s8*)BackingMemory, .Size = NumberOfBytesRead};
+			Str8ListAppend(Arena, &StdOutList, String);
+		}
+		str8 OutputString = Str8ListJoin(Arena, StdOutList);
+		printf("%.*s", Str8ToPrintfArgs(OutputString));   
+	}
 
-    return ProcessStatus == 0;
+	return ProcessStatus == 0;
 }
 
 str8 CompileCommandFromBuildOptions(memory_arena *Arena, build_options *BuildOptions, str8 HashedFilename, str8 SourceFilename)
 {   
-    str8 DebugOrRelease[2] =
-    { 
-        Str8("-g -O0"), Str8("-O2")
-    };
+	str8 DebugOrRelease[2] =
+	{ 
+		Str8("-g -O0"), Str8("-O2")
+	};
 
-    str8 Compilers[2] =
-    {
-        Str8("clang"), Str8("gcc")
-    };
+	str8 Compilers[2] =
+	{
+		Str8("clang"), Str8("gcc")
+	};
 
-    str8 ObjectiveC[2] =
-    {
-        Str8(""), Str8("-ObjC -fobjc-arc")
-    };
+	str8 ObjectiveC[2] =
+	{
+		Str8(""), Str8("-ObjC -fobjc-arc")
+	};
 
-    b32 IsObjectiveCFile = Str8EndsWith(SourceFilename, Str8(".m"));
+	b32 IsObjectiveCFile = Str8EndsWith(SourceFilename, Str8(".m"));
 
-    str8_list IncludePathsWithFlag = {0};
-    for (str8_list_node *Node = BuildOptions->IncludePaths.First; Node != Null; Node = Node->Next)
-    {
-        Str8ListAppend(Arena, &IncludePathsWithFlag, Str8PushF(Arena, "-I%.*s ", Str8ToPrintfArgs(Node->String)));
-    }
+	str8_list IncludePathsWithFlag = {0};
+	for (str8_list_node *Node = BuildOptions->IncludePaths.First; Node != Null; Node = Node->Next)
+	{
+		Str8ListAppend(Arena, &IncludePathsWithFlag, Str8PushF(Arena, "-I%.*s ", Str8ToPrintfArgs(Node->String)));
+	}
 
-    str8 CompileCommand = Str8PushF(
-        Arena,
-        "%.*s %.*s -c %.*s %.*s -o%.*s%.*s %.*s ",
-        Str8ToPrintfArgs(Compilers[BuildOptions->Compiler]),
-        Str8ToPrintfArgs(ObjectiveC[IsObjectiveCFile]),
-        Str8ToPrintfArgs(SourceFilename),
-        Str8ToPrintfArgs(DebugOrRelease[BuildOptions->Optimise]),
-        Str8ToPrintfArgs(BuildOptions->OutputPath),
-        Str8ToPrintfArgs(HashedFilename),
-        Str8ToPrintfArgs(Str8ListJoin(Arena, IncludePathsWithFlag)));
+	str8 CompileCommand = Str8PushF(
+		Arena,
+		"%.*s %.*s -c %.*s %.*s -o%.*s%.*s %.*s ",
+		Str8ToPrintfArgs(Compilers[BuildOptions->Compiler]),
+		Str8ToPrintfArgs(ObjectiveC[IsObjectiveCFile]),
+		Str8ToPrintfArgs(SourceFilename),
+		Str8ToPrintfArgs(DebugOrRelease[BuildOptions->Optimise]),
+		Str8ToPrintfArgs(BuildOptions->OutputPath),
+		Str8ToPrintfArgs(HashedFilename),
+		Str8ToPrintfArgs(Str8ListJoin(Arena, IncludePathsWithFlag)));
 
-    return CompileCommand;
+	return CompileCommand;
 }
 
 str8 LinkCommandFromBuildOptions(memory_arena *Arena, build_options *BuildOptions, str8_array ObjectFiles)
 {   
-    str8 LinkCommand = Str8PushF(
-        Arena,
-        "clang %.*s -o %.*s%.*s %.*s",
-        Str8ToPrintfArgs(Str8ListJoin(Arena, BuildOptions->ExtraLinkFlags)),
-        Str8ToPrintfArgs(BuildOptions->OutputPath),
-        Str8ToPrintfArgs(BuildOptions->OutputName),
-        Str8ToPrintfArgs(Str8ArrayJoin(Arena, ObjectFiles))
-    );
+	str8 LinkCommand = Str8PushF(
+		Arena,
+		"clang %.*s -o %.*s%.*s %.*s",
+		Str8ToPrintfArgs(Str8ListJoin(Arena, BuildOptions->ExtraLinkFlags)),
+		Str8ToPrintfArgs(BuildOptions->OutputPath),
+		Str8ToPrintfArgs(BuildOptions->OutputName),
+		Str8ToPrintfArgs(Str8ArrayJoin(Arena, ObjectFiles))
+	);
 
-    return LinkCommand;
+	return LinkCommand;
 }
 
 #define Entry(Data) void *Entry(void *Data)
@@ -444,32 +444,32 @@ Entry(Data);
 
 typedef struct barrier
 {
-    atomic_ullong Generation;
-    atomic_ullong LanesWaiting;
-    s64 LaneCount;
+	atomic_ullong Generation;
+	atomic_ullong LanesWaiting;
+	s64 LaneCount;
 }
 barrier;
 
 typedef struct shared_wave_info
 {
-    s32 ArgCount;
-    char **Args;
-    barrier *Barrier;
+	s32 ArgCount;
+	char **Args;
+	barrier *Barrier;
 
-    s64 LaneCount;
+	s64 LaneCount;
 
-    memory_arena Arena;
-    build_options BuildOptions;
+	memory_arena Arena;
+	build_options BuildOptions;
 
 
-    atomic_llong Data[4096];
+	atomic_llong Data[4096];
 }
 shared_wave_info;
 
 typedef struct wave_info
 {
-    shared_wave_info *Shared;
-    s32 Lane;
+	shared_wave_info *Shared;
+	s32 Lane;
 }
 wave_info;
 
@@ -480,69 +480,69 @@ https://devblogs.microsoft.com/oldnewthing/20160824-00/?p=94155
 void WaveBarrier(barrier *Barrier)
 {
 	
-    s64 Generation = atomic_load_explicit(&Barrier->Generation, memory_order_acquire);
+	s64 Generation = atomic_load_explicit(&Barrier->Generation, memory_order_acquire);
 	s64 LanesWaiting = atomic_fetch_add_explicit(&Barrier->LanesWaiting, 1, memory_order_acq_rel);
 
 	if(LanesWaiting < Barrier->LaneCount - 1)
-    {
-        while(atomic_load_explicit(&Barrier->Generation, memory_order_acquire) == Generation)
-        {
-            os_sync_wait_on_address(&Barrier->Generation, Generation, sizeof(atomic_llong), OS_SYNC_WAIT_ON_ADDRESS_SHARED);   
-        }
-    }
+	{
+		while(atomic_load_explicit(&Barrier->Generation, memory_order_acquire) == Generation)
+		{
+			os_sync_wait_on_address(&Barrier->Generation, Generation, sizeof(atomic_llong), OS_SYNC_WAIT_ON_ADDRESS_SHARED);   
+		}
+	}
 	else if(LanesWaiting == Barrier->LaneCount - 1)
-    {
-        atomic_store_explicit(&Barrier->LanesWaiting, 0, memory_order_release);
-        atomic_fetch_add_explicit(&Barrier->Generation, 1, memory_order_release);
-        os_sync_wake_by_address_all(&Barrier->Generation, sizeof(atomic_llong), OS_SYNC_WAKE_BY_ADDRESS_SHARED);
-    }
+	{
+		atomic_store_explicit(&Barrier->LanesWaiting, 0, memory_order_release);
+		atomic_fetch_add_explicit(&Barrier->Generation, 1, memory_order_release);
+		os_sync_wake_by_address_all(&Barrier->Generation, sizeof(atomic_llong), OS_SYNC_WAKE_BY_ADDRESS_SHARED);
+	}
 	else
 	{
 		assert(False);
 	}
-    
+	
 }
 
 s64 LaneValueFromTotal(wave_info *WaveInfo, s64 Count)
 {
-    s64 Base = Count / WaveInfo->Shared->LaneCount;
-    s64 Remainder = Count % WaveInfo->Shared->LaneCount;
-    s64 Result = Count / WaveInfo->Shared->LaneCount + (WaveInfo->Lane < Remainder ? 1 : 0);
+	s64 Base = Count / WaveInfo->Shared->LaneCount;
+	s64 Remainder = Count % WaveInfo->Shared->LaneCount;
+	s64 Result = Count / WaveInfo->Shared->LaneCount + (WaveInfo->Lane < Remainder ? 1 : 0);
 
-    if (Count < WaveInfo->Shared->LaneCount)
-    {
-        Result = (s64)(WaveInfo->Lane < Count);
-    }
+	if (Count < WaveInfo->Shared->LaneCount)
+	{
+		Result = (s64)(WaveInfo->Lane < Count);
+	}
 
-    return Result;
+	return Result;
 }
 
 void Dispatch(shared_wave_info *Shared, s64 LaneCount)
 {
-    wave_info *Entries = (wave_info*)ArenaPush(&Shared->Arena, LaneCount*sizeof(wave_info));
-    pthread_t *Waves = (pthread_t*)ArenaPush(&Shared->Arena, LaneCount*sizeof(pthread_t));
-    
-    barrier Barrier = {0};
+	wave_info *Entries = (wave_info*)ArenaPush(&Shared->Arena, LaneCount*sizeof(wave_info));
+	pthread_t *Waves = (pthread_t*)ArenaPush(&Shared->Arena, LaneCount*sizeof(pthread_t));
+	
+	barrier Barrier = {0};
 
-    Shared->LaneCount = LaneCount;
-    Barrier.LaneCount = LaneCount;
-    for (s64 Lane = 0; Lane < LaneCount; Lane++)
-    {
-        Entries[Lane].Shared = Shared;
-        Entries[Lane].Lane = Lane;
-        Entries[Lane].Shared->Barrier = &Barrier;
-        pthread_create(Waves + Lane, Null, Entry, Entries + Lane);
-    }
+	Shared->LaneCount = LaneCount;
+	Barrier.LaneCount = LaneCount;
+	for (s64 Lane = 0; Lane < LaneCount; Lane++)
+	{
+		Entries[Lane].Shared = Shared;
+		Entries[Lane].Lane = Lane;
+		Entries[Lane].Shared->Barrier = &Barrier;
+		pthread_create(Waves + Lane, Null, Entry, Entries + Lane);
+	}
 
-    for (s64 Lane = 0; Lane < LaneCount; Lane++)
-    {
-        pthread_join(Waves[Lane], Null);
-    } 
+	for (s64 Lane = 0; Lane < LaneCount; Lane++)
+	{
+		pthread_join(Waves[Lane], Null);
+	} 
 }
 
 b32 WaveIsFirstLane(wave_info *WaveInfo)
 {
-    return WaveInfo->Lane == 0;
+	return WaveInfo->Lane == 0;
 }
 
 u8 *ArenaPushTransient(memory_arena *Arena, s64 Bytes);
@@ -550,16 +550,16 @@ u8 *ArenaPushTransient(memory_arena *Arena, s64 Bytes);
 void BroadcastBytes(wave_info *WaveInfo, void *Bytes, s64 ByteCount)
 {
 	WaveBarrier(WaveInfo->Shared->Barrier);
-    u8 *Result = Null;
-    if(WaveIsFirstLane(WaveInfo))
-    {
-        Result = ArenaPushTransient(&WaveInfo->Shared->Arena, ByteCount);
-        MemoryCopy(Result, Bytes, ByteCount);
-    }
-    WaveBarrier(WaveInfo->Shared->Barrier);
-    Result = (u8*)(WaveInfo->Shared->Arena.Start + WaveInfo->Shared->Arena.At);
-    MemoryCopy(Bytes, Result, ByteCount);
-    WaveBarrier(WaveInfo->Shared->Barrier);
+	u8 *Result = Null;
+	if(WaveIsFirstLane(WaveInfo))
+	{
+		Result = ArenaPushTransient(&WaveInfo->Shared->Arena, ByteCount);
+		MemoryCopy(Result, Bytes, ByteCount);
+	}
+	WaveBarrier(WaveInfo->Shared->Barrier);
+	Result = (u8*)(WaveInfo->Shared->Arena.Start + WaveInfo->Shared->Arena.At);
+	MemoryCopy(Bytes, Result, ByteCount);
+	WaveBarrier(WaveInfo->Shared->Barrier);
 }
 
 #define BroadcastToAllLanes(WaveInfo, Variable) BroadcastBytes(WaveInfo, &Variable, sizeof(Variable))
@@ -568,20 +568,20 @@ void BroadcastBytes(wave_info *WaveInfo, void *Bytes, s64 ByteCount)
 
 s64 WaveGetLaneIndex(wave_info *WaveInfo)
 {
-    return WaveInfo->Lane;
+	return WaveInfo->Lane;
 }
 
 u64 NearestPowerOfTwo(u64 Value)
 {
-    if(Value == 0) return 1;
-    Value -= 1;
-    Value |= Value >> 1;
-    Value |= Value >> 2;
-    Value |= Value >> 4;
-    Value |= Value >> 8;
-    Value |= Value >> 16;
-    Value |= Value >> 32;
-    return Value + 1;
+	if(Value == 0) return 1;
+	Value -= 1;
+	Value |= Value >> 1;
+	Value |= Value >> 2;
+	Value |= Value >> 4;
+	Value |= Value >> 8;
+	Value |= Value >> 16;
+	Value |= Value >> 32;
+	return Value + 1;
 }
 
 /*
@@ -633,10 +633,10 @@ u64 ExclusiveWavePrefixSum(wave_info *WaveInfo, u64 Value)
 u64 WaveSum(wave_info *WaveInfo, u64 Value)
 {
 	WaveBarrier(WaveInfo->Shared->Barrier);
-    atomic_store_explicit(WaveInfo->Shared->Data + 0, 0, memory_order_release);
+	atomic_store_explicit(WaveInfo->Shared->Data + 0, 0, memory_order_release);
 	WaveBarrier(WaveInfo->Shared->Barrier);
-    atomic_fetch_add_explicit(WaveInfo->Shared->Data + 0, Value, memory_order_consume);
-    WaveBarrier(WaveInfo->Shared->Barrier);
+	atomic_fetch_add_explicit(WaveInfo->Shared->Data + 0, Value, memory_order_consume);
+	WaveBarrier(WaveInfo->Shared->Barrier);
 	return atomic_load_explicit(WaveInfo->Shared->Data + 0, memory_order_acquire);
 }
 
@@ -644,20 +644,20 @@ b32 WaveAnyTrue(wave_info *WaveInfo, b32 Expression)
 {
 	WaveBarrier(WaveInfo->Shared->Barrier);
 	atomic_store_explicit(WaveInfo->Shared->Data + 0, 0, memory_order_release);
-    WaveBarrier(WaveInfo->Shared->Barrier);
-    atomic_fetch_add_explicit(WaveInfo->Shared->Data + 0, Expression, memory_order_consume);
-    WaveBarrier(WaveInfo->Shared->Barrier);
-    return atomic_load_explicit(WaveInfo->Shared->Data + 0, memory_order_acquire) > 0;
+	WaveBarrier(WaveInfo->Shared->Barrier);
+	atomic_fetch_add_explicit(WaveInfo->Shared->Data + 0, Expression, memory_order_consume);
+	WaveBarrier(WaveInfo->Shared->Barrier);
+	return atomic_load_explicit(WaveInfo->Shared->Data + 0, memory_order_acquire) > 0;
 }
 
 b32 WaveAllTrue(wave_info *WaveInfo, b32 Expression)
 {
 	WaveBarrier(WaveInfo->Shared->Barrier);
-    atomic_store_explicit(WaveInfo->Shared->Data + 0, 0, memory_order_release);
-    WaveBarrier(WaveInfo->Shared->Barrier);
-    atomic_fetch_add_explicit(WaveInfo->Shared->Data + 0, Expression, memory_order_acq_rel);
-    WaveBarrier(WaveInfo->Shared->Barrier);
-    return atomic_load_explicit(WaveInfo->Shared->Data + 0, memory_order_acquire) == WaveInfo->Shared->LaneCount;
+	atomic_store_explicit(WaveInfo->Shared->Data + 0, 0, memory_order_release);
+	WaveBarrier(WaveInfo->Shared->Barrier);
+	atomic_fetch_add_explicit(WaveInfo->Shared->Data + 0, Expression, memory_order_acq_rel);
+	WaveBarrier(WaveInfo->Shared->Barrier);
+	return atomic_load_explicit(WaveInfo->Shared->Data + 0, memory_order_acquire) == WaveInfo->Shared->LaneCount;
 }
 
 #elif defined(_WIN32)
@@ -673,235 +673,235 @@ b32 WaveAllTrue(wave_info *WaveInfo, b32 Expression)
 
 operating_system GetOperatingSystem()
 {
-    return OS_WINDOWS;
+	return OS_WINDOWS;
 }
 
 u64 GetPageSize()
 {
-    SYSTEM_INFO SystemInfo = {0};
-    GetSystemInfo(&SystemInfo);
+	SYSTEM_INFO SystemInfo = {0};
+	GetSystemInfo(&SystemInfo);
 
-    return SystemInfo.dwPageSize;
+	return SystemInfo.dwPageSize;
 }
 
 str8 LoadEntireFileIntoMemory(memory_arena *Arena, str8 Filename)
 {
-    HANDLE FileHandle = CreateFileA(CStrFromStr8(Arena, Filename),
-                    GENERIC_READ,
-                    FILE_SHARE_READ,
-                    Null,
-                    OPEN_EXISTING,
-                    FILE_ATTRIBUTE_NORMAL,
-                    Null);
+	HANDLE FileHandle = CreateFileA(CStrFromStr8(Arena, Filename),
+					GENERIC_READ,
+					FILE_SHARE_READ,
+					Null,
+					OPEN_EXISTING,
+					FILE_ATTRIBUTE_NORMAL,
+					Null);
 
-    if (FileHandle == INVALID_HANDLE_VALUE) 
-    {
-        printf("File: %.*s not found\n", Str8ToPrintfArgs(Filename));
-        return (str8){0};
-    }
+	if (FileHandle == INVALID_HANDLE_VALUE) 
+	{
+		printf("File: %.*s not found\n", Str8ToPrintfArgs(Filename));
+		return (str8){0};
+	}
 
-    LARGE_INTEGER FileSize;
-    DWORD BytesRead;
-    GetFileSizeEx(FileHandle, &FileSize);
+	LARGE_INTEGER FileSize;
+	DWORD BytesRead;
+	GetFileSizeEx(FileHandle, &FileSize);
 
-    u8* BackingMemory = ArenaPush(Arena, (u64)FileSize.QuadPart+1);
-    BackingMemory[FileSize.QuadPart] = 0;
+	u8* BackingMemory = ArenaPush(Arena, (u64)FileSize.QuadPart+1);
+	BackingMemory[FileSize.QuadPart] = 0;
 
-    str8 Result = {0};
-    Result.Bytes = (s8*)BackingMemory;
-    Result.Size = FileSize.QuadPart;
+	str8 Result = {0};
+	Result.Bytes = (s8*)BackingMemory;
+	Result.Size = FileSize.QuadPart;
 
-    ReadFile(FileHandle, BackingMemory, FileSize.QuadPart, &BytesRead, Null);
+	ReadFile(FileHandle, BackingMemory, FileSize.QuadPart, &BytesRead, Null);
 
-    CloseHandle(FileHandle);
+	CloseHandle(FileHandle);
 
-    return Result;
+	return Result;
 }
 
 void WriteStringToDisk(memory_arena *Arena, str8 DestinationPath, str8 StringToWrite)
 {
-    HANDLE FileHandle = CreateFileA(CStrFromStr8(Arena, DestinationPath),
-                    GENERIC_WRITE,
-                    0,
-                    Null,
-                    CREATE_ALWAYS,
-                    FILE_ATTRIBUTE_NORMAL,
-                    Null);
+	HANDLE FileHandle = CreateFileA(CStrFromStr8(Arena, DestinationPath),
+					GENERIC_WRITE,
+					0,
+					Null,
+					CREATE_ALWAYS,
+					FILE_ATTRIBUTE_NORMAL,
+					Null);
 
-    DWORD BytesWritten = 0;
-    WriteFile(FileHandle, StringToWrite.Bytes, StringToWrite.Size, &BytesWritten, Null);
-    CloseHandle(FileHandle);
+	DWORD BytesWritten = 0;
+	WriteFile(FileHandle, StringToWrite.Bytes, StringToWrite.Size, &BytesWritten, Null);
+	CloseHandle(FileHandle);
 }
 
 void AppendSourceFilesInFolder(memory_arena *Arena, str8_list *SourceFilesFromFolder, str8 Path)
 {
-    str8 PathWithWildcard = Str8PushF(Arena, "%.*s", Str8ToPrintfArgs(Path));
-    str8_list Entries = ListOfDirectoryEntriesFromPath(Arena, PathWithWildcard);
-    for(str8_list_node *Entry = Entries.First; Entry != Null; Entry = Entry->Next)
-    {
-        if(Str8EndsWith(Entry->String, Str8(".c")))
-        {
-            str8 SourceFilepath = Str8PushF(Arena, "%.*s/%.*s", 
-                                            Str8ToPrintfArgs(Path),
-                                            Str8ToPrintfArgs(Entry->String));
-            Str8ListAppend(Arena, SourceFilesFromFolder, SourceFilepath);
-        }
-    }
+	str8 PathWithWildcard = Str8PushF(Arena, "%.*s", Str8ToPrintfArgs(Path));
+	str8_list Entries = ListOfDirectoryEntriesFromPath(Arena, PathWithWildcard);
+	for(str8_list_node *Entry = Entries.First; Entry != Null; Entry = Entry->Next)
+	{
+		if(Str8EndsWith(Entry->String, Str8(".c")))
+		{
+			str8 SourceFilepath = Str8PushF(Arena, "%.*s/%.*s", 
+											Str8ToPrintfArgs(Path),
+											Str8ToPrintfArgs(Entry->String));
+			Str8ListAppend(Arena, SourceFilesFromFolder, SourceFilepath);
+		}
+	}
 }
 
 str8 GetExecutableDirectory(memory_arena *Arena)
 {
-    DWORD NumberOfBytes = GetCurrentDirectoryA(0, 0);
-    u8* BackingMemory = ArenaPushZero(Arena, NumberOfBytes);
+	DWORD NumberOfBytes = GetCurrentDirectoryA(0, 0);
+	u8* BackingMemory = ArenaPushZero(Arena, NumberOfBytes);
 
-    GetCurrentDirectoryA(NumberOfBytes, (LPSTR)BackingMemory);
+	GetCurrentDirectoryA(NumberOfBytes, (LPSTR)BackingMemory);
 
-    str8 Result = {0};
-    Result.Size = NumberOfBytes;
-    Result.Bytes = (s8*)BackingMemory;
+	str8 Result = {0};
+	Result.Size = NumberOfBytes;
+	Result.Bytes = (s8*)BackingMemory;
 
-    return Result;
+	return Result;
 }
 
 
 void MakeDirectoryFromPath(memory_arena *Arena, str8 Path)
 {
-    CreateDirectoryA(CStrFromStr8(Arena, Path), Null);
+	CreateDirectoryA(CStrFromStr8(Arena, Path), Null);
 }
 
 b32 FileExists(memory_arena *Arena, str8 Filename)
 {
-    DWORD FileAttributes = GetFileAttributesA((LPCSTR)CStrFromStr8(Arena, Filename));
+	DWORD FileAttributes = GetFileAttributesA((LPCSTR)CStrFromStr8(Arena, Filename));
 
-    return FileAttributes != INVALID_FILE_ATTRIBUTES && !(FileAttributes & FILE_ATTRIBUTE_DIRECTORY);
+	return FileAttributes != INVALID_FILE_ATTRIBUTES && !(FileAttributes & FILE_ATTRIBUTE_DIRECTORY);
 }
 
 s64 AtomicIncrement(s64 volatile *Addend, s64 Value)
 {
-    return InterlockedExchangeAdd64(Addend, Value);
+	return InterlockedExchangeAdd64(Addend, Value);
 }
 
 u64 TimeStampNow()
 {
-    LARGE_INTEGER Stamp = {0};
-    QueryPerformanceCounter(&Stamp);
-    return Stamp.QuadPart;
+	LARGE_INTEGER Stamp = {0};
+	QueryPerformanceCounter(&Stamp);
+	return Stamp.QuadPart;
 }
 
 f32 MilliSecondsFromTimeStamp(u64 TimeStamp)
 {
-    LARGE_INTEGER Frequency = {0};
-    QueryPerformanceFrequency(&Frequency);
+	LARGE_INTEGER Frequency = {0};
+	QueryPerformanceFrequency(&Frequency);
 
-    return (f32)(1000.0*(TimeStamp) / Frequency.QuadPart);
+	return (f32)(1000.0*(TimeStamp) / Frequency.QuadPart);
 
 }
 
 s64 GetNumberOfCPUs()
 {
-    SYSTEM_INFO SystemInfo = {0};
-    GetSystemInfo(&SystemInfo);
+	SYSTEM_INFO SystemInfo = {0};
+	GetSystemInfo(&SystemInfo);
 
-    return SystemInfo.dwNumberOfProcessors;
+	return SystemInfo.dwNumberOfProcessors;
 }
 
 void DeleteFileFromDisk(memory_arena *Arena, str8 Filename)
 {
-    DeleteFileA(CStrFromStr8(Arena, Filename));    
+	DeleteFileA(CStrFromStr8(Arena, Filename));    
 }
 
 b32 ExecuteCommand(memory_arena *Arena, str8 EntireCommandAndArguments, b32 *FailedToExecute)
 {
-    STARTUPINFOA StartupInfo = {0};
-    PROCESS_INFORMATION ProcessInfo = {0};
+	STARTUPINFOA StartupInfo = {0};
+	PROCESS_INFORMATION ProcessInfo = {0};
 
-    SECURITY_ATTRIBUTES SecurityAttributes = {0};
-    SecurityAttributes.nLength = sizeof(SECURITY_ATTRIBUTES);
-    SecurityAttributes.bInheritHandle = True;
+	SECURITY_ATTRIBUTES SecurityAttributes = {0};
+	SecurityAttributes.nLength = sizeof(SECURITY_ATTRIBUTES);
+	SecurityAttributes.bInheritHandle = True;
 
-    HANDLE StdOutHandleRead = 0;
-    HANDLE StdOutHandleWrite = 0;
+	HANDLE StdOutHandleRead = 0;
+	HANDLE StdOutHandleWrite = 0;
 
-    CreatePipe(&StdOutHandleRead, &StdOutHandleWrite, &SecurityAttributes, 0);
+	CreatePipe(&StdOutHandleRead, &StdOutHandleWrite, &SecurityAttributes, 0);
 
-    b32 ProcessStatus = CreateProcessA(0, CStrFromStr8(Arena, EntireCommandAndArguments), 
-                                       0, 0, 1, 0, 0, 0, &StartupInfo, &ProcessInfo);
-    if (ProcessStatus)
-    {
+	b32 ProcessStatus = CreateProcessA(0, CStrFromStr8(Arena, EntireCommandAndArguments), 
+									   0, 0, 1, 0, 0, 0, &StartupInfo, &ProcessInfo);
+	if (ProcessStatus)
+	{
 
-        WaitForSingleObject(ProcessInfo.hProcess, INFINITE);
+		WaitForSingleObject(ProcessInfo.hProcess, INFINITE);
 
-        DWORD ExitCode;
-        GetExitCodeProcess(ProcessInfo.hProcess, &ExitCode);
-        CloseHandle(ProcessInfo.hProcess);
-        CloseHandle(ProcessInfo.hThread);
-        CloseHandle(StdOutHandleWrite);
+		DWORD ExitCode;
+		GetExitCodeProcess(ProcessInfo.hProcess, &ExitCode);
+		CloseHandle(ProcessInfo.hProcess);
+		CloseHandle(ProcessInfo.hThread);
+		CloseHandle(StdOutHandleWrite);
 
-        FailedToExecute[0] = ExitCode != 0;
-        DWORD NumberOfBytesRead = 0;
-        str8_list StdOutList = {0};
-        for (;;)
-        {
-            u8* BackingMemory = ArenaPushZero(Arena, 4096);
-            BOOL Success = ReadFile(StdOutHandleRead, BackingMemory, 4096, &NumberOfBytesRead, NULL);
-            if (!Success || NumberOfBytesRead == 0)
-            {
-                break;
-            }
-            str8 String = {.Bytes = (s8*)BackingMemory, .Size = NumberOfBytesRead };
-            Str8ListAppend(Arena, &StdOutList, String);
-        }
-        str8 OutputString = Str8ListJoin(Arena, StdOutList);
-        printf("%.*s", Str8ToPrintfArgs(OutputString));
-    }
+		FailedToExecute[0] = ExitCode != 0;
+		DWORD NumberOfBytesRead = 0;
+		str8_list StdOutList = {0};
+		for (;;)
+		{
+			u8* BackingMemory = ArenaPushZero(Arena, 4096);
+			BOOL Success = ReadFile(StdOutHandleRead, BackingMemory, 4096, &NumberOfBytesRead, NULL);
+			if (!Success || NumberOfBytesRead == 0)
+			{
+				break;
+			}
+			str8 String = {.Bytes = (s8*)BackingMemory, .Size = NumberOfBytesRead };
+			Str8ListAppend(Arena, &StdOutList, String);
+		}
+		str8 OutputString = Str8ListJoin(Arena, StdOutList);
+		printf("%.*s", Str8ToPrintfArgs(OutputString));
+	}
 
-    return ProcessStatus;
+	return ProcessStatus;
 }
 
 str8 CompileCommandFromBuildOptions(memory_arena *Arena, build_options *BuildOptions, str8 HashedFilename, str8 SourceFilename)
 {   
-    str8 DebugOrRelease[2] =
-    { 
-        Str8("/Zi /Od"), Str8("/O2")
-    };
+	str8 DebugOrRelease[2] =
+	{ 
+		Str8("/Zi /Od"), Str8("/O2")
+	};
 
-    str8 Compilers[2] =
-    {
-        Str8("cl.exe"),
-        Str8("clang-cl")
-    };
+	str8 Compilers[2] =
+	{
+		Str8("cl.exe"),
+		Str8("clang-cl")
+	};
 
-    str8_list IncludePathsWithFlag = {0};
-    for (str8_list_node *Node = BuildOptions->IncludePaths.First; Node != Null; Node = Node->Next)
-    {
-        Str8ListAppend(Arena, &IncludePathsWithFlag, Str8PushF(Arena, "-I%.*s ", Str8ToPrintfArgs(Node->String)));
-    }
+	str8_list IncludePathsWithFlag = {0};
+	for (str8_list_node *Node = BuildOptions->IncludePaths.First; Node != Null; Node = Node->Next)
+	{
+		Str8ListAppend(Arena, &IncludePathsWithFlag, Str8PushF(Arena, "-I%.*s ", Str8ToPrintfArgs(Node->String)));
+	}
 
-    str8 CompileCommand = Str8PushF(
-        Arena,
-        "%.*s /c /TC /nologo /FS /EHsc %.*s %.*s /Fo%.*s%.*s %.*s ",
-        Str8ToPrintfArgs(Compilers[BuildOptions->Compiler]),
-        Str8ToPrintfArgs(SourceFilename),
-        Str8ToPrintfArgs(DebugOrRelease[BuildOptions->Optimise]),
-        Str8ToPrintfArgs(BuildOptions->OutputPath),
-        Str8ToPrintfArgs(HashedFilename),
-        Str8ToPrintfArgs(Str8ListJoin(Arena, IncludePathsWithFlag)));
+	str8 CompileCommand = Str8PushF(
+		Arena,
+		"%.*s /c /TC /nologo /FS /EHsc %.*s %.*s /Fo%.*s%.*s %.*s ",
+		Str8ToPrintfArgs(Compilers[BuildOptions->Compiler]),
+		Str8ToPrintfArgs(SourceFilename),
+		Str8ToPrintfArgs(DebugOrRelease[BuildOptions->Optimise]),
+		Str8ToPrintfArgs(BuildOptions->OutputPath),
+		Str8ToPrintfArgs(HashedFilename),
+		Str8ToPrintfArgs(Str8ListJoin(Arena, IncludePathsWithFlag)));
 
-    return CompileCommand;
+	return CompileCommand;
 }
 
 str8 LinkCommandFromBuildOptions(memory_arena *Arena, build_options *BuildOptions, str8_array ObjectFiles)
 {   
-    str8 LinkCommand = Str8PushF(
-        Arena,
-        "link /nologo /INCREMENTAL:NO /DEBUG /PDB:build/%.*s.pdb /OUT:%.*s%.*s.exe %.*s",
-        Str8ToPrintfArgs(BuildOptions->OutputName),
-        Str8ToPrintfArgs(BuildOptions->OutputPath),
-        Str8ToPrintfArgs(BuildOptions->OutputName),
-        Str8ToPrintfArgs(Str8ArrayJoin(Arena, ObjectFiles))
-    );
+	str8 LinkCommand = Str8PushF(
+		Arena,
+		"link /nologo /INCREMENTAL:NO /DEBUG /PDB:build/%.*s.pdb /OUT:%.*s%.*s.exe %.*s",
+		Str8ToPrintfArgs(BuildOptions->OutputName),
+		Str8ToPrintfArgs(BuildOptions->OutputPath),
+		Str8ToPrintfArgs(BuildOptions->OutputName),
+		Str8ToPrintfArgs(Str8ArrayJoin(Arena, ObjectFiles))
+	);
 
-    return LinkCommand;
+	return LinkCommand;
 }
 
 #define Entry(Data) DWORD WINAPI Entry(void *Data)
@@ -910,86 +910,86 @@ Entry(Data);
 
 typedef struct shared_wave_info
 {
-    s32 ArgCount;
-    char **Args;
-    RTL_BARRIER *Barrier;
+	s32 ArgCount;
+	char **Args;
+	RTL_BARRIER *Barrier;
 
-    s64 LaneCount;
+	s64 LaneCount;
 
-    memory_arena Arena;
-    build_options BuildOptions;
+	memory_arena Arena;
+	build_options BuildOptions;
 
 
-    volatile u64 Data[4096];
+	volatile u64 Data[4096];
 }
 shared_wave_info;
 
 typedef struct wave_info
 {
-    shared_wave_info *Shared;
-    s32 Lane;
+	shared_wave_info *Shared;
+	s32 Lane;
 }
 wave_info;
 
 void WaveBarrier(RTL_BARRIER *Barrier)
 {
-    EnterSynchronizationBarrier(Barrier, SYNCHRONIZATION_BARRIER_FLAGS_BLOCK_ONLY);
+	EnterSynchronizationBarrier(Barrier, SYNCHRONIZATION_BARRIER_FLAGS_BLOCK_ONLY);
 }
 
 s64 LaneValueFromTotal(wave_info *WaveInfo, s64 Count)
 {
-    s64 Base = Count / WaveInfo->Shared->LaneCount;
-    s64 Remainder = Count % WaveInfo->Shared->LaneCount;
-    s64 Result = Count / WaveInfo->Shared->LaneCount + (WaveInfo->Lane < Remainder ? 1 : 0);
+	s64 Base = Count / WaveInfo->Shared->LaneCount;
+	s64 Remainder = Count % WaveInfo->Shared->LaneCount;
+	s64 Result = Count / WaveInfo->Shared->LaneCount + (WaveInfo->Lane < Remainder ? 1 : 0);
 
-    if (Count < WaveInfo->Shared->LaneCount)
-    {
-        Result = (s64)(WaveInfo->Lane < Count);
-    }
+	if (Count < WaveInfo->Shared->LaneCount)
+	{
+		Result = (s64)(WaveInfo->Lane < Count);
+	}
 
-    return Result;
+	return Result;
 }
 
 void Dispatch(shared_wave_info *Shared, s64 LaneCount)
 {
-    wave_info *Entries = (wave_info*)ArenaPush(&Shared->Arena, LaneCount*sizeof(wave_info));
-    HANDLE *Waves = (HANDLE*)ArenaPush(&Shared->Arena, LaneCount*sizeof(HANDLE));
-    
-    RTL_BARRIER Barrier;
+	wave_info *Entries = (wave_info*)ArenaPush(&Shared->Arena, LaneCount*sizeof(wave_info));
+	HANDLE *Waves = (HANDLE*)ArenaPush(&Shared->Arena, LaneCount*sizeof(HANDLE));
+	
+	RTL_BARRIER Barrier;
 
-    Shared->LaneCount = LaneCount;
-    InitializeSynchronizationBarrier(&Barrier, LaneCount, -1);
-    for (s64 Lane = 0; Lane < LaneCount; Lane++)
-    {
-        Entries[Lane].Shared = Shared;
-        Entries[Lane].Lane = Lane;
-        Entries[Lane].Shared->Barrier = &Barrier;
-        DWORD ThreadID;
-        Waves[Lane] = CreateThread(0, 0, Entry, Entries + Lane, 0, &ThreadID);
-    }
+	Shared->LaneCount = LaneCount;
+	InitializeSynchronizationBarrier(&Barrier, LaneCount, -1);
+	for (s64 Lane = 0; Lane < LaneCount; Lane++)
+	{
+		Entries[Lane].Shared = Shared;
+		Entries[Lane].Lane = Lane;
+		Entries[Lane].Shared->Barrier = &Barrier;
+		DWORD ThreadID;
+		Waves[Lane] = CreateThread(0, 0, Entry, Entries + Lane, 0, &ThreadID);
+	}
 
-    WaitForMultipleObjects(LaneCount, Waves, True, INFINITE);
+	WaitForMultipleObjects(LaneCount, Waves, True, INFINITE);
 }
 
 b32 WaveIsFirstLane(wave_info *WaveInfo)
 {
-    return WaveInfo->Lane == 0;
+	return WaveInfo->Lane == 0;
 }
 
 u8 *ArenaPushTransient(memory_arena *Arena, s64 Bytes);
 
 void BroadcastBytes(wave_info *WaveInfo, void *Bytes, s64 ByteCount)
 {
-    u8 *Result = Null;
-    if(WaveIsFirstLane(WaveInfo))
-    {
-        Result = ArenaPushTransient(&WaveInfo->Shared->Arena, ByteCount);
-        MemoryCopy(Result, Bytes, ByteCount);
-    }
-    WaveBarrier(WaveInfo->Shared->Barrier);
-    Result = (u8*)(WaveInfo->Shared->Arena.Start + WaveInfo->Shared->Arena.At);
-    MemoryCopy(Bytes, Result, ByteCount);
-    WaveBarrier(WaveInfo->Shared->Barrier);
+	u8 *Result = Null;
+	if(WaveIsFirstLane(WaveInfo))
+	{
+		Result = ArenaPushTransient(&WaveInfo->Shared->Arena, ByteCount);
+		MemoryCopy(Result, Bytes, ByteCount);
+	}
+	WaveBarrier(WaveInfo->Shared->Barrier);
+	Result = (u8*)(WaveInfo->Shared->Arena.Start + WaveInfo->Shared->Arena.At);
+	MemoryCopy(Bytes, Result, ByteCount);
+	WaveBarrier(WaveInfo->Shared->Barrier);
 }
 
 #define BroadcastToAllLanes(WaveInfo, Variable) BroadcastBytes(WaveInfo, &Variable, sizeof(Variable))
@@ -998,20 +998,20 @@ void BroadcastBytes(wave_info *WaveInfo, void *Bytes, s64 ByteCount)
 
 s64 WaveGetLaneIndex(wave_info *WaveInfo)
 {
-    return WaveInfo->Lane;
+	return WaveInfo->Lane;
 }
 
 u64 NearestPowerOfTwo(u64 Value)
 {
-    if(Value == 0) return 1;
-    Value -= 1;
-    Value |= Value >> 1;
-    Value |= Value >> 2;
-    Value |= Value >> 4;
-    Value |= Value >> 8;
-    Value |= Value >> 16;
-    Value |= Value >> 32;
-    return Value + 1;
+	if(Value == 0) return 1;
+	Value -= 1;
+	Value |= Value >> 1;
+	Value |= Value >> 2;
+	Value |= Value >> 4;
+	Value |= Value >> 8;
+	Value |= Value >> 16;
+	Value |= Value >> 32;
+	return Value + 1;
 }
 
 /*
@@ -1020,480 +1020,480 @@ https://www.youtube.com/watch?v=1G8CZioSjnM
 */
 u64 WavePrefixSum(wave_info *WaveInfo, u64 Value)
 {
-    WaveInfo->Shared->Data[WaveInfo->Lane] = Value;
-    WaveInfo->Shared->Data[0] = 0;
-    WaveBarrier(WaveInfo->Shared->Barrier);
-    int Offset = 1;
+	WaveInfo->Shared->Data[WaveInfo->Lane] = Value;
+	WaveInfo->Shared->Data[0] = 0;
+	WaveBarrier(WaveInfo->Shared->Barrier);
+	int Offset = 1;
 
-    for(int D = NearestPowerOfTwo(WaveInfo->Shared->LaneCount)/2; D > 0; D >>= 1)
-    {
-        WaveBarrier(WaveInfo->Shared->Barrier);
-        if(WaveInfo->Lane < D)
-        {
-            int AI = Offset * (2 * WaveInfo->Lane + 1)-1;
-            int BI = Offset * (2 * WaveInfo->Lane + 2)-1;
-            WaveInfo->Shared->Data[BI] += WaveInfo->Shared->Data[AI];
-        }
-        Offset *= 2;
-    }
+	for(int D = NearestPowerOfTwo(WaveInfo->Shared->LaneCount)/2; D > 0; D >>= 1)
+	{
+		WaveBarrier(WaveInfo->Shared->Barrier);
+		if(WaveInfo->Lane < D)
+		{
+			int AI = Offset * (2 * WaveInfo->Lane + 1)-1;
+			int BI = Offset * (2 * WaveInfo->Lane + 2)-1;
+			WaveInfo->Shared->Data[BI] += WaveInfo->Shared->Data[AI];
+		}
+		Offset *= 2;
+	}
 
-    for(int D = 2; D < NearestPowerOfTwo(WaveInfo->Shared->LaneCount); D *= 2)
-    {
-        Offset >>= 1;
-        WaveBarrier(WaveInfo->Shared->Barrier);
-        if(WaveInfo->Lane < D-1)
-        {
-            int AI = Offset*(WaveInfo->Lane + 1) - 1;
-            int BI = Offset*(WaveInfo->Lane + 1) + (Offset/2) - 1;
-            WaveInfo->Shared->Data[BI] += WaveInfo->Shared->Data[AI];
-        }
-    }
-    WaveBarrier(WaveInfo->Shared->Barrier);
-    return WaveInfo->Shared->Data[WaveInfo->Lane];
+	for(int D = 2; D < NearestPowerOfTwo(WaveInfo->Shared->LaneCount); D *= 2)
+	{
+		Offset >>= 1;
+		WaveBarrier(WaveInfo->Shared->Barrier);
+		if(WaveInfo->Lane < D-1)
+		{
+			int AI = Offset*(WaveInfo->Lane + 1) - 1;
+			int BI = Offset*(WaveInfo->Lane + 1) + (Offset/2) - 1;
+			WaveInfo->Shared->Data[BI] += WaveInfo->Shared->Data[AI];
+		}
+	}
+	WaveBarrier(WaveInfo->Shared->Barrier);
+	return WaveInfo->Shared->Data[WaveInfo->Lane];
 }
 
 u64 WaveSum(wave_info *WaveInfo, u64 Value)
 {
-    WaveInfo->Shared->Data[0] = 0;
-    WaveBarrier(WaveInfo->Shared->Barrier);
-    AtomicIncrement(WaveInfo->Shared->Data + 0, Value);
-    WaveBarrier(WaveInfo->Shared->Barrier);
-    return WaveInfo->Shared->Data[0];
+	WaveInfo->Shared->Data[0] = 0;
+	WaveBarrier(WaveInfo->Shared->Barrier);
+	AtomicIncrement(WaveInfo->Shared->Data + 0, Value);
+	WaveBarrier(WaveInfo->Shared->Barrier);
+	return WaveInfo->Shared->Data[0];
 }
 
 b32 WaveAnyTrue(wave_info *WaveInfo, b32 Expression)
 {
-    WaveInfo->Shared->Data[0] = 0;
-    WaveBarrier(WaveInfo->Shared->Barrier);
-    AtomicIncrement((volatile s64*)WaveInfo->Shared->Data + 0, Expression);
-    WaveBarrier(WaveInfo->Shared->Barrier);
-    return WaveInfo->Shared->Data[0];
+	WaveInfo->Shared->Data[0] = 0;
+	WaveBarrier(WaveInfo->Shared->Barrier);
+	AtomicIncrement((volatile s64*)WaveInfo->Shared->Data + 0, Expression);
+	WaveBarrier(WaveInfo->Shared->Barrier);
+	return WaveInfo->Shared->Data[0];
 }
 
 b32 WaveAllTrue(wave_info *WaveInfo, b32 Expression)
 {
-    WaveInfo->Shared->Data[0] = 0;
-    WaveBarrier(WaveInfo->Shared->Barrier);
-    AtomicIncrement((volatile s64*)WaveInfo->Shared->Data + 0, Expression);
-    WaveBarrier(WaveInfo->Shared->Barrier);
-    return WaveInfo->Shared->Data[0];
+	WaveInfo->Shared->Data[0] = 0;
+	WaveBarrier(WaveInfo->Shared->Barrier);
+	AtomicIncrement((volatile s64*)WaveInfo->Shared->Data + 0, Expression);
+	WaveBarrier(WaveInfo->Shared->Barrier);
+	return WaveInfo->Shared->Data[0];
 }
 
 
 str8_list ListOfDirectoryEntriesFromPath(memory_arena *Arena, str8 Path)
 {
-    str8_list Entries = { 0 };
+	str8_list Entries = { 0 };
 
-    WIN32_FIND_DATAA FindData = {0};
-    str8 Directory = Str8PushF(Arena, "%.*s\\*", Str8ToPrintfArgs(Path));
-    HANDLE FindHandle = FindFirstFileA(CStrFromStr8(Arena, Directory), &FindData);
+	WIN32_FIND_DATAA FindData = {0};
+	str8 Directory = Str8PushF(Arena, "%.*s\\*", Str8ToPrintfArgs(Path));
+	HANDLE FindHandle = FindFirstFileA(CStrFromStr8(Arena, Directory), &FindData);
 
-    b32 NextFile = FindHandle != INVALID_HANDLE_VALUE;
-    for(;NextFile != False; NextFile = FindNextFileA(FindHandle, &FindData))
-    {
-        if(FindData.dwFileAttributes != INVALID_FILE_ATTRIBUTES && !(FindData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
-        {
-            Str8ListAppend(Arena, &Entries, Str8PushF(Arena, "%s", FindData.cFileName));
-        }
-    }
-    return Entries;
+	b32 NextFile = FindHandle != INVALID_HANDLE_VALUE;
+	for(;NextFile != False; NextFile = FindNextFileA(FindHandle, &FindData))
+	{
+		if(FindData.dwFileAttributes != INVALID_FILE_ATTRIBUTES && !(FindData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
+		{
+			Str8ListAppend(Arena, &Entries, Str8PushF(Arena, "%s", FindData.cFileName));
+		}
+	}
+	return Entries;
 }
 
 str8_array ArrayOfDirectoryEntriesFromPath(memory_arena *Arena, str8 Path)
 {
-    
-    s64 Count = 0;
-    {
-        WIN32_FIND_DATAA FindData = {0};
-        str8 Directory = Str8PushF(Arena, "%.*s\\*", Str8ToPrintfArgs(Path));
-        HANDLE FindHandle = FindFirstFileA(CStrFromStr8(Arena, Directory), &FindData);
-        b32 NextFile = FindHandle != INVALID_HANDLE_VALUE;
-        for(;NextFile != False; NextFile = FindNextFileA(FindHandle, &FindData))
-        {
-            if(FindData.dwFileAttributes != INVALID_FILE_ATTRIBUTES && !(FindData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
-            {
-                Count += 1;
-            }
-        }
-    }
+	
+	s64 Count = 0;
+	{
+		WIN32_FIND_DATAA FindData = {0};
+		str8 Directory = Str8PushF(Arena, "%.*s\\*", Str8ToPrintfArgs(Path));
+		HANDLE FindHandle = FindFirstFileA(CStrFromStr8(Arena, Directory), &FindData);
+		b32 NextFile = FindHandle != INVALID_HANDLE_VALUE;
+		for(;NextFile != False; NextFile = FindNextFileA(FindHandle, &FindData))
+		{
+			if(FindData.dwFileAttributes != INVALID_FILE_ATTRIBUTES && !(FindData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
+			{
+				Count += 1;
+			}
+		}
+	}
 
-    str8_array Result = {0};
-    Result.Count = Count;
-    Result.Items = (str8*)ArenaPush(Arena, Count*sizeof(str8));
+	str8_array Result = {0};
+	Result.Count = Count;
+	Result.Items = (str8*)ArenaPush(Arena, Count*sizeof(str8));
 
-    {
-        WIN32_FIND_DATAA FindData = {0};
-        str8 Directory = Str8PushF(Arena, "%.*s\\*", Str8ToPrintfArgs(Path));
-        HANDLE FindHandle = FindFirstFileA(CStrFromStr8(Arena, Directory), &FindData);
-        b32 NextFile = FindHandle != INVALID_HANDLE_VALUE;
-        s64 Index = 0;
-        for(;NextFile != False; NextFile = FindNextFileA(FindHandle, &FindData))
-        {
-            if(FindData.dwFileAttributes != INVALID_FILE_ATTRIBUTES && !(FindData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
-            {
-                Result.Items[Index++] = Str8PushF(Arena, "%.*s%s", Str8ToPrintfArgs(Path), FindData.cFileName);
-            }
-        }
-    }
-    
-    return Result;
+	{
+		WIN32_FIND_DATAA FindData = {0};
+		str8 Directory = Str8PushF(Arena, "%.*s\\*", Str8ToPrintfArgs(Path));
+		HANDLE FindHandle = FindFirstFileA(CStrFromStr8(Arena, Directory), &FindData);
+		b32 NextFile = FindHandle != INVALID_HANDLE_VALUE;
+		s64 Index = 0;
+		for(;NextFile != False; NextFile = FindNextFileA(FindHandle, &FindData))
+		{
+			if(FindData.dwFileAttributes != INVALID_FILE_ATTRIBUTES && !(FindData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
+			{
+				Result.Items[Index++] = Str8PushF(Arena, "%.*s%s", Str8ToPrintfArgs(Path), FindData.cFileName);
+			}
+		}
+	}
+	
+	return Result;
 }
 
 #endif
 
 u8* ArenaPush(memory_arena *Arena, s64 Bytes)
 {
-    if(Arena->At + Bytes >= Arena->Committed)
-    {
-        s64 BytesNeeded = (Arena->At + Bytes - Arena->Committed);
-        u64 BytesToCommit = BytesNeeded + GetPageSize() - (BytesNeeded % GetPageSize());
-        MemoryCommit(Arena->Start + Arena->Committed, BytesToCommit);
-        Arena->Committed += BytesToCommit;
-    }
-    u8* Memory = Arena->Start + Arena->At;
-    Arena->At += Bytes;
-    
-    return Memory;
+	if(Arena->At + Bytes >= Arena->Committed)
+	{
+		s64 BytesNeeded = (Arena->At + Bytes - Arena->Committed);
+		u64 BytesToCommit = BytesNeeded + GetPageSize() - (BytesNeeded % GetPageSize());
+		MemoryCommit(Arena->Start + Arena->Committed, BytesToCommit);
+		Arena->Committed += BytesToCommit;
+	}
+	u8* Memory = Arena->Start + Arena->At;
+	Arena->At += Bytes;
+	
+	return Memory;
 }
 
 u8 *ArenaPushTransient(memory_arena *Arena, s64 Bytes)
 {
-    if(Arena->At + Bytes >= Arena->Committed)
-    {
-        s64 BytesNeeded = (Arena->At + Bytes - Arena->Committed);
-        u64 BytesToCommit = BytesNeeded + GetPageSize() - (BytesNeeded % GetPageSize());
-        MemoryCommit(Arena->Start + Arena->Committed, BytesToCommit);
-        Arena->Committed += BytesToCommit;
-    }
-    u8* Memory = Arena->Start + Arena->At;
-    
-    return Memory;
+	if(Arena->At + Bytes >= Arena->Committed)
+	{
+		s64 BytesNeeded = (Arena->At + Bytes - Arena->Committed);
+		u64 BytesToCommit = BytesNeeded + GetPageSize() - (BytesNeeded % GetPageSize());
+		MemoryCommit(Arena->Start + Arena->Committed, BytesToCommit);
+		Arena->Committed += BytesToCommit;
+	}
+	u8* Memory = Arena->Start + Arena->At;
+	
+	return Memory;
 }
 
 u8 *ArenaPushZero(memory_arena *Arena, s64 Bytes)
 {
-    u8 *Memory = ArenaPush(Arena, Bytes);
-    MemoryZero(Memory, Bytes);
-    return Memory;
+	u8 *Memory = ArenaPush(Arena, Bytes);
+	MemoryZero(Memory, Bytes);
+	return Memory;
 }
 
 str8 Str8PushFV(memory_arena *Arena, char *Format, va_list InputArgList)
 {
-    va_list ArgList;
-    va_copy(ArgList, InputArgList);
-    u32 BytesNeeded = vsnprintf(0, 0, Format, InputArgList) + 1;
-    str8 Result = {0};
-    Result.Bytes = (s8*)ArenaPush(Arena, BytesNeeded);
-    Result.Size = vsnprintf((char *)Result.Bytes, BytesNeeded, Format, ArgList);
-    Result.Bytes[Result.Size] = 0;
-    va_end(ArgList);
-    return Result;
+	va_list ArgList;
+	va_copy(ArgList, InputArgList);
+	u32 BytesNeeded = vsnprintf(0, 0, Format, InputArgList) + 1;
+	str8 Result = {0};
+	Result.Bytes = (s8*)ArenaPush(Arena, BytesNeeded);
+	Result.Size = vsnprintf((char *)Result.Bytes, BytesNeeded, Format, ArgList);
+	Result.Bytes[Result.Size] = 0;
+	va_end(ArgList);
+	return Result;
 }
 
 str8 Str8PushF(memory_arena *Arena, char *Format, ...)
 {
-    va_list args;
-    va_start(args, Format);
-    str8 Result = Str8PushFV(Arena, Format, args);
-    va_end(args);
-    return Result;
+	va_list args;
+	va_start(args, Format);
+	str8 Result = Str8PushFV(Arena, Format, args);
+	va_end(args);
+	return Result;
 }
 
 char *CStrFromStr8(memory_arena *Arena, str8 String)
 {
-    char *Result = (char *)ArenaPushZero(Arena, String.Size + 1);
-    MemoryCopy(Result, String.Bytes, String.Size);
-    return Result;
+	char *Result = (char *)ArenaPushZero(Arena, String.Size + 1);
+	MemoryCopy(Result, String.Bytes, String.Size);
+	return Result;
 }
 
 b32 Str8Equal(str8 A, str8 B)
 {
-    if (A.Size != B.Size)
-        return False;
-    for (u64 Index = 0; Index < A.Size; Index++)
-    {
-        if (A.Bytes[Index] != B.Bytes[Index])
-        {
-            return False;
-        }
-    }
-    return True;
+	if (A.Size != B.Size)
+		return False;
+	for (u64 Index = 0; Index < A.Size; Index++)
+	{
+		if (A.Bytes[Index] != B.Bytes[Index])
+		{
+			return False;
+		}
+	}
+	return True;
 }
 
 b32  Str8EndsWith(str8 String, str8 EndsWith)
 {
-    str8 SubString = String;
-    SubString.Bytes += String.Size - EndsWith.Size;
-    SubString.Size = EndsWith.Size;
-    return Str8Equal(SubString, EndsWith);
+	str8 SubString = String;
+	SubString.Bytes += String.Size - EndsWith.Size;
+	SubString.Size = EndsWith.Size;
+	return Str8Equal(SubString, EndsWith);
 }
 
 void Str8ListAppend(memory_arena *Arena, str8_list *List, str8 String)
 {
-    str8_list_node *Node = ArenaPushTypeZero(Arena, str8_list_node);
-    Node->String = Str8PushF(Arena, "%.*s", Str8ToPrintfArgs(String));
-    if (List->First == Null)
-    {
-        List->First = Node;
-        List->Last = List->First;
-    }
-    else
-    {
-        List->Last->Next = Node;
-        Node->Previous = List->Last;
-        List->Last = Node;
-    }
+	str8_list_node *Node = ArenaPushTypeZero(Arena, str8_list_node);
+	Node->String = Str8PushF(Arena, "%.*s", Str8ToPrintfArgs(String));
+	if (List->First == Null)
+	{
+		List->First = Node;
+		List->Last = List->First;
+	}
+	else
+	{
+		List->Last->Next = Node;
+		Node->Previous = List->Last;
+		List->Last = Node;
+	}
 }
 
 str8 Str8ListJoin(memory_arena *Arena, str8_list List)
 {
-    u64 BytesToAllocate = 0;
-    for (str8_list_node *Node = List.First; Node != Null; Node = Node->Next)
-    {
-        BytesToAllocate += Node->String.Size;
-    }
-    u8 *Bytes = ArenaPush(Arena, BytesToAllocate);
-    u64 At = 0;
-    for (str8_list_node *Node = List.First; Node != Null; Node = Node->Next)
-    {
-        MemoryCopy(Bytes + At, Node->String.Bytes, Node->String.Size);
-        At += Node->String.Size;
-    }
-    str8 Result = {.Bytes = (s8*)Bytes, .Size = BytesToAllocate};
+	u64 BytesToAllocate = 0;
+	for (str8_list_node *Node = List.First; Node != Null; Node = Node->Next)
+	{
+		BytesToAllocate += Node->String.Size;
+	}
+	u8 *Bytes = ArenaPush(Arena, BytesToAllocate);
+	u64 At = 0;
+	for (str8_list_node *Node = List.First; Node != Null; Node = Node->Next)
+	{
+		MemoryCopy(Bytes + At, Node->String.Bytes, Node->String.Size);
+		At += Node->String.Size;
+	}
+	str8 Result = {.Bytes = (s8*)Bytes, .Size = BytesToAllocate};
 
-    return Result;
+	return Result;
 }
 
 str8 Str8ArrayJoin(memory_arena *Arena, str8_array Array)
 {
-    u64 BytesToAllocate = 0;
-    for (int I = 0; I < Array.Count; I++)
-    {
-        BytesToAllocate += Array.Items[I].Size;
-    }
-    u8 *Bytes = ArenaPush(Arena, BytesToAllocate);
-    u64 At = 0;
-    for (int I = 0; I < Array.Count; I++)
-    {
-        MemoryCopy(Bytes + At, Array.Items[I].Bytes, Array.Items[I].Size);
-        At += Array.Items[I].Size;
-    }
-    str8 Result = {.Bytes = (s8*)Bytes, .Size = BytesToAllocate};
+	u64 BytesToAllocate = 0;
+	for (int I = 0; I < Array.Count; I++)
+	{
+		BytesToAllocate += Array.Items[I].Size;
+	}
+	u8 *Bytes = ArenaPush(Arena, BytesToAllocate);
+	u64 At = 0;
+	for (int I = 0; I < Array.Count; I++)
+	{
+		MemoryCopy(Bytes + At, Array.Items[I].Bytes, Array.Items[I].Size);
+		At += Array.Items[I].Size;
+	}
+	str8 Result = {.Bytes = (s8*)Bytes, .Size = BytesToAllocate};
 
-    return Result;
+	return Result;
 }
 
 str8_array Str8ArrayFromList(memory_arena *Arena, str8_list List)
 {
-    str8_array Result = {0};
-    s64 Count = 0;
-    for(str8_list_node *Entry = List.First; Entry != Null; Entry = Entry->Next)
-    {
-        Count++;
-    }
-    Result.Count = Count;
-    Result.Items = (str8*)ArenaPush(Arena, sizeof(str8)*Count);
-    s64 Index = 0;
-    for(str8_list_node *Entry = List.First; Entry != Null; Entry = Entry->Next)
-    {
-        Result.Items[Index++] = Entry->String;
-    }
-    return Result;
+	str8_array Result = {0};
+	s64 Count = 0;
+	for(str8_list_node *Entry = List.First; Entry != Null; Entry = Entry->Next)
+	{
+		Count++;
+	}
+	Result.Count = Count;
+	Result.Items = (str8*)ArenaPush(Arena, sizeof(str8)*Count);
+	s64 Index = 0;
+	for(str8_list_node *Entry = List.First; Entry != Null; Entry = Entry->Next)
+	{
+		Result.Items[Index++] = Entry->String;
+	}
+	return Result;
 }
 
 #define FNV_64_PRIME ((u64)0x100000001b3ULL)
 #define FNV_HASH_START ((u64)0xcbf29ce484222325ULL)
 void FNVHash64(u64 *Hash, str8 String)
 {
-    for (s64 Index = 0; Index < String.Size; Index++)
-    {
+	for (s64 Index = 0; Index < String.Size; Index++)
+	{
 
-        *Hash *= FNV_64_PRIME;
-        *Hash ^= (u64)String.Bytes[Index];
-    }
+		*Hash *= FNV_64_PRIME;
+		*Hash ^= (u64)String.Bytes[Index];
+	}
 }
 
 b32 AdvanceN(str8 File, u64 *At, u64 N)
 {
-    if (*At + N < File.Size)
-    {
-        *At += N;
-        return True;
-    }
-    return False;
+	if (*At + N < File.Size)
+	{
+		*At += N;
+		return True;
+	}
+	return False;
 }
 
 void GobbleWhitespace(str8 File, u64 *At)
 {
-    while (*At < File.Size)
-    {
-        u64 Byte = File.Bytes[*At];
-        switch (Byte)
-        {
-        case ' ':
-        case '\r':
-        case '\t':
-        case '\n':
-        {
-            if(AdvanceN(File, At, 1) == False)
-            {
-                return;
-            }
-        }
-        break;
-        default:
-        {
-            return;
-        }
-        break;
-        }
-    }
+	while (*At < File.Size)
+	{
+		u64 Byte = File.Bytes[*At];
+		switch (Byte)
+		{
+		case ' ':
+		case '\r':
+		case '\t':
+		case '\n':
+		{
+			if(AdvanceN(File, At, 1) == False)
+			{
+				return;
+			}
+		}
+		break;
+		default:
+		{
+			return;
+		}
+		break;
+		}
+	}
 }
 
 void GobbleUpToWhitespace(str8 File, u64 *At)
 {
-    while (*At < File.Size)
-    {
-        u64 Byte = File.Bytes[*At];
-        switch (Byte)
-        {
-        case ' ':
-        case '\r':
-        case '\t':
-        case '\n':
-        {
-            return;
-        }
-        break;
-        default:
-        {
-            if(AdvanceN(File, At, 1) == False)
-            {
-                return;
-            }
-        }
-        break;
-        }
-    }
+	while (*At < File.Size)
+	{
+		u64 Byte = File.Bytes[*At];
+		switch (Byte)
+		{
+		case ' ':
+		case '\r':
+		case '\t':
+		case '\n':
+		{
+			return;
+		}
+		break;
+		default:
+		{
+			if(AdvanceN(File, At, 1) == False)
+			{
+				return;
+			}
+		}
+		break;
+		}
+	}
 }
 
 str8 Str8UpToLastCharacter(memory_arena *Arena, str8 InputPath, u8 Character)
 {
-    s64 SizeUptoLastCharacter = InputPath.Size - 1;
-    b32 FoundCharacter = False;
-    for (; SizeUptoLastCharacter >= 0; SizeUptoLastCharacter--)
-    {
-        if (InputPath.Bytes[SizeUptoLastCharacter] == Character)
-        {
-            FoundCharacter = True;
-            break;
-        }
-    }
-    str8 Path = {0};
-    if (FoundCharacter)
-    {
-        Path.Size = SizeUptoLastCharacter;
-        Path.Bytes = (s8*)ArenaPush(Arena, SizeUptoLastCharacter);
-        MemoryCopy(Path.Bytes, InputPath.Bytes, SizeUptoLastCharacter);
-    }
-    return Path;
+	s64 SizeUptoLastCharacter = InputPath.Size - 1;
+	b32 FoundCharacter = False;
+	for (; SizeUptoLastCharacter >= 0; SizeUptoLastCharacter--)
+	{
+		if (InputPath.Bytes[SizeUptoLastCharacter] == Character)
+		{
+			FoundCharacter = True;
+			break;
+		}
+	}
+	str8 Path = {0};
+	if (FoundCharacter)
+	{
+		Path.Size = SizeUptoLastCharacter;
+		Path.Bytes = (s8*)ArenaPush(Arena, SizeUptoLastCharacter);
+		MemoryCopy(Path.Bytes, InputPath.Bytes, SizeUptoLastCharacter);
+	}
+	return Path;
 }
 
 
 void FindAllIncludesInFile(memory_arena *Arena, str8 Filename, str8_list IncludePaths, str8_list *IncludeChainFiles)
 {
-    // Support unicode...
+	// Support unicode...
 
-    str8 CurrentFile = LoadEntireFileIntoMemory(Arena, Filename);
-    Str8ListAppend(Arena, IncludeChainFiles, CurrentFile);
+	str8 CurrentFile = LoadEntireFileIntoMemory(Arena, Filename);
+	Str8ListAppend(Arena, IncludeChainFiles, CurrentFile);
 
-    int CommentNesting = 0;
-    for (u64 At = 0; At < CurrentFile.Size; At++)
-    {
-        u8 Byte = CurrentFile.Bytes[At];
-        u8 NextNonWhitespaceByte = 0;
-        u64 NextAt = At;
-        GobbleWhitespace(CurrentFile, &NextAt);
-        NextNonWhitespaceByte = CurrentFile.Bytes[NextAt+1];
-        
-        if(Byte == '/' && ((NextAt > At && (NextNonWhitespaceByte == '/') || NextNonWhitespaceByte == '*')))
-        {
-            CommentNesting += 1;
-        }
+	int CommentNesting = 0;
+	for (u64 At = 0; At < CurrentFile.Size; At++)
+	{
+		u8 Byte = CurrentFile.Bytes[At];
+		u8 NextNonWhitespaceByte = 0;
+		u64 NextAt = At;
+		GobbleWhitespace(CurrentFile, &NextAt);
+		NextNonWhitespaceByte = CurrentFile.Bytes[NextAt+1];
+		
+		if(Byte == '/' && ((NextAt > At && (NextNonWhitespaceByte == '/') || NextNonWhitespaceByte == '*')))
+		{
+			CommentNesting += 1;
+		}
 
-        if(CommentNesting > 0)
-        {
-            if((Byte == '*' && ((NextAt > At && (NextNonWhitespaceByte == '/') || Byte == '\n'))))
-            {
-                CommentNesting -= 1;
-            }
-        }
-        else if (Byte == '#')
-        {
-            if (AdvanceN(CurrentFile, &At, 1) == False) 
-            {
-                return;
-            }
-            str8 Token = {0};
-            Token.Bytes = CurrentFile.Bytes + At;
-            str8 IncludeToken = Str8("include");
-            Token.Size = IncludeToken.Size;
-            if (At + Token.Size < CurrentFile.Size)
-            {
-                if (Str8Equal(Token, IncludeToken))
-                {
-                    AdvanceN(CurrentFile, &At, Token.Size);
-                    GobbleWhitespace(CurrentFile, &At);
-                    if (CurrentFile.Bytes[At] == '"')
-                    {
-                        if (AdvanceN(CurrentFile, &At, 1))
-                        {
-                            str8 IncludePath = {0};
-                            IncludePath.Bytes = CurrentFile.Bytes + At;
-                            for (; AdvanceN(CurrentFile, &At, 1) && CurrentFile.Bytes[At] != '"';);
-                            IncludePath.Size = CurrentFile.Bytes + At - IncludePath.Bytes;
-                            str8 SourceDir = Str8UpToLastCharacter(Arena, Filename, '/');
-                            str8 SourceDirPlusIncludePath = Str8PushF(Arena, "%.*s/%.*s", Str8ToPrintfArgs(SourceDir), Str8ToPrintfArgs(IncludePath));
-                            b32 FoundFile = False;
-                            str8_list AttemptedIncludes = {0};
-                            if (FileExists(Arena, SourceDirPlusIncludePath))
-                            {
-                                FoundFile = True;
-                                FindAllIncludesInFile(Arena, SourceDirPlusIncludePath, IncludePaths, IncludeChainFiles);
-                            }
-                            else
-                            {
-                                for (str8_list_node *Node = IncludePaths.First; Node != 0; Node = Node->Next)
-                                {
-                                    str8 FullPath = Str8PushF(
-                                        Arena,
-                                        "%.*s/%.*s",
-                                        Str8ToPrintfArgs(Str8UpToLastCharacter(Arena, Node->String, '/')),
-                                        Str8ToPrintfArgs(IncludePath));
-                                    
-                                    if(FileExists(Arena, FullPath))
-                                    {
-                                        FoundFile = True;
-                                        FindAllIncludesInFile(Arena, FullPath, IncludePaths, IncludeChainFiles);
-                                        break;
-                                    }
-                                    else
-                                    {
-                                        Str8ListAppend(Arena, &AttemptedIncludes, FullPath);
-                                    }
-                                }
-                            }
+		if(CommentNesting > 0)
+		{
+			if((Byte == '*' && ((NextAt > At && (NextNonWhitespaceByte == '/') || Byte == '\n'))))
+			{
+				CommentNesting -= 1;
+			}
+		}
+		else if (Byte == '#')
+		{
+			if (AdvanceN(CurrentFile, &At, 1) == False) 
+			{
+				return;
+			}
+			str8 Token = {0};
+			Token.Bytes = CurrentFile.Bytes + At;
+			str8 IncludeToken = Str8("include");
+			Token.Size = IncludeToken.Size;
+			if (At + Token.Size < CurrentFile.Size)
+			{
+				if (Str8Equal(Token, IncludeToken))
+				{
+					AdvanceN(CurrentFile, &At, Token.Size);
+					GobbleWhitespace(CurrentFile, &At);
+					if (CurrentFile.Bytes[At] == '"')
+					{
+						if (AdvanceN(CurrentFile, &At, 1))
+						{
+							str8 IncludePath = {0};
+							IncludePath.Bytes = CurrentFile.Bytes + At;
+							for (; AdvanceN(CurrentFile, &At, 1) && CurrentFile.Bytes[At] != '"';);
+							IncludePath.Size = CurrentFile.Bytes + At - IncludePath.Bytes;
+							str8 SourceDir = Str8UpToLastCharacter(Arena, Filename, '/');
+							str8 SourceDirPlusIncludePath = Str8PushF(Arena, "%.*s/%.*s", Str8ToPrintfArgs(SourceDir), Str8ToPrintfArgs(IncludePath));
+							b32 FoundFile = False;
+							str8_list AttemptedIncludes = {0};
+							if (FileExists(Arena, SourceDirPlusIncludePath))
+							{
+								FoundFile = True;
+								FindAllIncludesInFile(Arena, SourceDirPlusIncludePath, IncludePaths, IncludeChainFiles);
+							}
+							else
+							{
+								for (str8_list_node *Node = IncludePaths.First; Node != 0; Node = Node->Next)
+								{
+									str8 FullPath = Str8PushF(
+										Arena,
+										"%.*s/%.*s",
+										Str8ToPrintfArgs(Str8UpToLastCharacter(Arena, Node->String, '/')),
+										Str8ToPrintfArgs(IncludePath));
+									
+									if(FileExists(Arena, FullPath))
+									{
+										FoundFile = True;
+										FindAllIncludesInFile(Arena, FullPath, IncludePaths, IncludeChainFiles);
+										break;
+									}
+									else
+									{
+										Str8ListAppend(Arena, &AttemptedIncludes, FullPath);
+									}
+								}
+							}
 
-                            if (FoundFile == False)
-                            {
-                                return;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
+							if (FoundFile == False)
+							{
+								return;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
 }
 
 void EmbedFiles(memory_arena *Arena, str8_list SourcePaths, str8 DestinationPath, str8_list Names)
@@ -1555,8 +1555,8 @@ void EmbedFiles(memory_arena *Arena, str8_list SourcePaths, str8 DestinationPath
 		Str8ListAppend(Arena, &Embed, Str8("\n};\n\n"));
 	}
 
-    str8 JoinedEmbed = Str8ListJoin(Arena, Embed);
-    WriteStringToDisk(Arena, DestinationPath, JoinedEmbed);
+	str8 JoinedEmbed = Str8ListJoin(Arena, Embed);
+	WriteStringToDisk(Arena, DestinationPath, JoinedEmbed);
 }
 
 void EmbedFile(memory_arena *Arena, str8 SourcePath, str8 DestinationPath, str8 Name)
@@ -1572,249 +1572,249 @@ void EmbedFile(memory_arena *Arena, str8 SourcePath, str8 DestinationPath, str8 
 
 u64 HashSourceFileAndIncludes(memory_arena *Arena, str8 SourceFilename, str8_list IncludePaths, b32 Optimise, compiler Compiler)
 {
-    str8_list IncludeChainFiles = {0};
-    FindAllIncludesInFile(Arena, SourceFilename, IncludePaths, &IncludeChainFiles);
-    u64 Hash = FNV_HASH_START;
-    FNVHash64(&Hash, SourceFilename);
-    FNVHash64(&Hash, Str8PushF(Arena, "%d", Compiler));
-    FNVHash64(&Hash, Str8PushF(Arena, "%d", Optimise));
-    for (str8_list_node *File = IncludeChainFiles.First; File != 0; File = File->Next)
-    {
-        FNVHash64(&Hash, File->String);
-    }
+	str8_list IncludeChainFiles = {0};
+	FindAllIncludesInFile(Arena, SourceFilename, IncludePaths, &IncludeChainFiles);
+	u64 Hash = FNV_HASH_START;
+	FNVHash64(&Hash, SourceFilename);
+	FNVHash64(&Hash, Str8PushF(Arena, "%d", Compiler));
+	FNVHash64(&Hash, Str8PushF(Arena, "%d", Optimise));
+	for (str8_list_node *File = IncludeChainFiles.First; File != 0; File = File->Next)
+	{
+		FNVHash64(&Hash, File->String);
+	}
 
-    return Hash;
+	return Hash;
 }
 
 b32 CompileTranslationUnit(memory_arena *Arena, build_options *BuildOptions, str8 SourceFilename, u64 Hash)
 {
-    str8 HashedFilename = Str8PushF(Arena, "%llu.o", Hash);
-    
-    b32 FoundFile = FileExists(Arena, Str8PushF(Arena, "build/%.*s", Str8ToPrintfArgs(HashedFilename)));
+	str8 HashedFilename = Str8PushF(Arena, "%llu.o", Hash);
+	
+	b32 FoundFile = FileExists(Arena, Str8PushF(Arena, "build/%.*s", Str8ToPrintfArgs(HashedFilename)));
 
-    b32 FoundObjectFile = FoundFile;
-    if (FoundObjectFile && !BuildOptions->FullRebuild)
-    {
-        return False;
-    }
+	b32 FoundObjectFile = FoundFile;
+	if (FoundObjectFile && !BuildOptions->FullRebuild)
+	{
+		return False;
+	}
 
-    b32 FailedToExecute = False;
-    b32 FailedToBuild = False;
-    str8 CompileCommand = CompileCommandFromBuildOptions(Arena, BuildOptions, HashedFilename, SourceFilename);
-    if(ExecuteCommand(Arena, CompileCommand, &FailedToExecute) == False)
-    {
-        printf(STR_COLOUR_RED "ERROR: " STR_COLOUR_RESET);
-        printf("Failed to launch compiler\n");
-        FailedToBuild = True;
-    }
+	b32 FailedToExecute = False;
+	b32 FailedToBuild = False;
+	str8 CompileCommand = CompileCommandFromBuildOptions(Arena, BuildOptions, HashedFilename, SourceFilename);
+	if(ExecuteCommand(Arena, CompileCommand, &FailedToExecute) == False)
+	{
+		printf(STR_COLOUR_RED "ERROR: " STR_COLOUR_RESET);
+		printf("Failed to launch compiler\n");
+		FailedToBuild = True;
+	}
 
-    return FailedToBuild || FailedToExecute;
+	return FailedToBuild || FailedToExecute;
 }
 
 b32 LinkObjectFiles(memory_arena *Arena, build_options *BuildOptions, str8_array ObjectFileNames)
 {
 
-    str8_array ObjectFilePaths = {0};
-    ObjectFilePaths.Count = ObjectFileNames.Count;
-    ObjectFilePaths.Items = (str8*)ArenaPush(Arena, ObjectFilePaths.Count*sizeof(str8));
+	str8_array ObjectFilePaths = {0};
+	ObjectFilePaths.Count = ObjectFileNames.Count;
+	ObjectFilePaths.Items = (str8*)ArenaPush(Arena, ObjectFilePaths.Count*sizeof(str8));
 
-    for (s64 I = 0; I < ObjectFilePaths.Count; I++)
-    {
-        ObjectFilePaths.Items[I] = Str8PushF(Arena, "%.*s%.*s ", 
-                                             Str8ToPrintfArgs(BuildOptions->OutputPath),
-                                             Str8ToPrintfArgs(ObjectFileNames.Items[I]));
-    }
+	for (s64 I = 0; I < ObjectFilePaths.Count; I++)
+	{
+		ObjectFilePaths.Items[I] = Str8PushF(Arena, "%.*s%.*s ", 
+											 Str8ToPrintfArgs(BuildOptions->OutputPath),
+											 Str8ToPrintfArgs(ObjectFileNames.Items[I]));
+	}
 
-    str8_list BuildDirectoryEntries = ListOfDirectoryEntriesFromPath(Arena, BuildOptions->OutputPath);
-    for(str8_list_node *Entry = BuildDirectoryEntries.First; Entry != Null; Entry = Entry->Next)
-    {
-        if (Str8EndsWith(Entry->String, Str8(".o")))
-        {   
-            b32 FoundMatch = False;
-            str8 FilePathToCheck = Str8PushF(Arena, "%.*s%.*s", Str8ToPrintfArgs(BuildOptions->OutputPath),
-                                                                 Str8ToPrintfArgs(Entry->String));
-            for (s64 J = 0; J < ObjectFileNames.Count; J++)
-            {
-                str8 ObjectFilePathWithoutSpace = ObjectFilePaths.Items[J];
-                ObjectFilePathWithoutSpace.Size -= 1;
-                if (Str8Equal(ObjectFilePathWithoutSpace, FilePathToCheck))
-                {
-                    FoundMatch = True;
-                    break;
-                }
-            }
-            if (FoundMatch == False)
-            {
-                DeleteFileFromDisk(Arena, FilePathToCheck);
-            }
-        }
-    }
+	str8_list BuildDirectoryEntries = ListOfDirectoryEntriesFromPath(Arena, BuildOptions->OutputPath);
+	for(str8_list_node *Entry = BuildDirectoryEntries.First; Entry != Null; Entry = Entry->Next)
+	{
+		if (Str8EndsWith(Entry->String, Str8(".o")))
+		{   
+			b32 FoundMatch = False;
+			str8 FilePathToCheck = Str8PushF(Arena, "%.*s%.*s", Str8ToPrintfArgs(BuildOptions->OutputPath),
+																 Str8ToPrintfArgs(Entry->String));
+			for (s64 J = 0; J < ObjectFileNames.Count; J++)
+			{
+				str8 ObjectFilePathWithoutSpace = ObjectFilePaths.Items[J];
+				ObjectFilePathWithoutSpace.Size -= 1;
+				if (Str8Equal(ObjectFilePathWithoutSpace, FilePathToCheck))
+				{
+					FoundMatch = True;
+					break;
+				}
+			}
+			if (FoundMatch == False)
+			{
+				DeleteFileFromDisk(Arena, FilePathToCheck);
+			}
+		}
+	}
 
-    str8 LinkCommand = LinkCommandFromBuildOptions(Arena, BuildOptions, ObjectFilePaths);
+	str8 LinkCommand = LinkCommandFromBuildOptions(Arena, BuildOptions, ObjectFilePaths);
 
 	b32 FailedToExecute = False;
-    b32 FailedToLink = False;
+	b32 FailedToLink = False;
 	if(ExecuteCommand(Arena, LinkCommand, &FailedToExecute) == False)
 	{
-        printf(STR_COLOUR_RED "ERROR: " STR_COLOUR_RESET);
-        printf("Failed to launch linker\n");
-        FailedToLink = True;
+		printf(STR_COLOUR_RED "ERROR: " STR_COLOUR_RESET);
+		printf("Failed to launch linker\n");
+		FailedToLink = True;
 	}
-    return FailedToLink || FailedToExecute;
+	return FailedToLink || FailedToExecute;
 }
 
 void Build(wave_info *WaveInfo, memory_arena *Arena, build_options BuildOptions)
 {
-    u64 Start = TimeStampNow();
+	u64 Start = TimeStampNow();
 
-    str8_array RelativeSourceFilePaths = {0};
-    str8_array ObjectFileNames = {0};
-    if(WaveIsFirstLane(WaveInfo))
-    {
-        RelativeSourceFilePaths = Str8ArrayFromList(&WaveInfo->Shared->Arena, BuildOptions.SourceFiles);
-        ObjectFileNames.Count = RelativeSourceFilePaths.Count;
-        ObjectFileNames.Items = (str8*)ArenaPush(&WaveInfo->Shared->Arena, sizeof(str8)*RelativeSourceFilePaths.Count);
-    }
+	str8_array RelativeSourceFilePaths = {0};
+	str8_array ObjectFileNames = {0};
+	if(WaveIsFirstLane(WaveInfo))
+	{
+		RelativeSourceFilePaths = Str8ArrayFromList(&WaveInfo->Shared->Arena, BuildOptions.SourceFiles);
+		ObjectFileNames.Count = RelativeSourceFilePaths.Count;
+		ObjectFileNames.Items = (str8*)ArenaPush(&WaveInfo->Shared->Arena, sizeof(str8)*RelativeSourceFilePaths.Count);
+	}
 
-    BroadcastToAllLanes(WaveInfo, RelativeSourceFilePaths);
-    BroadcastToAllLanes(WaveInfo, ObjectFileNames);
+	BroadcastToAllLanes(WaveInfo, RelativeSourceFilePaths);
+	BroadcastToAllLanes(WaveInfo, ObjectFileNames);
 
-    s64 Count = LaneValueFromTotal(WaveInfo, RelativeSourceFilePaths.Count);
-    s64 Index = InclusiveWavePrefixSum(WaveInfo, Count);
+	s64 Count = LaneValueFromTotal(WaveInfo, RelativeSourceFilePaths.Count);
+	s64 Index = InclusiveWavePrefixSum(WaveInfo, Count);
 
-    b32 FailedToBuild = False;
+	b32 FailedToBuild = False;
 	u64 PerLaneCount = 0;
-    for(int I = Index; I < Index + Count; I++)
-    {
+	for(int I = Index; I < Index + Count; I++)
+	{
 		PerLaneCount++;
-        u64 PerFileStart = TimeStampNow();
-        u64 Hash = HashSourceFileAndIncludes(Arena, 
-                                              RelativeSourceFilePaths.Items[I],
-                                              BuildOptions.IncludePaths,
-                                              BuildOptions.Optimise,
-                                              BuildOptions.Compiler);
-        b32 FailedToCompile = CompileTranslationUnit(Arena,
-                               &BuildOptions,
-                                RelativeSourceFilePaths.Items[I],
-                                Hash);
-        FailedToBuild |= FailedToCompile;
+		u64 PerFileStart = TimeStampNow();
+		u64 Hash = HashSourceFileAndIncludes(Arena, 
+											  RelativeSourceFilePaths.Items[I],
+											  BuildOptions.IncludePaths,
+											  BuildOptions.Optimise,
+											  BuildOptions.Compiler);
+		b32 FailedToCompile = CompileTranslationUnit(Arena,
+							   &BuildOptions,
+								RelativeSourceFilePaths.Items[I],
+								Hash);
+		FailedToBuild |= FailedToCompile;
 
-        ObjectFileNames.Items[I] = Str8PushF(Arena, "%llu.o", Hash);
+		ObjectFileNames.Items[I] = Str8PushF(Arena, "%llu.o", Hash);
 
-        if(!FailedToCompile)
-        {
-            printf("Compiled %.*s in %.2fms\n",
-                   Str8ToPrintfArgs(RelativeSourceFilePaths.Items[I]),
-                   MilliSecondsFromTimeStamp(TimeStampNow() - PerFileStart));
-        }
+		if(!FailedToCompile)
+		{
+			printf("Compiled %.*s in %.2fms\n",
+				   Str8ToPrintfArgs(RelativeSourceFilePaths.Items[I]),
+				   MilliSecondsFromTimeStamp(TimeStampNow() - PerFileStart));
+		}
 
-    }
+	}
 	
-    b32 AnyFailedToBuild = WaveAnyTrue(WaveInfo, FailedToBuild);
+	b32 AnyFailedToBuild = WaveAnyTrue(WaveInfo, FailedToBuild);
 
 	b32 FailedToLink = False;
-    if(WaveIsFirstLane(WaveInfo) && !AnyFailedToBuild)
-    {
-        printf("\nCompiled all TUs in %.2fms\n", MilliSecondsFromTimeStamp(TimeStampNow() - Start));
-        {
-            u64 LinkStart = TimeStampNow();
-            
-            FailedToLink = LinkObjectFiles(Arena, &BuildOptions, ObjectFileNames);
-            printf("Linking finished in %.2fms\n", MilliSecondsFromTimeStamp(TimeStampNow() - LinkStart));
-        }
-    }
+	if(WaveIsFirstLane(WaveInfo) && !AnyFailedToBuild)
+	{
+		printf("\nCompiled all TUs in %.2fms\n", MilliSecondsFromTimeStamp(TimeStampNow() - Start));
+		{
+			u64 LinkStart = TimeStampNow();
+			
+			FailedToLink = LinkObjectFiles(Arena, &BuildOptions, ObjectFileNames);
+			printf("Linking finished in %.2fms\n", MilliSecondsFromTimeStamp(TimeStampNow() - LinkStart));
+		}
+	}
 
 	b32 AnyFailedToLink = WaveAnyTrue(WaveInfo, FailedToLink);
 
-    if(WaveIsFirstLane(WaveInfo) && (AnyFailedToBuild || AnyFailedToLink))
-    {
+	if(WaveIsFirstLane(WaveInfo) && (AnyFailedToBuild || AnyFailedToLink))
+	{
 		str8 OutputPathAndName = Str8PushF(Arena, "%.*s/%.*s",
 								   Str8ToPrintfArgs(BuildOptions.OutputPath),
 								   Str8ToPrintfArgs(BuildOptions.OutputName));
 		DeleteFileFromDisk(Arena, OutputPathAndName);
 
-        printf(STR_COLOUR_RED "\nERROR\n" STR_COLOUR_RESET);
+		printf(STR_COLOUR_RED "\nERROR\n" STR_COLOUR_RESET);
 	}
 	else if(WaveIsFirstLane(WaveInfo))
 	{
 
-    	printf(STR_COLOUR_GREEN "\nSUCCESS\n" STR_COLOUR_RESET);
+		printf(STR_COLOUR_GREEN "\nSUCCESS\n" STR_COLOUR_RESET);
 	}
-    
+	
 }
 
 
 str8 PathFromFilePath(memory_arena *Arena, str8 SourceFilePath)
 {
-    return Str8UpToLastCharacter(Arena, SourceFilePath, '/');
+	return Str8UpToLastCharacter(Arena, SourceFilePath, '/');
 }
 
 str8 FileNameFromFilePath(memory_arena *Arena, str8 FilePath)
 {
-    str8 Path = PathFromFilePath(Arena, FilePath);
-    str8 FileName = Str8PushF(Arena, "%.*s", Str8ToPrintfArgs(FilePath));
-    FileName.Bytes += Path.Size + 1;
-    FileName.Size -= Path.Size + 1;
-    return FileName;
+	str8 Path = PathFromFilePath(Arena, FilePath);
+	str8 FileName = Str8PushF(Arena, "%.*s", Str8ToPrintfArgs(FilePath));
+	FileName.Bytes += Path.Size + 1;
+	FileName.Size -= Path.Size + 1;
+	return FileName;
 }
 
 str8 ForwardSlashPathFromPath(str8 Path)
 {
-    for(s64 I = 0; I < Path.Size; I++)
-    {
-        if(Path.Bytes[I] == '\\')
-        {
-            Path.Bytes[I] = '/';
-        }
-    }
-    return Path;
+	for(s64 I = 0; I < Path.Size; I++)
+	{
+		if(Path.Bytes[I] == '\\')
+		{
+			Path.Bytes[I] = '/';
+		}
+	}
+	return Path;
 }
 
 void EmitCompileCommandsJson(memory_arena *Arena, build_options BuildOptions)
 {
-    str8_list Output = {0};
+	str8_list Output = {0};
 
-    Str8ListAppend(Arena, &Output, Str8("[\n"));
-    
-    for(str8_list_node *SourceNode = BuildOptions.SourceFiles.First;
-        SourceNode != Null;
-        SourceNode = SourceNode->Next)
-    {
-        str8 FileName = ForwardSlashPathFromPath(SourceNode->String);
-        str8 ObjectFileName = Str8PushF(Arena, "%.*s.o", 
-                                        Str8ToPrintfArgs(
-                                        Str8UpToLastCharacter(Arena, 
-                                                              FileName, 
-                                                              '.')));
-        Str8ListAppend(Arena, &Output, Str8("    {\n"));
-        Str8ListAppend(Arena, &Output, Str8PushF(Arena,
-               "        \"directory\": \"%.*s\",\n",
-                       Str8ToPrintfArgs(ForwardSlashPathFromPath(BuildOptions.WorkingDirectory))));
-        Str8ListAppend(Arena,
-                   &Output,
-                   Str8PushF(Arena,
-                   "        \"command\": \"%.*s\",\n",
-                   Str8ToPrintfArgs(CompileCommandFromBuildOptions(Arena,
-                                    &BuildOptions, 
-                                    ObjectFileName,
-                                    FileName))));
-        Str8ListAppend(Arena,
-                 &Output,
-               Str8PushF(Arena,
-               "        \"file\": \"%.*s\"\n",
-                       Str8ToPrintfArgs(FileName)));
-        Str8ListAppend(Arena, &Output, Str8("    }"));
-        if(SourceNode->Next)
-        {
-            Str8ListAppend(Arena, &Output, Str8(",\n"));
-        }
-        else
-        {
-            Str8ListAppend(Arena, &Output, Str8("\n"));
-        }
-    }
-    
-    Str8ListAppend(Arena, &Output, Str8("]\n"));
+	Str8ListAppend(Arena, &Output, Str8("[\n"));
+	
+	for(str8_list_node *SourceNode = BuildOptions.SourceFiles.First;
+		SourceNode != Null;
+		SourceNode = SourceNode->Next)
+	{
+		str8 FileName = ForwardSlashPathFromPath(SourceNode->String);
+		str8 ObjectFileName = Str8PushF(Arena, "%.*s.o", 
+										Str8ToPrintfArgs(
+										Str8UpToLastCharacter(Arena, 
+															  FileName, 
+															  '.')));
+		Str8ListAppend(Arena, &Output, Str8("    {\n"));
+		Str8ListAppend(Arena, &Output, Str8PushF(Arena,
+			   "        \"directory\": \"%.*s\",\n",
+					   Str8ToPrintfArgs(ForwardSlashPathFromPath(BuildOptions.WorkingDirectory))));
+		Str8ListAppend(Arena,
+				   &Output,
+				   Str8PushF(Arena,
+				   "        \"command\": \"%.*s\",\n",
+				   Str8ToPrintfArgs(CompileCommandFromBuildOptions(Arena,
+									&BuildOptions, 
+									ObjectFileName,
+									FileName))));
+		Str8ListAppend(Arena,
+				 &Output,
+			   Str8PushF(Arena,
+			   "        \"file\": \"%.*s\"\n",
+					   Str8ToPrintfArgs(FileName)));
+		Str8ListAppend(Arena, &Output, Str8("    }"));
+		if(SourceNode->Next)
+		{
+			Str8ListAppend(Arena, &Output, Str8(",\n"));
+		}
+		else
+		{
+			Str8ListAppend(Arena, &Output, Str8("\n"));
+		}
+	}
+	
+	Str8ListAppend(Arena, &Output, Str8("]\n"));
 
-    WriteStringToDisk(Arena, Str8("compile_commands.json"), Str8ListJoin(Arena, Output));
+	WriteStringToDisk(Arena, Str8("compile_commands.json"), Str8ListJoin(Arena, Output));
 }

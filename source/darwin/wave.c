@@ -153,7 +153,6 @@ u64 ExclusiveWavePrefixSum(wave_info *WaveInfo, u64 Value)
 {
 	WaveBarrier(WaveInfo->Shared->Barrier);
 	WaveInfo->Shared->Data[WaveInfo->Lane] = Value;
-	WaveInfo->Shared->Data[0] = 0;
 	WaveBarrier(WaveInfo->Shared->Barrier);
 
 	u64 PerLaneSum = 0;
@@ -169,7 +168,6 @@ u64 InclusiveWavePrefixSum(wave_info *WaveInfo, u64 Value)
 {
 	WaveBarrier(WaveInfo->Shared->Barrier);
 	WaveInfo->Shared->Data[WaveInfo->Lane] = Value;
-	WaveInfo->Shared->Data[0] = 0;
 	WaveBarrier(WaveInfo->Shared->Barrier);
 
 	int PerLaneSum = 0;

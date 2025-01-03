@@ -672,7 +672,7 @@ int main()
 
 	M.UI->Font = M.CodeFont;
 
-	M.Tree = OS_DirectoryTreeFromPath(M.PermanentArena, Str8PushF(Arena, "/Users/olivercruickshank/EmberGen/liquigen"));
+	M.Tree = OS_DirectoryTreeFromPath(M.PermanentArena, Str8PushF(Arena, "/Users/olivercruickshank/EmberGen"));
 
 	M.RandomState = XorShiftInit();
 

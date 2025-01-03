@@ -215,7 +215,7 @@ v3f ForceDisplacementFromPosition(octree_header *Octree, int OctantIndex, v3f Po
 {	
 	v3f Result = v3f(0.0);
 
-	int OctantStack[32];
+	int OctantStack[1024];
 	int StackTop = 0;
 	OctantStack[StackTop++] = OctantIndex;
 
@@ -278,7 +278,7 @@ void ParallelForceDisplacement(wave_info *WaveInfo, void* Input)
 	int Count = LaneValueFromTotal(WaveInfo, P->NodeCount);
 	int Index = ExclusiveWavePrefixSum(WaveInfo, Count);
 
-	for(int I = Index; I < Index + Count && I < P->NodeCount; I++)
+	for(int I = Index; I < Index + Count; I++)
 	{
 		P->Displacements[I] = ForceDisplacementFromPosition(P->Octree,
 														   0,
@@ -300,20 +300,20 @@ void SimulateForceDirectedGraphOctree(m_arena *Arena, fdg_node *Nodes, int NodeC
 
 	v3f *Displacements = ArenaPushArrayZero(Arena, v3f, NodeCount);
 
-parallel_force_displacement *P = ArenaPushArrayZero(Arena, parallel_force_displacement, 1);
-P->Displacements = Displacements;
-P->K = K;
-P->NodeCount = NodeCount;
-P->Nodes = Nodes;
-P->Octree = Octree;
+	parallel_force_displacement *P = ArenaPushArrayZero(Arena, parallel_force_displacement, 1);
+	P->Displacements = Displacements;
+	P->K = K;
+	P->NodeCount = NodeCount;
+	P->Nodes = Nodes;
+	P->Octree = Octree;
 
-Dispatch(Shared, ParallelForceDisplacement, P);
+	Dispatch(Shared, ParallelForceDisplacement, P);
 
-	for(int I = 0; I < NodeCount; I++)
-	{
-		Displacements[I] = ForceDisplacementFromPosition(Octree, 0, Nodes[I].TargetPosition, K);
+	// for(int I = 0; I < NodeCount; I++)
+	// {
+	// 	Displacements[I] = ForceDisplacementFromPosition(Octree, 0, Nodes[I].TargetPosition, K);
 		
-	}
+	// }
 
 	for(int I = 0; I < LinkCount; I++)
 	{

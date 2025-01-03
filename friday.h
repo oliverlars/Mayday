@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
@@ -461,7 +462,7 @@ typedef struct shared_wave_info
     build_options BuildOptions;
 
 
-    s64 Data[4096];
+    atomic_llong Data[4096];
 }
 shared_wave_info;
 
@@ -478,22 +479,28 @@ https://devblogs.microsoft.com/oldnewthing/20160824-00/?p=94155
 */
 void WaveBarrier(barrier *Barrier)
 {
+	
     s64 Generation = atomic_load_explicit(&Barrier->Generation, memory_order_acquire);
-    s64 LanesWaiting = atomic_fetch_add_explicit(&Barrier->LanesWaiting, 1, memory_order_acquire);
-    if (LanesWaiting < Barrier->LaneCount - 1)
+	s64 LanesWaiting = atomic_fetch_add_explicit(&Barrier->LanesWaiting, 1, memory_order_acq_rel);
+
+	if(LanesWaiting < Barrier->LaneCount - 1)
     {
-        while(Barrier->Generation == Generation)
+        while(atomic_load_explicit(&Barrier->Generation, memory_order_acquire) == Generation)
         {
-            os_sync_wait_on_address(&Barrier->Generation, Generation, sizeof(s64), OS_SYNC_WAIT_ON_ADDRESS_SHARED);   
+            os_sync_wait_on_address(&Barrier->Generation, Generation, sizeof(atomic_llong), OS_SYNC_WAIT_ON_ADDRESS_SHARED);   
         }
     }
-    else if(LanesWaiting + 1 == Barrier->LaneCount)
+	else if(LanesWaiting == Barrier->LaneCount - 1)
     {
-        Barrier->LanesWaiting = 0;
+        atomic_store_explicit(&Barrier->LanesWaiting, 0, memory_order_release);
         atomic_fetch_add_explicit(&Barrier->Generation, 1, memory_order_release);
-        os_sync_wake_by_address_all(&Barrier->Generation, sizeof(s64), OS_SYNC_WAKE_BY_ADDRESS_SHARED);
+        os_sync_wake_by_address_all(&Barrier->Generation, sizeof(atomic_llong), OS_SYNC_WAKE_BY_ADDRESS_SHARED);
     }
-    atomic_thread_fence(memory_order_release);
+	else
+	{
+		assert(False);
+	}
+    
 }
 
 s64 LaneValueFromTotal(wave_info *WaveInfo, s64 Count)
@@ -542,6 +549,7 @@ u8 *ArenaPushTransient(memory_arena *Arena, s64 Bytes);
 
 void BroadcastBytes(wave_info *WaveInfo, void *Bytes, s64 ByteCount)
 {
+	WaveBarrier(WaveInfo->Shared->Barrier);
     u8 *Result = Null;
     if(WaveIsFirstLane(WaveInfo))
     {
@@ -577,68 +585,79 @@ u64 NearestPowerOfTwo(u64 Value)
 }
 
 /*
+This could be faster probably but it's fine and works,
+I don't own a threadripper so this will be fine for
+32 core computers...
+
+The following link shows a faster version that would work better.
+
 GPU Gems 3
 https://www.youtube.com/watch?v=1G8CZioSjnM
 */
-u64 WavePrefixSum(wave_info *WaveInfo, u64 Value)
+u64 InclusiveWavePrefixSum(wave_info *WaveInfo, u64 Value)
 {
-    WaveInfo->Shared->Data[WaveInfo->Lane] = Value;
-    WaveInfo->Shared->Data[0] = 0;
-    WaveBarrier(WaveInfo->Shared->Barrier);
-    int Offset = 1;
+	WaveBarrier(WaveInfo->Shared->Barrier);
+	WaveInfo->Shared->Data[WaveInfo->Lane] = Value;
+	WaveInfo->Shared->Data[0] = 0;
+	WaveBarrier(WaveInfo->Shared->Barrier);
 
-    for(int D = NearestPowerOfTwo(WaveInfo->Shared->LaneCount)/2; D > 0; D >>= 1)
-    {
-        WaveBarrier(WaveInfo->Shared->Barrier);
-        if(WaveInfo->Lane < D)
-        {
-            int AI = Offset * (2 * WaveInfo->Lane + 1)-1;
-            int BI = Offset * (2 * WaveInfo->Lane + 2)-1;
-            WaveInfo->Shared->Data[BI] += WaveInfo->Shared->Data[AI];
-        }
-        Offset *= 2;
-    }
+	int PerLaneSum = 0;
+	for(int I = 0; I <= WaveInfo->Lane; I++)
+	{
+		PerLaneSum += WaveInfo->Shared->Data[WaveInfo->Lane];
+	}
+	WaveBarrier(WaveInfo->Shared->Barrier);
+	WaveInfo->Shared->Data[WaveInfo->Lane] = PerLaneSum;
+	WaveBarrier(WaveInfo->Shared->Barrier);
+	return WaveInfo->Shared->Data[WaveInfo->Lane];
+}
 
-    for(int D = 2; D < NearestPowerOfTwo(WaveInfo->Shared->LaneCount); D *= 2)
-    {
-        Offset >>= 1;
-        WaveBarrier(WaveInfo->Shared->Barrier);
-        if(WaveInfo->Lane < D-1)
-        {
-            int AI = Offset*(WaveInfo->Lane + 1) - 1;
-            int BI = Offset*(WaveInfo->Lane + 1) + (Offset/2) - 1;
-            WaveInfo->Shared->Data[BI] += WaveInfo->Shared->Data[AI];
-        }
-    }
-    WaveBarrier(WaveInfo->Shared->Barrier);
-    return WaveInfo->Shared->Data[WaveInfo->Lane];
+u64 ExclusiveWavePrefixSum(wave_info *WaveInfo, u64 Value)
+{
+	WaveBarrier(WaveInfo->Shared->Barrier);
+	WaveInfo->Shared->Data[WaveInfo->Lane] = Value;
+	WaveInfo->Shared->Data[0] = 0;
+	WaveBarrier(WaveInfo->Shared->Barrier);
+
+	int PerLaneSum = 0;
+	for(int I = 0; I <= WaveInfo->Lane; I++)
+	{
+		PerLaneSum += WaveInfo->Shared->Data[WaveInfo->Lane];
+	}
+	WaveBarrier(WaveInfo->Shared->Barrier);
+	WaveInfo->Shared->Data[WaveInfo->Lane] = PerLaneSum;
+	WaveBarrier(WaveInfo->Shared->Barrier);
+	return WaveInfo->Shared->Data[WaveInfo->Lane];
 }
 
 u64 WaveSum(wave_info *WaveInfo, u64 Value)
 {
-    WaveInfo->Shared->Data[0] = 0;
+	WaveBarrier(WaveInfo->Shared->Barrier);
+    atomic_store_explicit(WaveInfo->Shared->Data + 0, 0, memory_order_release);
+	WaveBarrier(WaveInfo->Shared->Barrier);
+    atomic_fetch_add_explicit(WaveInfo->Shared->Data + 0, Value, memory_order_consume);
     WaveBarrier(WaveInfo->Shared->Barrier);
-    AtomicAdd(WaveInfo->Shared->Data + 0, Value);
-    WaveBarrier(WaveInfo->Shared->Barrier);
-    return WaveInfo->Shared->Data[0];
+	return atomic_load_explicit(WaveInfo->Shared->Data + 0, memory_order_acquire);
 }
 
 b32 WaveAnyTrue(wave_info *WaveInfo, b32 Expression)
 {
-    WaveInfo->Shared->Data[0] = 0;
+	WaveBarrier(WaveInfo->Shared->Barrier);
+	atomic_store_explicit(WaveInfo->Shared->Data + 0, 0, memory_order_release);
     WaveBarrier(WaveInfo->Shared->Barrier);
-    AtomicAdd(WaveInfo->Shared->Data + 0, Expression);
+    atomic_fetch_add_explicit(WaveInfo->Shared->Data + 0, Expression, memory_order_consume);
     WaveBarrier(WaveInfo->Shared->Barrier);
-    return WaveInfo->Shared->Data[0] > 0;
+    return atomic_load_explicit(WaveInfo->Shared->Data + 0, memory_order_acquire) > 0;
 }
 
 b32 WaveAllTrue(wave_info *WaveInfo, b32 Expression)
 {
-    WaveInfo->Shared->Data[0] = 0;
+	WaveBarrier(WaveInfo->Shared->Barrier);
+    atomic_store_explicit(WaveInfo->Shared->Data + 0, 0, memory_order_release);
     WaveBarrier(WaveInfo->Shared->Barrier);
-    AtomicAdd(WaveInfo->Shared->Data + 0, Expression);
+    atomic_fetch_add_explicit(WaveInfo->Shared->Data + 0, Expression, memory_order_acq_rel);
     WaveBarrier(WaveInfo->Shared->Barrier);
-    return WaveInfo->Shared->Data[0] == WaveInfo->Shared->LaneCount;
+    return atomic_load_explicit(WaveInfo->Shared->Data + 0, memory_order_acquire) == WaveInfo->Shared->LaneCount;
 }
 
 #elif defined(_WIN32)
@@ -1467,12 +1486,6 @@ void FindAllIncludesInFile(memory_arena *Arena, str8 Filename, str8_list Include
 
                             if (FoundFile == False)
                             {
-                                printf("\nUnable to find include path...\n");
-                                for (str8_list_node *Node = AttemptedIncludes.First; Node != 0; Node = Node->Next)
-                                {
-                                    printf("%.*s | ", Str8ToPrintfArgs(Node->String));
-                                }
-                                printf("End\n");
                                 return;
                             }
                         }
@@ -1600,7 +1613,6 @@ b32 CompileTranslationUnit(memory_arena *Arena, build_options *BuildOptions, str
 
 b32 LinkObjectFiles(memory_arena *Arena, build_options *BuildOptions, str8_array ObjectFileNames)
 {
-    b32 FailedToBuild = False;
 
     str8_array ObjectFilePaths = {0};
     ObjectFilePaths.Count = ObjectFileNames.Count;
@@ -1640,8 +1652,15 @@ b32 LinkObjectFiles(memory_arena *Arena, build_options *BuildOptions, str8_array
 
     str8 LinkCommand = LinkCommandFromBuildOptions(Arena, BuildOptions, ObjectFilePaths);
 
-    ExecuteCommand(Arena, LinkCommand, &FailedToBuild);
-    return FailedToBuild;
+	b32 FailedToExecute = False;
+    b32 FailedToLink = False;
+	if(ExecuteCommand(Arena, LinkCommand, &FailedToExecute) == False)
+	{
+        printf(STR_COLOUR_RED "ERROR: " STR_COLOUR_RESET);
+        printf("Failed to launch linker\n");
+        FailedToLink = True;
+	}
+    return FailedToLink || FailedToExecute;
 }
 
 void Build(wave_info *WaveInfo, memory_arena *Arena, build_options BuildOptions)
@@ -1661,11 +1680,13 @@ void Build(wave_info *WaveInfo, memory_arena *Arena, build_options BuildOptions)
     BroadcastToAllLanes(WaveInfo, ObjectFileNames);
 
     s64 Count = LaneValueFromTotal(WaveInfo, RelativeSourceFilePaths.Count);
-    s64 Index = WavePrefixSum(WaveInfo, Count);
+    s64 Index = InclusiveWavePrefixSum(WaveInfo, Count);
 
     b32 FailedToBuild = False;
+	u64 PerLaneCount = 0;
     for(int I = Index; I < Index + Count; I++)
     {
+		PerLaneCount++;
         u64 PerFileStart = TimeStampNow();
         u64 Hash = HashSourceFileAndIncludes(Arena, 
                                               RelativeSourceFilePaths.Items[I],
@@ -1679,6 +1700,7 @@ void Build(wave_info *WaveInfo, memory_arena *Arena, build_options BuildOptions)
         FailedToBuild |= FailedToCompile;
 
         ObjectFileNames.Items[I] = Str8PushF(Arena, "%llu.o", Hash);
+
         if(!FailedToCompile)
         {
             printf("Compiled %.*s in %.2fms\n",
@@ -1687,22 +1709,24 @@ void Build(wave_info *WaveInfo, memory_arena *Arena, build_options BuildOptions)
         }
 
     }
+	
     b32 AnyFailedToBuild = WaveAnyTrue(WaveInfo, FailedToBuild);
-    
+
+	b32 FailedToLink = False;
     if(WaveIsFirstLane(WaveInfo) && !AnyFailedToBuild)
     {
         printf("\nCompiled all TUs in %.2fms\n", MilliSecondsFromTimeStamp(TimeStampNow() - Start));
         {
             u64 LinkStart = TimeStampNow();
             
-            LinkObjectFiles(Arena, &BuildOptions, ObjectFileNames);
-
+            FailedToLink = LinkObjectFiles(Arena, &BuildOptions, ObjectFileNames);
             printf("Linking finished in %.2fms\n", MilliSecondsFromTimeStamp(TimeStampNow() - LinkStart));
         }
-        printf(STR_COLOUR_GREEN "\nSUCCESS\n" STR_COLOUR_RESET);
     }
 
-    if(WaveIsFirstLane(WaveInfo) && AnyFailedToBuild)
+	b32 AnyFailedToLink = WaveAnyTrue(WaveInfo, FailedToLink);
+
+    if(WaveIsFirstLane(WaveInfo) && (AnyFailedToBuild || AnyFailedToLink))
     {
 		str8 OutputPathAndName = Str8PushF(Arena, "%.*s/%.*s",
 								   Str8ToPrintfArgs(BuildOptions.OutputPath),
@@ -1710,7 +1734,12 @@ void Build(wave_info *WaveInfo, memory_arena *Arena, build_options BuildOptions)
 		DeleteFileFromDisk(Arena, OutputPathAndName);
 
         printf(STR_COLOUR_RED "\nERROR\n" STR_COLOUR_RESET);
-    }
+	}
+	else if(WaveIsFirstLane(WaveInfo))
+	{
+
+    	printf(STR_COLOUR_GREEN "\nSUCCESS\n" STR_COLOUR_RESET);
+	}
     
 }
 

@@ -344,7 +344,7 @@ void OS_Update(void *Data)
 			M->LookAtTarget = Centre;
 			M->LookFromTarget = v3f(Centre.X, Centre.Y, 5);
 		}
-		DrawOctree(M->Draw, M->FrameArena, Octree, 0);
+		//DrawOctree(M->Draw, M->FrameArena, Octree, 0);
 	}
 
 	R_PopTransform(M->Render);

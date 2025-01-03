@@ -65,10 +65,9 @@ void *DispatchWorker(void *Data)
 			Shared->Entry(WaveInfo, Shared->EntryData);
 		}
 
-		Shared->WorkAvailable = 0;
 		WaveBarrier(Shared->Barrier);
+		atomic_store_explicit(&Shared->WorkAvailable, 0, memory_order_release);
 	}
-	
 }
 
 void DispatchInitialise(shared_wave_info *Shared, s64 LaneCount)
@@ -93,9 +92,11 @@ void Dispatch(shared_wave_info *Shared, void (*Entry)(wave_info *, void*), void*
 	
 	Shared->EntryData = EntryData;
 	Shared->Entry = Entry;
-	Shared->WorkAvailable = True;
+	atomic_store_explicit(&Shared->WorkAvailable, 1, memory_order_release);
 
 	os_sync_wake_by_address_all(&Shared->WorkAvailable, sizeof(b32), OS_SYNC_WAKE_BY_ADDRESS_SHARED);
+
+	while(atomic_load_explicit(&Shared->WorkAvailable, memory_order_acquire));
 }
 
 b32 WaveIsFirstLane(wave_info *WaveInfo)

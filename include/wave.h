@@ -29,7 +29,7 @@ typedef struct shared_wave_info
 
 	atomic_llong Data[4096];
 
-	b32 WorkAvailable;
+	atomic_bool WorkAvailable;
 	void (*Entry)(wave_info*, void*);
 	void *EntryData;
 	

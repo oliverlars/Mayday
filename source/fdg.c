@@ -353,7 +353,7 @@ void SimulateForceDirectedGraphOctree(m_arena *Arena, fdg_node *Nodes, int NodeC
 		}
 	}
 
-	Temperature[0] *= 0.9;
+	Temperature[0] = LerpF32(Temperature[0], 0.01, 0.05);
 
 	LogInfo("Time to simulate: ?f32", OS_MilliSecondsFromTimeStamp(OS_TimeStampNow() - Start));
 }

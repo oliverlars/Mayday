@@ -286,8 +286,6 @@ void ParallelForceDisplacement(wave_info *WaveInfo, void* Input)
 														   P->K);
 
 	}
-
-	WaveBarrier(WaveInfo->Shared->Barrier);
 }
 
 void SimulateForceDirectedGraphOctree(m_arena *Arena, fdg_node *Nodes, int NodeCount,
@@ -353,7 +351,7 @@ void SimulateForceDirectedGraphOctree(m_arena *Arena, fdg_node *Nodes, int NodeC
 		}
 	}
 
-	Temperature[0] = LerpF32(Temperature[0], 0.01, 0.05);
+	Temperature[0] = LerpF32(Temperature[0], 0.0, 0.1);
 
 	LogInfo("Time to simulate: ?f32", OS_MilliSecondsFromTimeStamp(OS_TimeStampNow() - Start));
 }

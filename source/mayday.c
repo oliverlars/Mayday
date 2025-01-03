@@ -672,7 +672,7 @@ int main()
 
 	M.UI->Font = M.CodeFont;
 
-	M.Tree = OS_DirectoryTreeFromPath(M.PermanentArena, Str8PushF(Arena, "/Users/olivercruickshank/EmberGen"));
+	M.Tree = OS_DirectoryTreeFromPath(M.PermanentArena, Str8PushF(Arena, "/Users/olivercruickshank/EmberGen/liquigen"));
 
 	M.RandomState = XorShiftInit();
 
@@ -699,8 +699,6 @@ int main()
 
 	//LogInfo("Time in ms: ?f32", OS_MilliSecondsFromTimeStamp(OS_TimeStampNow() - Start));
 	DispatchInitialise(&M.Shared, 16);
-
-
 
 	OS_Run(M.Window, &M);
 }

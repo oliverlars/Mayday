@@ -56,17 +56,15 @@ void *DispatchWorker(void *Data)
 	wave_info *WaveInfo = Data;
 	shared_wave_info *Shared = WaveInfo->Shared;
 
+	os_sync_wait_on_address(&Shared->WorkAvailable, 0, sizeof(b32), OS_SYNC_WAIT_ON_ADDRESS_SHARED);
 	for(;;)
 	{
-		os_sync_wait_on_address(&Shared->WorkAvailable, 0, sizeof(b32), OS_SYNC_WAIT_ON_ADDRESS_SHARED);
-		
-		if(Shared->Entry)
-		{
-			Shared->Entry(WaveInfo, Shared->EntryData);
-		}
+		//while(!Shared->Entry || !Shared->EntryData);
+		Shared->Entry(WaveInfo, Shared->EntryData);
+		atomic_store_explicit(&Shared->WorkAvailable, 0, memory_order_release);
 
 		WaveBarrier(Shared->Barrier);
-		atomic_store_explicit(&Shared->WorkAvailable, 0, memory_order_release);
+		os_sync_wait_on_address(&Shared->WorkAvailable, 0, sizeof(b32), OS_SYNC_WAIT_ON_ADDRESS_SHARED);
 	}
 }
 

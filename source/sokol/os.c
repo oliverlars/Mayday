@@ -251,7 +251,7 @@ str8 OS_LoadEntireFileIntoMemory(m_arena *Arena, str8 Filename)
 	BackingMemory[FileStat.st_size] = 0;
 
 	str8 Result = {0};
-	Result.Bytes = (s8*)BackingMemory;
+	Result.Bytes = BackingMemory;
 	Result.Size = FileStat.st_size;
 
 	ssize_t BytesRead = read(FileHandle, BackingMemory, FileStat.st_size);

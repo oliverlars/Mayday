@@ -50,27 +50,52 @@ s64 LaneValueFromTotal(wave_info *WaveInfo, s64 Count)
 	return Result;
 }
 
-void Dispatch(shared_wave_info *Shared, s64 LaneCount, void *(*Entry)(void*))
+
+void *DispatchWorker(void *Data)
+{
+	wave_info *WaveInfo = Data;
+	shared_wave_info *Shared = WaveInfo->Shared;
+
+	for(;;)
+	{
+		os_sync_wait_on_address(&Shared->WorkAvailable, 0, sizeof(b32), OS_SYNC_WAIT_ON_ADDRESS_SHARED);
+		
+		if(Shared->Entry)
+		{
+			Shared->Entry(WaveInfo, Shared->EntryData);
+		}
+
+		Shared->WorkAvailable = 0;
+		WaveBarrier(Shared->Barrier);
+	}
+	
+}
+
+void DispatchInitialise(shared_wave_info *Shared, s64 LaneCount)
 {
 	wave_info *Entries = (wave_info*)ArenaPushZero(Shared->Arena, LaneCount*sizeof(wave_info));
 	pthread_t *Waves = (pthread_t*)ArenaPushZero(Shared->Arena, LaneCount*sizeof(pthread_t));
-	
-	barrier Barrier = {0};
 
-	Shared->LaneCount = LaneCount;
+	barrier Barrier = {0};
 	Barrier.LaneCount = LaneCount;
+	Shared->LaneCount = LaneCount;
 	for (s64 Lane = 0; Lane < LaneCount; Lane++)
 	{
 		Entries[Lane].Shared = Shared;
 		Entries[Lane].Lane = Lane;
 		Entries[Lane].Shared->Barrier = &Barrier;
-		pthread_create(Waves + Lane, Null, Entry, Entries + Lane);
+		pthread_create(Waves + Lane, Null, DispatchWorker, Entries + Lane);
 	}
+}
 
-	for (s64 Lane = 0; Lane < LaneCount; Lane++)
-	{
-		pthread_join(Waves[Lane], Null);
-	} 
+void Dispatch(shared_wave_info *Shared, void (*Entry)(wave_info *, void*), void* EntryData)
+{
+	
+	Shared->EntryData = EntryData;
+	Shared->Entry = Entry;
+	Shared->WorkAvailable = True;
+
+	os_sync_wake_by_address_all(&Shared->WorkAvailable, sizeof(b32), OS_SYNC_WAKE_BY_ADDRESS_SHARED);
 }
 
 b32 WaveIsFirstLane(wave_info *WaveInfo)
@@ -124,6 +149,22 @@ The following link shows a faster version that would work better.
 GPU Gems 3
 https://www.youtube.com/watch?v=1G8CZioSjnM
 */
+u64 ExclusiveWavePrefixSum(wave_info *WaveInfo, u64 Value)
+{
+	WaveBarrier(WaveInfo->Shared->Barrier);
+	WaveInfo->Shared->Data[WaveInfo->Lane] = Value;
+	WaveInfo->Shared->Data[0] = 0;
+	WaveBarrier(WaveInfo->Shared->Barrier);
+
+	u64 PerLaneSum = 0;
+	for(int I = 0; I < WaveInfo->Lane; I++)
+	{
+		PerLaneSum += WaveInfo->Shared->Data[I];
+	}
+	WaveBarrier(WaveInfo->Shared->Barrier);
+	return PerLaneSum;
+}
+
 u64 InclusiveWavePrefixSum(wave_info *WaveInfo, u64 Value)
 {
 	WaveBarrier(WaveInfo->Shared->Barrier);
@@ -134,30 +175,11 @@ u64 InclusiveWavePrefixSum(wave_info *WaveInfo, u64 Value)
 	int PerLaneSum = 0;
 	for(int I = 0; I <= WaveInfo->Lane; I++)
 	{
-		PerLaneSum += WaveInfo->Shared->Data[WaveInfo->Lane];
+		PerLaneSum += WaveInfo->Shared->Data[I];
 	}
-	WaveBarrier(WaveInfo->Shared->Barrier);
-	WaveInfo->Shared->Data[WaveInfo->Lane] = PerLaneSum;
-	WaveBarrier(WaveInfo->Shared->Barrier);
-	return WaveInfo->Shared->Data[WaveInfo->Lane];
-}
 
-u64 ExclusiveWavePrefixSum(wave_info *WaveInfo, u64 Value)
-{
 	WaveBarrier(WaveInfo->Shared->Barrier);
-	WaveInfo->Shared->Data[WaveInfo->Lane] = Value;
-	WaveInfo->Shared->Data[0] = 0;
-	WaveBarrier(WaveInfo->Shared->Barrier);
-
-	int PerLaneSum = 0;
-	for(int I = 0; I <= WaveInfo->Lane; I++)
-	{
-		PerLaneSum += WaveInfo->Shared->Data[WaveInfo->Lane];
-	}
-	WaveBarrier(WaveInfo->Shared->Barrier);
-	WaveInfo->Shared->Data[WaveInfo->Lane] = PerLaneSum;
-	WaveBarrier(WaveInfo->Shared->Barrier);
-	return WaveInfo->Shared->Data[WaveInfo->Lane];
+	return PerLaneSum;
 }
 
 u64 WaveSum(wave_info *WaveInfo, u64 Value)

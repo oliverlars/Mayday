@@ -9,8 +9,10 @@
 #include "os.h"
 
 #include "draw.h"
+#include "wave.h"
 
 #include <arm_neon.h>
+#include <stdio.h>
 
 void DrawBounds(draw_context *Draw, m_arena *Arena, bounds Bounds)
 {
@@ -209,24 +211,21 @@ v3f OctreeCalculateAttributes(octree_header *Octree, int OctantIndex)
 }
 
 // https://patterns.eecs.berkeley.edu/?page_id=193
-v3f ForceDisplacementFromPosition(octree_header *Octree, int OctantIndex, v3f Position, f32 K, int *Count)
+v3f ForceDisplacementFromPosition(octree_header *Octree, int OctantIndex, v3f Position, f32 K)
 {	
 	v3f Result = v3f(0.0);
 
-	int OctantStack[1024];
+	int OctantStack[32];
 	int StackTop = 0;
 	OctantStack[StackTop++] = OctantIndex;
-	Count[0] = 0;
 
 	for(;StackTop;)
 	{
-		Count[0] += 1;
 		OctantIndex = OctantStack[--StackTop];
 		v3f Centre = Octree->Masses[OctantIndex];
+		v3f PositionToCentre = SubV3F(Position, Centre); 
 
 		f32 OctantRadius = 0.5*LengthV3F(SubV3F(Octree->Bounds[OctantIndex].Max, Octree->Bounds[OctantIndex].Min));
-
-		v3f PositionToCentre = SubV3F(Position, Centre); 
 		f32 DistanceSquared = DotV3F(PositionToCentre, PositionToCentre);
 		f32 Distance = sqrtf(DistanceSquared);
 		if(Octree->ChildrenCounts[OctantIndex] == 1)
@@ -263,20 +262,57 @@ v3f ForceDisplacementFromPosition(octree_header *Octree, int OctantIndex, v3f Po
 	return Result;
 }
 
+typedef struct parallel_force_displacement
+{
+	v3f *Displacements;
+	f32 K;
+	fdg_node *Nodes;
+	int NodeCount;
+
+	octree_header *Octree;
+} parallel_force_displacement;
+
+void ParallelForceDisplacement(wave_info *WaveInfo, void* Input)
+{
+	parallel_force_displacement *P = Input;
+	int Count = LaneValueFromTotal(WaveInfo, P->NodeCount);
+	int Index = ExclusiveWavePrefixSum(WaveInfo, Count);
+
+	for(int I = Index; I < Index + Count && I < P->NodeCount; I++)
+	{
+		P->Displacements[I] = ForceDisplacementFromPosition(P->Octree,
+														   0,
+														   P->Nodes[I].TargetPosition,
+														   P->K);
+
+	}
+
+	WaveBarrier(WaveInfo->Shared->Barrier);
+}
+
 void SimulateForceDirectedGraphOctree(m_arena *Arena, fdg_node *Nodes, int NodeCount,
 									  fdg_link *Links, int LinkCount,
 									  f32 *Temperature,
-									  octree_header *Octree)
+									  octree_header *Octree, shared_wave_info *Shared)
 {
 	u64 Start = OS_TimeStampNow();
 	f32 K = sqrtf(2.0 / NodeCount);
 
 	v3f *Displacements = ArenaPushArrayZero(Arena, v3f, NodeCount);
+
+parallel_force_displacement *P = ArenaPushArrayZero(Arena, parallel_force_displacement, 1);
+P->Displacements = Displacements;
+P->K = K;
+P->NodeCount = NodeCount;
+P->Nodes = Nodes;
+P->Octree = Octree;
+
+Dispatch(Shared, ParallelForceDisplacement, P);
+
 	for(int I = 0; I < NodeCount; I++)
 	{
-		int Count = 0;
-		Displacements[I] = ForceDisplacementFromPosition(Octree, 0, Nodes[I].TargetPosition, K, &Count);
-		//LogInfo("Nodes visited: ?u32", Count);
+		Displacements[I] = ForceDisplacementFromPosition(Octree, 0, Nodes[I].TargetPosition, K);
+		
 	}
 
 	for(int I = 0; I < LinkCount; I++)

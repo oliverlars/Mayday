@@ -4,6 +4,8 @@
 
 #include "draw.h"
 
+#include "wave.h"
+
 
 // Force directed graph node
 typedef struct fdg_node
@@ -56,7 +58,7 @@ typedef struct octree_header
 void SimulateForceDirectedGraphOctree(m_arena *Arena, fdg_node *Nodes, int NodeCount,
 								fdg_link *Links, int LinkCount,
 								f32 *Temperature,
-								octree_header *Octree);
+								octree_header *Octree, shared_wave_info *Shared);
 
 void SimulateForceDirectedGraphFast(m_arena *Arena, fdg_node *Nodes, int NodeCount,
 								fdg_link *Links, int LinkCount,

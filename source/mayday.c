@@ -19,9 +19,12 @@
 // TODO(Oliver): Remove platform specific code from here
 #include "darwin/menu_bar.h"
 
+#include "wave.h"
+
 #include <assert.h>
 #include <math.h>
 #include <stdint.h>
+#include <stdio.h>
 
 typedef struct mayday_context
 {
@@ -59,6 +62,8 @@ typedef struct mayday_context
 	random32_state RandomState;
 
 	os_directory_tree Tree;
+
+	shared_wave_info Shared;
 
 	b32 ShowEditor;
 }
@@ -120,9 +125,21 @@ f32 Angle = 0.0f;
 
 b32 ZoomedIn = False;
 
+
+void Test(wave_info *WaveInfo, void *Data)
+{
+	int Count = WaveInfo->Lane;
+	int Index = InclusiveWavePrefixSum(WaveInfo, Count);
+
+	printf("Lane: %d | Index: %d | Count: %d\n", WaveInfo->Lane, Index, Count);
+
+	WaveBarrier(WaveInfo->Shared->Barrier);
+}
+
 void OS_Update(void *Data)
 {
 	mayday_context *M = Data;
+
 
 	M->UI->Hot = 0;
 
@@ -274,24 +291,24 @@ void OS_Update(void *Data)
 	R_PopTransform(M->Render);
 
 	static f32 Temperature = 10.0;
-	octree_header Octree = {0};
-	Octree.Bounds = ArenaPushArrayZero(M->FrameArena, bounds, M->NodeCount*4);
-	Octree.ChildrenCounts = ArenaPushArrayZero(M->FrameArena, int, M->NodeCount*4);
-	Octree.Nodes = ArenaPushArrayZero(M->FrameArena, octant_node*, M->NodeCount*4);
-	Octree.Masses = ArenaPushArrayZero(M->FrameArena, v3f, M->NodeCount*4);
-	Octree.Octants = ArenaPushArrayZero(M->FrameArena, octant, M->NodeCount*4);
+	octree_header *Octree = ArenaPushArrayZero(M->FrameArena, octree_header, 1);
+	Octree->Bounds = ArenaPushArrayZero(M->FrameArena, bounds, M->NodeCount*4);
+	Octree->ChildrenCounts = ArenaPushArrayZero(M->FrameArena, int, M->NodeCount*4);
+	Octree->Nodes = ArenaPushArrayZero(M->FrameArena, octant_node*, M->NodeCount*4);
+	Octree->Masses = ArenaPushArrayZero(M->FrameArena, v3f, M->NodeCount*4);
+	Octree->Octants = ArenaPushArrayZero(M->FrameArena, octant, M->NodeCount*4);
 
-	Octree.Bounds[0] = GetBounds(M->Nodes, M->NodeCount);
-	Octree.NextOctantIndex = 1;
+	Octree->Bounds[0] = GetBounds(M->Nodes, M->NodeCount);
+	Octree->NextOctantIndex = 1;
 
 	for(int I = 0; I < M->NodeCount; I++)
 	{
-		OctreeBuild(M->FrameArena, &Octree, 0, &M->Nodes[I], 0);
+		OctreeBuild(M->FrameArena, Octree, 0, &M->Nodes[I], 0);
 	}
 	
-	Octree.Masses[0] = OctreeCalculateAttributes(&Octree, 0);
+	Octree->Masses[0] = OctreeCalculateAttributes(Octree, 0);
 
-	SimulateForceDirectedGraphOctree(M->FrameArena, M->Nodes, M->NodeCount, M->Links, M->LinkCount, &Temperature, &Octree);
+	SimulateForceDirectedGraphOctree(M->FrameArena, M->Nodes, M->NodeCount, M->Links, M->LinkCount, &Temperature, Octree, &M->Shared);
 
 	m_scratch_arena Scratch = ScratchBegin(0, 0);
 
@@ -327,7 +344,7 @@ void OS_Update(void *Data)
 			M->LookAtTarget = Centre;
 			M->LookFromTarget = v3f(Centre.X, Centre.Y, 5);
 		}
-		DrawOctree(M->Draw, M->FrameArena, &Octree, 0);
+		DrawOctree(M->Draw, M->FrameArena, Octree, 0);
 	}
 
 	R_PopTransform(M->Render);
@@ -655,7 +672,7 @@ int main()
 
 	M.UI->Font = M.CodeFont;
 
-	M.Tree = OS_DirectoryTreeFromPath(M.PermanentArena, Str8PushF(Arena, "/Users/olivercruickshank/EmberGen"));
+	M.Tree = OS_DirectoryTreeFromPath(M.PermanentArena, Str8PushF(Arena, "/Users/olivercruickshank/EmberGen/liquigen"));
 
 	M.RandomState = XorShiftInit();
 
@@ -666,6 +683,24 @@ int main()
 	M.LookAtTarget = v3f(0.0);
 	M.ViewSize = 5.0;
 	M.ViewSizeTarget = M.ViewSize;
+
+	M.Shared.Arena = M.PermanentArena;
+
+	u64 Start = OS_TimeStampNow();
+
+	// f32 Value = 0;
+	// f32 Final = 0;
+
+	// for(int I = 0; I < 50000; I++)
+	// {
+	// 	Value += (f32)(I % (I*I));
+	// 	Final += sqrtf(Value);
+	// }
+
+	//LogInfo("Time in ms: ?f32", OS_MilliSecondsFromTimeStamp(OS_TimeStampNow() - Start));
+	DispatchInitialise(&M.Shared, 16);
+
+
 
 	OS_Run(M.Window, &M);
 }

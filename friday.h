@@ -604,30 +604,25 @@ u64 InclusiveWavePrefixSum(wave_info *WaveInfo, u64 Value)
 	int PerLaneSum = 0;
 	for(int I = 0; I <= WaveInfo->Lane; I++)
 	{
-		PerLaneSum += WaveInfo->Shared->Data[WaveInfo->Lane];
+		PerLaneSum += WaveInfo->Shared->Data[I];
 	}
 	WaveBarrier(WaveInfo->Shared->Barrier);
-	WaveInfo->Shared->Data[WaveInfo->Lane] = PerLaneSum;
-	WaveBarrier(WaveInfo->Shared->Barrier);
-	return WaveInfo->Shared->Data[WaveInfo->Lane];
+	return PerLaneSum;
 }
 
 u64 ExclusiveWavePrefixSum(wave_info *WaveInfo, u64 Value)
 {
 	WaveBarrier(WaveInfo->Shared->Barrier);
 	WaveInfo->Shared->Data[WaveInfo->Lane] = Value;
-	WaveInfo->Shared->Data[0] = 0;
 	WaveBarrier(WaveInfo->Shared->Barrier);
 
 	int PerLaneSum = 0;
-	for(int I = 0; I <= WaveInfo->Lane; I++)
+	for(int I = 0; I < WaveInfo->Lane; I++)
 	{
-		PerLaneSum += WaveInfo->Shared->Data[WaveInfo->Lane];
+		PerLaneSum += WaveInfo->Shared->Data[I];
 	}
 	WaveBarrier(WaveInfo->Shared->Barrier);
-	WaveInfo->Shared->Data[WaveInfo->Lane] = PerLaneSum;
-	WaveBarrier(WaveInfo->Shared->Barrier);
-	return WaveInfo->Shared->Data[WaveInfo->Lane];
+	return PerLaneSum;
 }
 
 u64 WaveSum(wave_info *WaveInfo, u64 Value)
@@ -1680,7 +1675,7 @@ void Build(wave_info *WaveInfo, memory_arena *Arena, build_options BuildOptions)
 	BroadcastToAllLanes(WaveInfo, ObjectFileNames);
 
 	s64 Count = LaneValueFromTotal(WaveInfo, RelativeSourceFilePaths.Count);
-	s64 Index = InclusiveWavePrefixSum(WaveInfo, Count);
+	s64 Index = ExclusiveWavePrefixSum(WaveInfo, Count);
 
 	b32 FailedToBuild = False;
 	u64 PerLaneCount = 0;

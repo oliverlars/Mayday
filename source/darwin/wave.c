@@ -1,11 +1,13 @@
-#include "wave.h"
-#include "memory.h"
-
+#include <assert.h>
 #include <sys/sysctl.h>
 #include <os/os_sync_wait_on_address.h>
 #include <os/lock.h>
 #include <pthread.h>
 #include <stdatomic.h>
+
+#include "wave.h"
+#include "memory.h"
+#include "log.h"
 
 s64 AtomicAdd(s64 *Value, s64 Addend)
 {
@@ -19,21 +21,21 @@ https://devblogs.microsoft.com/oldnewthing/20160824-00/?p=94155
 void WaveBarrier(barrier *Barrier)
 {
 	s64 Generation = atomic_load_explicit(&Barrier->Generation, memory_order_acquire);
-	s64 LanesWaiting = atomic_fetch_add_explicit(&Barrier->LanesWaiting, 1, memory_order_acquire);
-	if (LanesWaiting < Barrier->LaneCount - 1)
+	s64 LanesWaiting = atomic_fetch_add_explicit(&Barrier->LanesWaiting, 1, memory_order_acq_rel);
+
+	if(LanesWaiting < Barrier->LaneCount - 1)
 	{
-		while(Barrier->Generation == Generation)
+		while(atomic_load_explicit(&Barrier->Generation, memory_order_acquire) == Generation)
 		{
-			os_sync_wait_on_address(&Barrier->Generation, Generation, sizeof(s64), OS_SYNC_WAIT_ON_ADDRESS_SHARED);   
+			os_sync_wait_on_address(&Barrier->Generation, Generation, sizeof(atomic_llong), OS_SYNC_WAIT_ON_ADDRESS_SHARED);   
 		}
 	}
-	else if(LanesWaiting + 1 == Barrier->LaneCount)
+	else if(LanesWaiting == Barrier->LaneCount - 1)
 	{
-		Barrier->LanesWaiting = 0;
+		atomic_store_explicit(&Barrier->LanesWaiting, 0, memory_order_release);
 		atomic_fetch_add_explicit(&Barrier->Generation, 1, memory_order_release);
-		os_sync_wake_by_address_all(&Barrier->Generation, sizeof(s64), OS_SYNC_WAKE_BY_ADDRESS_SHARED);
+		os_sync_wake_by_address_all(&Barrier->Generation, sizeof(atomic_llong), OS_SYNC_WAKE_BY_ADDRESS_SHARED);
 	}
-	atomic_thread_fence(memory_order_release);
 }
 
 s64 LaneValueFromTotal(wave_info *WaveInfo, s64 Count)
@@ -56,31 +58,51 @@ void *DispatchWorker(void *Data)
 	wave_info *WaveInfo = Data;
 	shared_wave_info *Shared = WaveInfo->Shared;
 
-	os_sync_wait_on_address(&Shared->WorkAvailable, 0, sizeof(b32), OS_SYNC_WAIT_ON_ADDRESS_SHARED);
+	logger Logger = {0};
+	Logger.Arena = ArenaInitialise(GigaBytes(1));
+	per_thread_context *ThreadContext = GetThreadContext();
+	ThreadContext->Logger = &Logger;
+	ThreadContext->ScratchArenas[0] = ArenaInitialise(GigaBytes(1));
+	ThreadContext->ScratchArenas[1] = ArenaInitialise(GigaBytes(1));
+
+	while(atomic_load_explicit(&Shared->WorkAvailable, memory_order_acquire) == 0)
+	{
+		os_sync_wait_on_address(&Shared->WorkAvailable, 0, sizeof(atomic_int), OS_SYNC_WAIT_ON_ADDRESS_SHARED);
+	}
+	
 	for(;;)
 	{
 		//while(!Shared->Entry || !Shared->EntryData);
 		Shared->Entry(WaveInfo, Shared->EntryData);
-		atomic_store_explicit(&Shared->WorkAvailable, 0, memory_order_release);
+		atomic_fetch_sub_explicit(&Shared->WorkAvailable, 1, memory_order_release);
+		WaveBarrier(Shared->TaskBarrier);
 
-		WaveBarrier(Shared->Barrier);
-		os_sync_wait_on_address(&Shared->WorkAvailable, 0, sizeof(b32), OS_SYNC_WAIT_ON_ADDRESS_SHARED);
+		while(atomic_load_explicit(&Shared->WorkAvailable, memory_order_acquire) == 0)
+		{
+			os_sync_wait_on_address(&Shared->WorkAvailable, 0, sizeof(atomic_int), OS_SYNC_WAIT_ON_ADDRESS_SHARED);
+		}
 	}
 }
 
 void DispatchInitialise(shared_wave_info *Shared, s64 LaneCount)
 {
-	wave_info *Entries = (wave_info*)ArenaPushZero(Shared->Arena, LaneCount*sizeof(wave_info));
-	pthread_t *Waves = (pthread_t*)ArenaPushZero(Shared->Arena, LaneCount*sizeof(pthread_t));
+
+	wave_info *Entries = ArenaPushArrayZero(Shared->Arena, wave_info, LaneCount);
+	pthread_t *Waves = ArenaPushArrayZero(Shared->Arena, pthread_t, LaneCount);
 
 	barrier Barrier = {0};
 	Barrier.LaneCount = LaneCount;
+
+	barrier *TaskBarrier = ArenaPushArrayZero(Shared->Arena, barrier, 1);
+	TaskBarrier->LaneCount = LaneCount + 1;
+
 	Shared->LaneCount = LaneCount;
 	for (s64 Lane = 0; Lane < LaneCount; Lane++)
 	{
 		Entries[Lane].Shared = Shared;
 		Entries[Lane].Lane = Lane;
 		Entries[Lane].Shared->Barrier = &Barrier;
+		Entries[Lane].Shared->TaskBarrier = TaskBarrier;
 		pthread_create(Waves + Lane, Null, DispatchWorker, Entries + Lane);
 	}
 }
@@ -90,11 +112,11 @@ void Dispatch(shared_wave_info *Shared, void (*Entry)(wave_info *, void*), void*
 	
 	Shared->EntryData = EntryData;
 	Shared->Entry = Entry;
-	atomic_store_explicit(&Shared->WorkAvailable, 1, memory_order_release);
+	atomic_store_explicit(&Shared->WorkAvailable, Shared->LaneCount, memory_order_release);
 
-	os_sync_wake_by_address_all(&Shared->WorkAvailable, sizeof(b32), OS_SYNC_WAKE_BY_ADDRESS_SHARED);
+	os_sync_wake_by_address_all(&Shared->WorkAvailable, sizeof(atomic_int), OS_SYNC_WAKE_BY_ADDRESS_SHARED);
 
-	while(atomic_load_explicit(&Shared->WorkAvailable, memory_order_acquire));
+	WaveBarrier(Shared->TaskBarrier);
 }
 
 b32 WaveIsFirstLane(wave_info *WaveInfo)

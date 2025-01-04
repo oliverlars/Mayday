@@ -252,7 +252,7 @@ void ParallelForceDisplacement(wave_info *WaveInfo, void* Input)
 	parallel_force_displacement *P = Input;
 	int Count = LaneValueFromTotal(WaveInfo, P->NodeCount);
 	int Index = ExclusiveWavePrefixSum(WaveInfo, Count);
-
+	
 	for(int I = Index; I < Index + Count; I++)
 	{
 		P->Displacements[I] = ForceDisplacementFromPosition(P->QuadTree,
@@ -263,8 +263,8 @@ void ParallelForceDisplacement(wave_info *WaveInfo, void* Input)
 	}
 }
 
-//#define PARALLEL_QUADTREE
-#define QUADTREE
+#define PARALLEL_QUADTREE
+//#define QUADTREE
 //#define NSQUARED
 
 void SimulateForceDirectedGraphQuadTree(m_arena *Arena, fdg_node *Nodes, int NodeCount,

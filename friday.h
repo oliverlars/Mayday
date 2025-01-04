@@ -454,6 +454,7 @@ typedef struct shared_wave_info
 {
 	s32 ArgCount;
 	char **Args;
+
 	barrier *Barrier;
 
 	s64 LaneCount;
@@ -496,11 +497,6 @@ void WaveBarrier(barrier *Barrier)
 		atomic_fetch_add_explicit(&Barrier->Generation, 1, memory_order_release);
 		os_sync_wake_by_address_all(&Barrier->Generation, sizeof(atomic_llong), OS_SYNC_WAKE_BY_ADDRESS_SHARED);
 	}
-	else
-	{
-		assert(False);
-	}
-	
 }
 
 s64 LaneValueFromTotal(wave_info *WaveInfo, s64 Count)

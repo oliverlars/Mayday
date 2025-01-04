@@ -647,17 +647,8 @@ int main()
 
 	u64 Start = OS_TimeStampNow();
 
-	// f32 Value = 0;
-	// f32 Final = 0;
-
-	// for(int I = 0; I < 50000; I++)
-	// {
-	// 	Value += (f32)(I % (I*I));
-	// 	Final += sqrtf(Value);
-	// }
-
 	//LogInfo("Time in ms: ?f32", OS_MilliSecondsFromTimeStamp(OS_TimeStampNow() - Start));
-	DispatchInitialise(&M.Shared, 16);
+	DispatchInitialise(&M.Shared, 15);
 
 	OS_Run(M.Window, &M);
 }

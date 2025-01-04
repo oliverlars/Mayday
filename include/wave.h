@@ -22,6 +22,7 @@ typedef struct shared_wave_info
 	s32 ArgCount;
 	char **Args;
 	barrier *Barrier;
+	barrier *TaskBarrier;
 
 	s64 LaneCount;
 
@@ -29,7 +30,7 @@ typedef struct shared_wave_info
 
 	atomic_llong Data[4096];
 
-	atomic_bool WorkAvailable;
+	atomic_int WorkAvailable;
 	void (*Entry)(wave_info*, void*);
 	void *EntryData;
 	

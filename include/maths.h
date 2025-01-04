@@ -44,7 +44,11 @@ v2f AddV2F(v2f A, v2f B);
 v2f SubV2F(v2f A, v2f B);
 v2f MulV2F(v2f A, v2f B);
 v2f DivV2F(v2f A, v2f B);
-v2f LerpV2f(v2f Source, v2f Target, float T);
+v2f LerpV2F(v2f Source, v2f Target, float T);
+f32 LengthV2F(v2f V);
+v2f NormalizeV2F(v2f V);
+v2f CrossV2F(v2f A, v2f B);
+f32 DotV2F(v2f A, v2f B);
 
 typedef struct v2d { f64 X; f64 Y; } v2d;
 #define v2d(...) (v2d){ __VA_ARGS__ }
@@ -84,7 +88,7 @@ v3f AddV3F(v3f A, v3f B);
 v3f SubV3F(v3f A, v3f B);
 v3f MulV3F(v3f A, v3f B);
 v3f DivV3F(v3f A, v3f B);
-v3f LerpV3f(v3f Source, v3f Target, float T);
+v3f LerpV3F(v3f Source, v3f Target, float T);
 f32 LengthV3F(v3f V);
 v3f NormalizeV3F(v3f V);
 v3f CrossV3F(v3f A, v3f B);

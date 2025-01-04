@@ -10,8 +10,8 @@
 // Force directed graph node
 typedef struct fdg_node
 {
-	v3f TargetPosition;
-	v3f Position;
+	v2f TargetPosition;
+	v2f Position;
 	// These should probably not be stored here
 	str8 Name;
 	b32 IsFolder;
@@ -25,54 +25,46 @@ typedef struct fdg_link
 
 typedef struct bounds
 {
-	v3f Min;
-	v3f Max;
+	v2f Min;
+	v2f Max;
 } bounds;
 
 
-typedef u32 octree_index;
+typedef u32 QuadTree_index;
 
-typedef struct octant
+typedef struct Quadrant
 {
-	octree_index Children[8];
+	QuadTree_index Children[4];
 }
-octant;
+Quadrant;
 
-typedef struct octant_node
+typedef struct Quadrant_node
 {
 	fdg_node *Node;
-	struct octant_node *Next;
-} octant_node;
+	struct Quadrant_node *Next;
+} quadrant_node;
 
-typedef struct octree_header
+typedef struct quadtree_header
 {
-	v3f          *Masses;
+	v2f          *Masses;
 	int          *ChildrenCounts;
-	octant_node **Nodes;
+	quadrant_node **Nodes;
 	bounds       *Bounds;
-	octant       *Octants;
+	Quadrant       *Quadrants;
 	int           Count;
-	int           NextOctantIndex;
-} octree_header;
+	int           NextQuadrantIndex;
+} quadtree_header;
 
-void SimulateForceDirectedGraphOctree(m_arena *Arena, fdg_node *Nodes, int NodeCount,
+void SimulateForceDirectedGraphQuadTree(m_arena *Arena, fdg_node *Nodes, int NodeCount,
 								fdg_link *Links, int LinkCount,
 								f32 *Temperature,
-								octree_header *Octree, shared_wave_info *Shared);
-
-void SimulateForceDirectedGraphFast(m_arena *Arena, fdg_node *Nodes, int NodeCount,
-								fdg_link *Links, int LinkCount,
-								f32 *Temperature);
-
-void SimulateForceDirectedGraphSIMD(m_arena *Arena, fdg_node *Nodes, int NodeCount,
-								fdg_link *Links, int LinkCount,
-								f32 *Temperature);
+								quadtree_header *QuadTree, shared_wave_info *Shared);
 
 bounds GetBounds(fdg_node *Nodes, int NodeCount);
 
-void OctreeBuild(m_arena *Arena, octree_header *Octree, octree_index OctantIndex, fdg_node *Node, int Depth);
-v3f OctreeCalculateAttributes(octree_header *Octree, int OctantIndex);
+void QuadTreeBuild(m_arena *Arena, quadtree_header *QuadTree, QuadTree_index QuadrantIndex, fdg_node *Node, int Depth);
+v2f QuadTreeCalculateAttributes(quadtree_header *QuadTree, int QuadrantIndex);
 
 void DrawBounds(draw_context *Draw, m_arena *Arena, bounds Bounds);
 
-void DrawOctree(draw_context *Draw, m_arena *Arena, octree_header *Octree, int OctreeIndex);
+void DrawQuadTree(draw_context *Draw, m_arena *Arena, quadtree_header *QuadTree, int QuadTreeIndex);

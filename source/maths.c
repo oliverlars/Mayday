@@ -111,12 +111,28 @@ v2f DivV2F(v2f A, v2f B)
 	return Result;
 }
 
-v2f LerpV2f(v2f Source, v2f Target, float T)
+v2f LerpV2F(v2f Source, v2f Target, float T)
 {
 	v2f Result;
 	Result.X = Source.X + T * (Target.X - Source.X);
 	Result.Y = Source.Y + T * (Target.Y - Source.Y);
 	return Result;
+}
+
+f32 LengthV2F(v2f V)
+{
+	return sqrtf(DotV2F(V, V));
+}
+
+v2f NormalizeV2F(v2f V)
+{
+	f32 L = LengthV2F(V);
+	return DivV2F(V, v2f(L, L));
+}
+
+f32 DotV2F(v2f A, v2f B)
+{
+	return A.X*B.X + A.Y*B.Y;
 }
 
 v2d AddV2D(v2d A, v2d B)
@@ -263,7 +279,7 @@ v3f DivV3F(v3f A, v3f B)
 	return Result;
 }
 
-v3f LerpV3f(v3f Source, v3f Target, float T)
+v3f LerpV3F(v3f Source, v3f Target, float T)
 {
 	v3f Result;
 	Result.X = Source.X + T * (Target.X - Source.X);

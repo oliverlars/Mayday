@@ -88,7 +88,7 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 																	 Font,
 																	 BufferPosition);
 
-			Cursor->Position = LerpV2f(Cursor->Position, Cursor->TargetPosition, 0.3);
+			Cursor->Position = LerpV2F(Cursor->Position, Cursor->TargetPosition, 0.3);
 			D_DrawQuad(Draw, Arena, Cursor->Position, 5, LineHeight, v4f(0.3, 0.7, 0, 1));
 		}
 	}

@@ -52,10 +52,7 @@ typedef struct mayday_context
 	int LinkCount;
 
 
-	v3f LookAt;
-	v3f LookFrom;
-	v3f LookAtTarget;
-	v3f LookFromTarget;
+	v2f CameraPosition;
 	f32 ViewSize;
 	f32 ViewSizeTarget;
 
@@ -84,17 +81,18 @@ void TreeData(mayday_context *M)
 	os_directory_tree_iterator Iter = {.Tree = M->Tree, .Current = M->Tree.Root };
 
 	M->NodeCount = TotalCount;
-	M->Nodes[0].TargetPosition = v3f(0, 0, 0);
-	M->Nodes[0].Position = v3f(0.0);
+	M->Nodes[0].TargetPosition = v2f(0, 0);
+	M->Nodes[0].Position = v2f(0.0, 0.0);
 	M->Nodes[0].Name = M->Tree.Root->PathAndName;
 	M->Nodes[0].IsFolder = True;
 	int Index = 1;
 	for(;OS_DirectoryTreeIterate(&Iter);)
 	{
-		M->Nodes[Index].TargetPosition = v3f(RandomBilateral(&M->RandomState),
-											RandomBilateral(&M->RandomState),
-											RandomBilateral(&M->RandomState));
-		M->Nodes[Index].TargetPosition = NormalizeV3F(M->Nodes[Index].TargetPosition);
+
+		f32 X = (0.5*RandomBilateral(&M->RandomState) + 0.5)*1500.0;
+		f32 Y = (0.5*RandomBilateral(&M->RandomState) + 0.5)*1500.0;
+		M->Nodes[Index].TargetPosition = v2f(X, Y);
+		M->Nodes[Index].TargetPosition = M->Nodes[Index].TargetPosition;
 		M->Nodes[Index].Position = M->Nodes[Index].TargetPosition;
 		M->Nodes[Index].Name = Iter.Current->PathAndName;
 		M->Nodes[Index].IsFolder = Iter.Current->Type == OS_DIR_ENTRY_FOLDER;
@@ -168,28 +166,12 @@ void OS_Update(void *Data)
 					 v2i(WindowWidth, WindowHeight));
 	}
 
-	Angle += M->UI->ScrollOffset.X/1000.0;
-
-
-	Angle = LerpF32(Angle, 0.0, 0.05);
-
 	m44f ModelMatrix = M44F_IDENTITY;
-
-	if(ZoomedIn)
-	{
-		ModelMatrix = M44FTranslate(MulV3F(M->LookAt, V3FromF32(1.0)));
-		ModelMatrix = MulM44FM44F(M44FromYAngle(-Angle), ModelMatrix);
-		ModelMatrix = MulM44FM44F(M44FTranslate(MulV3F(M->LookAt, V3FromF32(-1.0))), ModelMatrix);
-	}
-	else
-	{
-		ModelMatrix = M44FromYAngle(-Angle);
-	}
 
 	//ModelMatrix = MulM44FM44F(M44FromZAngle(Angle*0.1), ModelMatrix);
 	m44f ProjectionMatrix = M44FPerspective(sapp_widthf()/sapp_heightf(), 70, 0.01, 1000.0);
-	ProjectionMatrix = M44FOrthographic(-M->ViewSize, M->ViewSize, M->ViewSize, -M->ViewSize, -1000.0, 1000.0);
-	m44f ViewMatrix = M44FLookAt(M->LookFrom, M->LookAt, v3f(0, 1, 0));
+	ProjectionMatrix = M44FOrthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0);
+	m44f ViewMatrix = M44FTranslate(v3f(M->CameraPosition.X, M->CameraPosition.Y, -2.0));
 
 	m44f VP = MulM44FM44F(ViewMatrix, ProjectionMatrix);
 	m44f PVM = MulM44FM44F(ModelMatrix, VP);
@@ -204,7 +186,7 @@ void OS_Update(void *Data)
 
 	for(int I = 0; I < M->NodeCount; I++)
 	{
-		M->Nodes[I].Position = LerpV3f(M->Nodes[I].Position, M->Nodes[I].TargetPosition, 0.1);
+		M->Nodes[I].Position = LerpV2F(M->Nodes[I].Position, M->Nodes[I].TargetPosition, 0.1);
 	}
 
 	R_PushTransform(M->Render, Transform);
@@ -212,21 +194,6 @@ void OS_Update(void *Data)
 	fdg_node *ClickedNode = Null;
 	for(int I = 0; !M->ShowEditor && I < M->NodeCount; I++)
 	{
-		v3f P = M->Nodes[I].Position;
-		v4f ProjectedPoint = MulM44FV4F(M44FTranspose(PVM), v4f(P.X, P.Y, P.Z, 1.0));
-		ProjectedPoint.X /= ProjectedPoint.W;
-		ProjectedPoint.Y /= ProjectedPoint.W;
-		ProjectedPoint.Z /= ProjectedPoint.W;
-		ProjectedPoint.W /= ProjectedPoint.W;
-
-		ProjectedPoint.X = ProjectedPoint.X*0.5 + 0.5;
-		ProjectedPoint.Y = ProjectedPoint.Y*0.5 + 0.5;
-
-		v2f WindowSpacePoint = MulV2F(v2f(ProjectedPoint.X, ProjectedPoint.Y), v2f(sapp_widthf(), sapp_heightf()));
-
-		WindowSpacePoint = AddV2F(WindowSpacePoint, v2f(20, 10));
-
-
 		f32 FontSize = ZoomedIn ? 40 : 35;
 		if(M->Nodes[I].IsFolder)
 		{
@@ -234,7 +201,7 @@ void OS_Update(void *Data)
 			b32 Clicked = UI_TextButton(M->UI, M->Draw,
 				  M->FrameArena, Str8PushF(M->FrameArena, "?S##?u32", Str8FromLastCharacter(M->FrameArena, M->Nodes[I].Name, '/'), I),
 				  FontSize,
-				  WindowSpacePoint, v4f(0.5, 0.1, 0.0, 1));
+				  M->Nodes[I].Position, v4f(0.5, 0.1, 0.0, 1));
 			
 			if(Clicked && !ZoomedIn)
 			{
@@ -243,8 +210,6 @@ void OS_Update(void *Data)
 
 				M->Tree = OS_DirectoryTreeFromPath(M->PermanentArena, Str8PushF(M->PermanentArena, "?S", ClickedNode->Name));
 				TreeData(M);
-				M->LookFromTarget = v3f(0.0);
-				M->LookAtTarget = v3f(0.0);
 				M->ViewSizeTarget = M->ViewSize;
 			}
 			//D_DrawStr8(M->Draw, M->FrameArena, M->LogoFont, WindowSpacePoint, v4f(0.5, 0.1, 0.0, 1), 25, M->Nodes[I].Name);
@@ -255,7 +220,7 @@ void OS_Update(void *Data)
 			b32 Clicked = UI_TextButton(M->UI, M->Draw,
 				  M->FrameArena, Str8PushF(M->FrameArena, "?S##?u32", Str8FromLastCharacter(M->FrameArena, M->Nodes[I].Name, '/'), I),
 				  FontSize,
-				  WindowSpacePoint, v4f(0.5, 0.1, 0.0, 1));
+				  M->Nodes->Position, v4f(0.5, 0.1, 0.0, 1));
 			if(Clicked && !M->ShowEditor)
 			{
 				m_scratch_arena Scratch = ScratchBegin(0, 0);
@@ -279,8 +244,6 @@ void OS_Update(void *Data)
 	// 	ZoomedIn = True;
 	// }
 
-	M->LookAt = LerpV3f(M->LookAt, M->LookAtTarget, 0.1);
-	M->LookFrom = LerpV3f(M->LookFrom, M->LookFromTarget, 0.1);
 	M->ViewSize = LerpF32(M->ViewSize, M->ViewSizeTarget, 0.1);
 
 	if(!M->ShowEditor)
@@ -291,39 +254,39 @@ void OS_Update(void *Data)
 	R_PopTransform(M->Render);
 
 	static f32 Temperature = 10.0;
-	octree_header *Octree = ArenaPushArrayZero(M->FrameArena, octree_header, 1);
-	Octree->Bounds = ArenaPushArrayZero(M->FrameArena, bounds, M->NodeCount*4);
-	Octree->ChildrenCounts = ArenaPushArrayZero(M->FrameArena, int, M->NodeCount*4);
-	Octree->Nodes = ArenaPushArrayZero(M->FrameArena, octant_node*, M->NodeCount*4);
-	Octree->Masses = ArenaPushArrayZero(M->FrameArena, v3f, M->NodeCount*4);
-	Octree->Octants = ArenaPushArrayZero(M->FrameArena, octant, M->NodeCount*4);
+	quadtree_header *QuadTree = ArenaPushArrayZero(M->FrameArena, quadtree_header, 1);
+	QuadTree->Bounds = ArenaPushArrayZero(M->FrameArena, bounds, M->NodeCount*4);
+	QuadTree->ChildrenCounts = ArenaPushArrayZero(M->FrameArena, int, M->NodeCount*4);
+	QuadTree->Nodes = ArenaPushArrayZero(M->FrameArena, quadrant_node*, M->NodeCount*4);
+	QuadTree->Masses = ArenaPushArrayZero(M->FrameArena, v2f, M->NodeCount*4);
+	QuadTree->Quadrants = ArenaPushArrayZero(M->FrameArena, Quadrant, M->NodeCount*4);
 
-	Octree->Bounds[0] = GetBounds(M->Nodes, M->NodeCount);
-	Octree->NextOctantIndex = 1;
+	QuadTree->Bounds[0] = GetBounds(M->Nodes, M->NodeCount);
+	QuadTree->NextQuadrantIndex = 1;
 
 	for(int I = 0; I < M->NodeCount; I++)
 	{
-		OctreeBuild(M->FrameArena, Octree, 0, &M->Nodes[I], 0);
+		QuadTreeBuild(M->FrameArena, QuadTree, 0, &M->Nodes[I], 0);
 	}
 	
-	Octree->Masses[0] = OctreeCalculateAttributes(Octree, 0);
+	QuadTree->Masses[0] = QuadTreeCalculateAttributes(QuadTree, 0);
 
-	SimulateForceDirectedGraphOctree(M->FrameArena, M->Nodes, M->NodeCount, M->Links, M->LinkCount, &Temperature, Octree, &M->Shared);
+	SimulateForceDirectedGraphQuadTree(M->FrameArena, M->Nodes, M->NodeCount, M->Links, M->LinkCount, &Temperature, QuadTree, &M->Shared);
 
 	m_scratch_arena Scratch = ScratchBegin(0, 0);
 
 	v3f *Positions = (v3f*)ArenaPushArrayZero(Scratch.Arena, v3f, M->NodeCount);
 	for(int I = 0; I < M->NodeCount; I++)
 	{
-		Positions[I] = M->Nodes[I].Position;
+		Positions[I] = v3f(M->Nodes[I].Position.X, M->Nodes[I].Position.Y, 0.0);
 	}
 
 	v3f *LinePositions = ArenaPushArrayZero(Scratch.Arena, v3f, M->LinkCount*2);
 	int LineIndex = 0;
 	for(int I = 0; I < M->LinkCount; I++)
 	{
-		LinePositions[LineIndex + 0] = M->Nodes[M->Links[I].From].Position;
-		LinePositions[LineIndex + 1] = M->Nodes[M->Links[I].To].Position;
+		LinePositions[LineIndex + 0] = v3f(M->Nodes[M->Links[I].From].Position.X, M->Nodes[M->Links[I].From].Position.Y, 0.0);
+		LinePositions[LineIndex + 1] = v3f(M->Nodes[M->Links[I].To].Position.X, M->Nodes[M->Links[I].To].Position.Y, 0.0);
 		LineIndex += 2;
 	}
 
@@ -334,17 +297,16 @@ void OS_Update(void *Data)
 
 		bounds TotalBounds = GetBounds(M->Nodes, M->NodeCount);
 
-		//DrawBounds(M->Draw, M->FrameArena, Octree.Bounds[0]);
+		//DrawBounds(M->Draw, M->FrameArena, QuadTree.Bounds[0]);
 
-		v3f Centre = DivV3F(AddV3F(TotalBounds.Min, TotalBounds.Max), V3FromF32(2.0));
+		v2f Centre = DivV2F(AddV2F(TotalBounds.Min, TotalBounds.Max), v2f(2.0, 2.0));
 
 
 		if(!ZoomedIn)
 		{
-			M->LookAtTarget = Centre;
-			M->LookFromTarget = v3f(Centre.X, Centre.Y, 5);
+
 		}
-		//DrawOctree(M->Draw, M->FrameArena, Octree, 0);
+		DrawQuadTree(M->Draw, M->FrameArena, QuadTree, 0);
 	}
 
 	R_PopTransform(M->Render);
@@ -672,15 +634,12 @@ int main()
 
 	M.UI->Font = M.CodeFont;
 
-	M.Tree = OS_DirectoryTreeFromPath(M.PermanentArena, Str8PushF(Arena, "/Users/olivercruickshank/EmberGen/liquigen"));
+	M.Tree = OS_DirectoryTreeFromPath(M.PermanentArena, Str8PushF(Arena, "/Users/olivercruickshank/mayday"));
 
 	M.RandomState = XorShiftInit();
 
 	bounds TotalBounds = GetBounds(M.Nodes, M.NodeCount);
-	M.LookFrom = v3f(0.0);
-	M.LookFromTarget = v3f(0.0);
-	M.LookAt = v3f(0.0);
-	M.LookAtTarget = v3f(0.0);
+	M.CameraPosition = v2f(0, 0);
 	M.ViewSize = 5.0;
 	M.ViewSizeTarget = M.ViewSize;
 

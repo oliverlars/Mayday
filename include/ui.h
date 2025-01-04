@@ -40,8 +40,12 @@ typedef struct ui_context
 	u8 MultiClickCount;
 	u64 TimeStampWhenMousePressed;
 
+	ui_view View;
+
 	ui_widget Widgets[UI_TABLE_SIZE];
 } ui_context;
+
+void UI_Begin(ui_context *UI);
 
 b32 UI_TextButton(ui_context *UI, draw_context *Draw,
 				  m_arena *Arena, str8 String,

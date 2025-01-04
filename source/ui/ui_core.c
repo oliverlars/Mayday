@@ -116,3 +116,8 @@ b32 UI_TextButton(ui_context *UI, draw_context *Draw, m_arena *Arena,
 
 	return Clicked;
 }
+
+void UI_Begin(ui_context *UI)
+{
+	UI->Hot = 0;
+}

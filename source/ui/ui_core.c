@@ -104,16 +104,15 @@ b32 UI_TextButton(ui_context *UI, draw_context *Draw, m_arena *Arena,
 		{
 			Clicked = True;
 		}
-		Colour = MulV4F(Colour, V4FromF32(1.2));
+
 		UI->HotAnimation = LerpF32(UI->HotAnimation, 1.0, 0.1);
 		D_DrawStr8(Draw, Arena, UI->Font, Position, v4f(1, 1, 1, 1), HeightInPixels, DisplayString);
 	}
 	else
 	{
 		//D_DrawQuad(Draw, Arena, BoxPosition, Width, Height, v4f(0, 0, 0, 1));
-		D_DrawStr8(Draw, Arena, UI->Font, Position, v4f(0.2, 0.1, 0.0, 1.0), HeightInPixels, DisplayString);
+		D_DrawStr8(Draw, Arena, UI->Font, Position, v4f(0.2, 0.5, 0.0, 1.0), HeightInPixels, DisplayString);
 	}
-
 
 	return Clicked;
 }

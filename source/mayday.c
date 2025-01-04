@@ -191,50 +191,6 @@ void OS_Update(void *Data)
 
 	R_PushTransform(M->Render, Transform);
 
-	fdg_node *ClickedNode = Null;
-	for(int I = 0; !M->ShowEditor && I < M->NodeCount; I++)
-	{
-		f32 FontSize = ZoomedIn ? 40 : 35;
-		if(M->Nodes[I].IsFolder)
-		{
-			
-			b32 Clicked = UI_TextButton(M->UI, M->Draw,
-				  M->FrameArena, Str8PushF(M->FrameArena, "?S##?u32", Str8FromLastCharacter(M->FrameArena, M->Nodes[I].Name, '/'), I),
-				  FontSize,
-				  M->Nodes[I].Position, v4f(0.5, 0.1, 0.0, 1));
-			
-			if(Clicked && !ZoomedIn)
-			{
-				M->UI->MouseWasPressed = False;
-				ClickedNode = M->Nodes + I;
-
-				M->Tree = OS_DirectoryTreeFromPath(M->PermanentArena, Str8PushF(M->PermanentArena, "?S", ClickedNode->Name));
-				TreeData(M);
-				M->ViewSizeTarget = M->ViewSize;
-			}
-			//D_DrawStr8(M->Draw, M->FrameArena, M->LogoFont, WindowSpacePoint, v4f(0.5, 0.1, 0.0, 1), 25, M->Nodes[I].Name);
-		}
-		
-		if(ZoomedIn && !M->Nodes[I].IsFolder && !ClickedNode)
-		{
-			b32 Clicked = UI_TextButton(M->UI, M->Draw,
-				  M->FrameArena, Str8PushF(M->FrameArena, "?S##?u32", Str8FromLastCharacter(M->FrameArena, M->Nodes[I].Name, '/'), I),
-				  FontSize,
-				  M->Nodes->Position, v4f(0.5, 0.1, 0.0, 1));
-			if(Clicked && !M->ShowEditor)
-			{
-				m_scratch_arena Scratch = ScratchBegin(0, 0);
-				str8 Temp = OS_LoadEntireFileIntoMemory(Scratch.Arena, M->Nodes[I].Name);
-				MemoryCopy(M->Buffer.String.Bytes, Temp.Bytes, Temp.Size);
-				M->Buffer.String.Size = Temp.Size;
-				M->ShowEditor = True;
-				ScratchEnd(Scratch);
-				ZoomedIn = False;
-				M->UI->MouseWasPressed = False;
-			}
-		}
-	}
-
 	// if(ClickedNode)
 	// {
 	// 	M->ViewSizeTarget = 1.0;
@@ -293,7 +249,7 @@ void OS_Update(void *Data)
 	if(!M->ShowEditor)
 	{
 		D_DrawPointsArray(M->Draw, M->FrameArena, Positions, M->NodeCount, v4f(1, 0, 0, 1));
-		D_DrawLinesArray(M->Draw, M->FrameArena, LinePositions, M->LinkCount*2, v4f(0.5, 0.1, 0, 1));
+		//D_DrawLinesArray(M->Draw, M->FrameArena, LinePositions, M->LinkCount*2, v4f(0.5, 0.1, 0, 1));
 
 		bounds TotalBounds = GetBounds(M->Nodes, M->NodeCount);
 
@@ -308,6 +264,52 @@ void OS_Update(void *Data)
 		}
 		DrawQuadTree(M->Draw, M->FrameArena, QuadTree, 0);
 	}
+
+
+	fdg_node *ClickedNode = Null;
+	for(int I = 0; !M->ShowEditor && I < M->NodeCount; I++)
+	{
+		f32 FontSize = ZoomedIn ? 40 : 35;
+		if(M->Nodes[I].IsFolder)
+		{
+			
+			b32 Clicked = UI_TextButton(M->UI, M->Draw,
+				  M->FrameArena, Str8PushF(M->FrameArena, "?S##?u32", Str8FromLastCharacter(M->FrameArena, M->Nodes[I].Name, '/'), I),
+				  FontSize,
+				  M->Nodes[I].Position, v4f(0.5, 0.1, 0.0, 1));
+			
+			if(Clicked && !ZoomedIn)
+			{
+				M->UI->MouseWasPressed = False;
+				ClickedNode = M->Nodes + I;
+
+				M->Tree = OS_DirectoryTreeFromPath(M->PermanentArena, Str8PushF(M->PermanentArena, "?S", ClickedNode->Name));
+				TreeData(M);
+				M->ViewSizeTarget = M->ViewSize;
+			}
+			//D_DrawStr8(M->Draw, M->FrameArena, M->LogoFont, WindowSpacePoint, v4f(0.5, 0.1, 0.0, 1), 25, M->Nodes[I].Name);
+		}
+		
+		if(ZoomedIn && !M->Nodes[I].IsFolder && !ClickedNode)
+		{
+			b32 Clicked = UI_TextButton(M->UI, M->Draw,
+				  M->FrameArena, Str8PushF(M->FrameArena, "?S##?u32", Str8FromLastCharacter(M->FrameArena, M->Nodes[I].Name, '/'), I),
+				  FontSize,
+				  M->Nodes->Position, v4f(0.5, 0.1, 0.0, 1));
+			if(Clicked && !M->ShowEditor)
+			{
+				m_scratch_arena Scratch = ScratchBegin(0, 0);
+				str8 Temp = OS_LoadEntireFileIntoMemory(Scratch.Arena, M->Nodes[I].Name);
+				MemoryCopy(M->Buffer.String.Bytes, Temp.Bytes, Temp.Size);
+				M->Buffer.String.Size = Temp.Size;
+				M->ShowEditor = True;
+				ScratchEnd(Scratch);
+				ZoomedIn = False;
+				M->UI->MouseWasPressed = False;
+			}
+		}
+	}
+
 
 	R_PopTransform(M->Render);
 
@@ -647,8 +649,7 @@ int main()
 
 	u64 Start = OS_TimeStampNow();
 
-	//LogInfo("Time in ms: ?f32", OS_MilliSecondsFromTimeStamp(OS_TimeStampNow() - Start));
-	DispatchInitialise(&M.Shared, 15);
+	DispatchInitialise(&M.Shared, 16);
 
 	OS_Run(M.Window, &M);
 }

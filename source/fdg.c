@@ -200,11 +200,9 @@ v2f ForceDisplacementFromPosition(quadtree_header *QuadTree, int QuadrantIndex, 
 	{
 		QuadrantIndex = QuadrantStack[--StackTop];
 		v2f Centre = QuadTree->Masses[QuadrantIndex];
-		v2f PositionToCentre = SubV2F(Position, Centre); 
+		v2f PositionToCentre = v2f(Position.X - Centre.X, Position.Y - Centre.Y);
 
-		f32 QuadrantRadius = LengthV2F(SubV2F(QuadTree->Bounds[QuadrantIndex].Max, QuadTree->Bounds[QuadrantIndex].Min));
-		f32 DistanceSquared = DotV2F(PositionToCentre, PositionToCentre);
-		f32 Distance = sqrtf(DistanceSquared);
+		f32 DistanceSquared = PositionToCentre.X*PositionToCentre.X + PositionToCentre.Y*PositionToCentre.Y;
 		if(QuadTree->ChildrenCounts[QuadrantIndex] == 1)
 		{
 			f32 Scale = (K) / (DistanceSquared + 0.01);
@@ -214,7 +212,9 @@ v2f ForceDisplacementFromPosition(quadtree_header *QuadTree, int QuadrantIndex, 
 		}
 		else
 		{
-			if(QuadrantRadius/Max(Distance, 0.01) < 0.5)
+			v2f MaxSubMin = SubV2F(QuadTree->Bounds[QuadrantIndex].Max, QuadTree->Bounds[QuadrantIndex].Min);
+			f32 QuadrantRadiusSquared = MaxSubMin.X*MaxSubMin.X + MaxSubMin.Y*MaxSubMin.Y;
+			if(QuadrantRadiusSquared/(DistanceSquared + 0.01) < 1.0)
 			{
 				f32 Scale = QuadTree->ChildrenCounts[QuadrantIndex] * (K) / (DistanceSquared + 0.01);
 
@@ -252,7 +252,7 @@ void ParallelForceDisplacement(wave_info *WaveInfo, void* Input)
 	parallel_force_displacement *P = Input;
 	int Count = LaneValueFromTotal(WaveInfo, P->NodeCount);
 	int Index = ExclusiveWavePrefixSum(WaveInfo, Count);
-	
+
 	for(int I = Index; I < Index + Count; I++)
 	{
 		P->Displacements[I] = ForceDisplacementFromPosition(P->QuadTree,
@@ -273,7 +273,7 @@ void SimulateForceDirectedGraphQuadTree(m_arena *Arena, fdg_node *Nodes, int Nod
 									  quadtree_header *QuadTree, shared_wave_info *Shared)
 {
 	u64 Start = OS_TimeStampNow();
-	f32 K = 500.0;
+	f32 K = 100.0;
 
 	v2f *Displacements = ArenaPushArrayZero(Arena, v2f, NodeCount);
 

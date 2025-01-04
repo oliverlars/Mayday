@@ -45,12 +45,6 @@ typedef struct mayday_context
 	editable_buffer Buffer;
 	cursor Cursor;
 
-	fdg_node *Nodes;
-	int NodeCount;
-
-	fdg_link *Links;
-	int LinkCount;
-
 
 	v2f CameraPosition;
 	f32 ViewSize;
@@ -58,81 +52,13 @@ typedef struct mayday_context
 
 	random32_state RandomState;
 
-	os_directory_tree Tree;
+	ui_tree TreeView;
 
 	shared_wave_info Shared;
-
-	b32 ShowEditor;
 }
 mayday_context;
 
 #include "shaders.h"
-
-void TreeData(mayday_context *M)
-{
-	os_directory_entry *Entry = M->Tree.Root;
-
-	int TotalCount = OS_CountAllEntriesInDirectoryTree(M->Tree);
-	LogInfo("Total ?s32", TotalCount);
-
-	M->Nodes = (fdg_node*)ArenaPushArrayZero(M->PermanentArena, fdg_node, TotalCount);
-	M->Links = (fdg_link*)ArenaPushArrayZero(M->PermanentArena, fdg_link, TotalCount);
-
-	os_directory_tree_iterator Iter = {.Tree = M->Tree, .Current = M->Tree.Root };
-
-	M->NodeCount = TotalCount;
-	M->Nodes[0].TargetPosition = v2f(0, 0);
-	M->Nodes[0].Position = v2f(0.0, 0.0);
-	M->Nodes[0].Name = M->Tree.Root->PathAndName;
-	M->Nodes[0].IsFolder = True;
-	int Index = 1;
-	for(;OS_DirectoryTreeIterate(&Iter);)
-	{
-
-		f32 X = (0.5*RandomBilateral(&M->RandomState) + 0.5)*1500.0;
-		f32 Y = (0.5*RandomBilateral(&M->RandomState) + 0.5)*1500.0;
-		M->Nodes[Index].TargetPosition = v2f(X, Y);
-		M->Nodes[Index].TargetPosition = M->Nodes[Index].TargetPosition;
-		M->Nodes[Index].Position = M->Nodes[Index].TargetPosition;
-		M->Nodes[Index].Name = Iter.Current->PathAndName;
-		M->Nodes[Index].IsFolder = Iter.Current->Type == OS_DIR_ENTRY_FOLDER;
-		Index++;
-	}
-
-	Iter.Current = M->Tree.Root;
-	int From = 0;
-	int To = 1;
-	Index = 0;
-	for(;OS_DirectoryTreeIterate(&Iter);)
-	{
-		M->Links[Index].From = From;
-		M->Links[Index].To = To;
-		if(Iter.Current->Type == OS_DIR_ENTRY_FOLDER)
-		{
-			From = To;
-		}
-		To++;
-		Index++;
-	}
-	M->LinkCount = Index;
-}
-
-
-f32 Angle = 0.0f;
-
-
-b32 ZoomedIn = False;
-
-
-void Test(wave_info *WaveInfo, void *Data)
-{
-	int Count = WaveInfo->Lane;
-	int Index = InclusiveWavePrefixSum(WaveInfo, Count);
-
-	printf("Lane: %d | Index: %d | Count: %d\n", WaveInfo->Lane, Index, Count);
-
-	WaveBarrier(WaveInfo->Shared->Barrier);
-}
 
 void OS_Update(void *Data)
 {
@@ -163,89 +89,8 @@ void OS_Update(void *Data)
 	}
 	else if(M->UI->View == UI_VIEW_TREE)
 	{
-		if(!M->Nodes)
-		{
-			TreeData(M);
-		}
-
-		static f32 Temperature = 20.0;
-		quadtree_header *QuadTree = ArenaPushArrayZero(M->FrameArena, quadtree_header, 1);
-		QuadTree->Bounds = ArenaPushArrayZero(M->FrameArena, bounds, M->NodeCount*4);
-		QuadTree->ChildrenCounts = ArenaPushArrayZero(M->FrameArena, int, M->NodeCount*4);
-		QuadTree->Nodes = ArenaPushArrayZero(M->FrameArena, quadrant_node*, M->NodeCount*4);
-		QuadTree->Masses = ArenaPushArrayZero(M->FrameArena, v2f, M->NodeCount*4);
-		QuadTree->Quadrants = ArenaPushArrayZero(M->FrameArena, Quadrant, M->NodeCount*4);
-
-		QuadTree->Bounds[0] = GetBounds(M->Nodes, M->NodeCount);
-		QuadTree->NextQuadrantIndex = 1;
-
-		for(int I = 0; I < M->NodeCount; I++)
-		{
-			QuadTreeBuild(M->FrameArena, QuadTree, 0, &M->Nodes[I], 0);
-		}
-		
-		QuadTree->Masses[0] = QuadTreeCalculateAttributes(QuadTree, 0);
-
-		SimulateForceDirectedGraphQuadTree(M->FrameArena, M->Nodes, M->NodeCount, M->Links, M->LinkCount, &Temperature, QuadTree, &M->Shared);
-
-		m_scratch_arena Scratch = ScratchBegin(0, 0);
-
-		v3f *Positions = (v3f*)ArenaPushArrayZero(Scratch.Arena, v3f, M->NodeCount);
-		for(int I = 0; I < M->NodeCount; I++)
-		{
-			Positions[I] = v3f(M->Nodes[I].Position.X, M->Nodes[I].Position.Y, 0.0);
-		}
-
-		v3f *LinePositions = ArenaPushArrayZero(Scratch.Arena, v3f, M->LinkCount*2);
-		int LineIndex = 0;
-		for(int I = 0; I < M->LinkCount; I++)
-		{
-			LinePositions[LineIndex + 0] = v3f(M->Nodes[M->Links[I].From].Position.X, M->Nodes[M->Links[I].From].Position.Y, 0.0);
-			LinePositions[LineIndex + 1] = v3f(M->Nodes[M->Links[I].To].Position.X, M->Nodes[M->Links[I].To].Position.Y, 0.0);
-			LineIndex += 2;
-		}
-
-
-		D_DrawPointsArray(M->Draw, M->FrameArena, Positions, M->NodeCount, v4f(1, 0, 0, 1));
-		//D_DrawLinesArray(M->Draw, M->FrameArena, LinePositions, M->LinkCount*2, v4f(0.5, 0.1, 0, 1));
-
-		bounds TotalBounds = GetBounds(M->Nodes, M->NodeCount);
-
-
-		v2f Centre = DivV2F(AddV2F(TotalBounds.Min, TotalBounds.Max), v2f(2.0, 2.0));
-
-		DrawQuadTree(M->Draw, M->FrameArena, QuadTree, 0);
-	
-
-		for(int I = 0; !M->ShowEditor && I < M->NodeCount; I++)
-		{
-			f32 FontSize = ZoomedIn ? 40 : 35;
-			if(M->Nodes[I].IsFolder)
-			{
-				
-				b32 Clicked = UI_TextButton(M->UI, M->Draw,
-					M->FrameArena, Str8PushF(M->FrameArena, "?S##?u32", Str8FromLastCharacter(M->FrameArena, M->Nodes[I].Name, '/'), I),
-					FontSize,
-					M->Nodes[I].Position, v4f(0.5, 0.1, 0.0, 1));
-			}
-			
-			if(0 && !M->Nodes[I].IsFolder)
-			{
-				b32 Clicked = UI_TextButton(M->UI, M->Draw,
-					M->FrameArena, Str8PushF(M->FrameArena, "?S##?u32", Str8FromLastCharacter(M->FrameArena, M->Nodes[I].Name, '/'), I),
-					FontSize,
-					M->Nodes->Position, v4f(0.5, 0.1, 0.0, 1));
-			}
-		}
-
-		D_DrawStr8(M->Draw, M->FrameArena, M->LogoFont, v2f(50, 50), v4f(1.0, 0.05, 0.0, 1), 100, Str8("MAYDAY!"));
-		
-		for(int I = 0; I < M->NodeCount; I++)
-		{
-		M->Nodes[I].Position = LerpV2F(M->Nodes[I].Position, M->Nodes[I].TargetPosition, 0.1);
-		}
-
-		ScratchEnd(Scratch);
+		UI_TreeView(M->UI, M->Draw,  &M->Shared,
+					M->FrameArena, &M->TreeView, Str8("/Users/olivercruickshank/mayday"));
 	}
 
 	R_PopTransform(M->Render);
@@ -259,23 +104,6 @@ void OS_Update(void *Data)
 	{
 		M->UI->MouseIsDragging = False;
 	}
-
-	if(0)
-	{
-		int LogoSize = 600;
-		int LogoTextWidth = UI_GetTextWidth(M->LogoFont, M->Draw, Str8("MAYDAY!"), LogoSize);
-
-		int Padding = 200;
-		v4f Rect = v4f(Padding, Padding, WindowWidth - Padding*2, WindowHeight - Padding*2);
-		D_DrawQuad(M->Draw, M->FrameArena, v2f(Rect.X, Rect.Y), Rect.Z, Rect.W, v4f(0.2, 0.06, 0, 1));
-		D_DrawQuad(M->Draw, M->FrameArena, v2f(Rect.X + 5, Rect.Y + 5), Rect.Z - 10, Rect.W - 10, v4f(0.009, 0.00, 0, 1.0));
-
-		D_DrawQuad(M->Draw, M->FrameArena, v2f(WindowWidth/2.0 - LogoTextWidth/2.0, WindowHeight/2.0 - LogoSize/5.0), LogoTextWidth, LogoSize, v4f(0.009, 0.00, 0, 1.0));
-		D_DrawStr8(M->Draw,
-			M->FrameArena, M->LogoFont,
-			v2f(WindowWidth/2.0 - LogoTextWidth/2.0, WindowHeight/2.0), v4f(0.4, 0.02, 0, 1), LogoSize, Str8("MAYDAY!"));
-	}
-
 
 	R_Update(M->Render, M->FrameArena);
 
@@ -568,11 +396,8 @@ int main()
 
 	M.UI->Font = M.CodeFont;
 
-	M.Tree = OS_DirectoryTreeFromPath(M.PermanentArena, Str8PushF(Arena, "/Users/olivercruickshank/EmberGen"));
-
 	M.RandomState = XorShiftInit();
 
-	bounds TotalBounds = GetBounds(M.Nodes, M.NodeCount);
 	M.CameraPosition = v2f(0, 0);
 	M.ViewSize = 5.0;
 	M.ViewSizeTarget = M.ViewSize;

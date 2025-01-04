@@ -6,6 +6,9 @@
 
 #include "edit.h"
 
+#include "os.h"
+#include "fdg.h"
+
 #define UI_TABLE_SIZE (4096)
 
 
@@ -19,6 +22,28 @@ typedef enum ui_view
 	UI_VIEW_TREE,
 	UI_VIEW_EDIT,
 } ui_view;
+
+
+typedef struct ui_tree_info
+{
+	fdg_node *Nodes;
+	int NodeCount;
+
+	fdg_link *Links;
+	int LinkCount;
+
+	os_directory_tree Tree;
+} ui_tree_info;
+
+typedef struct ui_tree
+{
+	m_arena *Arena;
+	f32 Temperature;
+
+	ui_tree_info Info;
+
+	u64 TreeHash;
+} ui_tree;
 
 typedef struct ui_context
 {
@@ -45,7 +70,9 @@ typedef struct ui_context
 	ui_widget Widgets[UI_TABLE_SIZE];
 } ui_context;
 
+
 void UI_Begin(ui_context *UI);
+
 
 b32 UI_TextButton(ui_context *UI, draw_context *Draw,
 				  m_arena *Arena, str8 String,
@@ -61,8 +88,8 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 			   cursor *Cursors,
 			   v2i Size);
 
-void UI_TreeView(ui_context *UI, draw_context *Draw,
-				 m_arena *Arena, d_font Font, v2i Size);
+void UI_TreeView(ui_context *UI, draw_context *Draw, shared_wave_info *Shared,
+				 m_arena *Arena, ui_tree *TreeView, str8 Path);
 
 void UI_StatusBar(ui_context *UI, draw_context *Draw, edit_context *Edit,
 				  m_arena *Arena, d_font Font,

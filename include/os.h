@@ -1,3 +1,4 @@
+#pragma once
 #include "strings.h"
 
 #include "sokol_app.h"

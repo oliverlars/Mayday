@@ -90,7 +90,7 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 			   v2i Size);
 
 void UI_TreeView(ui_context *UI, draw_context *Draw, shared_wave_info *Shared,
-				 m_arena *Arena, ui_tree *TreeView, str8 Path);
+				 m_arena *Arena, ui_tree *TreeView, str8 Path, v2f Size);
 
 void UI_StatusBar(ui_context *UI, draw_context *Draw, edit_context *Edit,
 				  m_arena *Arena, d_font Font,

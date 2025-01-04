@@ -6,7 +6,7 @@
 #include "wave.h"
 
 
-ui_tree_info TreeInfoFromPath(m_arena *Arena, str8 Path)
+ui_tree_info TreeInfoFromPath(m_arena *Arena, str8 Path, v2f Size)
 {
 	ArenaReset(Arena);
 	ui_tree_info Info = {0};
@@ -30,8 +30,8 @@ ui_tree_info TreeInfoFromPath(m_arena *Arena, str8 Path)
 	for(;OS_DirectoryTreeIterate(&Iter);)
 	{
 
-		f32 X = (0.5*RandomBilateral(&RandomState) + 0.5)*1500.0;
-		f32 Y = (0.5*RandomBilateral(&RandomState) + 0.5)*1500.0;
+		f32 X = (0.5*RandomBilateral(&RandomState) + 0.5)*Size.X + Size.X/2.0;
+		f32 Y = (0.5*RandomBilateral(&RandomState) + 0.5)*Size.Y + Size.Y/2.0;
 		Info.Nodes[Index].TargetPosition = v2f(X, Y);
 		Info.Nodes[Index].TargetPosition = Info.Nodes[Index].TargetPosition;
 		Info.Nodes[Index].Position = Info.Nodes[Index].TargetPosition;
@@ -44,6 +44,10 @@ ui_tree_info TreeInfoFromPath(m_arena *Arena, str8 Path)
 	int From = 0;
 	int To = 1;
 	Index = 0;
+
+	int Stack[1024];
+	int Top = 0;
+	Stack[Top++] = To;
 	for(;OS_DirectoryTreeIterate(&Iter);)
 	{
 		Info.Links[Index].From = From;
@@ -61,7 +65,7 @@ ui_tree_info TreeInfoFromPath(m_arena *Arena, str8 Path)
 }
 
 void UI_TreeView(ui_context *UI, draw_context *Draw, shared_wave_info *Shared,
-				 m_arena *Arena, ui_tree *TreeView, str8 Path)
+				 m_arena *Arena, ui_tree *TreeView, str8 Path, v2f Size)
 {
 	u64 Hash = M_FNVHashString(M_FNV_HASH_START, Path);
 	if(Hash != TreeView->TreeHash)
@@ -70,7 +74,7 @@ void UI_TreeView(ui_context *UI, draw_context *Draw, shared_wave_info *Shared,
 		{
 			TreeView->Arena = ArenaInitialise(MegaBytes(256));
 		}
-		TreeView->Info = TreeInfoFromPath(TreeView->Arena, Path);
+		TreeView->Info = TreeInfoFromPath(TreeView->Arena, Path, Size);
 		TreeView->TreeHash = Hash;
 		TreeView->Temperature = 100.0;
 	}

@@ -88,7 +88,7 @@ void OS_Update(void *Data)
 	else if(M->UI->View == UI_VIEW_TREE)
 	{
 		UI_TreeView(M->UI, M->Draw,  &M->Shared,
-					M->FrameArena, &M->TreeView, Str8("/Users/olivercruickshank/mayday"));
+					M->FrameArena, &M->TreeView, Str8("/Users/olivercruickshank/mayday"), v2f((f32)WindowWidth, (f32)WindowHeight));
 	}
 
 	R_PopTransform(M->Render);

@@ -71,11 +71,10 @@ void UI_TreeView(ui_context *UI, draw_context *Draw, shared_wave_info *Shared,
 			TreeView->Arena = ArenaInitialise(MegaBytes(256));
 		}
 		TreeView->Info = TreeInfoFromPath(TreeView->Arena, Path);
-
 		TreeView->TreeHash = Hash;
+		TreeView->Temperature = 100.0;
 	}
-	
-	TreeView->Temperature = 20.0;
+
 	quadtree_header *QuadTree = ArenaPushArrayZero(Arena, quadtree_header, 1);
 	QuadTree->Bounds = ArenaPushArrayZero(Arena, bounds, TreeView->Info.NodeCount*4);
 	QuadTree->ChildrenCounts = ArenaPushArrayZero(Arena, int, TreeView->Info.NodeCount*4);
@@ -126,11 +125,9 @@ void UI_TreeView(ui_context *UI, draw_context *Draw, shared_wave_info *Shared,
 
 
 	D_DrawPointsArray(Draw, Arena, Positions, TreeView->Info.NodeCount, v4f(1, 0, 0, 1));
-	//D_DrawLinesArray(M->Draw, Arena, LinePositions, M->LinkCount*2, v4f(0.5, 0.1, 0, 1));
+	D_DrawLinesArray(Draw, Arena, LinePositions, TreeView->Info.LinkCount*2, v4f(0.5, 0.1, 0, 1));
 
 	bounds TotalBounds = GetBounds(TreeView->Info.Nodes, TreeView->Info.NodeCount);
-
-
 	v2f Centre = DivV2F(AddV2F(TotalBounds.Min, TotalBounds.Max), v2f(2.0, 2.0));
 
 	DrawQuadTree(Draw, Arena, QuadTree, 0);
@@ -145,6 +142,10 @@ void UI_TreeView(ui_context *UI, draw_context *Draw, shared_wave_info *Shared,
 				Arena, Str8PushF(Arena, "?S##?u32", Str8FromLastCharacter(Arena, TreeView->Info.Nodes[I].Name, '/'), I),
 				FontSize,
 				TreeView->Info.Nodes[I].Position, v4f(0.5, 0.1, 0.0, 1));
+			if(Clicked)
+			{
+					
+			}
 		}
 		
 		if(0 && !TreeView->Info.Nodes[I].IsFolder)

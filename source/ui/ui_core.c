@@ -100,7 +100,7 @@ b32 UI_TextButton(ui_context *UI, draw_context *Draw, m_arena *Arena,
 	b32 Clicked = False;
 	if(UI->Hot == Hash)
 	{
-		if(UI->MouseWasPressed)
+		if(UI->MouseWentUp)
 		{
 			Clicked = True;
 		}

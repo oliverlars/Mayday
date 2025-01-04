@@ -50,8 +50,6 @@ typedef struct mayday_context
 	f32 ViewSize;
 	f32 ViewSizeTarget;
 
-	random32_state RandomState;
-
 	ui_tree TreeView;
 
 	shared_wave_info Shared;
@@ -192,6 +190,7 @@ void OS_Event(const sapp_event *Event, void *Data)
 			}
 
 			M->UI->MouseWasPressed = True;
+			M->UI->MouseWentUp = False;
 			M->UI->TimeStampWhenMousePressed = OS_TimeStampNow();
 		}
 	}
@@ -202,6 +201,7 @@ void OS_Event(const sapp_event *Event, void *Data)
 	}
 	else if(Event->type == SAPP_EVENTTYPE_MOUSE_UP)
 	{
+		M->UI->MouseWentUp = True;
 		M->UI->MouseWasPressed = False;
 	}
 	else if(Event->type == SAPP_EVENTTYPE_KEY_DOWN)
@@ -395,8 +395,6 @@ int main()
 	M.LogoFont = D_LoadFontFromTTF(M.Draw, G_BasementGrotesque);
 
 	M.UI->Font = M.CodeFont;
-
-	M.RandomState = XorShiftInit();
 
 	M.CameraPosition = v2f(0, 0);
 	M.ViewSize = 5.0;

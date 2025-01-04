@@ -61,6 +61,7 @@ typedef struct ui_context
 	b32 MouseIsDragging;
 	v2i MousePosition;
 	b32 MouseWasPressed;
+	b32 MouseWentUp;
 
 	u8 MultiClickCount;
 	u64 TimeStampWhenMousePressed;

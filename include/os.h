@@ -48,7 +48,7 @@ typedef struct os_directory_tree_iterator
 	s64 StackTop;
 
 	s64 ParentIndex;
-	s64 CurrentIndex;
+	s64 Index;
 	os_directory_entry *Current;
 } os_directory_tree_iterator;
 

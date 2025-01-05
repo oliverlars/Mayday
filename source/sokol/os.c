@@ -189,10 +189,10 @@ OS_DirectoryTreeIterateWithStack(m_arena *Arena, os_directory_tree Tree, os_dire
 	{
 		It->Current = Tree.Root;
 		It->ParentIndex = 0;
-		It->CurrentIndex = 0;
+		It->Index = 0;
 
 		It->Stack = ArenaPushArrayZero(Arena, s64, Tree.Count);
-		It->Stack[It->StackTop++] = It->CurrentIndex;
+		It->Stack[It->StackTop++] = It->Index;
 	}
 	else
 	{
@@ -201,7 +201,7 @@ OS_DirectoryTreeIterateWithStack(m_arena *Arena, os_directory_tree Tree, os_dire
 
 		if(First)
 		{
-			It->Stack[It->StackTop++] = It->CurrentIndex;
+			It->Stack[It->StackTop++] = It->Index;
 			It->Current = First;
 		}
 		else if(Next)
@@ -233,7 +233,7 @@ OS_DirectoryTreeIterateWithStack(m_arena *Arena, os_directory_tree Tree, os_dire
 
 		if(Result)
 		{
-			It->CurrentIndex++;
+			It->Index += 1;
 		}
 	}
 
@@ -278,7 +278,11 @@ b32 OS_DirectoryTreeIterate(os_directory_tree Tree, os_directory_tree_iterator *
 				Result = False;
 			}
 		}
-		Iterator->CurrentIndex += (s64)Result;
+
+		if(Result)
+		{
+			Iterator->Index += 1;
+		}
 	}
 	return Result;
 }

@@ -26,11 +26,11 @@ ui_tree_info TreeInfoFromPath(m_arena *Arena, str8 Path, v2f Size)
 
 		f32 X = (0.5*RandomBilateral(&RandomState) + 0.5)*Size.X;
 		f32 Y = (0.5*RandomBilateral(&RandomState) + 0.5)*Size.Y;
-		Info.Nodes[It.CurrentIndex].TargetPosition = v2f(X, Y);
-		Info.Nodes[It.CurrentIndex].TargetPosition = Info.Nodes[It.CurrentIndex].TargetPosition;
-		Info.Nodes[It.CurrentIndex].Position = Info.Nodes[It.CurrentIndex].TargetPosition;
-		Info.Nodes[It.CurrentIndex].Name = It.Current->PathAndName;
-		Info.Nodes[It.CurrentIndex].IsFolder = It.Current->Type == OS_DIR_ENTRY_FOLDER;
+		Info.Nodes[It.Index].TargetPosition = v2f(X, Y);
+		Info.Nodes[It.Index].TargetPosition = Info.Nodes[It.Index].TargetPosition;
+		Info.Nodes[It.Index].Position = Info.Nodes[It.Index].TargetPosition;
+		Info.Nodes[It.Index].Name = It.Current->PathAndName;
+		Info.Nodes[It.Index].IsFolder = It.Current->Type == OS_DIR_ENTRY_FOLDER;
 	}
 
 	Info.NodeCount = Info.Tree.Count;
@@ -38,8 +38,8 @@ ui_tree_info TreeInfoFromPath(m_arena *Arena, str8 Path, v2f Size)
 	for(os_directory_tree_iterator It = {0};
 		OS_DirectoryTreeIterateWithStack(Scratch.Arena, Info.Tree, &It);)
 	{
-		Info.Links[It.CurrentIndex].From = It.ParentIndex;
-		Info.Links[It.CurrentIndex].To = It.CurrentIndex;
+		Info.Links[It.Index].From = It.ParentIndex;
+		Info.Links[It.Index].To = It.Index;
 	}
 	Info.LinkCount = Info.Tree.Count;
 

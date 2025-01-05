@@ -24,15 +24,14 @@ ui_tree_info TreeInfoFromPath(m_arena *Arena, str8 Path, v2f Size)
 	for(os_directory_tree_iterator It = {0};
 		OS_DirectoryTreeIterateWithStack(Scratch.Arena, Info.Tree, &It);)
 	{
-		f32 X = (0.5*RandomBilateral(&RandomState) + 0.5)*Size.X;
-		f32 Y = (0.5*RandomBilateral(&RandomState) + 0.5)*Size.Y;
+		f32 X = (0.5*RandomBilateral(&RandomState) + 0.5)*Size.X*0.2 + Size.X/2.0;
+		f32 Y = (0.5*RandomBilateral(&RandomState) + 0.5)*Size.Y*0.2 + Size.Y/5.0;
 		Info.Nodes[It.Index].TargetPosition = v2f(X, Y);
 		Info.Nodes[It.Index].TargetPosition = Info.Nodes[It.Index].TargetPosition;
 		Info.Nodes[It.Index].Position = Info.Nodes[It.Index].TargetPosition;
 		Info.Nodes[It.Index].Name = It.Current->PathAndName;
 		Info.Nodes[It.Index].IsFolder = It.Current->Type == OS_DIR_ENTRY_FOLDER;
 	}
-	//ScratchEnd(Scratch);
 
 	for(int I = 0; I < Info.Tree.Count; I++)
 	{

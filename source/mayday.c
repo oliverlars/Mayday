@@ -63,7 +63,6 @@ void OS_Update(void *Data)
 {
 	mayday_context *M = Data;
 
-
 	UI_Begin(M->UI);
 
 	int WindowHeight = OS_WindowHeight(&M->Window);
@@ -110,6 +109,9 @@ void OS_Update(void *Data)
 	D_GlyphsToAtlas(M->Draw);
 
 	ArenaReset(M->FrameArena);
+
+	M->UI->MouseWasPressed = False;
+	M->UI->MouseWentUp = False;
 }
 
 void OS_Event(const sapp_event *Event, void *Data)
@@ -408,7 +410,7 @@ int main()
 
 	DispatchInitialise(&M.Shared, 16);
 
-	M.Folder = Str8("/Users/olivercruickshank/mayday");
+	M.Folder = Str8("/Users/olivercruickshank/EmberGen/liquigen");
 
 	OS_Run(M.Window, &M);
 }

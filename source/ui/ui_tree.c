@@ -119,9 +119,23 @@ void UI_TreeView(ui_context *UI, draw_context *Draw, shared_wave_info *Shared,
 
 	DrawQuadTree(Draw, Arena, QuadTree, 0);
 
+	D_DrawStr8(Draw, Arena, UI->Font, v2f(50, 50), v4f(1.0, 0.05, 0.0, 1), 100, Str8("MAYDAY!"));
+	
 	for(int I = 0; I < TreeView->Info.NodeCount; I++)
 	{
-		f32 FontSize = 40;//ZoomedIn ? 40 : 35;
+		TreeView->Info.Nodes[I].Position = LerpV2F(TreeView->Info.Nodes[I].Position, TreeView->Info.Nodes[I].TargetPosition, 0.1);
+	}
+
+	ScratchEnd(Scratch);
+}
+
+
+void UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw,
+							 m_arena *Arena, ui_tree *TreeView)
+{
+	for(int I = 0; I < TreeView->Info.NodeCount; I++)
+	{
+		f32 FontSize = 40;
 		if(TreeView->Info.Nodes[I].IsFolder)
 		{
 			
@@ -143,13 +157,4 @@ void UI_TreeView(ui_context *UI, draw_context *Draw, shared_wave_info *Shared,
 				TreeView->Info.Nodes->Position, v4f(0.5, 0.1, 0.0, 1));
 		}
 	}
-
-	D_DrawStr8(Draw, Arena, UI->Font, v2f(50, 50), v4f(1.0, 0.05, 0.0, 1), 100, Str8("MAYDAY!"));
-	
-	for(int I = 0; I < TreeView->Info.NodeCount; I++)
-	{
-		TreeView->Info.Nodes[I].Position = LerpV2F(TreeView->Info.Nodes[I].Position, TreeView->Info.Nodes[I].TargetPosition, 0.1);
-	}
-
-	ScratchEnd(Scratch);
 }

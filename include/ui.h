@@ -43,6 +43,8 @@ typedef struct ui_tree
 	ui_tree_info Info;
 
 	u64 TreeHash;
+
+	v2f Offset;
 } ui_tree;
 
 typedef struct ui_context
@@ -91,6 +93,9 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 
 void UI_TreeView(ui_context *UI, draw_context *Draw, shared_wave_info *Shared,
 				 m_arena *Arena, ui_tree *TreeView, str8 Path, v2f Size);
+
+void UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw,
+							 m_arena *Arena, ui_tree *TreeView);
 
 void UI_StatusBar(ui_context *UI, draw_context *Draw, edit_context *Edit,
 				  m_arena *Arena, d_font Font,

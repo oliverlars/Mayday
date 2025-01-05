@@ -89,6 +89,7 @@ void OS_Update(void *Data)
 	{
 		UI_TreeView(M->UI, M->Draw,  &M->Shared,
 					M->FrameArena, &M->TreeView, Str8("/Users/olivercruickshank/EmberGen/liquigen"), v2f((f32)WindowWidth, (f32)WindowHeight));
+		UI_TreeViewFolderLabels(M->UI, M->Draw, M->FrameArena, &M->TreeView);
 	}
 
 	R_PopTransform(M->Render);

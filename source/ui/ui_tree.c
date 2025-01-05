@@ -3,6 +3,7 @@
 #include "memory.h"
 #include "misc.h"
 #include "os.h"
+#include "strings.h"
 #include "ui.h"
 #include "wave.h"
 
@@ -11,7 +12,7 @@ ui_tree_info TreeInfoFromPath(m_arena *Arena, str8 Path, v2f Size)
 {
 	ArenaReset(Arena);
 	ui_tree_info Info = {0};
-	Info.Tree = OS_DirectoryTreeFromPath(Arena, Str8PushF(Arena, "?S", Path));
+	Info.Tree = OS_DirectoryTreeFromPath(Arena, Str8Copy(Arena, Path));
 
 	Info.Nodes = (fdg_node*)ArenaPushArrayZero(Arena, fdg_node, Info.Tree.Count);
 	Info.Links = (fdg_link*)ArenaPushArrayZero(Arena, fdg_link, Info.Tree.Count);
@@ -23,7 +24,6 @@ ui_tree_info TreeInfoFromPath(m_arena *Arena, str8 Path, v2f Size)
 	for(os_directory_tree_iterator It = {0};
 		OS_DirectoryTreeIterateWithStack(Scratch.Arena, Info.Tree, &It);)
 	{
-
 		f32 X = (0.5*RandomBilateral(&RandomState) + 0.5)*Size.X;
 		f32 Y = (0.5*RandomBilateral(&RandomState) + 0.5)*Size.Y;
 		Info.Nodes[It.Index].TargetPosition = v2f(X, Y);
@@ -32,16 +32,24 @@ ui_tree_info TreeInfoFromPath(m_arena *Arena, str8 Path, v2f Size)
 		Info.Nodes[It.Index].Name = It.Current->PathAndName;
 		Info.Nodes[It.Index].IsFolder = It.Current->Type == OS_DIR_ENTRY_FOLDER;
 	}
+	//ScratchEnd(Scratch);
+
+	for(int I = 0; I < Info.Tree.Count; I++)
+	{
+		LogInfo("ENTRY: ?S", Info.Nodes[I].Name);
+	}
 
 	Info.NodeCount = Info.Tree.Count;
 
+	int LinkCount = 0;
 	for(os_directory_tree_iterator It = {0};
 		OS_DirectoryTreeIterateWithStack(Scratch.Arena, Info.Tree, &It);)
 	{
-		Info.Links[It.Index].From = It.ParentIndex;
-		Info.Links[It.Index].To = It.Index;
+		Info.Links[LinkCount].From = It.ParentIndex;
+		Info.Links[LinkCount].To = It.Index;
+		LinkCount += 1;
 	}
-	Info.LinkCount = Info.Tree.Count;
+	Info.LinkCount = LinkCount;
 
 	ScratchEnd(Scratch);
 	return Info;
@@ -57,6 +65,7 @@ void UI_TreeView(ui_context *UI, draw_context *Draw, shared_wave_info *Shared,
 		{
 			TreeView->Arena = ArenaInitialise(MegaBytes(256));
 		}
+		Path = Str8Copy(Arena, Path);
 		TreeView->Info = TreeInfoFromPath(TreeView->Arena, Path, Size);
 		TreeView->TreeHash = Hash;
 		TreeView->Temperature = 100.0;
@@ -146,7 +155,7 @@ str8 UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw,
 				TreeView->Info.Nodes[I].Position, v4f(0.5, 0.1, 0.0, 1));
 			if(Clicked)
 			{
-				Result = Str8PushF(TreeView->Arena, "?S", TreeView->Info.Nodes[I].Name);
+				Result = Str8Copy(TreeView->Arena, TreeView->Info.Nodes[I].Name);
 			}
 		}
 		

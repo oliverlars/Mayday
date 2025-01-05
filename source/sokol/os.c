@@ -153,7 +153,7 @@ os_directory_tree OS_DirectoryTreeFromPath(m_arena *Arena, str8 Path)
 	EntryRoot->Type = OS_DIR_ENTRY_FOLDER;
 	s64 Count = OS_DirectoryTreeFromPathHelper(Arena, Path, EntryRoot);
 	os_directory_tree Result = { EntryRoot };
-	Result.Count = Count;
+	Result.Count = Count + 1;
 	return Result;
 }
 
@@ -202,6 +202,7 @@ OS_DirectoryTreeIterateWithStack(m_arena *Arena, os_directory_tree Tree, os_dire
 		if(First)
 		{
 			It->Stack[It->StackTop++] = It->Index;
+			It->ParentIndex = It->Index;
 			It->Current = First;
 		}
 		else if(Next)
@@ -211,7 +212,7 @@ OS_DirectoryTreeIterateWithStack(m_arena *Arena, os_directory_tree Tree, os_dire
 		else
 		{
 			os_directory_entry *Parent = It->Current->Parent;
-
+			It->ParentIndex = It->Stack[--It->StackTop];
 			for(; Parent; Parent = Parent->Parent)
 			{
 				It->ParentIndex = It->Stack[--It->StackTop];
@@ -221,8 +222,6 @@ OS_DirectoryTreeIterateWithStack(m_arena *Arena, os_directory_tree Tree, os_dire
 					break;
 				}
 			}
-
-			assert(It->StackTop);
 
 			if(!Parent)
 			{

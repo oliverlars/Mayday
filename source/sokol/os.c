@@ -115,10 +115,11 @@ b32 OS_IsPathDirectory(str8 Path)
 	return Result;
 }
 
-void OS_DirectoryTreeFromPathHelper(m_arena *Arena, str8 Path, os_directory_entry *Entries)
+s64 OS_DirectoryTreeFromPathHelper(m_arena *Arena, str8 Path, os_directory_entry *Entries)
 {
 	DIR *Directory = opendir(CStrFromStr8(Arena, Path));
 	struct dirent *Entry;
+	s64 Count = 0;
 	while((Entry = readdir(Directory)))
 	{
 		if(Entry->d_name[0] != '.')
@@ -131,7 +132,7 @@ void OS_DirectoryTreeFromPathHelper(m_arena *Arena, str8 Path, os_directory_entr
 				DirectoryEntry.PathAndName = FullPath;
 				DirectoryEntry.Type = OS_DIR_ENTRY_FOLDER;
 				InsertDirectoryEntryAsChild(Arena, Entries, DirectoryEntry);
-				OS_DirectoryTreeFromPathHelper(Arena, FullPath, Entries);
+				Count += OS_DirectoryTreeFromPathHelper(Arena, FullPath, Entries->Last);
 			}
 			else
 			{
@@ -139,8 +140,10 @@ void OS_DirectoryTreeFromPathHelper(m_arena *Arena, str8 Path, os_directory_entr
 				DirectoryEntry.PathAndName = FullPath;
 				InsertDirectoryEntryAsChild(Arena, Entries, DirectoryEntry);
 			}
+			Count += 1;
 		}
 	}
+	return Count;
 }
 
 os_directory_tree OS_DirectoryTreeFromPath(m_arena *Arena, str8 Path)
@@ -148,8 +151,9 @@ os_directory_tree OS_DirectoryTreeFromPath(m_arena *Arena, str8 Path)
 	os_directory_entry *EntryRoot = ArenaPushArrayZero(Arena, os_directory_entry, 1);
 	EntryRoot->PathAndName = Str8PushF(Arena, "?S", Path);
 	EntryRoot->Type = OS_DIR_ENTRY_FOLDER;
-	OS_DirectoryTreeFromPathHelper(Arena, Path, EntryRoot);
+	s64 Count = OS_DirectoryTreeFromPathHelper(Arena, Path, EntryRoot);
 	os_directory_tree Result = { EntryRoot };
+	Result.Count = Count;
 	return Result;
 }
 
@@ -176,28 +180,72 @@ int OS_CountAllEntriesInDirectoryTree(os_directory_tree Tree)
 	return Result;
 }
 
-b32 OS_DirectoryTreeIterate(os_directory_tree_iterator *Iterator)
+b32
+OS_DirectoryTreeIterateWithStack(m_arena *Arena, os_directory_tree Tree, os_directory_tree_iterator *It)
 {
-	b32 Result = False;
-	if(Iterator->Current->Next)
+	b32 Result = True;
+
+	if(!It->Current)
 	{
-		Result = True;
-		Iterator->Current = Iterator->Current->Next;
+		It->Current = Tree.Root;
+		It->ParentIndex = 0;
+		It->CurrentIndex = 0;
+
+		It->Stack = ArenaPushArrayZero(Arena, s64, Tree.Count);
+		It->Stack[It->StackTop++] = It->CurrentIndex;
 	}
-	else if(Iterator->Current->First)
+	else
 	{
-		Result = True;
-		Iterator->Current = Iterator->Current->First;
+		os_directory_entry *Next  = It->Current->Next;
+		os_directory_entry *First = It->Current->First;
+
+		if(First)
+		{
+			It->Stack[It->StackTop++] = It->CurrentIndex;
+			It->Current = First;
+		}
+		else if(Next)
+		{
+			It->Current = Next;
+		}
+		else
+		{
+			os_directory_entry *Parent = It->Current->Parent;
+
+			for(; Parent; Parent = Parent->Parent)
+			{
+				It->ParentIndex = It->Stack[--It->StackTop];
+				if(Parent->Next)
+				{
+					It->Current = Parent->Next;
+					break;
+				}
+			}
+
+			assert(It->StackTop);
+
+			if(!Parent)
+			{
+				It->Current = Null;
+				Result = False;
+			}
+		}
+
+		if(Result)
+		{
+			It->CurrentIndex++;
+		}
 	}
+
 	return Result;
 }
 
-b32 OS_DirectoryTreeIterate2(os_directory_tree_iterator *Iterator)
+b32 OS_DirectoryTreeIterate(os_directory_tree Tree, os_directory_tree_iterator *Iterator)
 {
 	b32 Result = True;
 	if(!Iterator->Current)
 	{
-		Result = False;
+		Iterator->Current = Tree.Root;
 	}
 	else
 	{
@@ -230,7 +278,7 @@ b32 OS_DirectoryTreeIterate2(os_directory_tree_iterator *Iterator)
 				Result = False;
 			}
 		}
-
+		Iterator->CurrentIndex += (s64)Result;
 	}
 	return Result;
 }

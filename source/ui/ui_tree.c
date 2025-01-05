@@ -1,3 +1,4 @@
+#include "log.h"
 #include "maths.h"
 #include "memory.h"
 #include "misc.h"
@@ -12,55 +13,37 @@ ui_tree_info TreeInfoFromPath(m_arena *Arena, str8 Path, v2f Size)
 	ui_tree_info Info = {0};
 	Info.Tree = OS_DirectoryTreeFromPath(Arena, Str8PushF(Arena, "?S", Path));
 
-	int TotalCount = OS_CountAllEntriesInDirectoryTree(Info.Tree);
+	Info.Nodes = (fdg_node*)ArenaPushArrayZero(Arena, fdg_node, Info.Tree.Count);
+	Info.Links = (fdg_link*)ArenaPushArrayZero(Arena, fdg_link, Info.Tree.Count);
 
-	Info.Nodes = (fdg_node*)ArenaPushArrayZero(Arena, fdg_node, TotalCount);
-	Info.Links = (fdg_link*)ArenaPushArrayZero(Arena, fdg_link, TotalCount);
+	m_scratch_arena Scratch = ScratchBegin(0, 0);
 
-	os_directory_tree_iterator Iter = {.Tree = Info.Tree, .Current = Info.Tree.Root };
-
-	Info.NodeCount = TotalCount;
-	Info.Nodes[0].TargetPosition = v2f(0, 0);
-	Info.Nodes[0].Position = v2f(0.0, 0.0);
-	Info.Nodes[0].Name = Info.Tree.Root->PathAndName;
-	Info.Nodes[0].IsFolder = True;
-	int Index = 1;
 	random32_state RandomState = {0};
 	RandomState.State = (u32)M_FNV_HASH_START;
-	for(;OS_DirectoryTreeIterate(&Iter);)
+	for(os_directory_tree_iterator It = {0};
+		OS_DirectoryTreeIterateWithStack(Scratch.Arena, Info.Tree, &It);)
 	{
 
-		f32 X = (0.5*RandomBilateral(&RandomState) + 0.5)*Size.X + Size.X/2.0;
-		f32 Y = (0.5*RandomBilateral(&RandomState) + 0.5)*Size.Y + Size.Y/2.0;
-		Info.Nodes[Index].TargetPosition = v2f(X, Y);
-		Info.Nodes[Index].TargetPosition = Info.Nodes[Index].TargetPosition;
-		Info.Nodes[Index].Position = Info.Nodes[Index].TargetPosition;
-		Info.Nodes[Index].Name = Iter.Current->PathAndName;
-		Info.Nodes[Index].IsFolder = Iter.Current->Type == OS_DIR_ENTRY_FOLDER;
-		Index++;
+		f32 X = (0.5*RandomBilateral(&RandomState) + 0.5)*Size.X;
+		f32 Y = (0.5*RandomBilateral(&RandomState) + 0.5)*Size.Y;
+		Info.Nodes[It.CurrentIndex].TargetPosition = v2f(X, Y);
+		Info.Nodes[It.CurrentIndex].TargetPosition = Info.Nodes[It.CurrentIndex].TargetPosition;
+		Info.Nodes[It.CurrentIndex].Position = Info.Nodes[It.CurrentIndex].TargetPosition;
+		Info.Nodes[It.CurrentIndex].Name = It.Current->PathAndName;
+		Info.Nodes[It.CurrentIndex].IsFolder = It.Current->Type == OS_DIR_ENTRY_FOLDER;
 	}
 
-	Iter.Current = Info.Tree.Root;
-	int From = 0;
-	int To = 1;
-	Index = 0;
+	Info.NodeCount = Info.Tree.Count;
 
-	int Stack[1024];
-	int Top = 0;
-	Stack[Top++] = To;
-	for(;OS_DirectoryTreeIterate(&Iter);)
+	for(os_directory_tree_iterator It = {0};
+		OS_DirectoryTreeIterateWithStack(Scratch.Arena, Info.Tree, &It);)
 	{
-		Info.Links[Index].From = From;
-		Info.Links[Index].To = To;
-		if(Iter.Current->Type == OS_DIR_ENTRY_FOLDER)
-		{
-			From = To;
-		}
-		To++;
-		Index++;
+		Info.Links[It.CurrentIndex].From = It.ParentIndex;
+		Info.Links[It.CurrentIndex].To = It.CurrentIndex;
 	}
-	Info.LinkCount = Index;
+	Info.LinkCount = Info.Tree.Count;
 
+	ScratchEnd(Scratch);
 	return Info;
 }
 

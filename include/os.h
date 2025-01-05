@@ -39,11 +39,16 @@ os_directory_entry;
 typedef struct os_directory_tree
 {
 	os_directory_entry *Root;
+	s64 Count;
 } os_directory_tree;
 
 typedef struct os_directory_tree_iterator
 {
-	os_directory_tree Tree;
+	s64 *Stack;
+	s64 StackTop;
+
+	s64 ParentIndex;
+	s64 CurrentIndex;
 	os_directory_entry *Current;
 } os_directory_tree_iterator;
 
@@ -68,6 +73,7 @@ int OS_WindowHeight(os_window *Window);
 str8 OS_LoadEntireFileIntoMemory(m_arena *Arena, str8 Filename);
 
 
-b32 OS_DirectoryTreeIterate(os_directory_tree_iterator *Iterator);
+b32 OS_DirectoryTreeIterate(os_directory_tree Tree, os_directory_tree_iterator *Iterator);
+b32 OS_DirectoryTreeIterateWithStack(m_arena *Arena, os_directory_tree Tree, os_directory_tree_iterator *Iterator);
 int OS_CountAllEntriesInDirectoryTree(os_directory_tree Tree);
 os_directory_tree OS_DirectoryTreeFromPath(m_arena *Arena, str8 Path);

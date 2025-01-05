@@ -273,7 +273,7 @@ void SimulateForceDirectedGraphQuadTree(m_arena *Arena, fdg_node *Nodes, int Nod
 									  quadtree_header *QuadTree, shared_wave_info *Shared)
 {
 	u64 Start = OS_TimeStampNow();
-	f32 K = 100.0;
+	f32 K = 10000.0*(1.0/powf((f32)NodeCount, 0.7));
 
 	v2f *Displacements = ArenaPushArrayZero(Arena, v2f, NodeCount);
 
@@ -349,5 +349,5 @@ void SimulateForceDirectedGraphQuadTree(m_arena *Arena, fdg_node *Nodes, int Nod
 
 	Temperature[0] = LerpF32(Temperature[0], 0.0, 0.05);
 
-	//LogInfo("Time to simulate: ?f32", OS_MilliSecondsFromTimeStamp(OS_TimeStampNow() - Start));
+	LogInfo("Time to simulate: ?f32", OS_MilliSecondsFromTimeStamp(OS_TimeStampNow() - Start));
 }

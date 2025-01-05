@@ -261,14 +261,9 @@ str8 Str8PushF(m_arena *Arena, char *Format, ...)
 
 char* CStrFromStr8(m_arena *Arena, str8 String)
 {
-	s32 NullTerminated = 0;
-	if(String.Bytes[String.Size] == '\0')
-	{
-		NullTerminated = 1;
-	}
-
-	char* Result = (char*)ArenaPushZero(Arena, String.Size + NullTerminated);
+	char* Result = ArenaPushArrayZero(Arena, char, String.Size + 1);
 	MemoryCopy(Result, String.Bytes, String.Size);
+	Result[String.Size] = 0;
 	return Result;
 }
 

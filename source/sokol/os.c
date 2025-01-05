@@ -1,6 +1,7 @@
 #include "log.h"
 #include "memory.h"
 #include <assert.h>
+#include <errno.h>
 #define SOKOL_NO_ENTRY
 #define SOKOL_METAL
 #include "sokol_app.h"
@@ -115,9 +116,8 @@ b32 OS_IsPathDirectory(str8 Path)
 	return Result;
 }
 
-s64 OS_DirectoryTreeFromPathHelper(m_arena *Arena, str8 Path, os_directory_entry *Entries)
+s64 OS_DirectoryTreeFromPathHelper(m_arena *Arena, str8 Path, DIR *Directory, os_directory_entry *Entries)
 {
-	DIR *Directory = opendir(CStrFromStr8(Arena, Path));
 	struct dirent *Entry;
 	s64 Count = 0;
 	while((Entry = readdir(Directory)))
@@ -132,7 +132,9 @@ s64 OS_DirectoryTreeFromPathHelper(m_arena *Arena, str8 Path, os_directory_entry
 				DirectoryEntry.PathAndName = FullPath;
 				DirectoryEntry.Type = OS_DIR_ENTRY_FOLDER;
 				InsertDirectoryEntryAsChild(Arena, Entries, DirectoryEntry);
-				Count += OS_DirectoryTreeFromPathHelper(Arena, FullPath, Entries->Last);
+				DIR *NextDirectory = opendir(CStrFromStr8(Arena, FullPath));
+				Count += OS_DirectoryTreeFromPathHelper(Arena, FullPath, NextDirectory, Entries->Last);
+				closedir(NextDirectory);
 			}
 			else
 			{
@@ -151,7 +153,13 @@ os_directory_tree OS_DirectoryTreeFromPath(m_arena *Arena, str8 Path)
 	os_directory_entry *EntryRoot = ArenaPushArrayZero(Arena, os_directory_entry, 1);
 	EntryRoot->PathAndName = Str8PushF(Arena, "?S", Path);
 	EntryRoot->Type = OS_DIR_ENTRY_FOLDER;
-	s64 Count = OS_DirectoryTreeFromPathHelper(Arena, Path, EntryRoot);
+	DIR *Directory = opendir(CStrFromStr8(Arena, Path));
+	if(!Directory)
+	{
+		LogError("?s32", errno);
+	}
+	s64 Count = OS_DirectoryTreeFromPathHelper(Arena, Path, Directory, EntryRoot);
+	closedir(Directory);
 	os_directory_tree Result = { EntryRoot };
 	Result.Count = Count + 1;
 	return Result;

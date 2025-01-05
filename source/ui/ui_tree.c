@@ -130,9 +130,10 @@ void UI_TreeView(ui_context *UI, draw_context *Draw, shared_wave_info *Shared,
 }
 
 
-void UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw,
-							 m_arena *Arena, ui_tree *TreeView)
+str8 UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw,
+							 m_arena *Arena, ui_tree *TreeView, str8 CurrentPath)
 {
+	str8 Result = CurrentPath;
 	for(int I = 0; I < TreeView->Info.NodeCount; I++)
 	{
 		f32 FontSize = 40;
@@ -145,7 +146,7 @@ void UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw,
 				TreeView->Info.Nodes[I].Position, v4f(0.5, 0.1, 0.0, 1));
 			if(Clicked)
 			{
-					
+				Result = Str8PushF(TreeView->Arena, "?S", TreeView->Info.Nodes[I].Name);
 			}
 		}
 		
@@ -157,4 +158,6 @@ void UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw,
 				TreeView->Info.Nodes->Position, v4f(0.5, 0.1, 0.0, 1));
 		}
 	}
+
+	return Result;
 }

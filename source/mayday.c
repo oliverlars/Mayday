@@ -51,6 +51,7 @@ typedef struct mayday_context
 	f32 ViewSizeTarget;
 
 	ui_tree TreeView;
+	str8 Folder;
 
 	shared_wave_info Shared;
 }
@@ -88,8 +89,8 @@ void OS_Update(void *Data)
 	else if(M->UI->View == UI_VIEW_TREE)
 	{
 		UI_TreeView(M->UI, M->Draw,  &M->Shared,
-					M->FrameArena, &M->TreeView, Str8("/Users/olivercruickshank/EmberGen/liquigen"), v2f((f32)WindowWidth, (f32)WindowHeight));
-		UI_TreeViewFolderLabels(M->UI, M->Draw, M->FrameArena, &M->TreeView);
+					M->FrameArena, &M->TreeView, M->Folder, v2f((f32)WindowWidth, (f32)WindowHeight));
+		M->Folder = UI_TreeViewFolderLabels(M->UI, M->Draw, M->FrameArena, &M->TreeView, M->Folder);
 	}
 
 	R_PopTransform(M->Render);
@@ -406,6 +407,8 @@ int main()
 	u64 Start = OS_TimeStampNow();
 
 	DispatchInitialise(&M.Shared, 16);
+
+	M.Folder = Str8("/Users/olivercruickshank/mayday");
 
 	OS_Run(M.Window, &M);
 }

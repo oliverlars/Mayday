@@ -94,8 +94,8 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 void UI_TreeView(ui_context *UI, draw_context *Draw, shared_wave_info *Shared,
 				 m_arena *Arena, ui_tree *TreeView, str8 Path, v2f Size);
 
-void UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw,
-							 m_arena *Arena, ui_tree *TreeView);
+str8 UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw,
+							 m_arena *Arena, ui_tree *TreeView, str8 CurrentPath);
 
 void UI_StatusBar(ui_context *UI, draw_context *Draw, edit_context *Edit,
 				  m_arena *Arena, d_font Font,

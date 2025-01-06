@@ -1,4 +1,5 @@
 #include "friday.h"
+#include "memory.h"
 #include "strings.h"
 
 Entry(InputWaveInfo)
@@ -159,28 +160,25 @@ Entry(InputWaveInfo)
 	{
 		if(ShouldRun)
 		{
-			b32 FailedToExecute = False;
-			// NOTE(Oliver): I need a space for some stupid reason
-			ExecuteCommand(&Arena, Str8PushF(&Arena, "%.*s/%.*s ",
+			StartApplication(&Arena, Str8PushF(&Arena, "%.*s/%.*s",
 								   Str8ToPrintfArgs(BuildOptions.OutputPath),
-								   Str8ToPrintfArgs(BuildOptions.OutputName)),
-								   &FailedToExecute);
+								   Str8ToPrintfArgs(BuildOptions.OutputName)));
 		}
 	}
-
-	WaveBarrier(WaveInfo->Shared->Barrier);
 
 	return 0;
 }
 
 int main(s32 ArgCount, char **Args)
 {
-	shared_wave_info Shared = {0};
-	Shared.ArgCount = ArgCount;
-	Shared.Args = Args;
+
 
 	memory_arena SharedArena = {0};
 	SharedArena.Start = MemoryReserve(GigaBytes(64));
-	Shared.Arena = SharedArena;
-	Dispatch(&Shared, GetNumberOfCPUs());
+	
+	shared_wave_info *Shared = (shared_wave_info*)ArenaPushZero(&SharedArena, sizeof(shared_wave_info));
+	Shared->ArgCount = ArgCount;
+	Shared->Args = Args;
+	Shared->Arena = SharedArena;
+	Dispatch(Shared, GetNumberOfCPUs());
 }

@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
@@ -332,6 +333,14 @@ void DeleteFileFromDisk(memory_arena *Arena, str8 Filename)
 	remove(CStrFromStr8(Arena, Filename));    
 }
 
+/*
+
+I don't like how I need spaces at the ends of the commands.
+This whole thing is dumb
+
+HACK(Oliver): Fix ExecuteCommand spaces
+
+ */
 b32 ExecuteCommand(memory_arena *Arena, str8 EntireCommandAndArguments, b32 *FailedToExecute)
 {
 	s32 Pipes[2];
@@ -379,6 +388,25 @@ b32 ExecuteCommand(memory_arena *Arena, str8 EntireCommandAndArguments, b32 *Fai
 		}
 		str8 OutputString = Str8ListJoin(Arena, StdOutList);
 		printf("%.*s", Str8ToPrintfArgs(OutputString));   
+	}
+
+	return ProcessStatus == 0;
+}
+
+b32 StartApplication(memory_arena *Arena, str8 PathToApplication)
+{
+	pid_t ProcessID;
+	posix_spawn_file_actions_t SpawnActions;
+	posix_spawn_file_actions_init(&SpawnActions);
+
+	char *Arguments[2] = {0};
+	Arguments[0] = CStrFromStr8(Arena, PathToApplication);
+	Arguments[1] = Null;
+	s32 ProcessStatus = posix_spawnp(&ProcessID, Arguments[0], &SpawnActions, Null, Arguments, environ);
+	if (ProcessStatus == 0)
+	{
+		s32 ExitCode;
+		waitpid(ProcessID, &ExitCode, 0);
 	}
 
 	return ProcessStatus == 0;
@@ -480,7 +508,6 @@ https://devblogs.microsoft.com/oldnewthing/20160824-00/?p=94155
 */
 void WaveBarrier(barrier *Barrier)
 {
-	
 	s64 Generation = atomic_load_explicit(&Barrier->Generation, memory_order_acquire);
 	s64 LanesWaiting = atomic_fetch_add_explicit(&Barrier->LanesWaiting, 1, memory_order_acq_rel);
 
@@ -594,7 +621,6 @@ u64 InclusiveWavePrefixSum(wave_info *WaveInfo, u64 Value)
 {
 	WaveBarrier(WaveInfo->Shared->Barrier);
 	WaveInfo->Shared->Data[WaveInfo->Lane] = Value;
-	WaveInfo->Shared->Data[0] = 0;
 	WaveBarrier(WaveInfo->Shared->Barrier);
 
 	int PerLaneSum = 0;
@@ -602,6 +628,7 @@ u64 InclusiveWavePrefixSum(wave_info *WaveInfo, u64 Value)
 	{
 		PerLaneSum += WaveInfo->Shared->Data[I];
 	}
+
 	WaveBarrier(WaveInfo->Shared->Barrier);
 	return PerLaneSum;
 }
@@ -612,7 +639,7 @@ u64 ExclusiveWavePrefixSum(wave_info *WaveInfo, u64 Value)
 	WaveInfo->Shared->Data[WaveInfo->Lane] = Value;
 	WaveBarrier(WaveInfo->Shared->Barrier);
 
-	int PerLaneSum = 0;
+	u64 PerLaneSum = 0;
 	for(int I = 0; I < WaveInfo->Lane; I++)
 	{
 		PerLaneSum += WaveInfo->Shared->Data[I];

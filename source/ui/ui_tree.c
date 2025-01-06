@@ -10,19 +10,18 @@
 
 ui_tree_info TreeInfoFromPath(m_arena *Arena, str8 Path, v2f Size)
 {
-	ArenaReset(Arena);
 	ui_tree_info Info = {0};
 	Info.Tree = OS_DirectoryTreeFromPath(Arena, Str8Copy(Arena, Path));
 
 	Info.Nodes = (fdg_node*)ArenaPushArrayZero(Arena, fdg_node, Info.Tree.Count);
 	Info.Links = (fdg_link*)ArenaPushArrayZero(Arena, fdg_link, Info.Tree.Count);
 
-	m_scratch_arena Scratch = ScratchBegin(0, 0);
+	m_scratch_arena Scratch = ScratchBegin(&Arena, 1);
 
 	random32_state RandomState = {0};
 	RandomState.State = (u32)M_FNV_HASH_START;
 	for(os_directory_tree_iterator It = {0};
-		OS_DirectoryTreeIterateWithStack(Scratch.Arena, Info.Tree, &It);)
+		OS_DirectoryTreeIterateWithStack(Arena, Info.Tree, &It);)
 	{
 		f32 X = (0.5*RandomBilateral(&RandomState) + 0.5)*Size.X*0.2 + Size.X/2.0;
 		f32 Y = (0.5*RandomBilateral(&RandomState) + 0.5)*Size.Y*0.2 + Size.Y/5.0;
@@ -42,7 +41,7 @@ ui_tree_info TreeInfoFromPath(m_arena *Arena, str8 Path, v2f Size)
 
 	int LinkCount = 0;
 	for(os_directory_tree_iterator It = {0};
-		OS_DirectoryTreeIterateWithStack(Scratch.Arena, Info.Tree, &It);)
+		OS_DirectoryTreeIterateWithStack(Arena, Info.Tree, &It);)
 	{
 		Info.Links[LinkCount].From = It.ParentIndex;
 		Info.Links[LinkCount].To = It.Index;
@@ -64,7 +63,7 @@ void UI_TreeView(ui_context *UI, draw_context *Draw, shared_wave_info *Shared,
 		{
 			TreeView->Arena = ArenaInitialise(MegaBytes(256));
 		}
-		Path = Str8Copy(Arena, Path);
+		//ArenaReset(TreeView->Arena);
 		TreeView->Info = TreeInfoFromPath(TreeView->Arena, Path, Size);
 		TreeView->TreeHash = Hash;
 		TreeView->Temperature = 100.0;
@@ -96,16 +95,16 @@ void UI_TreeView(ui_context *UI, draw_context *Draw, shared_wave_info *Shared,
 									   QuadTree,
 									   Shared);
 
-	m_scratch_arena Scratch = ScratchBegin(0, 0);
+	
 
-	v3f *Positions = (v3f*)ArenaPushArrayZero(Scratch.Arena, v3f, TreeView->Info.NodeCount);
+	v3f *Positions = (v3f*)ArenaPushArrayZero(Arena, v3f, TreeView->Info.NodeCount);
 	for(int I = 0; I < TreeView->Info.NodeCount; I++)
 	{
 		Positions[I] = v3f(TreeView->Info.Nodes[I].Position.X,
 						   TreeView->Info.Nodes[I].Position.Y, 0.0);
 	}
 
-	v3f *LinePositions = ArenaPushArrayZero(Scratch.Arena, v3f, TreeView->Info.LinkCount*2);
+	v3f *LinePositions = ArenaPushArrayZero(Arena, v3f, TreeView->Info.LinkCount*2);
 	int LineIndex = 0;
 	for(int I = 0; I < TreeView->Info.LinkCount; I++)
 	{
@@ -133,8 +132,6 @@ void UI_TreeView(ui_context *UI, draw_context *Draw, shared_wave_info *Shared,
 	{
 		TreeView->Info.Nodes[I].Position = LerpV2F(TreeView->Info.Nodes[I].Position, TreeView->Info.Nodes[I].TargetPosition, 0.1);
 	}
-
-	ScratchEnd(Scratch);
 }
 
 

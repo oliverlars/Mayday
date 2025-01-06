@@ -118,6 +118,7 @@ b32 OS_IsPathDirectory(str8 Path)
 
 s64 OS_DirectoryTreeFromPathHelper(m_arena *Arena, str8 Path, DIR *Directory, os_directory_entry *Entries)
 {
+	m_scratch_arena Scratch = ScratchBegin(&Arena, 1);
 	struct dirent *Entry;
 	s64 Count = 0;
 	while((Entry = readdir(Directory)))
@@ -125,14 +126,13 @@ s64 OS_DirectoryTreeFromPathHelper(m_arena *Arena, str8 Path, DIR *Directory, os
 		if(Entry->d_name[0] != '.')
 		{
 			os_directory_entry DirectoryEntry = {0};
-			str8 Name = Str8PushF(Arena, "?cstr", Entry->d_name);
 			str8 FullPath = Str8PushF(Arena, "?S/?cstr", Path, Entry->d_name);
 			if(OS_IsPathDirectory(FullPath))
 			{
 				DirectoryEntry.PathAndName = FullPath;
 				DirectoryEntry.Type = OS_DIR_ENTRY_FOLDER;
 				InsertDirectoryEntryAsChild(Arena, Entries, DirectoryEntry);
-				DIR *NextDirectory = opendir(CStrFromStr8(Arena, FullPath));
+				DIR *NextDirectory = opendir(CStrFromStr8(Scratch.Arena, FullPath));
 				Count += OS_DirectoryTreeFromPathHelper(Arena, FullPath, NextDirectory, Entries->Last);
 				closedir(NextDirectory);
 			}
@@ -145,23 +145,33 @@ s64 OS_DirectoryTreeFromPathHelper(m_arena *Arena, str8 Path, DIR *Directory, os
 			Count += 1;
 		}
 	}
+	ScratchEnd(Scratch);
 	return Count;
 }
 
 os_directory_tree OS_DirectoryTreeFromPath(m_arena *Arena, str8 Path)
 {
+	m_scratch_arena Scratch = ScratchBegin(&Arena, 1);
+
+
 	os_directory_entry *EntryRoot = ArenaPushArrayZero(Arena, os_directory_entry, 1);
-	EntryRoot->PathAndName = Str8PushF(Arena, "?S", Path);
+	EntryRoot->PathAndName = Str8Copy(Arena, Path);
 	EntryRoot->Type = OS_DIR_ENTRY_FOLDER;
-	DIR *Directory = opendir(CStrFromStr8(Arena, Path));
+	DIR *Directory = opendir(CStrFromStr8(Scratch.Arena, Path));
+	os_directory_tree Result = {0};
 	if(!Directory)
 	{
 		LogError("?s32", errno);
 	}
-	s64 Count = OS_DirectoryTreeFromPathHelper(Arena, Path, Directory, EntryRoot);
-	closedir(Directory);
-	os_directory_tree Result = { EntryRoot };
-	Result.Count = Count + 1;
+	else
+	{
+		s64 Count = OS_DirectoryTreeFromPathHelper(Arena, Path, Directory, EntryRoot);
+		closedir(Directory);
+		Result.Count = Count + 1;
+		Result.Root = EntryRoot;
+	}
+
+	ScratchEnd(Scratch);
 	return Result;
 }
 

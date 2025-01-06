@@ -29,6 +29,8 @@
 typedef struct mayday_context
 {
 	m_arena *FrameArena;
+	m_arena *PreviousFrameArena;
+
 	m_arena *PermanentArena;
 
 
@@ -109,6 +111,9 @@ void OS_Update(void *Data)
 	D_GlyphsToAtlas(M->Draw);
 
 	ArenaReset(M->FrameArena);
+	m_arena *TempArena = M->FrameArena;
+	M->FrameArena = M->PreviousFrameArena;
+	M->PreviousFrameArena = TempArena;
 
 	M->UI->MouseWasPressed = False;
 	M->UI->MouseWentUp = False;
@@ -371,6 +376,7 @@ int main()
 {
 	m_arena *Arena = ArenaInitialise(GigaBytes(64));
 	m_arena *FrameArena = ArenaInitialise(GigaBytes(1));
+	m_arena *PreviousFrameArena = ArenaInitialise(GigaBytes(1));
 
 	logger Logger = {0};
 	Logger.Arena = ArenaInitialise(GigaBytes(1));
@@ -383,6 +389,7 @@ int main()
 
 	M.PermanentArena = Arena;
 	M.FrameArena = FrameArena;
+	M.PreviousFrameArena = PreviousFrameArena;
 
 	M.Draw = ArenaPushArrayZero(Arena, draw_context, 1);
 	M.Render = ArenaPushArrayZero(Arena, render_context, 1);
@@ -404,11 +411,11 @@ int main()
 	M.ViewSize = 5.0;
 	M.ViewSizeTarget = M.ViewSize;
 
-	M.Shared.Arena = M.PermanentArena;
+	M.Shared.Arena = ArenaInitialise(GigaBytes(1));
 
 	u64 Start = OS_TimeStampNow();
 
-	DispatchInitialise(&M.Shared, 16);
+	DispatchInitialise(&M.Shared, 15);
 
 	M.Folder = Str8("/Users/olivercruickshank/EmberGen/liquigen");
 

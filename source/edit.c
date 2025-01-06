@@ -506,7 +506,7 @@ void PushUndoAction(edit_context *E, m_arena *Arena, cursor *Cursor, undo_type T
 {
 	undo_stack *Action = ArenaPushArrayZero(Arena, undo_stack, 1);
 	Action->Index = Cursor->Selection.X;
-	Action->String = Str8PushF(Arena, "?S", InsertedOrRemovedText);
+	Action->String = Str8Copy(Arena, InsertedOrRemovedText);
 	Action->Type = Type;
 	if(!E->NewestAction)
 	{

@@ -69,7 +69,7 @@ void *DispatchWorker(void *Data)
 	{
 		os_sync_wait_on_address(&Shared->WorkAvailable, 0, sizeof(atomic_int), OS_SYNC_WAIT_ON_ADDRESS_SHARED);
 	}
-	
+
 	for(;;)
 	{
 		//while(!Shared->Entry || !Shared->EntryData);
@@ -90,8 +90,8 @@ void DispatchInitialise(shared_wave_info *Shared, s64 LaneCount)
 	wave_info *Entries = ArenaPushArrayZero(Shared->Arena, wave_info, LaneCount);
 	pthread_t *Waves = ArenaPushArrayZero(Shared->Arena, pthread_t, LaneCount);
 
-	barrier Barrier = {0};
-	Barrier.LaneCount = LaneCount;
+	barrier *Barrier = ArenaPushArrayZero(Shared->Arena, barrier, 1);
+	Barrier->LaneCount = LaneCount;
 
 	barrier *TaskBarrier = ArenaPushArrayZero(Shared->Arena, barrier, 1);
 	TaskBarrier->LaneCount = LaneCount + 1;
@@ -101,7 +101,7 @@ void DispatchInitialise(shared_wave_info *Shared, s64 LaneCount)
 	{
 		Entries[Lane].Shared = Shared;
 		Entries[Lane].Lane = Lane;
-		Entries[Lane].Shared->Barrier = &Barrier;
+		Entries[Lane].Shared->Barrier = Barrier;
 		Entries[Lane].Shared->TaskBarrier = TaskBarrier;
 		pthread_create(Waves + Lane, Null, DispatchWorker, Entries + Lane);
 	}
@@ -117,6 +117,8 @@ void Dispatch(shared_wave_info *Shared, void (*Entry)(wave_info *, void*), void*
 	os_sync_wake_by_address_all(&Shared->WorkAvailable, sizeof(atomic_int), OS_SYNC_WAKE_BY_ADDRESS_SHARED);
 
 	WaveBarrier(Shared->TaskBarrier);
+
+	while(atomic_load_explicit(&Shared->WorkAvailable, memory_order_acquire) > 0);
 }
 
 b32 WaveIsFirstLane(wave_info *WaveInfo)
@@ -135,7 +137,7 @@ void BroadcastBytes(wave_info *WaveInfo, void *Bytes, s64 ByteCount)
 		ScratchEnd(Scratch);
 	}
 	WaveBarrier(WaveInfo->Shared->Barrier);
-	Result = (u8*)(WaveInfo->Shared->Arena->Start + WaveInfo->Shared->Arena->At);
+	Result = (u8*)WaveSum(WaveInfo, (u64)Result);
 	MemoryCopy(Bytes, Result, ByteCount);
 	WaveBarrier(WaveInfo->Shared->Barrier);
 }
@@ -203,10 +205,11 @@ u64 InclusiveWavePrefixSum(wave_info *WaveInfo, u64 Value)
 
 u64 WaveSum(wave_info *WaveInfo, u64 Value)
 {
+	LogInfo("Lane: ?u32", WaveInfo->Lane);
 	WaveBarrier(WaveInfo->Shared->Barrier);
 	atomic_store_explicit(WaveInfo->Shared->Data + 0, 0, memory_order_release);
 	WaveBarrier(WaveInfo->Shared->Barrier);
-	atomic_fetch_add_explicit(WaveInfo->Shared->Data + 0, Value, memory_order_consume);
+	atomic_fetch_add_explicit(WaveInfo->Shared->Data + 0, 1, memory_order_seq_cst);
 	WaveBarrier(WaveInfo->Shared->Barrier);
 	return atomic_load_explicit(WaveInfo->Shared->Data + 0, memory_order_acquire);
 }

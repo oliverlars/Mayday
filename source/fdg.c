@@ -249,6 +249,7 @@ typedef struct parallel_force_displacement
 
 void ParallelForceDisplacement(wave_info *WaveInfo, void* Input)
 {
+	
 	parallel_force_displacement *P = Input;
 	int Count = LaneValueFromTotal(WaveInfo, P->NodeCount);
 	int Index = ExclusiveWavePrefixSum(WaveInfo, Count);
@@ -279,14 +280,14 @@ void SimulateForceDirectedGraphQuadTree(m_arena *Arena, fdg_node *Nodes, int Nod
 
 
 #if defined(PARALLEL_QUADTREE)
-	parallel_force_displacement *P = ArenaPushArrayZero(Arena, parallel_force_displacement, 1);
-	P->Displacements = Displacements;
-	P->K = K;
-	P->NodeCount = NodeCount;
-	P->Nodes = Nodes;
-	P->QuadTree = QuadTree;
+	parallel_force_displacement P = {0};
+	P.Displacements = Displacements;
+	P.K = K;
+	P.NodeCount = NodeCount;
+	P.Nodes = Nodes;
+	P.QuadTree = QuadTree;
 
-	Dispatch(Shared, ParallelForceDisplacement, P);
+	Dispatch(Shared, ParallelForceDisplacement, &P);
 #elif defined(QUADTREE)
 
 	for(int I = 0; I < NodeCount; I++)

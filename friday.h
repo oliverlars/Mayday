@@ -1172,7 +1172,7 @@ str8 Str8PushFV(memory_arena *Arena, char *Format, va_list InputArgList)
 {
 	va_list ArgList;
 	va_copy(ArgList, InputArgList);
-	u32 BytesNeeded = vsnprintf(0, 0, Format, InputArgList) + 1;
+	u32 BytesNeeded = vsnprintf(0, 0, Format, InputArgList) +1;
 	str8 Result = {0};
 	Result.Bytes = (s8*)ArenaPush(Arena, BytesNeeded);
 	Result.Size = vsnprintf((char *)Result.Bytes, BytesNeeded, Format, ArgList);

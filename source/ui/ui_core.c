@@ -14,7 +14,7 @@ str8 UI_DisplayString(m_arena *Arena, str8 String)
 		if(String.Bytes[I] == '#' && 
 		   I + 1 < String.Size && String.Bytes[I+1] == '#')
 		{
-			Result = Str8PushF(Arena, "?S", (str8){I, String.Bytes});
+			Result = Str8Copy(Arena, (str8){I, String.Bytes});
 			break;
 		}
 	}

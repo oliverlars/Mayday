@@ -271,8 +271,9 @@ str8 Str8Copy(m_arena *Arena, str8 String)
 {
 	str8 Result = {0};
 	Result.Size = String.Size;
-	Result.Bytes = ArenaPush(Arena, String.Size);
-	MemoryCopy(Result.Bytes, String.Bytes, String.Size);
+	Result.Bytes = ArenaPush(Arena, String.Size + 1);
+	MemoryCopy(Result.Bytes, String.Bytes, String.Size + 1);
+	Result.Bytes[Result.Size] = 0;
 	return Result;
 }
 

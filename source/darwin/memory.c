@@ -21,7 +21,7 @@ m_arena *ArenaInitialise(s64 NumberOfBytes)
 	return Result;
 }
 
-m_scratch_arena ScratchBegin(m_arena **Arenas, int ConflictCount)
+m_scratch_arena ScratchBegin(m_arena **Conflicts, int ConflictCount)
 {
 	per_thread_context *ThreadContext = GetThreadContext();
 	m_scratch_arena Scratch = {0};
@@ -29,18 +29,18 @@ m_scratch_arena ScratchBegin(m_arena **Arenas, int ConflictCount)
 		ScratchIndex < ArrayCount(ThreadContext->ScratchArenas);
 		ScratchIndex++)
 	{
-		b32 Conflict = False;
-		for(m_arena **Conflicts = Arenas;
-			Conflicts < Conflicts + ConflictCount;
-			Conflicts++)
+		b32 IsConflicting = False;
+		for(m_arena **Conflict = Conflicts;
+			Conflict < Conflicts + ConflictCount;
+			Conflict++)
 		{
-			if(Conflicts[0] == ThreadContext->ScratchArenas[ScratchIndex])
+			if(Conflict[0] == ThreadContext->ScratchArenas[ScratchIndex])
 			{
-				Conflict = True;
+				IsConflicting = True;
 				break;
 			}
 		}
-		if(!Conflict)
+		if(!IsConflicting)
 		{
 			Scratch.Arena = ThreadContext->ScratchArenas[ScratchIndex];
 			Scratch.At = Scratch.Arena->At;

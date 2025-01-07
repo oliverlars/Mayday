@@ -98,6 +98,7 @@ typedef struct ui_tree_view_signal
 {
 	b32 Clicked;
 	str8 NewPath;
+	int NewPathIndex;
 	str8 FileToLoad;
 } ui_tree_view_signal;
 

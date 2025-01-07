@@ -62,17 +62,7 @@ bounds GetBounds(fdg_node *Nodes, int NodeCount)
 		Max.Y = Max(Max.Y, Nodes[I].TargetPosition.Y);
 		
 	}
-	f32 Width = Max.X - Min.X;
-	f32 Height = Max.Y - Min.Y;
-
-	if(Width > Height)
-	{
-		Max.Y = Min.Y + Width;
-	}
-	else
-	{
-		Max.X = Min.X + Height;
-	}
+	
 	return (bounds){Min, Max};
 }
 

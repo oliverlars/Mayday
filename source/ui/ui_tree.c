@@ -23,8 +23,8 @@ ui_tree_info TreeInfoFromPath(m_arena *Arena, str8 Path, v2f Size)
 	for(os_directory_tree_iterator It = {0};
 		OS_DirectoryTreeIterateWithStack(Arena, Info.Tree, &It);)
 	{
-		f32 X = (0.5*RandomBilateral(&RandomState) + 0.5)*Size.X*0.2 + Size.X/2.0;
-		f32 Y = (0.5*RandomBilateral(&RandomState) + 0.5)*Size.Y*0.2 + Size.Y/5.0;
+		f32 X = (0.5*RandomBilateral(&RandomState) + 0.5)*Size.X;
+		f32 Y = (0.5*RandomBilateral(&RandomState) + 0.5)*Size.Y;
 		Info.Nodes[It.Index].TargetPosition = v2f(X, Y);
 		Info.Nodes[It.Index].TargetPosition = Info.Nodes[It.Index].TargetPosition;
 		Info.Nodes[It.Index].Position = Info.Nodes[It.Index].TargetPosition;
@@ -64,7 +64,34 @@ void UI_TreeView(ui_context *UI, draw_context *Draw, shared_wave_info *Shared,
 			TreeView->Arena = ArenaInitialise(MegaBytes(256));
 		}
 		//ArenaReset(TreeView->Arena);
-		TreeView->Info = TreeInfoFromPath(TreeView->Arena, Path, Size);
+
+
+		ui_tree_info NextInfo = TreeInfoFromPath(TreeView->Arena, Path, Size);
+
+		/*
+		
+		NOTE(Oliver): We do this just so we can avoid the jarring position
+		reset. It can probably be done better than this but it's fine really
+
+		*/
+		if(TreeView->Info.Nodes)
+		{		
+			int Index = 0;
+			for(int I = 0; I < TreeView->Info.NodeCount; I++)
+			{
+				if(Str8Equal(TreeView->Info.Nodes[I].Name, Path))
+				{
+					Index = I;
+				}
+			}
+
+			for(int I = 0; I < NextInfo.NodeCount; I++)
+			{
+				NextInfo.Nodes[I].Position = TreeView->Info.Nodes[I + Index].Position;
+				NextInfo.Nodes[I].TargetPosition = TreeView->Info.Nodes[I + Index].TargetPosition;
+			}
+		}
+		TreeView->Info = NextInfo;
 		TreeView->TreeHash = Hash;
 		TreeView->Temperature = 100.0;
 	}

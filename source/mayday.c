@@ -432,7 +432,7 @@ int main()
 
 	DispatchInitialise(&M.Shared, 16);
 
-	M.Folder = Str8("/Users/olivercruickshank/mayday");
+	M.Folder = Str8("/Users/olivercruickshank/embergen/liquigen");
 
 	OS_Run(M.Window, &M);
 }

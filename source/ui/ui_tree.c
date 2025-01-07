@@ -133,10 +133,11 @@ void UI_TreeView(ui_context *UI, draw_context *Draw, shared_wave_info *Shared,
 }
 
 
-str8 UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw,
-							 m_arena *Arena, ui_tree *TreeView, str8 CurrentPath)
+ui_tree_view_signal UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw,
+							 				m_arena *Arena,
+											ui_tree *TreeView, str8 CurrentPath)
 {
-	str8 Result = CurrentPath;
+	ui_tree_view_signal Result = {0};
 	 
 	for(os_directory_tree_iterator It = {0};
 		OS_DirectoryTreeIterate(TreeView->Info.Tree, &It);)
@@ -151,7 +152,8 @@ str8 UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw,
 				TreeView->Info.Nodes[It.Index].Position, v4f(0.5, 0.1, 0.0, 1));
 			if(Clicked)
 			{
-				Result = Str8Copy(TreeView->Arena, TreeView->Info.Nodes[It.Index].Name);
+				Result.Clicked = True;
+				Result.NewPath = Str8Copy(TreeView->Arena, TreeView->Info.Nodes[It.Index].Name);
 			}
 		}
 		if(It.Depth == 1)
@@ -162,6 +164,11 @@ str8 UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw,
 					Arena, Str8PushF(Arena, "?S##?u32", Str8FromLastCharacter(Arena, TreeView->Info.Nodes[It.Index].Name, '/'), It.Index),
 					FontSize,
 					TreeView->Info.Nodes[It.Index].Position, v4f(0.5, 0.1, 0.0, 1));
+				if(Clicked)
+				{
+					Result.Clicked = True;
+					Result.FileToLoad = Str8Copy(TreeView->Arena, TreeView->Info.Nodes[It.Index].Name);
+				}
 			}
 		}
 	}

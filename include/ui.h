@@ -94,8 +94,17 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 void UI_TreeView(ui_context *UI, draw_context *Draw, shared_wave_info *Shared,
 				 m_arena *Arena, ui_tree *TreeView, str8 Path, v2f Size);
 
-str8 UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw,
-							 m_arena *Arena, ui_tree *TreeView, str8 CurrentPath);
+typedef struct ui_tree_view_signal
+{
+	b32 Clicked;
+	str8 NewPath;
+	str8 FileToLoad;
+} ui_tree_view_signal;
+
+ui_tree_view_signal UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw,
+											m_arena *Arena,
+											ui_tree *TreeView, str8 CurrentPath);
+
 
 void UI_StatusBar(ui_context *UI, draw_context *Draw, edit_context *Edit,
 				  m_arena *Arena, d_font Font,

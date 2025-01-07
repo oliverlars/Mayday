@@ -91,7 +91,20 @@ void OS_Update(void *Data)
 	{
 		UI_TreeView(M->UI, M->Draw,  &M->Shared,
 					M->FrameArena, &M->TreeView, M->Folder, v2f((f32)WindowWidth, (f32)WindowHeight));
-		M->Folder = UI_TreeViewFolderLabels(M->UI, M->Draw, M->FrameArena, &M->TreeView, M->Folder);
+		
+		ui_tree_view_signal TreeSignal = UI_TreeViewFolderLabels(M->UI, M->Draw, M->FrameArena, &M->TreeView, M->Folder);
+		if(TreeSignal.Clicked)
+		{
+			if(TreeSignal.NewPath.Size > 0)
+			{
+				M->Folder = TreeSignal.NewPath;
+			}
+			else if(TreeSignal.FileToLoad.Size > 0)
+			{
+				M->Buffer.String = OS_LoadEntireFileIntoMemory(M->PermanentArena, TreeSignal.FileToLoad);
+				M->UI->View = UI_VIEW_EDIT;
+			}
+		}
 
 		D_DrawStr8(M->Draw, M->FrameArena, M->LogoFont, v2f(50, 50), v4f(1.0, 0.05, 0.0, 1), 100, Str8("MAYDAY!"));
 	}

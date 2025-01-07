@@ -125,8 +125,6 @@ void UI_TreeView(ui_context *UI, draw_context *Draw, shared_wave_info *Shared,
 	v2f Centre = DivV2F(AddV2F(TotalBounds.Min, TotalBounds.Max), v2f(2.0, 2.0));
 
 	DrawQuadTree(Draw, Arena, QuadTree, 0);
-
-	D_DrawStr8(Draw, Arena, UI->Font, v2f(50, 50), v4f(1.0, 0.05, 0.0, 1), 100, Str8("MAYDAY!"));
 	
 	for(int I = 0; I < TreeView->Info.NodeCount; I++)
 	{
@@ -139,28 +137,32 @@ str8 UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw,
 							 m_arena *Arena, ui_tree *TreeView, str8 CurrentPath)
 {
 	str8 Result = CurrentPath;
-	for(int I = 0; I < TreeView->Info.NodeCount; I++)
+	 
+	for(os_directory_tree_iterator It = {0};
+		OS_DirectoryTreeIterate(TreeView->Info.Tree, &It);)
 	{
 		f32 FontSize = 40;
-		if(TreeView->Info.Nodes[I].IsFolder)
+		if(TreeView->Info.Nodes[It.Index].IsFolder)
 		{
 			
 			b32 Clicked = UI_TextButton(UI, Draw,
-				Arena, Str8PushF(Arena, "?S##?u32", Str8FromLastCharacter(Arena, TreeView->Info.Nodes[I].Name, '/'), I),
+				Arena, Str8PushF(Arena, "?S##?u32", Str8FromLastCharacter(Arena, TreeView->Info.Nodes[It.Index].Name, '/'), It.Index),
 				FontSize,
-				TreeView->Info.Nodes[I].Position, v4f(0.5, 0.1, 0.0, 1));
+				TreeView->Info.Nodes[It.Index].Position, v4f(0.5, 0.1, 0.0, 1));
 			if(Clicked)
 			{
-				Result = Str8Copy(TreeView->Arena, TreeView->Info.Nodes[I].Name);
+				Result = Str8Copy(TreeView->Arena, TreeView->Info.Nodes[It.Index].Name);
 			}
 		}
-		
-		if(0 && !TreeView->Info.Nodes[I].IsFolder)
-		{
-			b32 Clicked = UI_TextButton(UI, Draw,
-				Arena, Str8PushF(Arena, "?S##?u32", Str8FromLastCharacter(Arena, TreeView->Info.Nodes[I].Name, '/'), I),
-				FontSize,
-				TreeView->Info.Nodes->Position, v4f(0.5, 0.1, 0.0, 1));
+		if(It.Depth == 1)
+		{		
+			if(!TreeView->Info.Nodes[It.Index].IsFolder)
+			{
+				b32 Clicked = UI_TextButton(UI, Draw,
+					Arena, Str8PushF(Arena, "?S##?u32", Str8FromLastCharacter(Arena, TreeView->Info.Nodes[It.Index].Name, '/'), It.Index),
+					FontSize,
+					TreeView->Info.Nodes[It.Index].Position, v4f(0.5, 0.1, 0.0, 1));
+			}
 		}
 	}
 

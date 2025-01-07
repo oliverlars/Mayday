@@ -222,6 +222,7 @@ OS_DirectoryTreeIterateWithStack(m_arena *Arena, os_directory_tree Tree, os_dire
 			It->Stack[It->StackTop++] = It->Index;
 			It->ParentIndex = It->Index;
 			It->Current = First;
+			It->Depth++;
 		}
 		else if(Next)
 		{
@@ -231,8 +232,10 @@ OS_DirectoryTreeIterateWithStack(m_arena *Arena, os_directory_tree Tree, os_dire
 		{
 			os_directory_entry *Parent = It->Current->Parent;
 			It->ParentIndex = It->Stack[--It->StackTop];
+			It->Depth--;
 			for(; Parent; Parent = Parent->Parent)
 			{
+				It->Depth--;
 				It->ParentIndex = It->Stack[--It->StackTop];
 				if(Parent->Next)
 				{
@@ -272,6 +275,7 @@ b32 OS_DirectoryTreeIterate(os_directory_tree Tree, os_directory_tree_iterator *
 		if(First)
 		{
 			Iterator->Current = First;
+			Iterator->Depth++;
 		}
 		else if(Next)
 		{
@@ -283,6 +287,7 @@ b32 OS_DirectoryTreeIterate(os_directory_tree Tree, os_directory_tree_iterator *
 
 			for(;Parent; Parent = Parent->Parent)
 			{
+				Iterator->Depth--;
 				if(Parent->Next)
 				{
 					Iterator->Current = Parent->Next;

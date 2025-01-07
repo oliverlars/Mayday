@@ -92,6 +92,8 @@ void OS_Update(void *Data)
 		UI_TreeView(M->UI, M->Draw,  &M->Shared,
 					M->FrameArena, &M->TreeView, M->Folder, v2f((f32)WindowWidth, (f32)WindowHeight));
 		M->Folder = UI_TreeViewFolderLabels(M->UI, M->Draw, M->FrameArena, &M->TreeView, M->Folder);
+
+		D_DrawStr8(M->Draw, M->FrameArena, M->LogoFont, v2f(50, 50), v4f(1.0, 0.05, 0.0, 1), 100, Str8("MAYDAY!"));
 	}
 
 	R_PopTransform(M->Render);
@@ -417,7 +419,7 @@ int main()
 
 	DispatchInitialise(&M.Shared, 16);
 
-	M.Folder = Str8("/Users/olivercruickshank/EmberGen/liquigen");
+	M.Folder = Str8("/Users/olivercruickshank/mayday");
 
 	OS_Run(M.Window, &M);
 }

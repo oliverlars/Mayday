@@ -43,6 +43,7 @@ typedef struct mayday_context
 
 	d_font CodeFont;
 	d_font LogoFont;
+	d_font StatusFont;
 
 	editable_buffer Buffer;
 	cursor Cursor;
@@ -73,7 +74,7 @@ void OS_Update(void *Data)
 	m44f Transform = M44FOrthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0);
 	R_PushTransform(M->Render, Transform);
 	D_DrawQuad(M->Draw, M->FrameArena, v2f(0, 0),  WindowWidth, WindowHeight, v4f(0.008, 0.00, 0, 1.0));
-	
+
 
 	if(M->UI->View == UI_VIEW_EDIT)
 	{
@@ -83,7 +84,7 @@ void OS_Update(void *Data)
 			   &M->Cursor,
 			   v2i(WindowWidth, WindowHeight));
 
-		UI_StatusBar(M->UI, M->Draw, M->Edit, M->FrameArena, M->CodeFont,
+		UI_StatusBar(M->UI, M->Draw, M->Edit, M->FrameArena, M->StatusFont,
 					 &M->Cursor, &M->Buffer,
 					 v2i(WindowWidth, WindowHeight));
 	}
@@ -91,7 +92,7 @@ void OS_Update(void *Data)
 	{
 		UI_TreeView(M->UI, M->Draw,  &M->Shared,
 					M->FrameArena, &M->TreeView, M->Folder, v2f((f32)WindowWidth, (f32)WindowHeight));
-		
+
 		ui_tree_view_signal TreeSignal = UI_TreeViewFolderLabels(M->UI, M->Draw, M->FrameArena, &M->TreeView, M->Folder);
 		if(TreeSignal.Clicked)
 		{
@@ -110,7 +111,7 @@ void OS_Update(void *Data)
 	}
 
 	R_PopTransform(M->Render);
-	
+
 	if(OS_MilliSecondsFromTimeStamp(OS_TimeStampNow() - M->UI->TimeStampWhenMousePressed) > 150.0 &&
 	   M->UI->MouseClicked && M->UI->MultiClickCount == 0)
 	{
@@ -176,7 +177,7 @@ void OS_Event(const sapp_event *Event, void *Data)
 				E_MoveCursors(M->Edit, M->Draw, M->CodeFont, Cursor, &M->Buffer, E_MOVE_WORD_LEFT, E_MOVE_NOT_SELECTING);
 				Cursor->Selection = v2i(Cursor->Selection.X, Selection.Y);
 				M->UI->MultiClickCount++;
-				
+
 				if(LastCursor != Cursor)
 				{
 					LastCursor[0] = Cursor[0];
@@ -189,7 +190,7 @@ void OS_Event(const sapp_event *Event, void *Data)
 				int LineEnd = E_LineEndFromIndex(M->Edit, Cursor->Selection.Y, &M->Buffer);
 				Cursor->Selection = v2i(LineStart, LineEnd);
 				M->UI->MultiClickCount++;
-				
+
 				if(LastCursor != Cursor)
 				{
 					LastCursor[0] = Cursor[0];
@@ -209,7 +210,7 @@ void OS_Event(const sapp_event *Event, void *Data)
 			}
 			else if(MillisecondsSinceLastClick >= 400)
 			{
-				Cursor->Selection = v2i(Index, Index);	
+				Cursor->Selection = v2i(Index, Index);
 				M->UI->MultiClickCount = 0;
 			}
 
@@ -242,7 +243,7 @@ void OS_Event(const sapp_event *Event, void *Data)
 			M->Cursor.Next = Null;
 		}
 
-		if(Event->key_code == SAPP_KEYCODE_BACKSPACE)	
+		if(Event->key_code == SAPP_KEYCODE_BACKSPACE)
 		{
 			E_DeleteTo(M->Edit, &M->Cursor, &M->Buffer);
 
@@ -337,7 +338,7 @@ void OS_Event(const sapp_event *Event, void *Data)
 			for(cursor *Cursor = &M->Cursor; Cursor; Cursor = Cursor->Next)
 			{
 				int LineStart = E_LineStartFromIndex(M->Edit, Cursor->Selection.Y, &M->Buffer);
-				
+
 				int FirstNonWhitespace = LineStart;
 				for(;M->Buffer.String.Bytes[FirstNonWhitespace] == ' ' ||
 					 M->Buffer.String.Bytes[FirstNonWhitespace] == '\t';)
@@ -419,6 +420,7 @@ int main()
 
 	M.CodeFont = D_LoadFontFromTTF(M.Draw, G_BerkeleyMonoRegular);
 	M.LogoFont = D_LoadFontFromTTF(M.Draw, G_BasementGrotesque);
+	M.StatusFont = D_LoadFontFromTTF(M.Draw, G_Doto);
 
 	M.UI->Font = M.CodeFont;
 

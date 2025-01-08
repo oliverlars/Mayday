@@ -57,7 +57,7 @@ Entry(InputWaveInfo)
 					printf("Using platform default\n\n");
 				}
 			}
-			else if(Str8Equal(Arg, Str8("help"))) { 
+			else if(Str8Equal(Arg, Str8("help"))) {
 				str8_list Help = {0};
 				Str8ListAppend(&Arena, &Help, Str8PushF(&Arena, "\nFriday MK%s\n\n", FRIDAY_VERSION));
 				Str8ListAppend(&Arena, &Help, Str8("Flags: \n"));
@@ -106,11 +106,13 @@ Entry(InputWaveInfo)
 		Str8ListAppend(&Arena, &Fonts, Str8("fonts/BerkeleyMono-Regular.ttf"));
 		Str8ListAppend(&Arena, &Fonts, Str8("fonts/BebasNeue-Regular.ttf"));
 		Str8ListAppend(&Arena, &Fonts, Str8("fonts/BasementGrotesque.otf"));
+		Str8ListAppend(&Arena, &Fonts, Str8("fonts/Doto.ttf"));
 
 		str8_list FontVariableNames = {0};
 		Str8ListAppend(&Arena, &FontVariableNames, Str8("G_BerkeleyMonoRegular"));
 		Str8ListAppend(&Arena, &FontVariableNames, Str8("G_BebasNeueRegular"));
 		Str8ListAppend(&Arena, &FontVariableNames, Str8("G_BasementGrotesque"));
+		Str8ListAppend(&Arena, &FontVariableNames, Str8("G_Doto"));
 
 
 		EmbedFiles(&Arena, Fonts, Str8("embed/berkeley_mono_font.h"), FontVariableNames);
@@ -175,7 +177,7 @@ int main(s32 ArgCount, char **Args)
 
 	memory_arena SharedArena = {0};
 	SharedArena.Start = MemoryReserve(GigaBytes(64));
-	
+
 	shared_wave_info *Shared = (shared_wave_info*)ArenaPushZero(&SharedArena, sizeof(shared_wave_info));
 	Shared->ArgCount = ArgCount;
 	Shared->Args = Args;

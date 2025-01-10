@@ -73,7 +73,7 @@ void D_GlyphsToAtlas(draw_context *D)
 				// No more atlas space left, this is where we could just
 				// allocate a bigger texture . For now we'll just evict
 				// the remaining glyphs. Since we are iterating
-				// newest to oldest, the current glyph is the 
+				// newest to oldest, the current glyph is the
 				// oldest invalid glyph, so we pop all glyphs
 				// from this glyph onwards.
 				D->OldestGlyph = Glyph->NextInLRU;
@@ -101,7 +101,7 @@ void D_GlyphsToAtlas(draw_context *D)
 
 void PushGlyphOntoLRU(draw_context *D_Context, d_atlas_glyph *Glyph)
 {
-	
+
 	if(!D_Context->OldestGlyph)
 	{
 		D_Context->OldestGlyph = Glyph;
@@ -136,7 +136,7 @@ d_atlas_glyph *D_GlyphFromCodePoint(draw_context *D, d_font Font, s32 HeightInPi
 	d_atlas_glyph *ResultGlyph = Glyph;
 
 	float Scale = stbtt_ScaleForPixelHeight(&Font.Info, HeightInPixels);
-	
+
 	if(Glyph->Hash != 0 && Glyph->Hash != Hash)
 	{
 		LogInfo("Glyph collision occured");
@@ -149,7 +149,7 @@ d_atlas_glyph *D_GlyphFromCodePoint(draw_context *D, d_font Font, s32 HeightInPi
 		NextGlyph->AdvanceX = AdvanceX;
 		NextGlyph->Hash = Hash;
 		NextGlyph->CodePoint = CodePoint;
-		stbtt_GetCodepointBox(&Font.Info, CodePoint, &NextGlyph->Box.X, &NextGlyph->Box.Y, 
+		stbtt_GetCodepointBox(&Font.Info, CodePoint, &NextGlyph->Box.X, &NextGlyph->Box.Y,
 													 &NextGlyph->Box.Z, &NextGlyph->Box.W);
 
 		PushGlyphOntoLRU(D, NextGlyph);
@@ -160,7 +160,7 @@ d_atlas_glyph *D_GlyphFromCodePoint(draw_context *D, d_font Font, s32 HeightInPi
 									Scale, Scale,
 									&BitmapBox.X, &BitmapBox.Y,
 									&BitmapBox.Z, &BitmapBox.W);
-		
+
 		int GlyphSizeInBytes = (BitmapBox.Z - BitmapBox.X)*(BitmapBox.W - BitmapBox.Y);
 		NextGlyph->Data = ArenaPushZero(D->Arena, GlyphSizeInBytes);
 		stbtt_MakeCodepointBitmap(&Font.Info,
@@ -178,7 +178,7 @@ d_atlas_glyph *D_GlyphFromCodePoint(draw_context *D, d_font Font, s32 HeightInPi
 		int AdvanceX;
 		int LeftSideBearing;
 		stbtt_GetCodepointHMetrics(&Font.Info, CodePoint, &AdvanceX, &LeftSideBearing);
-		
+
 		Glyph->AdvanceX = AdvanceX;
 		Glyph->Hash = Hash;
 		Glyph->CodePoint = CodePoint;
@@ -222,8 +222,8 @@ void D_DrawQuad(draw_context *D,
 	Command.VerticesFormat = R_VF_POSITION | R_VF_UV;
 
 	r_vertex *R_Vertices = Command.Vertices;
-	
-	v2f Vertices[6] = 
+
+	v2f Vertices[6] =
 	{
 		v2f(Position.X, Position.Y),
 		v2f(Position.X + Width, Position.Y),
@@ -294,7 +294,7 @@ void D_DrawStr8(draw_context *D,
 		{
 			NewLine = False;
 		}
-		
+
 		//if(NewLine) CodePoint = 'N';
 
 		d_atlas_glyph *Glyph  = D_GlyphFromCodePoint(D,  Font, HeightInPixels, CodePoint);
@@ -305,7 +305,7 @@ void D_DrawStr8(draw_context *D,
 		f32 GlyphBitmapWidth = ((f32)(Glyph->BitmapBox.Z - Glyph->BitmapBox.X));
 		f32 GlyphBitmapHeight = ((f32)(Glyph->BitmapBox.W - Glyph->BitmapBox.Y));
 
-		v2f Vertices[6] = 
+		v2f Vertices[6] =
 		{
 			v2f(Position.X, Position.Y),
 			v2f(Position.X + GlyphWidth, Position.Y),
@@ -316,9 +316,9 @@ void D_DrawStr8(draw_context *D,
 			v2f(Position.X + GlyphWidth, Position.Y + GlyphHeight),
 		};
 
-		v2f UVs[6] = 
+		v2f UVs[6] =
 		{
-			
+
 			v2f(Glyph->AtlasPosition.X, Glyph->AtlasPosition.Y + GlyphBitmapHeight),
 			v2f(Glyph->AtlasPosition.X + GlyphBitmapWidth, Glyph->AtlasPosition.Y + GlyphBitmapHeight),
 			v2f(Glyph->AtlasPosition.X + GlyphBitmapWidth, Glyph->AtlasPosition.Y),
@@ -412,7 +412,7 @@ void D_DrawSelectionRange(draw_context *D,
 		}
 
 
-		d_atlas_glyph *Glyph  = D_GlyphFromCodePoint(D, Font, HeightInPixels, CodePoint);		
+		d_atlas_glyph *Glyph  = D_GlyphFromCodePoint(D, Font, HeightInPixels, CodePoint);
 
 		Position.X += Glyph->AdvanceX * Scale * TabMultiplier;
 	}
@@ -437,7 +437,7 @@ void D_DrawCubePoints(draw_context *D,
 	Command.VerticesFormat = R_VF_POSITION | R_VF_COLOUR;
 
 	r_vertex *R_Vertices = Command.Vertices;
-	
+
 	f32 Width = Size.X;
 	f32 Height = Size.Y;
 	f32 Depth = Size.Z;
@@ -530,7 +530,7 @@ void D_DrawLinesArray(draw_context *D,
 
 void D_DrawGrid(draw_context *Draw, m_arena *Arena, f32 Size, s32 Count)
 {
-	s32 LineCount = (Count + 1) * 2; 
+	s32 LineCount = (Count + 1) * 2;
 	v3f *Lines = (v3f*)ArenaPushArrayZero(Arena, v3f, LineCount * 2); // Each line has 2 vertices
 
 	int Index = 0;
@@ -552,4 +552,30 @@ void D_DrawGrid(draw_context *Draw, m_arena *Arena, f32 Size, s32 Count)
 	}
 
 	D_DrawLinesArray(Draw, Arena, Lines, LineCount * 2, v4f(1.0, .05, 0, 1));
+}
+
+void D_DrawGrid2D(draw_context *Draw, m_arena *Arena, f32 Size, s32 Count)
+{
+	s32 LineCount = (Count + 1) * 2;
+	v3f *Lines = (v3f*)ArenaPushArrayZero(Arena, v3f, LineCount * 2); // Each line has 2 vertices
+
+	int Index = 0;
+
+	f32 HalfSize = (Count * Size) / 2.0f;
+
+	for (s32 I = 0; I <= Count; I++)
+	{
+		f32 Y = -HalfSize + (I * Size);
+		Lines[Index++] = v3f(-HalfSize, Y, 0);
+		Lines[Index++] = v3f(HalfSize,  Y, 0);
+	}
+
+	for (s32 I = 0; I <= Count; I++)
+	{
+		f32 X = -HalfSize + (I * Size);
+		Lines[Index++] = v3f(X, -HalfSize, 0);
+		Lines[Index++] = v3f(X, HalfSize, 0);
+	}
+
+	D_DrawLinesArray(Draw, Arena, Lines, LineCount * 2, v4f(0.02, .0, 0, 1));
 }

@@ -75,6 +75,7 @@ void OS_Update(void *Data)
 	R_PushTransform(M->Render, Transform);
 	D_DrawQuad(M->Draw, M->FrameArena, v2f(0, 0),  WindowWidth, WindowHeight, v4f(0.008, 0.00, 0, 1.0));
 
+	D_DrawGrid2D(M->Draw, M->FrameArena, 50, 200);
 
 	if(M->UI->View == UI_VIEW_EDIT)
 	{

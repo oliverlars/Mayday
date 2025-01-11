@@ -53,6 +53,7 @@ void R_PushTransform(render_context *Render, m44f Transform)
 {
 	assert(Render->TransformCount < MAX_TRANSFORMS);
 	Render->TransformStack[Render->TransformCount] = Transform;
+	Render->InverseTransformStack[Render->TransformCount] = M44FInverse(Transform);
 	Render->TransformCount += 1;
 }
 
@@ -60,6 +61,18 @@ void R_PopTransform(render_context *Render)
 {
 	assert(Render->TransformCount >= 1);
 	--Render->TransformCount;
+}
+
+m44f R_CurrentTransform(render_context *Render)
+{
+	assert(Render->TransformCount >= 1);
+	return Render->TransformStack[Render->TransformCount - 1];
+}
+
+m44f R_CurrentInverseTransform(render_context *Render)
+{
+	assert(Render->TransformCount >= 1);
+	return Render->InverseTransformStack[Render->TransformCount - 1];
 }
 
 // Dumb hack
@@ -78,13 +91,13 @@ void R_TextureFromBytes(render_context *R, u8 *Bytes, s32 Width, s32 Height)
 		Metal->FontAtlasTexture = [Metal->Device newTextureWithDescriptor:TextureDescriptor];
 	}
 	MTLRegion region = MTLRegionMake2D(0, 0, Width, Height);
-	[Metal->FontAtlasTexture replaceRegion:region mipmapLevel:0 withBytes:Bytes bytesPerRow:Width];	
+	[Metal->FontAtlasTexture replaceRegion:region mipmapLevel:0 withBytes:Bytes bytesPerRow:Width];
 }
 
 id<MTLTexture> MakeDepthTexture(render_context *R, CGSize Size)
 {
 	metal_context *Metal = R->Backend;
-	MTLTextureDescriptor *Desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatDepth32Float 
+	MTLTextureDescriptor *Desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatDepth32Float
 													   width:Size.width
 													   height:Size.height mipmapped:NO];
 	Desc.usage = MTLTextureUsageRenderTarget;
@@ -188,7 +201,7 @@ metal_shader R_GlyphShader(render_context *R)
 	VertexDescriptor.attributes[2].format = MTLVertexFormatFloat4;
 	VertexDescriptor.attributes[2].offset = 2*sizeof(v4f);
 	VertexDescriptor.attributes[2].bufferIndex = 0;
-	VertexDescriptor.layouts[0].stride = sizeof(gpu_vertex); 
+	VertexDescriptor.layouts[0].stride = sizeof(gpu_vertex);
 
 	PipelineDescriptor.vertexDescriptor = VertexDescriptor;
 
@@ -245,7 +258,7 @@ metal_shader R_TriangleShader(render_context *R)
 	VertexDescriptor.attributes[1].format = MTLVertexFormatFloat4;
 	VertexDescriptor.attributes[1].offset = sizeof(v4f);
 	VertexDescriptor.attributes[1].bufferIndex = 0;
-	VertexDescriptor.layouts[0].stride = sizeof(gpu_vertex); 
+	VertexDescriptor.layouts[0].stride = sizeof(gpu_vertex);
 
 	PipelineDescriptor.vertexDescriptor = VertexDescriptor;
 
@@ -302,7 +315,7 @@ metal_shader R_PointShader(render_context *R)
 	VertexDescriptor.attributes[1].format = MTLVertexFormatFloat4;
 	VertexDescriptor.attributes[1].offset = sizeof(v4f);
 	VertexDescriptor.attributes[1].bufferIndex = 0;
-	VertexDescriptor.layouts[0].stride = sizeof(gpu_vertex); 
+	VertexDescriptor.layouts[0].stride = sizeof(gpu_vertex);
 
 	PipelineDescriptor.vertexDescriptor = VertexDescriptor;
 
@@ -359,7 +372,7 @@ metal_shader R_LineShader(render_context *R)
 	VertexDescriptor.attributes[1].format = MTLVertexFormatFloat4;
 	VertexDescriptor.attributes[1].offset = sizeof(v4f);
 	VertexDescriptor.attributes[1].bufferIndex = 0;
-	VertexDescriptor.layouts[0].stride = sizeof(gpu_vertex); 
+	VertexDescriptor.layouts[0].stride = sizeof(gpu_vertex);
 
 	PipelineDescriptor.vertexDescriptor = VertexDescriptor;
 
@@ -509,7 +522,7 @@ void R_RenderTriangles(render_context *R, id<MTLCommandBuffer> CommandBuffer, in
 	PassDesc.colorAttachments[0].loadAction = MTLLoadActionLoad;
 	PassDesc.colorAttachments[0].storeAction = MTLStoreActionStore;
 	PassDesc.colorAttachments[0].clearColor = MTLClearColorMake(0.0,0.0,0.0,1);
-	
+
 	PassDesc.depthAttachment.texture = Metal->DepthTexture;
 	PassDesc.depthAttachment.loadAction = MTLLoadActionLoad;
 	PassDesc.depthAttachment.storeAction = MTLStoreActionStore;
@@ -577,7 +590,7 @@ void R_RenderFullscreenBloom(render_context *R, id<MTLCommandBuffer> CommandBuff
 	[Encoder setFragmentTexture:Metal->BaseFrameBuffer atIndex:0];
 	[Encoder setFragmentTexture:Metal->BlurredFrameBuffer atIndex:1];
 	[Encoder setFragmentSamplerState:Metal->BloomSamplerState atIndex:0];
-	[Encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:6];	
+	[Encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:6];
 
 	[Encoder endEncoding];
 }
@@ -649,7 +662,7 @@ void R_Update(render_context *R, m_arena *FrameArena)
 
 		if(0){}
 		else if(Command->Type == R_COMMAND_GLYPH)
-		{	
+		{
 			gpu_vertex *GPUVertices = (gpu_vertex*)ArenaPushArrayZero(Scratch.Arena,
 																	  gpu_vertex, Command->VerticesCount);
 			for(int V = 0; V < Command->VerticesCount; V++)
@@ -721,7 +734,7 @@ void R_Update(render_context *R, m_arena *FrameArena)
 			uniforms Uniforms = { Command->Transform };
 			MemoryCopy(Metal->UniformBuffers[R->Frame % FRAMES_IN_FLIGHT].contents + sizeof(Uniforms)*UniformCount,
 					   &Uniforms, sizeof(Uniforms));
-			
+
 			if(Command->Type == R_COMMAND_GLYPH)
 			{
 				R_RenderGlyphs(R, CommandBuffer, TotalGlyphVertices, GlyphVertexOffset*sizeof(gpu_vertex), UniformCount*sizeof(m44f));

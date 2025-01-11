@@ -91,10 +91,21 @@ void OS_Update(void *Data)
 	}
 	else if(M->UI->View == UI_VIEW_TREE)
 	{
+		v2f Centre = {0};
+
+		if(M->TreeView.Info.Nodes)
+		{
+			Centre = SubV2F(v2f(sapp_widthf()/2.0, sapp_heightf()/2.0), M->TreeView.Info.Nodes[0].Position);
+		}
+
+		R_PushTransform(M->Render, MulM44FM44F(M44FTranslate(v3f(Centre.X, Centre.Y, 0)), Transform));
 		UI_TreeView(M->UI, M->Draw,  &M->Shared,
 					M->FrameArena, &M->TreeView, M->Folder, v2f((f32)WindowWidth, (f32)WindowHeight));
 
 		ui_tree_view_signal TreeSignal = UI_TreeViewFolderLabels(M->UI, M->Draw, M->FrameArena, &M->TreeView, M->Folder);
+
+		R_PopTransform(M->Render);
+
 		if(TreeSignal.Clicked)
 		{
 			if(TreeSignal.NewPath.Size > 0)

@@ -70,7 +70,7 @@ s32 ClampS32(s32 Value, s32 Low, s32 High)
 
 f32 LerpF32(f32 Source, f32 Target, float T)
 {
-	return Source + T * (Target - Source);	
+	return Source + T * (Target - Source);
 }
 
 /*
@@ -767,6 +767,147 @@ m44f M44FScale(v3f Scale)
 	Result.E[1][1] = Scale.Y;
 	Result.E[2][2] = Scale.Z;
 
+	return Result;
+}
+
+m44f M44FInverse(m44f Matrix)
+{
+	m44f Result = M44F_IDENTITY;
+	float Inverse[16] = {0};
+	float Determinant = 1.0;
+	float Flattened[16] =
+	{
+		Matrix.E[0][0], Matrix.E[0][1], Matrix.E[0][2], Matrix.E[0][3],
+		Matrix.E[1][0], Matrix.E[1][1], Matrix.E[1][2], Matrix.E[1][3],
+		Matrix.E[2][0], Matrix.E[2][1], Matrix.E[2][2], Matrix.E[2][3],
+		Matrix.E[3][0], Matrix.E[3][1], Matrix.E[3][2], Matrix.E[3][3],
+	};
+
+	Inverse[0] = Flattened[5]  * Flattened[10] * Flattened[15]
+			   - Flattened[5]  * Flattened[11] * Flattened[14]
+			   - Flattened[9]  * Flattened[6]  * Flattened[15]
+			   + Flattened[9]  * Flattened[7]  * Flattened[14]
+			   + Flattened[13] * Flattened[6]  * Flattened[11]
+			   - Flattened[13] * Flattened[7]  * Flattened[10];
+
+	Inverse[4] = -Flattened[4] * Flattened[10] * Flattened[15]
+			   + Flattened[4]  * Flattened[11] * Flattened[14]
+			   + Flattened[8]  * Flattened[6]  * Flattened[15]
+			   - Flattened[8]  * Flattened[7]  * Flattened[14]
+			   - Flattened[12] * Flattened[6]  * Flattened[11]
+			   + Flattened[12] * Flattened[7]  * Flattened[10];
+
+	Inverse[8] = Flattened[4]  * Flattened[9]  * Flattened[15]
+			   - Flattened[4]  * Flattened[11] * Flattened[13]
+			   - Flattened[8]  * Flattened[5]  * Flattened[15]
+			   + Flattened[8]  * Flattened[7]  * Flattened[13]
+			   + Flattened[12] * Flattened[5]  * Flattened[11]
+			   - Flattened[12] * Flattened[7]  * Flattened[9];
+
+	Inverse[12] = -Flattened[4] * Flattened[9]  * Flattened[14]
+				+ Flattened[4]  * Flattened[10] * Flattened[13]
+				+ Flattened[8]  * Flattened[5]  * Flattened[14]
+				- Flattened[8]  * Flattened[6]  * Flattened[13]
+				- Flattened[12] * Flattened[5]  * Flattened[10]
+				+ Flattened[12] * Flattened[6]  * Flattened[9];
+
+	Inverse[1] = -Flattened[1] * Flattened[10] * Flattened[15]
+			   + Flattened[1]  * Flattened[11] * Flattened[14]
+			   + Flattened[9]  * Flattened[2]  * Flattened[15]
+			   - Flattened[9]  * Flattened[3]  * Flattened[14]
+			   - Flattened[13] * Flattened[2]  * Flattened[11]
+			   + Flattened[13] * Flattened[3]  * Flattened[10];
+
+	Inverse[5] =  Flattened[0] * Flattened[10] * Flattened[15]
+			   - Flattened[0]  * Flattened[11] * Flattened[14]
+			   - Flattened[8]  * Flattened[2]  * Flattened[15]
+			   + Flattened[8]  * Flattened[3]  * Flattened[14]
+			   + Flattened[12] * Flattened[2]  * Flattened[11]
+			   - Flattened[12] * Flattened[3]  * Flattened[10];
+
+	Inverse[9] = -Flattened[0] * Flattened[9]  * Flattened[15]
+			   + Flattened[0]  * Flattened[11] * Flattened[13]
+			   + Flattened[8]  * Flattened[1]  * Flattened[15]
+			   - Flattened[8]  * Flattened[3]  * Flattened[13]
+			   - Flattened[12] * Flattened[1]  * Flattened[11]
+			   + Flattened[12] * Flattened[3]  * Flattened[9];
+
+	Inverse[13] = Flattened[0]  * Flattened[9]  * Flattened[14]
+				- Flattened[0]  * Flattened[10] * Flattened[13]
+				- Flattened[8]  * Flattened[1]  * Flattened[14]
+				+ Flattened[8]  * Flattened[2]  * Flattened[13]
+				+ Flattened[12] * Flattened[1]  * Flattened[10]
+				- Flattened[12] * Flattened[2]  * Flattened[9];
+
+	Inverse[2] = Flattened[1]  * Flattened[6] * Flattened[15]
+			   - Flattened[1]  * Flattened[7] * Flattened[14]
+			   - Flattened[5]  * Flattened[2] * Flattened[15]
+			   + Flattened[5]  * Flattened[3] * Flattened[14]
+			   + Flattened[13] * Flattened[2] * Flattened[7]
+			   - Flattened[13] * Flattened[3] * Flattened[6];
+
+	Inverse[6] = -Flattened[0]  * Flattened[6] * Flattened[15]
+			   +  Flattened[0]  * Flattened[7] * Flattened[14]
+			   +  Flattened[4]  * Flattened[2] * Flattened[15]
+			   -  Flattened[4]  * Flattened[3] * Flattened[14]
+			   -  Flattened[12] * Flattened[2] * Flattened[7]
+			   +  Flattened[12] * Flattened[3] * Flattened[6];
+
+	Inverse[10] = Flattened[0]  * Flattened[5] * Flattened[15]
+				- Flattened[0]  * Flattened[7] * Flattened[13]
+				- Flattened[4]  * Flattened[1] * Flattened[15]
+				+ Flattened[4]  * Flattened[3] * Flattened[13]
+				+ Flattened[12] * Flattened[1] * Flattened[7]
+				- Flattened[12] * Flattened[3] * Flattened[5];
+
+	Inverse[14] = -Flattened[0]  * Flattened[5] * Flattened[14]
+				+  Flattened[0]  * Flattened[6] * Flattened[13]
+				+  Flattened[4]  * Flattened[1] * Flattened[14]
+				-  Flattened[4]  * Flattened[2] * Flattened[13]
+				-  Flattened[12] * Flattened[1] * Flattened[6]
+				+  Flattened[12] * Flattened[2] * Flattened[5];
+
+	Inverse[3]  = -Flattened[1] * Flattened[6] * Flattened[11]
+				+  Flattened[1] * Flattened[7] * Flattened[10]
+				+  Flattened[5] * Flattened[2] * Flattened[11]
+				-  Flattened[5] * Flattened[3] * Flattened[10]
+				-  Flattened[9] * Flattened[2] * Flattened[7]
+				+  Flattened[9] * Flattened[3] * Flattened[6];
+
+	Inverse[7] = Flattened[0] * Flattened[6] * Flattened[11]
+			   - Flattened[0] * Flattened[7] * Flattened[10]
+			   - Flattened[4] * Flattened[2] * Flattened[11]
+			   + Flattened[4] * Flattened[3] * Flattened[10]
+			   + Flattened[8] * Flattened[2] * Flattened[7]
+			   - Flattened[8] * Flattened[3] * Flattened[6];
+
+	Inverse[11] = -Flattened[0] * Flattened[5] * Flattened[11]
+				+  Flattened[0] * Flattened[7] * Flattened[9]
+				+  Flattened[4] * Flattened[1] * Flattened[11]
+				-  Flattened[4] * Flattened[3] * Flattened[9]
+				-  Flattened[8] * Flattened[1] * Flattened[7]
+				+  Flattened[8] * Flattened[3] * Flattened[5];
+
+	Inverse[15] = Flattened[0] * Flattened[5] * Flattened[10]
+				- Flattened[0] * Flattened[6] * Flattened[9]
+				- Flattened[4] * Flattened[1] * Flattened[10]
+				+ Flattened[4] * Flattened[2] * Flattened[9]
+				+ Flattened[8] * Flattened[1] * Flattened[6]
+				- Flattened[8] * Flattened[2] * Flattened[5];
+
+	Determinant = Flattened[0] * Inverse[0] + Flattened[1] * Inverse[4] + Flattened[2] * Inverse[8] + Flattened[3] * Inverse[12];
+	if (Determinant == 0.0f) return M44F_IDENTITY;
+
+	Determinant = 1.0f / Determinant;
+	for (int I = 0; I < 16; I++)
+	{
+		Inverse[I] *= Determinant;
+	}
+
+	Result.E[0][0] = Inverse[0];  Result.E[0][1] = Inverse[1];  Result.E[0][2] = Inverse[2];  Result.E[0][3] = Inverse[3];
+	Result.E[1][0] = Inverse[4];  Result.E[1][1] = Inverse[5];  Result.E[1][2] = Inverse[6];  Result.E[1][3] = Inverse[7];
+	Result.E[2][0] = Inverse[8];  Result.E[2][1] = Inverse[9];  Result.E[2][2] = Inverse[10]; Result.E[2][3] = Inverse[11];
+	Result.E[3][0] = Inverse[12]; Result.E[3][1] = Inverse[13]; Result.E[3][2] = Inverse[14]; Result.E[3][3] = Inverse[15];
 	return Result;
 }
 

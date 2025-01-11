@@ -1,3 +1,4 @@
+#include "render.h"
 #include "ui.h"
 #include "maths.h"
 
@@ -11,7 +12,7 @@ str8 UI_DisplayString(m_arena *Arena, str8 String)
 	str8 Result = {0};
 	for(int I = 1; I < String.Size; I++)
 	{
-		if(String.Bytes[I] == '#' && 
+		if(String.Bytes[I] == '#' &&
 		   I + 1 < String.Size && String.Bytes[I+1] == '#')
 		{
 			Result = Str8Copy(Arena, (str8){I, String.Bytes});
@@ -26,7 +27,7 @@ str8 UI_HashString(m_arena *Arena, str8 String)
 	str8 Result = {0};
 	for(int I = 1; I < String.Size; I++)
 	{
-		if(String.Bytes[I] == '#' && 
+		if(String.Bytes[I] == '#' &&
 		   I + 1 < String.Size && String.Bytes[I+1] == '#' &&
 		   I + 2 < String.Size && String.Bytes[I+2] == '#')
 		{
@@ -52,7 +53,7 @@ int UI_GetTextWidth(d_font Font, draw_context *Draw, str8 String, f32 HeightInPi
 
 void UI_DrawBoxCorners(ui_context *UI, draw_context *Draw, m_arena *Arena, v2f Position, v2f Size, f32 LengthOfCornersInPixels)
 {
-	
+
 	f32 Width = Size.X;
 	f32 Height = Size.Y;
 	v2f Corners[4] =
@@ -85,14 +86,24 @@ b32 UI_TextButton(ui_context *UI, draw_context *Draw, m_arena *Arena,
 	f32 Height = D_LineHeightFromFont(UI->Font, HeightInPixels);
 	f32 Width = UI_GetTextWidth(UI->Font, Draw, DisplayString, HeightInPixels);
 
-	v2f BoxPosition = AddV2F(Position, v2f(0, UI->Font.Descent * Scale));
-	
-	if(UI->MousePosition.X >= BoxPosition.X && UI->MousePosition.X <= (BoxPosition.X + Width) &&
-	   UI->MousePosition.Y >= BoxPosition.Y && UI->MousePosition.Y <= (BoxPosition.Y + Height))
+	v2f Min = AddV2F(Position, v2f(0, UI->Font.Descent * Scale));
+	v2f Max = v2f(Min.X + Width, Min.Y + Height);
+
+	v4f MouseNDC = v4f(UI->MousePosition.X, UI->MousePosition.Y, 0, 1);
+	MouseNDC.X = (MouseNDC.X/sapp_widthf())*2.0 - 1.0;
+	MouseNDC.Y = (MouseNDC.Y/sapp_heightf())*2.0 -1.0;
+
+	v4f MouseWorld = MulM44FV4F(M44FTranspose(R_CurrentInverseTransform(Draw->Render)), MouseNDC);
+	v2f MousePosition = v2f(MouseWorld.X / MouseWorld.W, MouseWorld.Y / MouseWorld.W);
+
+	LogInfo("MousePosition: ?v2f", MousePosition);
+
+	if(MousePosition.X >= Min.X && MousePosition.X <= (Max.X) &&
+	   MousePosition.Y >= Min.Y && MousePosition.Y <= (Max.Y))
 	{
 		UI->Hot = Hash;
 	}
-	else 
+	else
 	{
 		UI->HotAnimation = LerpF32(UI->HotAnimation, 0.0, 0.1);
 	}

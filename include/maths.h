@@ -193,6 +193,8 @@ m44f M44FLookAt(v3f From, v3f To, v3f ArbitraryUp);
 m44f M44FTranslate(v3f Translate);
 m44f M44FScale(v3f Scale);
 
+m44f M44FInverse(m44f M);
+
 extern m44f M44F_IDENTITY;
 
 typedef union m44d { f64 E[4][4]; } m44d;

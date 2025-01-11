@@ -78,6 +78,7 @@ typedef struct render_context
 	void *Backend;
 
 	m44f TransformStack[MAX_TRANSFORMS];
+	m44f InverseTransformStack[MAX_TRANSFORMS];
 	int TransformCount;
 }
 render_context;
@@ -92,3 +93,6 @@ void R_PushCommand(render_context *R, m_arena *Arena, r_command Command);
 
 void R_PushTransform(render_context *Render, m44f Transform);
 void R_PopTransform(render_context *Render);
+
+m44f R_CurrentTransform(render_context *Render);
+m44f R_CurrentInverseTransform(render_context *Render);

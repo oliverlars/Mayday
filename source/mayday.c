@@ -62,6 +62,22 @@ mayday_context;
 
 #include "shaders.h"
 
+typedef struct label
+{
+	fdg_node *Node;
+	v2f LabelSize;
+
+} label;
+
+int LabelSortFunction(const void *A, const void *B)
+{
+	label *X = A;
+	label *Y = B;
+	if (X->Node->Position.Y < Y->Node->Position.Y) return 1;
+	if (X->Node->Position.Y > Y->Node->Position.Y) return -1;
+	return 0;
+}
+
 void OS_Update(void *Data)
 {
 	mayday_context *M = Data;
@@ -102,6 +118,44 @@ void OS_Update(void *Data)
 		UI_TreeView(M->UI, M->Draw,  &M->Shared,
 					M->FrameArena, &M->TreeView, M->Folder, v2f((f32)WindowWidth, (f32)WindowHeight));
 
+		label *Labels = ArenaPushArrayZero(M->FrameArena, label, M->TreeView.Info.NodeCount);
+		int ActualLabelCount = 0;
+		for(os_directory_tree_iterator It = {0};
+			OS_DirectoryTreeIterate(M->TreeView.Info.Tree, &It);)
+		{
+			if(It.Current->Type == OS_DIR_ENTRY_FOLDER)
+			{
+				Labels[ActualLabelCount].Node = M->TreeView.Info.Nodes + It.Index;
+				str8 Label = Str8FromLastCharacter(M->FrameArena, M->TreeView.Info.Nodes[It.Index].Name, '/');
+				Labels[ActualLabelCount].LabelSize.X = UI_GetTextWidth(M->UI->Font, M->Draw, Label, 40);
+				Labels[ActualLabelCount].LabelSize.Y = 40;
+				ActualLabelCount += 1;
+			}
+			else if(It.Depth == 1 && It.Current->Type != OS_DIR_ENTRY_FOLDER)
+			{
+				Labels[ActualLabelCount].Node = M->TreeView.Info.Nodes + It.Index;
+				str8 Label = Str8FromLastCharacter(M->FrameArena, M->TreeView.Info.Nodes[It.Index].Name, '/');
+				Labels[ActualLabelCount].LabelSize.X = UI_GetTextWidth(M->UI->Font, M->Draw, Label, 40);
+				Labels[ActualLabelCount].LabelSize.Y = 40;
+				ActualLabelCount += 1;
+			}
+		}
+		qsort(Labels, ActualLabelCount, sizeof(label), LabelSortFunction);
+		// for(int I = 1; I < ActualLabelCount; I++)
+		// {
+		// 	v2f P[2] = { Labels[I].Node->Position, Labels[I-1].Node->Position};
+		// 	f32 Bottom[2] = { P[0].Y, P[1].Y };
+		// 	f32 Top[2] = { P[0].Y + Labels[I].LabelSize.Y, P[1].Y + Labels[I-1].LabelSize.Y };
+
+		// 	f32 Left[2] = { P[0].X, P[1].X };
+		// 	f32 Right[2] = { P[0].X + Labels[I].LabelSize.X, P[1].X + Labels[I-1].LabelSize.X };
+
+		// 	if((Left[0] < Right[1]) && (Right[0] > Left[1]) &&
+		// 	   (Bottom[0] < Top[1]) && (Top[0] > Bottom[1]))
+		// 	{
+		// 		Labels[I].Node->TargetPosition.Y += Top[0] - Bottom[1];
+		// 	}
+		// }
 		ui_tree_view_signal TreeSignal = UI_TreeViewFolderLabels(M->UI, M->Draw, M->FrameArena, &M->TreeView, M->Folder);
 
 		R_PopTransform(M->Render);

@@ -16,6 +16,7 @@ typedef struct fdg_node
 	// These should probably not be stored here
 	str8 Name;
 	b32 IsFolder;
+	f32 Radius;
 } fdg_node;
 
 typedef struct fdg_link

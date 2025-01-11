@@ -96,8 +96,6 @@ b32 UI_TextButton(ui_context *UI, draw_context *Draw, m_arena *Arena,
 	v4f MouseWorld = MulM44FV4F(M44FTranspose(R_CurrentInverseTransform(Draw->Render)), MouseNDC);
 	v2f MousePosition = v2f(MouseWorld.X / MouseWorld.W, MouseWorld.Y / MouseWorld.W);
 
-	LogInfo("MousePosition: ?v2f", MousePosition);
-
 	if(MousePosition.X >= Min.X && MousePosition.X <= (Max.X) &&
 	   MousePosition.Y >= Min.Y && MousePosition.Y <= (Max.Y))
 	{

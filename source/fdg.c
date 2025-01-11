@@ -39,7 +39,7 @@ void DrawBounds(draw_context *Draw, m_arena *Arena, bounds Bounds)
 void DrawQuadTree(draw_context *Draw, m_arena *Arena, quadtree_header *QuadTree, int QuadTreeIndex)
 {
 	DrawBounds(Draw, Arena, QuadTree->Bounds[QuadTreeIndex]);
-	
+
 	for(int I = 0; I < 4; I++)
 	{
 		if(QuadTree->Quadrants[QuadTreeIndex].Children[I])
@@ -60,9 +60,9 @@ bounds GetBounds(fdg_node *Nodes, int NodeCount)
 
 		Max.X = Max(Max.X, Nodes[I].TargetPosition.X);
 		Max.Y = Max(Max.Y, Nodes[I].TargetPosition.Y);
-		
+
 	}
-	
+
 	return (bounds){Min, Max};
 }
 
@@ -102,7 +102,8 @@ void QuadTreeBuild(m_arena *Arena, quadtree_header *QuadTree, QuadTree_index Qua
 	}
 	else
 	{
-		if(QuadTree->Nodes[ChildIndex] && (Depth >= 64))
+		if((QuadTree->Nodes[ChildIndex] && (Depth >= 64)) ||
+		   ((Max.X - Min.X) < 0.1 || (Max.Y - Min.Y) < 0.1))
 		{
 			quadrant_node *LastNode = QuadTree->Nodes[ChildIndex];
 			for(;LastNode->Next; LastNode = LastNode->Next);
@@ -178,41 +179,44 @@ v2f QuadTreeCalculateAttributes(quadtree_header *QuadTree, int QuadrantIndex)
 }
 
 // https://patterns.eecs.berkeley.edu/?page_id=193
-v2f ForceDisplacementFromPosition(quadtree_header *QuadTree, int QuadrantIndex, v2f Position, f32 K)
-{	
+v2f ForceDisplacementFromPosition(quadtree_header *QuadTree, int QuadrantIndex, fdg_node *Node, f32 K)
+{
 	v2f Result = v2f(0.0);
 
 	int QuadrantStack[1024];
 	int StackTop = 0;
 	QuadrantStack[StackTop++] = QuadrantIndex;
 
-	for(;StackTop;)
+	v2f Position = Node->TargetPosition;
+
+	for(;StackTop > 0;)
 	{
 		QuadrantIndex = QuadrantStack[--StackTop];
 		v2f Centre = QuadTree->Masses[QuadrantIndex];
 		v2f PositionToCentre = v2f(Position.X - Centre.X, Position.Y - Centre.Y);
-
-		f32 DistanceSquared = PositionToCentre.X*PositionToCentre.X + PositionToCentre.Y*PositionToCentre.Y;
+		f64 DistanceSquared = PositionToCentre.X*PositionToCentre.X + PositionToCentre.Y*PositionToCentre.Y;
+		f64 Distance = sqrt(DistanceSquared);
+		f64 EffectiveDistance = Max((f32)Distance - 15, 1.0);
 		if(QuadTree->ChildrenCounts[QuadrantIndex] == 1)
 		{
-			f32 Scale = (K) / (DistanceSquared + 0.01);
+			f64 ForceMagnitude = (K) / (EffectiveDistance*EffectiveDistance + 0.01);
 
-			Result.X += Scale * PositionToCentre.X;
-			Result.Y += Scale * PositionToCentre.Y;
+			Result.X += ForceMagnitude * PositionToCentre.X;
+			Result.Y += ForceMagnitude * PositionToCentre.Y;
 		}
 		else
 		{
 			v2f MaxSubMin = SubV2F(QuadTree->Bounds[QuadrantIndex].Max, QuadTree->Bounds[QuadrantIndex].Min);
 			f32 QuadrantRadiusSquared = MaxSubMin.X*MaxSubMin.X + MaxSubMin.Y*MaxSubMin.Y;
-			if(QuadrantRadiusSquared/(DistanceSquared + 0.01) < 1.0)
+			if(QuadrantRadiusSquared/(EffectiveDistance*EffectiveDistance + 0.01) < 0.5)
 			{
-				f32 Scale = QuadTree->ChildrenCounts[QuadrantIndex] * (K) / (DistanceSquared + 0.01);
+				f32 ForceMagnitude = QuadTree->ChildrenCounts[QuadrantIndex] * (K) / (EffectiveDistance*EffectiveDistance + 0.01);
 
-				Result.X += Scale * PositionToCentre.X;
-				Result.Y += Scale * PositionToCentre.Y;
+				Result.X += ForceMagnitude * PositionToCentre.X;
+				Result.Y += ForceMagnitude * PositionToCentre.Y;
 			}
 			else
-			{			
+			{
 				for(int I = 0; I < 4; I++)
 				{
 					if(QuadTree->Quadrants[QuadrantIndex].Children[I])
@@ -239,7 +243,7 @@ typedef struct parallel_force_displacement
 
 void ParallelForceDisplacement(wave_info *WaveInfo, void* Input)
 {
-	
+
 	parallel_force_displacement *P = Input;
 	int Count = LaneValueFromTotal(WaveInfo, P->NodeCount);
 	int Index = ExclusiveWavePrefixSum(WaveInfo, Count);
@@ -248,7 +252,7 @@ void ParallelForceDisplacement(wave_info *WaveInfo, void* Input)
 	{
 		P->Displacements[I] = ForceDisplacementFromPosition(P->QuadTree,
 														   0,
-														   P->Nodes[I].TargetPosition,
+														   P->Nodes + I,
 														   P->K);
 
 	}
@@ -264,7 +268,7 @@ void SimulateForceDirectedGraphQuadTree(m_arena *Arena, fdg_node *Nodes, int Nod
 									  quadtree_header *QuadTree, shared_wave_info *Shared)
 {
 	u64 Start = OS_TimeStampNow();
-	f32 K = 10000.0*(1.0/powf((f32)NodeCount, 0.7));
+	f32 K = 5.0;
 
 	v2f *Displacements = ArenaPushArrayZero(Arena, v2f, NodeCount);
 
@@ -312,7 +316,9 @@ void SimulateForceDirectedGraphQuadTree(m_arena *Arena, fdg_node *Nodes, int Nod
 
 		f32 DX = Nodes[A].TargetPosition.X - Nodes[B].TargetPosition.X;
 		f32 DY = Nodes[A].TargetPosition.Y - Nodes[B].TargetPosition.Y;
-		f32 Distance = sqrtf(DX * DX + DY * DY);
+		v2f Delta = v2f(DX, DY);
+		Delta = NormalizeV2F(Delta);;
+		f32 Distance = LengthV2F(Delta);
 
 		if(Distance > 0)
 		{

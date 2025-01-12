@@ -126,6 +126,87 @@ b32 UI_TextButton(ui_context *UI, draw_context *Draw, m_arena *Arena,
 	return Clicked;
 }
 
+b32 UI_TextButtonWrapping(ui_context *UI, draw_context *Draw, m_arena *Arena,
+				 		  str8 String, f32 HeightInPixels, v2f Position, v4f Colour)
+{
+	u64 Hash = M_FNVHashString(M_FNV_HASH_START, String);
+	f32 Scale = stbtt_ScaleForPixelHeight(&UI->Font.Info, HeightInPixels);
+
+	int MaxCharacters = 32;
+
+	str8 DisplayString = UI_DisplayString(Arena, String);
+
+	str8 FirstLine = DisplayString;
+	str8 SecondLine = DisplayString;
+	int LineCount = 1;
+	if(DisplayString.Size > MaxCharacters)
+	{
+		LineCount = 2;
+		//SecondLine.Size = DisplayString.Size - MaxCharacters/2;
+		//SecondLine.Bytes += MaxCharacters/2;
+		FirstLine = Str8PushF(Arena, "?S...?S", (str8){MaxCharacters/2-1, DisplayString.Bytes}, (str8){MaxCharacters/2, DisplayString.Bytes + DisplayString.Size - MaxCharacters/2});
+	}
+
+	f32 Height = D_LineHeightFromFont(UI->Font, HeightInPixels);
+	f32 Width = UI_GetTextWidth(UI->Font, Draw, DisplayString, HeightInPixels);
+
+	v2f Min = AddV2F(Position, v2f(0, UI->Font.Descent * Scale));
+	v2f Max = v2f(Min.X + Width, Min.Y + Height);
+
+	v4f MouseNDC = v4f(UI->MousePosition.X, UI->MousePosition.Y, 0, 1);
+	MouseNDC.X = (MouseNDC.X/sapp_widthf())*2.0 - 1.0;
+	MouseNDC.Y = (MouseNDC.Y/sapp_heightf())*2.0 -1.0;
+
+	v4f MouseWorld = MulM44FV4F(M44FTranspose(R_CurrentInverseTransform(Draw->Render)), MouseNDC);
+	v2f MousePosition = v2f(MouseWorld.X / MouseWorld.W, MouseWorld.Y / MouseWorld.W);
+
+	if(MousePosition.X >= Min.X && MousePosition.X <= (Max.X) &&
+	   MousePosition.Y >= Min.Y && MousePosition.Y <= (Max.Y))
+	{
+		UI->Hot = Hash;
+	}
+	else
+	{
+		UI->HotAnimation = LerpF32(UI->HotAnimation, 0.0, 0.1);
+	}
+
+	b32 Clicked = False;
+	if(UI->Hot == Hash)
+	{
+		if(UI->MouseWentUp)
+		{
+			Clicked = True;
+		}
+
+		UI->HotAnimation = LerpF32(UI->HotAnimation, 1.0, 0.1);
+		if(LineCount == 2)
+		{
+			D_DrawStr8(Draw, Arena, UI->Font, Position, v4f(1, 1, 1, 1), HeightInPixels, FirstLine);
+			//Position.Y -= HeightInPixels;
+			//D_DrawStr8(Draw, Arena, UI->Font, Position, v4f(1, 1, 1, 1), HeightInPixels, SecondLine);
+		}
+		else
+		{
+			D_DrawStr8(Draw, Arena, UI->Font, Position, v4f(1, 1, 1, 1), HeightInPixels, DisplayString);
+		}
+	}
+	else
+	{
+		if(LineCount == 2)
+		{
+			D_DrawStr8(Draw, Arena, UI->Font, Position, v4f(0.2, 0.5, 0.0, 1.0), HeightInPixels, FirstLine);
+			//Position.Y -= HeightInPixels;
+			//D_DrawStr8(Draw, Arena, UI->Font, Position, v4f(0.2, 0.5, 0.0, 1.0), HeightInPixels, SecondLine);
+		}
+		else
+		{
+			D_DrawStr8(Draw, Arena, UI->Font, Position, v4f(0.2, 0.5, 0.0, 1.0), HeightInPixels, DisplayString);
+		}
+	}
+
+	return Clicked;
+}
+
 void UI_Begin(ui_context *UI)
 {
 	UI->Hot = 0;

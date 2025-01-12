@@ -197,7 +197,7 @@ void OS_Update(void *Data)
 	M->FrameArena = M->PreviousFrameArena;
 	M->PreviousFrameArena = TempArena;
 
-	M->UI->MouseWasPressed = False;
+	M->UI->MouseWentDown = False;
 	M->UI->MouseWentUp = False;
 }
 
@@ -280,7 +280,7 @@ void OS_Event(const sapp_event *Event, void *Data)
 				M->UI->MultiClickCount = 0;
 			}
 
-			M->UI->MouseWasPressed = True;
+			M->UI->MouseWentDown = True;
 			M->UI->MouseWentUp = False;
 			M->UI->TimeStampWhenMousePressed = OS_TimeStampNow();
 		}
@@ -293,7 +293,7 @@ void OS_Event(const sapp_event *Event, void *Data)
 	else if(Event->type == SAPP_EVENTTYPE_MOUSE_UP)
 	{
 		M->UI->MouseWentUp = True;
-		M->UI->MouseWasPressed = False;
+		M->UI->MouseWentDown = False;
 	}
 	else if(Event->type == SAPP_EVENTTYPE_KEY_DOWN)
 	{

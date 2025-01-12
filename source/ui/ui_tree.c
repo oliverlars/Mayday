@@ -21,8 +21,9 @@ ui_tree_info TreeInfoFromPath(m_arena *Arena, str8 Path, v2f Size)
 	random32_state RandomState = {0};
 	RandomState.State = (u32)M_FNV_HASH_START;
 	for(os_directory_tree_iterator It = {0};
-		OS_DirectoryTreeIterateWithStack(Arena, Info.Tree, &It);)
+		OS_DirectoryTreeIterate(Info.Tree, &It);)
 	{
+
 		f32 X = (0.5*RandomBilateral(&RandomState) + 0.5)*Size.X;
 		f32 Y = (0.5*RandomBilateral(&RandomState) + 0.5)*Size.Y;
 		Info.Nodes[It.Index].TargetPosition = v2f(X, Y);
@@ -30,7 +31,11 @@ ui_tree_info TreeInfoFromPath(m_arena *Arena, str8 Path, v2f Size)
 		Info.Nodes[It.Index].Position = Info.Nodes[It.Index].TargetPosition;
 		Info.Nodes[It.Index].Name = It.Current->PathAndName;
 		Info.Nodes[It.Index].IsFolder = It.Current->Type == OS_DIR_ENTRY_FOLDER;
-		Info.Nodes[It.Index].Radius = 0.0 + 20.0*(0.5*RandomBilateral(&RandomState) + 0.5);
+
+		if(It.Depth == 1)
+		{
+			Info.Nodes[It.Index].Radius = 2*Str8UpToLastCharacter(Scratch.Arena, It.Current->PathAndName, '/').Size;
+		}
 	}
 
 	for(int I = 0; I < Info.Tree.Count; I++)
@@ -94,7 +99,7 @@ void UI_TreeView(ui_context *UI, draw_context *Draw, shared_wave_info *Shared,
 		}
 		TreeView->Info = NextInfo;
 		TreeView->TreeHash = Hash;
-		TreeView->Temperature = 100.0;
+		TreeView->Temperature = 150.0;
 	}
 
 	quadtree_header *QuadTree = ArenaPushArrayZero(Arena, quadtree_header, 1);
@@ -147,12 +152,12 @@ void UI_TreeView(ui_context *UI, draw_context *Draw, shared_wave_info *Shared,
 
 
 	D_DrawPointsArray(Draw, Arena, Positions, TreeView->Info.NodeCount, v4f(1, 0, 0, 1));
-	D_DrawLinesArray(Draw, Arena, LinePositions, TreeView->Info.LinkCount*2, v4f(0.5, 0.1, 0, 1));
+	//D_DrawLinesArray(Draw, Arena, LinePositions, TreeView->Info.LinkCount*2, v4f(0.5, 0.1, 0, 1));
 
 	bounds TotalBounds = GetBounds(TreeView->Info.Nodes, TreeView->Info.NodeCount);
 	v2f Centre = DivV2F(AddV2F(TotalBounds.Min, TotalBounds.Max), v2f(2.0, 2.0));
 
-	DrawQuadTree(Draw, Arena, QuadTree, 0);
+	//DrawQuadTree(Draw, Arena, QuadTree, 0);
 
 	for(int I = 0; I < TreeView->Info.NodeCount; I++)
 	{
@@ -170,11 +175,11 @@ ui_tree_view_signal UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw,
 	for(os_directory_tree_iterator It = {0};
 		OS_DirectoryTreeIterate(TreeView->Info.Tree, &It);)
 	{
-		f32 FontSize = 40;
+		f32 FontSize = 30;
 		if(TreeView->Info.Nodes[It.Index].IsFolder)
 		{
 
-			b32 Clicked = UI_TextButton(UI, Draw,
+			b32 Clicked = UI_TextButtonWrapping(UI, Draw,
 				Arena, Str8PushF(Arena, "?S##?u32", Str8FromLastCharacter(Arena, TreeView->Info.Nodes[It.Index].Name, '/'), It.Index),
 				FontSize,
 				TreeView->Info.Nodes[It.Index].Position, v4f(0.5, 0.1, 0.0, 1));
@@ -188,7 +193,7 @@ ui_tree_view_signal UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw,
 		{
 			if(!TreeView->Info.Nodes[It.Index].IsFolder)
 			{
-				b32 Clicked = UI_TextButton(UI, Draw,
+				b32 Clicked = UI_TextButtonWrapping(UI, Draw,
 					Arena, Str8PushF(Arena, "?S##?u32", Str8FromLastCharacter(Arena, TreeView->Info.Nodes[It.Index].Name, '/'), It.Index),
 					FontSize,
 					TreeView->Info.Nodes[It.Index].Position, v4f(0.5, 0.1, 0.0, 1));

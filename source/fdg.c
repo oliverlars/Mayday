@@ -196,7 +196,7 @@ v2f ForceDisplacementFromPosition(quadtree_header *QuadTree, int QuadrantIndex, 
 		v2f PositionToCentre = v2f(Position.X - Centre.X, Position.Y - Centre.Y);
 		f64 DistanceSquared = PositionToCentre.X*PositionToCentre.X + PositionToCentre.Y*PositionToCentre.Y;
 		f64 Distance = sqrt(DistanceSquared);
-		f64 EffectiveDistance = Max((f32)Distance - 15, 1.0);
+		f64 EffectiveDistance = Max((f32)Distance - Node->Radius, 1.0);
 		if(QuadTree->ChildrenCounts[QuadrantIndex] == 1)
 		{
 			f64 ForceMagnitude = (K) / (EffectiveDistance*EffectiveDistance + 0.01);
@@ -344,7 +344,7 @@ void SimulateForceDirectedGraphQuadTree(m_arena *Arena, fdg_node *Nodes, int Nod
 		}
 	}
 
-	Temperature[0] = LerpF32(Temperature[0], 0.0, 0.05);
+	Temperature[0] = LerpF32(Temperature[0], 0.001, 0.05);
 
 	LogInfo("Time to simulate: ?f32", OS_MilliSecondsFromTimeStamp(OS_TimeStampNow() - Start));
 }

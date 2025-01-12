@@ -30,19 +30,25 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 	}
 
 	int MainCursorLine = E_LineFromBufferIndex(Edit, Cursors[0].Selection.Y, Buffer);
-	for(int I = 0; I < 50; I++)
+	int LineCount = 0;
+	for(int I = 0; I < Buffer->String.Size; I++)
 	{
-		if(MainCursorLine == I)
+		if(MainCursorLine == LineCount)
 		{
 			D_DrawStr8(Draw, Arena, Font, NumbersPosition,
-				v4f(0.8, 0.3, 0, 1), LineHeight, Str8PushF(Arena, "?u32", I + 1));
+				v4f(0.8, 0.3, 0, 1), LineHeight, Str8PushF(Arena, "?u32", LineCount + 1));
 		}
 		else
 		{
 			D_DrawStr8(Draw, Arena, Font, NumbersPosition,
-					   v4f(0.1, 0.04, 0, 1), LineHeight, Str8PushF(Arena, "?u32", I + 1));
+					   v4f(0.1, 0.04, 0, 1), LineHeight, Str8PushF(Arena, "?u32", LineCount + 1));
 		}
-		NumbersPosition.Y -= LineHeight;
+
+		if(Buffer->String.Bytes[I] == '\n')
+		{
+			LineCount += 1;
+			NumbersPosition.Y -= LineHeight;
+		}
 	}
 
 	for(cursor *Cursor = Cursors; Cursor; Cursor = Cursor->Next)
@@ -65,7 +71,7 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 			   Buffer->HeightInPixels, Buffer->String);
 
 
-	if(UI->MouseIsDragging || UI->MouseWasPressed)
+	if(UI->MouseIsDragging || UI->MouseWentDown)
 	{
 		Cursors[0].TargetPosition = E_GetPositionFromEditableBuffer(Edit,
 																	Draw,

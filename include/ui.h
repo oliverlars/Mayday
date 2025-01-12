@@ -47,6 +47,22 @@ typedef struct ui_tree
 	v2f Offset;
 } ui_tree;
 
+typedef enum ui_mouse_buttons
+{
+	MOUSE_BUTTON_LEFT,
+	MOUSE_BUTTON_RIGHT,
+	MOUSE_BUTTON_MIDDLE,
+	MOUSE_BUTTON_COUNT,
+} ui_mouse_buttons;
+
+typedef enum ui_modifiers
+{
+	MODIFIER_ALT,
+	MODIFIER_CTRL,
+	MODIFIER_CMD,
+	MODIFIER_OPTION,
+} ui_modifiers;
+
 typedef struct ui_context
 {
 	u64 Hot;
@@ -62,8 +78,14 @@ typedef struct ui_context
 
 	b32 MouseIsDragging;
 	v2i MousePosition;
-	b32 MouseWasPressed;
+	b32 MouseWentDown;
 	b32 MouseWentUp;
+
+	b32 MouseButtonWasDown[MOUSE_BUTTON_COUNT];
+	b32 MouseButtonWasUp[MOUSE_BUTTON_COUNT];
+
+
+	str8 TextToInsert;
 
 	u8 MultiClickCount;
 	u64 TimeStampWhenMousePressed;
@@ -81,6 +103,10 @@ b32 UI_TextButton(ui_context *UI, draw_context *Draw,
 				  m_arena *Arena, str8 String,
 				  f32 HeightInPixels,
 				  v2f Position, v4f Colour);
+
+b32 UI_TextButtonWrapping(ui_context *UI, draw_context *Draw, m_arena *Arena,
+				 		  str8 String, f32 HeightInPixels, v2f Position, v4f Colour);
+
 
 int UI_GetTextWidth(d_font Font, draw_context *Draw, str8 String, f32 HeightInPixels);
 

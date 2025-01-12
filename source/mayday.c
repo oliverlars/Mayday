@@ -71,8 +71,8 @@ typedef struct label
 
 int LabelSortFunction(const void *A, const void *B)
 {
-	label *X = A;
-	label *Y = B;
+	const label *X = A;
+	const label *Y = B;
 	if (X->Node->Position.Y < Y->Node->Position.Y) return 1;
 	if (X->Node->Position.Y > Y->Node->Position.Y) return -1;
 	return 0;
@@ -87,7 +87,9 @@ void OS_Update(void *Data)
 	int WindowHeight = OS_WindowHeight(&M->Window);
 	int WindowWidth = OS_WindowWidth(&M->Window);
 
-	m44f Transform = M44FOrthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0);
+	//m44f Transform = M44FOrthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0);
+	m44f Transform = M44FPerspective(sapp_widthf()/sapp_heightf(), 100, 0.1, 1000.0);
+	Transform = MulM44FM44F(M44FLookAt(v3f(0, 0, 100), v3f(0, 0, 0), v3f(0, 1, 0)), Transform);
 	R_PushTransform(M->Render, Transform);
 	D_DrawQuad(M->Draw, M->FrameArena, v2f(0, 0),  WindowWidth, WindowHeight, v4f(0.008, 0.00, 0, 1.0));
 
@@ -111,13 +113,13 @@ void OS_Update(void *Data)
 
 		if(M->TreeView.Info.Nodes)
 		{
-			Centre = SubV2F(v2f(sapp_widthf()/2.0, sapp_heightf()/2.0), M->TreeView.Info.Nodes[0].Position);
+			//Centre = SubV3F(v3f(sapp_widthf()/2.0, sapp_heightf()/2.0), M->TreeView.Info.Nodes[0].Position);
 		}
 
-		R_PushTransform(M->Render, MulM44FM44F(M44FTranslate(v3f(Centre.X, Centre.Y, 0)), Transform));
 		UI_TreeView(M->UI, M->Draw,  &M->Shared,
-					M->FrameArena, &M->TreeView, M->Folder, v2f((f32)WindowWidth, (f32)WindowHeight));
+					M->FrameArena, &M->TreeView, M->Folder, v3f(0.1, 0.1, 0.1));
 
+		R_PushTransform(M->Render, M44FOrthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
 		label *Labels = ArenaPushArrayZero(M->FrameArena, label, M->TreeView.Info.NodeCount);
 		int ActualLabelCount = 0;
 		for(os_directory_tree_iterator It = {0};
@@ -158,7 +160,6 @@ void OS_Update(void *Data)
 		// }
 		ui_tree_view_signal TreeSignal = UI_TreeViewFolderLabels(M->UI, M->Draw, M->FrameArena, &M->TreeView, M->Folder);
 
-		R_PopTransform(M->Render);
 
 		if(TreeSignal.Clicked)
 		{
@@ -175,6 +176,8 @@ void OS_Update(void *Data)
 
 		D_DrawStr8(M->Draw, M->FrameArena, M->LogoFont, v2f(50, 50), v4f(1.0, 0.05, 0.0, 1), 100, Str8("MAYDAY!"));
 	}
+
+	R_PopTransform(M->Render);
 
 	R_PopTransform(M->Render);
 

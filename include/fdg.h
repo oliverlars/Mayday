@@ -11,8 +11,8 @@
 // Force directed graph node
 typedef struct fdg_node
 {
-	v2f TargetPosition;
-	v2f Position;
+	v3f TargetPosition;
+	v3f Position;
 	// These should probably not be stored here
 	str8 Name;
 	b32 IsFolder;
@@ -27,8 +27,8 @@ typedef struct fdg_link
 
 typedef struct bounds
 {
-	v2f Min;
-	v2f Max;
+	v3f Min;
+	v3f Max;
 } bounds;
 
 
@@ -36,7 +36,7 @@ typedef u32 QuadTree_index;
 
 typedef struct Quadrant
 {
-	QuadTree_index Children[4];
+	QuadTree_index Children[8];
 }
 Quadrant;
 
@@ -48,7 +48,7 @@ typedef struct Quadrant_node
 
 typedef struct quadtree_header
 {
-	v2f          *Masses;
+	v3f          *Masses;
 	int          *ChildrenCounts;
 	quadrant_node **Nodes;
 	bounds       *Bounds;
@@ -65,7 +65,7 @@ void SimulateForceDirectedGraphQuadTree(m_arena *Arena, fdg_node *Nodes, int Nod
 bounds GetBounds(fdg_node *Nodes, int NodeCount);
 
 void QuadTreeBuild(m_arena *Arena, quadtree_header *QuadTree, QuadTree_index QuadrantIndex, fdg_node *Node, int Depth);
-v2f QuadTreeCalculateAttributes(quadtree_header *QuadTree, int QuadrantIndex);
+v3f QuadTreeCalculateAttributes(quadtree_header *QuadTree, int QuadrantIndex);
 
 void DrawBounds(draw_context *Draw, m_arena *Arena, bounds Bounds);
 

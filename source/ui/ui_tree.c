@@ -8,7 +8,7 @@
 #include "wave.h"
 
 
-ui_tree_info TreeInfoFromPath(m_arena *Arena, str8 Path, v2f Size)
+ui_tree_info TreeInfoFromPath(m_arena *Arena, str8 Path, v3f Size)
 {
 	ui_tree_info Info = {0};
 	Info.Tree = OS_DirectoryTreeFromPath(Arena, Str8Copy(Arena, Path));
@@ -26,7 +26,8 @@ ui_tree_info TreeInfoFromPath(m_arena *Arena, str8 Path, v2f Size)
 
 		f32 X = (0.5*RandomBilateral(&RandomState) + 0.5)*Size.X;
 		f32 Y = (0.5*RandomBilateral(&RandomState) + 0.5)*Size.Y;
-		Info.Nodes[It.Index].TargetPosition = v2f(X, Y);
+		f32 Z = (0.5*RandomBilateral(&RandomState) + 0.5)*Size.Z;
+		Info.Nodes[It.Index].TargetPosition = v3f(X, Y, Z);
 		Info.Nodes[It.Index].TargetPosition = Info.Nodes[It.Index].TargetPosition;
 		Info.Nodes[It.Index].Position = Info.Nodes[It.Index].TargetPosition;
 		Info.Nodes[It.Index].Name = It.Current->PathAndName;
@@ -60,7 +61,7 @@ ui_tree_info TreeInfoFromPath(m_arena *Arena, str8 Path, v2f Size)
 }
 
 void UI_TreeView(ui_context *UI, draw_context *Draw, shared_wave_info *Shared,
-				 m_arena *Arena, ui_tree *TreeView, str8 Path, v2f Size)
+				 m_arena *Arena, ui_tree *TreeView, str8 Path, v3f Size)
 {
 	u64 Hash = M_FNVHashString(M_FNV_HASH_START, Path);
 	if(Hash != TreeView->TreeHash)
@@ -106,7 +107,7 @@ void UI_TreeView(ui_context *UI, draw_context *Draw, shared_wave_info *Shared,
 	QuadTree->Bounds = ArenaPushArrayZero(Arena, bounds, TreeView->Info.NodeCount*4);
 	QuadTree->ChildrenCounts = ArenaPushArrayZero(Arena, int, TreeView->Info.NodeCount*4);
 	QuadTree->Nodes = ArenaPushArrayZero(Arena, quadrant_node*, TreeView->Info.NodeCount*4);
-	QuadTree->Masses = ArenaPushArrayZero(Arena, v2f, TreeView->Info.NodeCount*4);
+	QuadTree->Masses = ArenaPushArrayZero(Arena, v3f, TreeView->Info.NodeCount*4);
 	QuadTree->Quadrants = ArenaPushArrayZero(Arena, Quadrant, TreeView->Info.NodeCount*4);
 
 	QuadTree->Bounds[0] = GetBounds(TreeView->Info.Nodes, TreeView->Info.NodeCount);
@@ -152,16 +153,16 @@ void UI_TreeView(ui_context *UI, draw_context *Draw, shared_wave_info *Shared,
 
 
 	D_DrawPointsArray(Draw, Arena, Positions, TreeView->Info.NodeCount, v4f(1, 0, 0, 1));
-	//D_DrawLinesArray(Draw, Arena, LinePositions, TreeView->Info.LinkCount*2, v4f(0.5, 0.1, 0, 1));
+	D_DrawLinesArray(Draw, Arena, LinePositions, TreeView->Info.LinkCount*2, v4f(0.5, 0.1, 0, 1));
 
 	bounds TotalBounds = GetBounds(TreeView->Info.Nodes, TreeView->Info.NodeCount);
-	v2f Centre = DivV2F(AddV2F(TotalBounds.Min, TotalBounds.Max), v2f(2.0, 2.0));
+	v3f Centre = DivV3F(AddV3F(TotalBounds.Min, TotalBounds.Max), v3f(2.0, 2.0, 2.0));
 
-	//DrawQuadTree(Draw, Arena, QuadTree, 0);
+	DrawQuadTree(Draw, Arena, QuadTree, 0);
 
 	for(int I = 0; I < TreeView->Info.NodeCount; I++)
 	{
-		TreeView->Info.Nodes[I].Position = LerpV2F(TreeView->Info.Nodes[I].Position, TreeView->Info.Nodes[I].TargetPosition, 0.1);
+		TreeView->Info.Nodes[I].Position = LerpV3F(TreeView->Info.Nodes[I].Position, TreeView->Info.Nodes[I].TargetPosition, 0.1);
 	}
 }
 
@@ -176,13 +177,14 @@ ui_tree_view_signal UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw,
 		OS_DirectoryTreeIterate(TreeView->Info.Tree, &It);)
 	{
 		f32 FontSize = 30;
+		v3f P = TreeView->Info.Nodes[It.Index].Position;
 		if(TreeView->Info.Nodes[It.Index].IsFolder)
 		{
 
 			b32 Clicked = UI_TextButtonWrapping(UI, Draw,
 				Arena, Str8PushF(Arena, "?S##?u32", Str8FromLastCharacter(Arena, TreeView->Info.Nodes[It.Index].Name, '/'), It.Index),
 				FontSize,
-				TreeView->Info.Nodes[It.Index].Position, v4f(0.5, 0.1, 0.0, 1));
+				v2f(P.X, P.Y), v4f(0.5, 0.1, 0.0, 1));
 			if(Clicked)
 			{
 				Result.Clicked = True;
@@ -196,7 +198,7 @@ ui_tree_view_signal UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw,
 				b32 Clicked = UI_TextButtonWrapping(UI, Draw,
 					Arena, Str8PushF(Arena, "?S##?u32", Str8FromLastCharacter(Arena, TreeView->Info.Nodes[It.Index].Name, '/'), It.Index),
 					FontSize,
-					TreeView->Info.Nodes[It.Index].Position, v4f(0.5, 0.1, 0.0, 1));
+					v2f(P.X, P.Y), v4f(0.5, 0.1, 0.0, 1));
 				if(Clicked)
 				{
 					Result.Clicked = True;

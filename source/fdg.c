@@ -16,31 +16,55 @@
 
 void DrawBounds(draw_context *Draw, m_arena *Arena, bounds Bounds)
 {
-	v3f *Lines = (v3f*)ArenaPushArrayZero(Arena, v3f, 4*2);
+	v3f *Lines = (v3f*)ArenaPushArrayZero(Arena, v3f, 12*2);
 
-	v2f Min = Bounds.Min;
-	v2f Max = Bounds.Max;
+	v3f Min = Bounds.Min;
+	v3f Max = Bounds.Max;
 
-	Lines[0] = v3f(Min.X, Min.Y, 0.0);
-	Lines[1] = v3f(Min.X, Max.Y, 0.0);
+	Lines[0] = v3f(Min.X, Min.Y, Min.Z);
+	Lines[1] = v3f(Min.X, Max.Y, Min.Z);
 
-	Lines[2] = v3f(Min.X, Min.Y, 0.0);
-	Lines[3] = v3f(Max.X, Min.Y, 0.0);
+	Lines[2] = v3f(Min.X, Min.Y, Min.Z);
+	Lines[3] = v3f(Max.X, Min.Y, Min.Z);
 
-	Lines[4] = v3f(Min.X, Max.Y, 0.0);
-	Lines[5] = v3f(Max.X, Max.Y, 0.0);
+	Lines[4] = v3f(Min.X, Min.Y, Min.Z);
+	Lines[5] = v3f(Min.X, Min.Y, Max.Z);
 
-	Lines[6] = v3f(Max.X, Min.Y, 0.0);
-	Lines[7] = v3f(Max.X, Max.Y, 0.0);
+	Lines[6] = v3f(Max.X, Max.Y, Max.Z);
+	Lines[7] = v3f(Max.X, Min.Y, Max.Z);
 
-	D_DrawLinesArray(Draw, Arena, Lines, 4*2, v4f(0, 0.1, 0, 1));
+	Lines[8] = v3f(Max.X, Max.Y, Max.Z);
+	Lines[9] = v3f(Min.X, Max.Y, Max.Z);
+
+	Lines[10] = v3f(Max.X, Max.Y, Max.Z);
+	Lines[11] = v3f(Max.X, Max.Y, Min.Z);
+
+	Lines[12] = v3f(Min.X, Max.Y, Min.Z);
+	Lines[13] = v3f(Max.X, Max.Y, Min.Z);
+
+	Lines[14] = v3f(Min.X, Max.Y, Min.Z);
+	Lines[15] = v3f(Min.X, Max.Y, Max.Z);
+
+	Lines[16] = v3f(Max.X, Min.Y, Min.Z);
+	Lines[17] = v3f(Max.X, Max.Y, Min.Z);
+
+	Lines[18] = v3f(Max.X, Min.Y, Min.Z);
+	Lines[19] = v3f(Max.X, Min.Y, Max.Z);
+
+	Lines[20] = v3f(Min.X, Min.Y, Max.Z);
+	Lines[21] = v3f(Min.X, Max.Y, Max.Z);
+
+	Lines[22] = v3f(Min.X, Min.Y, Max.Z);
+	Lines[23] = v3f(Max.X, Min.Y, Max.Z);
+
+	D_DrawLinesArray(Draw, Arena, Lines, 24, v4f(0, 0.1, 0, 1));
 }
 
 void DrawQuadTree(draw_context *Draw, m_arena *Arena, quadtree_header *QuadTree, int QuadTreeIndex)
 {
 	DrawBounds(Draw, Arena, QuadTree->Bounds[QuadTreeIndex]);
 
-	for(int I = 0; I < 4; I++)
+	for(int I = 0; I < 8; I++)
 	{
 		if(QuadTree->Quadrants[QuadTreeIndex].Children[I])
 		{
@@ -51,39 +75,45 @@ void DrawQuadTree(draw_context *Draw, m_arena *Arena, quadtree_header *QuadTree,
 
 bounds GetBounds(fdg_node *Nodes, int NodeCount)
 {
-	v2f Min = v2f(FLT_MAX, FLT_MAX);
-	v2f Max = v2f(-FLT_MAX, -FLT_MAX);
+	v3f Min = v3f(FLT_MAX, FLT_MAX, FLT_MAX);
+	v3f Max = v3f(-FLT_MAX, -FLT_MAX, -FLT_MAX);
 	for(int I = 0; I < NodeCount; I++)
 	{
 		Min.X = Min(Min.X, Nodes[I].TargetPosition.X);
 		Min.Y = Min(Min.Y, Nodes[I].TargetPosition.Y);
+		Min.Z = Min(Min.Z, Nodes[I].TargetPosition.Z);
 
 		Max.X = Max(Max.X, Nodes[I].TargetPosition.X);
 		Max.Y = Max(Max.Y, Nodes[I].TargetPosition.Y);
+		Max.Z = Max(Max.Z, Nodes[I].TargetPosition.Z);
 
 	}
-
 	return (bounds){Min, Max};
 }
 
 void QuadTreeBuild(m_arena *Arena, quadtree_header *QuadTree, QuadTree_index QuadrantIndex, fdg_node *Node, int Depth)
 {
-	v2f Min = QuadTree->Bounds[QuadrantIndex].Min;
-	v2f Max = QuadTree->Bounds[QuadrantIndex].Max;
+	v3f Min = QuadTree->Bounds[QuadrantIndex].Min;
+	v3f Max = QuadTree->Bounds[QuadrantIndex].Max;
 
-	v2f Centre = DivV2F(AddV2F(Min, Max), v2f(2.0, 2.0));
+	v3f Centre = DivV3F(AddV3F(Min, Max), v3f(2.0, 2.0, 2.0));
 
 
 	int Index = 0;
 	if(Node->TargetPosition.X >= Centre.X) { Index |= 1; }
 	if(Node->TargetPosition.Y >= Centre.Y) { Index |= 2; }
+	if(Node->TargetPosition.Z >= Centre.Z) { Index |= 4; }
 
-	bounds ChildBounds[4] =
+	bounds ChildBounds[8] =
 	{
-		{ v2f(Min.X, Min.Y),          v2f(Centre.X, Centre.Y) },
-		{ v2f(Centre.X, Min.Y),       v2f(Max.X, Centre.Y)    },
-		{ v2f(Min.X, Centre.Y),       v2f(Centre.X, Max.Y)    },
-		{ v2f(Centre.X, Centre.Y),    v2f(Max.X, Max.Y)       },
+		{ v3f(Min.X, Min.Y, Min.Z),          v3f(Centre.X, Centre.Y, Centre.Z) },
+		{ v3f(Centre.X, Min.Y, Min.Z),       v3f(Max.X, Centre.Y, Centre.Z)    },
+		{ v3f(Min.X, Centre.Y, Min.Z),       v3f(Centre.X, Max.Y, Centre.Z)    },
+		{ v3f(Centre.X, Centre.Y, Min.Z),    v3f(Max.X, Max.Y, Centre.Z)       },
+		{ v3f(Min.X, Min.Y, Centre.Z),       v3f(Centre.X, Centre.Y, Max.Z)    },
+		{ v3f(Centre.X, Min.Y, Centre.Z),    v3f(Max.X, Centre.Y, Max.Z)       },
+		{ v3f(Min.X, Centre.Y, Centre.Z),    v3f(Centre.X, Max.Y, Max.Z)       },
+		{ v3f(Centre.X, Centre.Y, Centre.Z), v3f(Max.X, Max.Y, Max.Z)          },
 	};
 
 	int ChildIndex = QuadTree->Quadrants[QuadrantIndex].Children[Index];
@@ -103,7 +133,7 @@ void QuadTreeBuild(m_arena *Arena, quadtree_header *QuadTree, QuadTree_index Qua
 	else
 	{
 		if((QuadTree->Nodes[ChildIndex] && (Depth >= 64)) ||
-		   ((Max.X - Min.X) < 0.1 || (Max.Y - Min.Y) < 0.1))
+		   ((Max.X - Min.X) < 0.001 || (Max.Y - Min.Y) < 0.001) || (Max.Z - Min.Z) < 0.001)
 		{
 			quadrant_node *LastNode = QuadTree->Nodes[ChildIndex];
 			for(;LastNode->Next; LastNode = LastNode->Next);
@@ -121,10 +151,10 @@ void QuadTreeBuild(m_arena *Arena, quadtree_header *QuadTree, QuadTree_index Qua
 	}
 }
 
-v2f QuadTreeCalculateAttributes(quadtree_header *QuadTree, int QuadrantIndex)
+v3f QuadTreeCalculateAttributes(quadtree_header *QuadTree, int QuadrantIndex)
 {
 	int ChildrenInThisQuadrant = 0;
-	for(int I = 0; I < 4; I++)
+	for(int I = 0; I < 8; I++)
 	{
 		if(QuadTree->Quadrants[QuadrantIndex].Children[I])
 		{
@@ -132,7 +162,7 @@ v2f QuadTreeCalculateAttributes(quadtree_header *QuadTree, int QuadrantIndex)
 		}
 	}
 
-	v2f CentreOfMass = v2f(0.0, 0.0);
+	v3f CentreOfMass = v3f(0.0, 0.0, 0.0);
 	if(ChildrenInThisQuadrant == 0)
 	{
 		if(QuadTree->Nodes[QuadrantIndex])
@@ -142,10 +172,10 @@ v2f QuadTreeCalculateAttributes(quadtree_header *QuadTree, int QuadrantIndex)
 			int Count = 0;
 			for(;Node; Node = Node->Next)
 			{
-				CentreOfMass = AddV2F(Node->Node->TargetPosition, CentreOfMass);
+				CentreOfMass = AddV3F(Node->Node->TargetPosition, CentreOfMass);
 				Count++;
 			}
-			CentreOfMass = DivV2F(CentreOfMass, v2f((f32)Count, (f32)Count));
+			CentreOfMass = DivV3F(CentreOfMass, v3f((f32)Count, (f32)Count, (f32)Count));
 		}
 		else
 		{
@@ -155,11 +185,11 @@ v2f QuadTreeCalculateAttributes(quadtree_header *QuadTree, int QuadrantIndex)
 	else
 	{
 		int TotalChildren = 0;
-		for(int I = 0; I < 4; I++)
+		for(int I = 0; I < 8; I++)
 		{
 			if(QuadTree->Quadrants[QuadrantIndex].Children[I])
 			{
-				v2f ChildCentreOfMass = QuadTreeCalculateAttributes(QuadTree, QuadTree->Quadrants[QuadrantIndex].Children[I]);
+				v3f ChildCentreOfMass = QuadTreeCalculateAttributes(QuadTree, QuadTree->Quadrants[QuadrantIndex].Children[I]);
 
 				int ChildIndex = QuadTree->Quadrants[QuadrantIndex].Children[I];
 				int ChildrenCount = QuadTree->ChildrenCounts[ChildIndex];
@@ -168,10 +198,11 @@ v2f QuadTreeCalculateAttributes(quadtree_header *QuadTree, int QuadrantIndex)
 
 				CentreOfMass.X += ChildCentreOfMass.X * (f32)ChildrenCount;
 				CentreOfMass.Y += ChildCentreOfMass.Y * (f32)ChildrenCount;
+				CentreOfMass.Z += ChildCentreOfMass.Z * (f32)ChildrenCount;
 
 			}
 		}
-		CentreOfMass = DivV2F(CentreOfMass, v2f((f32)TotalChildren, (f32)TotalChildren));
+		CentreOfMass = DivV3F(CentreOfMass, v3f((f32)TotalChildren, (f32)TotalChildren, (f32)TotalChildren));
 		QuadTree->ChildrenCounts[QuadrantIndex] = TotalChildren;
 	}
 	QuadTree->Masses[QuadrantIndex] = CentreOfMass;
@@ -179,22 +210,22 @@ v2f QuadTreeCalculateAttributes(quadtree_header *QuadTree, int QuadrantIndex)
 }
 
 // https://patterns.eecs.berkeley.edu/?page_id=193
-v2f ForceDisplacementFromPosition(quadtree_header *QuadTree, int QuadrantIndex, fdg_node *Node, f32 K)
+v3f ForceDisplacementFromPosition(quadtree_header *QuadTree, int QuadrantIndex, fdg_node *Node, f32 K)
 {
-	v2f Result = v2f(0.0);
+	v3f Result = v3f(0.0);
 
 	int QuadrantStack[1024];
 	int StackTop = 0;
 	QuadrantStack[StackTop++] = QuadrantIndex;
 
-	v2f Position = Node->TargetPosition;
+	v3f Position = Node->TargetPosition;
 
 	for(;StackTop > 0;)
 	{
 		QuadrantIndex = QuadrantStack[--StackTop];
-		v2f Centre = QuadTree->Masses[QuadrantIndex];
-		v2f PositionToCentre = v2f(Position.X - Centre.X, Position.Y - Centre.Y);
-		f64 DistanceSquared = PositionToCentre.X*PositionToCentre.X + PositionToCentre.Y*PositionToCentre.Y;
+		v3f Centre = QuadTree->Masses[QuadrantIndex];
+		v3f PositionToCentre = v3f(Position.X - Centre.X, Position.Y - Centre.Y, Position.Z - Centre.Z);
+		f64 DistanceSquared = DotV3F(PositionToCentre, PositionToCentre);
 		f64 Distance = sqrt(DistanceSquared);
 		f64 EffectiveDistance = Max((f32)Distance - Node->Radius, 1.0);
 		if(QuadTree->ChildrenCounts[QuadrantIndex] == 1)
@@ -203,21 +234,23 @@ v2f ForceDisplacementFromPosition(quadtree_header *QuadTree, int QuadrantIndex, 
 
 			Result.X += ForceMagnitude * PositionToCentre.X;
 			Result.Y += ForceMagnitude * PositionToCentre.Y;
+			Result.Z += ForceMagnitude * PositionToCentre.Z;
 		}
 		else
 		{
-			v2f MaxSubMin = SubV2F(QuadTree->Bounds[QuadrantIndex].Max, QuadTree->Bounds[QuadrantIndex].Min);
-			f32 QuadrantRadiusSquared = MaxSubMin.X*MaxSubMin.X + MaxSubMin.Y*MaxSubMin.Y;
+			v3f MaxSubMin = SubV3F(QuadTree->Bounds[QuadrantIndex].Max, QuadTree->Bounds[QuadrantIndex].Min);
+			f32 QuadrantRadiusSquared = DotV3F(MaxSubMin, MaxSubMin);
 			if(QuadrantRadiusSquared/(EffectiveDistance*EffectiveDistance + 0.01) < 0.5)
 			{
 				f32 ForceMagnitude = QuadTree->ChildrenCounts[QuadrantIndex] * (K) / (EffectiveDistance*EffectiveDistance + 0.01);
 
 				Result.X += ForceMagnitude * PositionToCentre.X;
 				Result.Y += ForceMagnitude * PositionToCentre.Y;
+				Result.Z += ForceMagnitude * PositionToCentre.Z;
 			}
 			else
 			{
-				for(int I = 0; I < 4; I++)
+				for(int I = 0; I < 8; I++)
 				{
 					if(QuadTree->Quadrants[QuadrantIndex].Children[I])
 					{
@@ -233,7 +266,7 @@ v2f ForceDisplacementFromPosition(quadtree_header *QuadTree, int QuadrantIndex, 
 
 typedef struct parallel_force_displacement
 {
-	v2f *Displacements;
+	v3f *Displacements;
 	f32 K;
 	fdg_node *Nodes;
 	int NodeCount;
@@ -270,7 +303,7 @@ void SimulateForceDirectedGraphQuadTree(m_arena *Arena, fdg_node *Nodes, int Nod
 	u64 Start = OS_TimeStampNow();
 	f32 K = 5.0;
 
-	v2f *Displacements = ArenaPushArrayZero(Arena, v2f, NodeCount);
+	v3f *Displacements = ArenaPushArrayZero(Arena, v3f, NodeCount);
 
 
 #if defined(PARALLEL_QUADTREE)
@@ -298,13 +331,16 @@ void SimulateForceDirectedGraphQuadTree(m_arena *Arena, fdg_node *Nodes, int Nod
 		{
 			f32 DX = Nodes[J].TargetPosition.X - Nodes[I].TargetPosition.X;
 			f32 DY = Nodes[J].TargetPosition.Y - Nodes[I].TargetPosition.Y;
-			f32 DistanceSquared = DX * DX + DY * DY;
+			f32 DZ = Nodes[J].TargetPosition.Z - Nodes[I].TargetPosition.Z;
+			f32 DistanceSquared = DX * DX + DY * DY + DZ * DZ;
 
 			Displacements[I].X -= (K) * DX / Max(DistanceSquared, 0.01);
 			Displacements[I].Y -= (K) * DY / Max(DistanceSquared, 0.01);
+			Displacements[I].Z -= (K) * DZ / Max(DistanceSquared, 0.01);
 
 			Displacements[J].X += (K) * DX / Max(DistanceSquared, 0.01);
 			Displacements[J].Y += (K) * DY / Max(DistanceSquared, 0.01);
+			Displacements[J].Z += (K) * DZ / Max(DistanceSquared, 0.01);
 		}
 	}
 #endif
@@ -316,21 +352,25 @@ void SimulateForceDirectedGraphQuadTree(m_arena *Arena, fdg_node *Nodes, int Nod
 
 		f32 DX = Nodes[A].TargetPosition.X - Nodes[B].TargetPosition.X;
 		f32 DY = Nodes[A].TargetPosition.Y - Nodes[B].TargetPosition.Y;
-		v2f Delta = v2f(DX, DY);
-		Delta = NormalizeV2F(Delta);;
-		f32 Distance = LengthV2F(Delta);
+		f32 DZ = Nodes[A].TargetPosition.Z - Nodes[B].TargetPosition.Z;
+		v3f Delta = v3f(DX, DY, DZ);
+		Delta = NormalizeV3F(Delta);
+		f32 Distance = LengthV3F(Delta);
 
 		if(Distance > 0)
 		{
 			f32 AttractiveForce = Distance * Distance / K;
 			f32 NormDX = DX / Distance;
 			f32 NormDY = DY / Distance;
+			f32 NormDZ = DZ / Distance;
 
 			Displacements[A].X -= NormDX * AttractiveForce;
 			Displacements[A].Y -= NormDY * AttractiveForce;
+			Displacements[A].Z -= NormDZ * AttractiveForce;
 
 			Displacements[B].X += NormDX * AttractiveForce;
 			Displacements[B].Y += NormDY * AttractiveForce;
+			Displacements[B].Z += NormDZ * AttractiveForce;
 		}
 	}
 
@@ -341,6 +381,7 @@ void SimulateForceDirectedGraphQuadTree(m_arena *Arena, fdg_node *Nodes, int Nod
 		{
 			Nodes[I].TargetPosition.X += (Displacements[I].X / Norm) * Min(Norm, Temperature[0]);
 			Nodes[I].TargetPosition.Y += (Displacements[I].Y / Norm) * Min(Norm, Temperature[0]);
+			Nodes[I].TargetPosition.Z += (Displacements[I].Z / Norm) * Min(Norm, Temperature[0]);
 		}
 	}
 

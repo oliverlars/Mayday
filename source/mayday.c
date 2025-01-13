@@ -89,20 +89,20 @@ void OS_Update(void *Data)
 
 	f32 Size = 1000;
 	static f32 Angle = 0.0;
-	Angle += 0.00;
+	Angle += 0.001;
 	m44f Rotation = M44FromYAngle(Angle);
 	//m44f Transform = M44FOrthographic(-Size, +Size, +Size, -Size, -1000.0, 1000.0);
 	m44f Transform = M44FPerspective(sapp_widthf()/sapp_heightf(), 70, 0.01, 10000.0);
 	if(M->TreeView.Info.Nodes)
 	{
-		Transform = MulM44FM44F(M44FLookAt(v3f(0, 0, 1000), M->TreeView.Info.Nodes[0].Position, v3f(0, 1, 0)), Transform);
+		Transform = MulM44FM44F(M44FLookAt(v3f(0, 0, 100), M->TreeView.Info.Nodes[0].Position, v3f(0, 1, 0)), Transform);
 	}
 	else
 	{
-		Transform = MulM44FM44F(M44FLookAt(v3f(0, 0, 1000), v3f(0, 0, 0), v3f(0, 1, 0)), Transform);
+		Transform = MulM44FM44F(M44FLookAt(v3f(0, 0, 10), v3f(0, 0, 0), v3f(0, 1, 0)), Transform);
 	}
 
-	//Transform = MulM44FM44F(Rotation, Transform);
+	Transform = MulM44FM44F(Rotation, Transform);
 	R_PushTransform(M->Render, Transform);
 	D_DrawQuad(M->Draw, M->FrameArena, v2f(0, 0),  WindowWidth, WindowHeight, v4f(0.008, 0.00, 0, 1.0));
 

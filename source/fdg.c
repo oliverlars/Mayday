@@ -300,7 +300,7 @@ void SimulateForceDirectedGraphQuadTree(m_arena *Arena, fdg_node *Nodes, int Nod
 									  quadtree_header *QuadTree, shared_wave_info *Shared)
 {
 	u64 Start = OS_TimeStampNow();
-	f32 K = 100;
+	f32 K = 5;
 
 	v3f *Displacements = ArenaPushArrayZero(Arena, v3f, NodeCount);
 

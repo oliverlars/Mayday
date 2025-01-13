@@ -231,8 +231,6 @@ OS_DirectoryTreeIterateWithStack(m_arena *Arena, os_directory_tree Tree, os_dire
 		else
 		{
 			os_directory_entry *Parent = It->Current->Parent;
-			It->ParentIndex = It->Stack[--It->StackTop];
-			It->Depth--;
 			for(; Parent; Parent = Parent->Parent)
 			{
 				It->Depth--;

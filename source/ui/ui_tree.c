@@ -48,6 +48,7 @@ ui_tree_info TreeInfoFromPath(m_arena *Arena, str8 Path, v3f Size)
 	for(os_directory_tree_iterator It = {0};
 		OS_DirectoryTreeIterateWithStack(Arena, Info.Tree, &It);)
 	{
+		//if(It.Index == 0) continue;
 		Info.Links[LinkCount].From = It.ParentIndex;
 		Info.Links[LinkCount].To = It.Index;
 		LinkCount += 1;

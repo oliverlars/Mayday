@@ -78,7 +78,7 @@ void AppendDirectoryEntry(m_arena *Arena, os_directory_entry *Entries, os_direct
 	{
 		Entry.Parent = Entries->Parent;
 		os_directory_entry *LastEntry = Entries->Parent->Last;
-		
+
 		LastEntry->Next = ArenaPushArray(Arena, os_directory_entry, 1);
 		LastEntry->Next[0] = Entry;
 		Entries->Parent->Last = LastEntry->Next;
@@ -214,18 +214,21 @@ OS_DirectoryTreeIterateWithStack(m_arena *Arena, os_directory_tree Tree, os_dire
 	}
 	else
 	{
+		s64 CurrentIndex = It->Index;
+
 		os_directory_entry *Next  = It->Current->Next;
 		os_directory_entry *First = It->Current->First;
 
 		if(First)
 		{
-			It->Stack[It->StackTop++] = It->Index;
-			It->ParentIndex = It->Index;
+			It->Stack[It->StackTop++] = CurrentIndex;
+			It->ParentIndex = CurrentIndex;
 			It->Current = First;
 			It->Depth++;
 		}
 		else if(Next)
 		{
+			It->ParentIndex = It->Stack[It->StackTop - 1];
 			It->Current = Next;
 		}
 		else
@@ -237,6 +240,7 @@ OS_DirectoryTreeIterateWithStack(m_arena *Arena, os_directory_tree Tree, os_dire
 				It->ParentIndex = It->Stack[--It->StackTop];
 				if(Parent->Next)
 				{
+					It->ParentIndex = It->Stack[It->StackTop - 1];
 					It->Current = Parent->Next;
 					break;
 				}

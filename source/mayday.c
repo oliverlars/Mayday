@@ -49,9 +49,15 @@ typedef struct mayday_context
 	cursor Cursor;
 
 
-	v2f CameraPosition;
+	v3f CameraPosition;
 	f32 ViewSize;
 	f32 ViewSizeTarget;
+
+	v3f LookAtTarget;
+	v3f LookAt;
+
+	v3f LookFromTarget;
+	v3f LookFrom;
 
 	ui_tree TreeView;
 	str8 Folder;
@@ -87,15 +93,17 @@ void OS_Update(void *Data)
 	int WindowHeight = OS_WindowHeight(&M->Window);
 	int WindowWidth = OS_WindowWidth(&M->Window);
 
-	f32 Size = 1000;
+	f32 Size = 50;
 	static f32 Angle = 0.0;
 	Angle += 0.001;
 	m44f Rotation = M44FromYAngle(Angle);
-	//m44f Transform = M44FOrthographic(-Size, +Size, +Size, -Size, -1000.0, 1000.0);
-	m44f Transform = M44FPerspective(sapp_widthf()/sapp_heightf(), 70, 0.01, 10000.0);
+	m44f Transform = M44FOrthographic(-Size, +Size, +Size, -Size, -1000.0, 1000.0);
+	//m44f Transform = M44FPerspective(sapp_widthf()/sapp_heightf(), 70, 0.01, 10000.0);
+	M->LookAt = LerpV3F(M->LookAt, M->LookAtTarget, 0.1);
 	if(M->TreeView.Info.Nodes)
 	{
-		Transform = MulM44FM44F(M44FLookAt(v3f(0, 0, 100), M->TreeView.Info.Nodes[0].Position, v3f(0, 1, 0)), Transform);
+		M->LookAtTarget = M->TreeView.Info.Nodes[0].Position;
+		Transform = MulM44FM44F(M44FLookAt(v3f(0, 0, 100), M->LookAt, v3f(0, 1, 0)), Transform);
 	}
 	else
 	{
@@ -104,14 +112,13 @@ void OS_Update(void *Data)
 
 	Transform = MulM44FM44F(Rotation, Transform);
 	R_PushTransform(M->Render, Transform);
-	D_DrawQuad(M->Draw, M->FrameArena, v2f(0, 0),  WindowWidth, WindowHeight, v4f(0.008, 0.00, 0, 1.0));
-
-	//D_DrawGrid2D(M->Draw, M->FrameArena, 50, 200);
 
 	if(M->UI->View == UI_VIEW_EDIT)
 	{
 		u64 Start = OS_TimeStampNow();
 		R_PushTransform(M->Render, M44FOrthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
+		D_DrawQuad(M->Draw, M->FrameArena, v2f(0, 0),  WindowWidth, WindowHeight, v4f(0.008, 0.00, 0, 1.0));
+		D_DrawGrid2D(M->Draw, M->FrameArena, 50, 200);
 		UI_Buffer(M->UI, M->Draw, M->Edit,
 			   M->FrameArena, M->CodeFont,
 			   &M->Buffer,
@@ -129,6 +136,10 @@ void OS_Update(void *Data)
 	else if(M->UI->View == UI_VIEW_TREE)
 	{
 		v2f Centre = {0};
+		R_PushTransform(M->Render, M44FOrthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
+		D_DrawQuad(M->Draw, M->FrameArena, v2f(0, 0),  WindowWidth, WindowHeight, v4f(0.008, 0.00, 0, 1.0));
+		D_DrawGrid2D(M->Draw, M->FrameArena, 50, 200);
+		R_PopTransform(M->Render);
 
 		if(M->TreeView.Info.Nodes)
 		{
@@ -474,7 +485,7 @@ int main()
 
 	M.UI->Font = M.CodeFont;
 
-	M.CameraPosition = v2f(0, 0);
+	M.CameraPosition = v3f(0.0);
 	M.ViewSize = 5.0;
 	M.ViewSizeTarget = M.ViewSize;
 
@@ -482,9 +493,9 @@ int main()
 
 	u64 Start = OS_TimeStampNow();
 
-	DispatchInitialise(&M.Shared, 16);
+	DispatchInitialise(&M.Shared, 12);
 
-	M.Folder = Str8("/Users/olivercruickshank/mayday");
+	M.Folder = Str8("/Users/olivercruickshank/embergen/liquigen");
 
 	OS_Run(M.Window, &M);
 }

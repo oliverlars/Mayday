@@ -126,6 +126,8 @@ typedef struct ui_tree_view_signal
 	str8 NewPath;
 	int NewPathIndex;
 	str8 FileToLoad;
+
+	int NodeIndex;
 } ui_tree_view_signal;
 
 ui_tree_view_signal UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw,

@@ -189,6 +189,7 @@ ui_tree_view_signal UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw,
 				v2f(TransformedPoint.X, TransformedPoint.Y), v4f(0.5, 0.1, 0.0, 1));
 			if(Clicked)
 			{
+				Result.NodeIndex = It.Index;
 				Result.Clicked = True;
 				Result.NewPath = Str8Copy(TreeView->Arena, TreeView->Info.Nodes[It.Index].Name);
 			}

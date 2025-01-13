@@ -53,6 +53,7 @@ typedef struct mayday_context
 	f32 ViewSize;
 	f32 ViewSizeTarget;
 
+	int LookAtNodeIndex;
 	v3f LookAtTarget;
 	v3f LookAt;
 
@@ -102,7 +103,7 @@ void OS_Update(void *Data)
 	M->LookAt = LerpV3F(M->LookAt, M->LookAtTarget, 0.1);
 	if(M->TreeView.Info.Nodes)
 	{
-		M->LookAtTarget = M->TreeView.Info.Nodes[0].Position;
+		M->LookAtTarget = M->TreeView.Info.Nodes[M->LookAtNodeIndex].Position;
 		Transform = MulM44FM44F(M44FLookAt(v3f(0, 0, 100), M->LookAt, v3f(0, 1, 0)), Transform);
 	}
 	else
@@ -156,11 +157,14 @@ void OS_Update(void *Data)
 
 		if(TreeSignal.Clicked)
 		{
-			if(TreeSignal.NewPath.Size > 0)
-			{
-				M->Folder = TreeSignal.NewPath;
-			}
-			else if(TreeSignal.FileToLoad.Size > 0)
+			// if(TreeSignal.NewPath.Size > 0)
+			// {
+			// 	M->Folder = TreeSignal.NewPath;
+			// }
+			// else
+			//
+			M->LookAtNodeIndex = TreeSignal.NodeIndex;
+			if(TreeSignal.FileToLoad.Size > 0)
 			{
 				M->Buffer.String = OS_LoadEntireFileIntoMemory(M->PermanentArena, TreeSignal.FileToLoad);
 				M->UI->View = UI_VIEW_EDIT;
@@ -495,7 +499,7 @@ int main()
 
 	DispatchInitialise(&M.Shared, 12);
 
-	M.Folder = Str8("/Users/olivercruickshank/embergen/liquigen");
+	M.Folder = Str8("/Users/olivercruickshank/mayday");
 
 	OS_Run(M.Window, &M);
 }

@@ -16,7 +16,7 @@
 
 void DrawBounds(draw_context *Draw, m_arena *Arena, bounds Bounds)
 {
-	v3f *Lines = (v3f*)ArenaPushArrayZero(Arena, v3f, 12*2);
+	v3f *Lines = ArenaPushArrayZero(Arena, v3f, 12*2);
 
 	v3f Min = Bounds.Min;
 	v3f Max = Bounds.Max;
@@ -132,8 +132,8 @@ void QuadTreeBuild(m_arena *Arena, quadtree_header *QuadTree, QuadTree_index Qua
 	}
 	else
 	{
-		if((QuadTree->Nodes[ChildIndex] && (Depth >= 64)) ||
-		   ((Max.X - Min.X) < 0.001 || (Max.Y - Min.Y) < 0.001) || (Max.Z - Min.Z) < 0.001)
+		if(QuadTree->Nodes[ChildIndex] && ((Depth >= 64) ||
+		   (fabs(Max.X - Min.X) < 0.1 || fabs(Max.Y - Min.Y) < 0.1) || fabs(Max.Z - Min.Z) < 0.1))
 		{
 			quadrant_node *LastNode = QuadTree->Nodes[ChildIndex];
 			for(;LastNode->Next; LastNode = LastNode->Next);
@@ -210,12 +210,13 @@ v3f QuadTreeCalculateAttributes(quadtree_header *QuadTree, int QuadrantIndex)
 }
 
 // https://patterns.eecs.berkeley.edu/?page_id=193
-v3f ForceDisplacementFromPosition(quadtree_header *QuadTree, int QuadrantIndex, fdg_node *Node, f32 K)
+v3f ForceDisplacementFromPosition(quadtree_header *QuadTree, fdg_node *Node, f32 K)
 {
 	v3f Result = v3f(0.0);
 
 	int QuadrantStack[1024];
 	int StackTop = 0;
+	int QuadrantIndex = 0;
 	QuadrantStack[StackTop++] = QuadrantIndex;
 
 	v3f Position = Node->TargetPosition;
@@ -227,7 +228,7 @@ v3f ForceDisplacementFromPosition(quadtree_header *QuadTree, int QuadrantIndex, 
 		v3f PositionToCentre = v3f(Position.X - Centre.X, Position.Y - Centre.Y, Position.Z - Centre.Z);
 		f64 DistanceSquared = DotV3F(PositionToCentre, PositionToCentre);
 		f64 Distance = sqrt(DistanceSquared);
-		f64 EffectiveDistance = Max((f32)Distance - Node->Radius, 1.0);
+		f64 EffectiveDistance = Max((f32)Distance - Node->Radius, 0.1);
 		if(QuadTree->ChildrenCounts[QuadrantIndex] == 1)
 		{
 			f64 ForceMagnitude = (K) / (EffectiveDistance*EffectiveDistance + 0.01);
@@ -240,7 +241,7 @@ v3f ForceDisplacementFromPosition(quadtree_header *QuadTree, int QuadrantIndex, 
 		{
 			v3f MaxSubMin = SubV3F(QuadTree->Bounds[QuadrantIndex].Max, QuadTree->Bounds[QuadrantIndex].Min);
 			f32 QuadrantRadiusSquared = DotV3F(MaxSubMin, MaxSubMin);
-			if(QuadrantRadiusSquared/(EffectiveDistance*EffectiveDistance + 0.01) < 0.5)
+			if(QuadrantRadiusSquared/(EffectiveDistance*EffectiveDistance + 0.01) < 0.1)
 			{
 				f32 ForceMagnitude = QuadTree->ChildrenCounts[QuadrantIndex] * (K) / (EffectiveDistance*EffectiveDistance + 0.01);
 
@@ -284,13 +285,11 @@ void ParallelForceDisplacement(wave_info *WaveInfo, void* Input)
 	for(int I = Index; I < Index + Count; I++)
 	{
 		P->Displacements[I] = ForceDisplacementFromPosition(P->QuadTree,
-														   0,
-														   P->Nodes + I,
-														   P->K);
+															P->Nodes + I,
+															P->K);
 
 	}
 }
-
 #define PARALLEL_QUADTREE
 //#define QUADTREE
 //#define NSQUARED
@@ -301,7 +300,7 @@ void SimulateForceDirectedGraphQuadTree(m_arena *Arena, fdg_node *Nodes, int Nod
 									  quadtree_header *QuadTree, shared_wave_info *Shared)
 {
 	u64 Start = OS_TimeStampNow();
-	f32 K = 5.0;
+	f32 K = 100;
 
 	v3f *Displacements = ArenaPushArrayZero(Arena, v3f, NodeCount);
 
@@ -320,7 +319,7 @@ void SimulateForceDirectedGraphQuadTree(m_arena *Arena, fdg_node *Nodes, int Nod
 	for(int I = 0; I < NodeCount; I++)
 	{
 		Displacements[I] = ForceDisplacementFromPosition(QuadTree,
-														 0, Nodes[I].TargetPosition,
+														 Nodes + I,
 														 K);
 	}
 #elif defined(NSQUARED)
@@ -332,7 +331,7 @@ void SimulateForceDirectedGraphQuadTree(m_arena *Arena, fdg_node *Nodes, int Nod
 			f32 DX = Nodes[J].TargetPosition.X - Nodes[I].TargetPosition.X;
 			f32 DY = Nodes[J].TargetPosition.Y - Nodes[I].TargetPosition.Y;
 			f32 DZ = Nodes[J].TargetPosition.Z - Nodes[I].TargetPosition.Z;
-			f32 DistanceSquared = DX * DX + DY * DY + DZ * DZ;
+			f32 DistanceSquared = DX*DX + DY*DY + DZ*DZ;
 
 			Displacements[I].X -= (K) * DX / Max(DistanceSquared, 0.01);
 			Displacements[I].Y -= (K) * DY / Max(DistanceSquared, 0.01);
@@ -353,30 +352,29 @@ void SimulateForceDirectedGraphQuadTree(m_arena *Arena, fdg_node *Nodes, int Nod
 		f32 DX = Nodes[A].TargetPosition.X - Nodes[B].TargetPosition.X;
 		f32 DY = Nodes[A].TargetPosition.Y - Nodes[B].TargetPosition.Y;
 		f32 DZ = Nodes[A].TargetPosition.Z - Nodes[B].TargetPosition.Z;
-		v3f Delta = v3f(DX, DY, DZ);
-		Delta = NormalizeV3F(Delta);
-		f32 Distance = LengthV3F(Delta);
+		f32 DistanceSquared = DX*DX + DY*DY + DZ*DZ;
+		f32 Distance = sqrtf(DistanceSquared);
 
-		if(Distance > 0)
-		{
-			f32 AttractiveForce = Distance * Distance / K;
-			f32 NormDX = DX / Distance;
-			f32 NormDY = DY / Distance;
-			f32 NormDZ = DZ / Distance;
+		f32 ReciprocalDistance = 1.0 / (Distance + 0.01);
+		f32 NormDX = DX * ReciprocalDistance;
+		f32 NormDY = DY * ReciprocalDistance;
+		f32 NormDZ = DZ * ReciprocalDistance;
 
-			Displacements[A].X -= NormDX * AttractiveForce;
-			Displacements[A].Y -= NormDY * AttractiveForce;
-			Displacements[A].Z -= NormDZ * AttractiveForce;
+		f32 AttractiveForce = (DistanceSquared) / K;
 
-			Displacements[B].X += NormDX * AttractiveForce;
-			Displacements[B].Y += NormDY * AttractiveForce;
-			Displacements[B].Z += NormDZ * AttractiveForce;
-		}
+		Displacements[A].X -= NormDX * AttractiveForce;
+		Displacements[A].Y -= NormDY * AttractiveForce;
+		Displacements[A].Z -= NormDZ * AttractiveForce;
+
+		Displacements[B].X += NormDX * AttractiveForce;
+		Displacements[B].Y += NormDY * AttractiveForce;
+		Displacements[B].Z += NormDZ * AttractiveForce;
+
 	}
 
 	for(int I = 0; I < NodeCount; I++)
 	{
-		f32 Norm = sqrtf(Displacements[I].X * Displacements[I].X + Displacements[I].Y * Displacements[I].Y);
+		f32 Norm = sqrtf(Displacements[I].X * Displacements[I].X + Displacements[I].Y * Displacements[I].Y + Displacements[I].Z * Displacements[I].Z);
 		if(Norm > 0)
 		{
 			Nodes[I].TargetPosition.X += (Displacements[I].X / Norm) * Min(Norm, Temperature[0]);
@@ -385,7 +383,7 @@ void SimulateForceDirectedGraphQuadTree(m_arena *Arena, fdg_node *Nodes, int Nod
 		}
 	}
 
-	Temperature[0] = LerpF32(Temperature[0], 0.001, 0.05);
+	Temperature[0] = LerpF32(Temperature[0], 0.0, 0.05);
 
 	LogInfo("Time to simulate: ?f32", OS_MilliSecondsFromTimeStamp(OS_TimeStampNow() - Start));
 }

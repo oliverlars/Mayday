@@ -87,16 +87,31 @@ void OS_Update(void *Data)
 	int WindowHeight = OS_WindowHeight(&M->Window);
 	int WindowWidth = OS_WindowWidth(&M->Window);
 
-	//m44f Transform = M44FOrthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0);
-	m44f Transform = M44FPerspective(sapp_widthf()/sapp_heightf(), 100, 0.1, 1000.0);
-	Transform = MulM44FM44F(M44FLookAt(v3f(0, 0, 100), v3f(0, 0, 0), v3f(0, 1, 0)), Transform);
+	f32 Size = 1000;
+	static f32 Angle = 0.0;
+	Angle += 0.00;
+	m44f Rotation = M44FromYAngle(Angle);
+	//m44f Transform = M44FOrthographic(-Size, +Size, +Size, -Size, -1000.0, 1000.0);
+	m44f Transform = M44FPerspective(sapp_widthf()/sapp_heightf(), 70, 0.01, 10000.0);
+	if(M->TreeView.Info.Nodes)
+	{
+		Transform = MulM44FM44F(M44FLookAt(v3f(0, 0, 1000), M->TreeView.Info.Nodes[0].Position, v3f(0, 1, 0)), Transform);
+	}
+	else
+	{
+		Transform = MulM44FM44F(M44FLookAt(v3f(0, 0, 1000), v3f(0, 0, 0), v3f(0, 1, 0)), Transform);
+	}
+
+	//Transform = MulM44FM44F(Rotation, Transform);
 	R_PushTransform(M->Render, Transform);
 	D_DrawQuad(M->Draw, M->FrameArena, v2f(0, 0),  WindowWidth, WindowHeight, v4f(0.008, 0.00, 0, 1.0));
 
-	D_DrawGrid2D(M->Draw, M->FrameArena, 50, 200);
+	//D_DrawGrid2D(M->Draw, M->FrameArena, 50, 200);
 
 	if(M->UI->View == UI_VIEW_EDIT)
 	{
+		u64 Start = OS_TimeStampNow();
+		R_PushTransform(M->Render, M44FOrthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
 		UI_Buffer(M->UI, M->Draw, M->Edit,
 			   M->FrameArena, M->CodeFont,
 			   &M->Buffer,
@@ -106,6 +121,10 @@ void OS_Update(void *Data)
 		UI_StatusBar(M->UI, M->Draw, M->Edit, M->FrameArena, M->StatusFont,
 					 &M->Cursor, &M->Buffer,
 					 v2i(WindowWidth, WindowHeight));
+
+		u64 End = OS_TimeStampNow();
+		LogInfo("Time: ?f32", OS_MilliSecondsFromTimeStamp(End - Start));
+		R_PopTransform(M->Render);
 	}
 	else if(M->UI->View == UI_VIEW_TREE)
 	{
@@ -120,45 +139,8 @@ void OS_Update(void *Data)
 					M->FrameArena, &M->TreeView, M->Folder, v3f(0.1, 0.1, 0.1));
 
 		R_PushTransform(M->Render, M44FOrthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
-		label *Labels = ArenaPushArrayZero(M->FrameArena, label, M->TreeView.Info.NodeCount);
-		int ActualLabelCount = 0;
-		for(os_directory_tree_iterator It = {0};
-			OS_DirectoryTreeIterate(M->TreeView.Info.Tree, &It);)
-		{
-			if(It.Current->Type == OS_DIR_ENTRY_FOLDER)
-			{
-				Labels[ActualLabelCount].Node = M->TreeView.Info.Nodes + It.Index;
-				str8 Label = Str8FromLastCharacter(M->FrameArena, M->TreeView.Info.Nodes[It.Index].Name, '/');
-				Labels[ActualLabelCount].LabelSize.X = UI_GetTextWidth(M->UI->Font, M->Draw, Label, 40);
-				Labels[ActualLabelCount].LabelSize.Y = 40;
-				ActualLabelCount += 1;
-			}
-			else if(It.Depth == 1 && It.Current->Type != OS_DIR_ENTRY_FOLDER)
-			{
-				Labels[ActualLabelCount].Node = M->TreeView.Info.Nodes + It.Index;
-				str8 Label = Str8FromLastCharacter(M->FrameArena, M->TreeView.Info.Nodes[It.Index].Name, '/');
-				Labels[ActualLabelCount].LabelSize.X = UI_GetTextWidth(M->UI->Font, M->Draw, Label, 40);
-				Labels[ActualLabelCount].LabelSize.Y = 40;
-				ActualLabelCount += 1;
-			}
-		}
-		qsort(Labels, ActualLabelCount, sizeof(label), LabelSortFunction);
-		// for(int I = 1; I < ActualLabelCount; I++)
-		// {
-		// 	v2f P[2] = { Labels[I].Node->Position, Labels[I-1].Node->Position};
-		// 	f32 Bottom[2] = { P[0].Y, P[1].Y };
-		// 	f32 Top[2] = { P[0].Y + Labels[I].LabelSize.Y, P[1].Y + Labels[I-1].LabelSize.Y };
 
-		// 	f32 Left[2] = { P[0].X, P[1].X };
-		// 	f32 Right[2] = { P[0].X + Labels[I].LabelSize.X, P[1].X + Labels[I-1].LabelSize.X };
-
-		// 	if((Left[0] < Right[1]) && (Right[0] > Left[1]) &&
-		// 	   (Bottom[0] < Top[1]) && (Top[0] > Bottom[1]))
-		// 	{
-		// 		Labels[I].Node->TargetPosition.Y += Top[0] - Bottom[1];
-		// 	}
-		// }
-		ui_tree_view_signal TreeSignal = UI_TreeViewFolderLabels(M->UI, M->Draw, M->FrameArena, &M->TreeView, M->Folder);
+		ui_tree_view_signal TreeSignal = UI_TreeViewFolderLabels(M->UI, M->Draw, M->FrameArena, &M->TreeView, Transform, M->Folder);
 
 
 		if(TreeSignal.Clicked)
@@ -175,9 +157,8 @@ void OS_Update(void *Data)
 		}
 
 		D_DrawStr8(M->Draw, M->FrameArena, M->LogoFont, v2f(50, 50), v4f(1.0, 0.05, 0.0, 1), 100, Str8("MAYDAY!"));
+		R_PopTransform(M->Render);
 	}
-
-	R_PopTransform(M->Render);
 
 	R_PopTransform(M->Render);
 
@@ -503,7 +484,7 @@ int main()
 
 	DispatchInitialise(&M.Shared, 16);
 
-	M.Folder = Str8("/Users/olivercruickshank/embergen/liquigen");
+	M.Folder = Str8("/Users/olivercruickshank/mayday");
 
 	OS_Run(M.Window, &M);
 }

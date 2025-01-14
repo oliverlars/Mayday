@@ -61,6 +61,7 @@ typedef struct mayday_context
 	v3f LookFrom;
 
 	ui_tree TreeView;
+	int TreeDepth;
 	str8 Folder;
 
 	shared_wave_info Shared;
@@ -104,15 +105,24 @@ void OS_Update(void *Data)
 	M->ViewSize = LerpF32(M->ViewSize, M->ViewSizeTarget, 0.1);
 	if(M->TreeView.Info.Nodes)
 	{
+		bounds Bounds = GetBounds(M->TreeView.Info.Nodes, M->TreeView.Info.NodeCount);
 		M->LookAtTarget = M->TreeView.Info.Nodes[M->LookAtNodeIndex].Position;
-		Transform = MulM44FM44F(M44FLookAt(v3f(0, 0, 100), M->LookAt, v3f(0, 1, 0)), Transform);
+
+		f32 LongestSide = Max((Bounds.Max.X - Bounds.Min.X), Max((Bounds.Max.Z - Bounds.Min.Z), (Bounds.Max.Y - Bounds.Min.Y)));
+
+		M->ViewSizeTarget = LongestSide/(f32)(M->TreeDepth + 1);
+
+		Transform = MulM44FM44F(M44FLookAt(v3f(0, 0, 2.0*LongestSide), M->LookAt, v3f(0, 1, 0)), Transform);
 	}
 	else
 	{
 		Transform = MulM44FM44F(M44FLookAt(v3f(0, 0, 10), v3f(0, 0, 0), v3f(0, 1, 0)), Transform);
 	}
 
+
+	Transform = MulM44FM44F(M44FTranslate(M->LookAt), Transform);
 	Transform = MulM44FM44F(Rotation, Transform);
+	Transform = MulM44FM44F(M44FTranslate(MulV3F(M->LookAt, v3f(-1,-1,-1))), Transform);
 	R_PushTransform(M->Render, Transform);
 
 	if(M->UI->View == UI_VIEW_EDIT)
@@ -165,7 +175,7 @@ void OS_Update(void *Data)
 			// else
 			//
 			bounds Bounds = GetBounds(M->TreeView.Info.Nodes, M->TreeView.Info.NodeCount);
-			M->ViewSizeTarget *= 0.5;
+			M->TreeDepth += 1;
 			M->LookAtNodeIndex = TreeSignal.NodeIndex;
 			if(TreeSignal.FileToLoad.Size > 0)
 			{
@@ -502,7 +512,7 @@ int main()
 
 	DispatchInitialise(&M.Shared, 12);
 
-	M.Folder = Str8("/Users/olivercruickshank/mayday");
+	M.Folder = Str8("/Users/olivercruickshank/EmberGen/liquigen");
 
 	OS_Run(M.Window, &M);
 }

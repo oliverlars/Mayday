@@ -94,13 +94,14 @@ void OS_Update(void *Data)
 	int WindowHeight = OS_WindowHeight(&M->Window);
 	int WindowWidth = OS_WindowWidth(&M->Window);
 
-	f32 Size = 50;
+	f32 Size = M->ViewSize;
 	static f32 Angle = 0.0;
 	Angle += 0.001;
 	m44f Rotation = M44FromYAngle(Angle);
 	m44f Transform = M44FOrthographic(-Size, +Size, +Size, -Size, -1000.0, 1000.0);
 	//m44f Transform = M44FPerspective(sapp_widthf()/sapp_heightf(), 70, 0.01, 10000.0);
 	M->LookAt = LerpV3F(M->LookAt, M->LookAtTarget, 0.1);
+	M->ViewSize = LerpF32(M->ViewSize, M->ViewSizeTarget, 0.1);
 	if(M->TreeView.Info.Nodes)
 	{
 		M->LookAtTarget = M->TreeView.Info.Nodes[M->LookAtNodeIndex].Position;
@@ -163,6 +164,8 @@ void OS_Update(void *Data)
 			// }
 			// else
 			//
+			bounds Bounds = GetBounds(M->TreeView.Info.Nodes, M->TreeView.Info.NodeCount);
+			M->ViewSizeTarget *= 0.5;
 			M->LookAtNodeIndex = TreeSignal.NodeIndex;
 			if(TreeSignal.FileToLoad.Size > 0)
 			{
@@ -490,7 +493,7 @@ int main()
 	M.UI->Font = M.CodeFont;
 
 	M.CameraPosition = v3f(0.0);
-	M.ViewSize = 5.0;
+	M.ViewSize = 50.0;
 	M.ViewSizeTarget = M.ViewSize;
 
 	M.Shared.Arena = ArenaInitialise(GigaBytes(1));

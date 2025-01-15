@@ -167,7 +167,7 @@ void OS_Update(void *Data)
 		R_PushTransform(M->Render, M44FOrthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
 
 		ui_tree_view_signal TreeSignal = UI_TreeViewFolderLabels(M->UI, M->Draw, M->FrameArena,
-																 M->TreeParentIndex, M->TreeDepth, M->LookAtNodeIndex, &M->TreeView,
+																 M->LookAtNodeIndex, &M->TreeView,
 																 Transform, M->Folder);
 
 		if(TreeSignal.Clicked)
@@ -179,9 +179,8 @@ void OS_Update(void *Data)
 			// else
 			//
 			bounds Bounds = GetBounds(M->TreeView.Info.Nodes, M->TreeView.Info.NodeCount);
-			M->TreeDepth = TreeSignal.NodeDepth;
 			M->LookAtNodeIndex = TreeSignal.NodeIndex;
-			M->TreeParentIndex = TreeSignal.NodeParent;
+			M->TreeDepth = TreeSignal.NodeDepth;
 			if(TreeSignal.FileToLoad.Size > 0)
 			{
 				M->Buffer.String = OS_LoadEntireFileIntoMemory(M->PermanentArena, TreeSignal.FileToLoad);

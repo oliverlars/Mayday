@@ -62,6 +62,9 @@ typedef struct mayday_context
 
 	ui_tree TreeView;
 	int TreeDepth;
+	int TreeParentIndex;
+
+
 	str8 Folder;
 
 	shared_wave_info Shared;
@@ -163,8 +166,9 @@ void OS_Update(void *Data)
 
 		R_PushTransform(M->Render, M44FOrthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
 
-		ui_tree_view_signal TreeSignal = UI_TreeViewFolderLabels(M->UI, M->Draw, M->FrameArena, &M->TreeView, Transform, M->Folder);
-
+		ui_tree_view_signal TreeSignal = UI_TreeViewFolderLabels(M->UI, M->Draw, M->FrameArena,
+																 M->TreeParentIndex, M->TreeDepth, M->LookAtNodeIndex, &M->TreeView,
+																 Transform, M->Folder);
 
 		if(TreeSignal.Clicked)
 		{
@@ -175,8 +179,9 @@ void OS_Update(void *Data)
 			// else
 			//
 			bounds Bounds = GetBounds(M->TreeView.Info.Nodes, M->TreeView.Info.NodeCount);
-			M->TreeDepth += 1;
+			M->TreeDepth = TreeSignal.NodeDepth;
 			M->LookAtNodeIndex = TreeSignal.NodeIndex;
+			M->TreeParentIndex = TreeSignal.NodeParent;
 			if(TreeSignal.FileToLoad.Size > 0)
 			{
 				M->Buffer.String = OS_LoadEntireFileIntoMemory(M->PermanentArena, TreeSignal.FileToLoad);
@@ -512,7 +517,7 @@ int main()
 
 	DispatchInitialise(&M.Shared, 12);
 
-	M.Folder = Str8("/Users/olivercruickshank/EmberGen/liquigen");
+	M.Folder = Str8("/Users/olivercruickshank/mayday");
 
 	OS_Run(M.Window, &M);
 }

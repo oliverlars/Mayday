@@ -161,12 +161,14 @@ void UI_TreeView(ui_context *UI, draw_context *Draw, shared_wave_info *Shared,
 
 ui_tree_view_signal UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw,
 							 				m_arena *Arena,
+											int NodeParentIndex, int NodeDepth, int ActiveNodeIndex,
 											ui_tree *TreeView, m44f TreeTransform, str8 CurrentPath)
 {
 	ui_tree_view_signal Result = {0};
 
+	m_scratch_arena Scratch = ScratchBegin(0, 0);
 	for(os_directory_tree_iterator It = {0};
-		OS_DirectoryTreeIterate(TreeView->Info.Tree, &It);)
+		OS_DirectoryTreeIterateWithStack(Scratch.Arena, TreeView->Info.Tree, &It);)
 	{
 		f32 FontSize = 30;
 		v3f P = TreeView->Info.Nodes[It.Index].Position;
@@ -190,11 +192,13 @@ ui_tree_view_signal UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw,
 			if(Clicked)
 			{
 				Result.NodeIndex = It.Index;
+				Result.NodeDepth = It.Depth;
 				Result.Clicked = True;
 				Result.NewPath = Str8Copy(TreeView->Arena, TreeView->Info.Nodes[It.Index].Name);
 			}
 		}
-		if(It.Depth == 1)
+
+		if(It.ParentIndex == ActiveNodeIndex)
 		{
 			if(!TreeView->Info.Nodes[It.Index].IsFolder)
 			{
@@ -210,6 +214,8 @@ ui_tree_view_signal UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw,
 			}
 		}
 	}
+
+	ScratchEnd(Scratch);
 
 	return Result;
 }

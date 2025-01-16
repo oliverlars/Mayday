@@ -40,14 +40,10 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 			D_DrawStr8(Draw, Arena, Font, NumbersPosition,
 				v4f(0.8, 0.3, 0, 1), LineHeight, Str8PushF(Arena, "?u32", LineCount + 1));
 		}
-		else
+		if(Buffer->String.Bytes[I] == '\n')
 		{
 			D_DrawStr8(Draw, Arena, Font, NumbersPosition,
 					   v4f(0.1, 0.04, 0, 1), LineHeight, Str8PushF(Arena, "?u32", LineCount + 1));
-		}
-
-		if(Buffer->String.Bytes[I] == '\n')
-		{
 			LineCount += 1;
 			NumbersPosition.Y -= LineHeight;
 		}

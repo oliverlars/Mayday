@@ -260,12 +260,6 @@ void OS_Event(const sapp_event *Event, void *Data)
 		M->UI->MousePosition.Y = OS_WindowHeight(&M->Window) - Event->mouse_y;
 	}
 
-	if(Event->type == SAPP_EVENTTYPE_MOUSE_SCROLL)
-	{
-		M->UI->ScrollOffset.X += Event->scroll_x;
-		M->UI->ScrollOffset.Y -= Event->scroll_y;
-	}
-
 	if(Event->type == SAPP_EVENTTYPE_MOUSE_DOWN)
 	{
 		if(Event->mouse_button == SAPP_MOUSEBUTTON_LEFT)

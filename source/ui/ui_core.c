@@ -74,6 +74,20 @@ b32 UI_LeftMouseWentUp(ui_context *UI)
 	return Result;
 }
 
+v2f UI_Scroll(ui_context *UI)
+{
+	v2f Result = {0};
+	for(ui_event *Event = UI->EventFirst; Event; Event = Event->Next)
+	{
+		if(Event->E.type == SAPP_EVENTTYPE_MOUSE_SCROLL)
+		{
+			Result.X = Event->E.scroll_x;
+			Result.Y = -Event->E.scroll_y;
+		}
+	}
+	return Result;
+}
+
 str8 UI_DisplayString(m_arena *Arena, str8 String)
 {
 	str8 Result = {0};

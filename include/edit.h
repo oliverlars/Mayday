@@ -42,6 +42,8 @@ typedef struct editable_buffer
 
 	cursor *Cursors;
 
+	v2f Offset;
+
 	struct editable_buffer *NextInFreeList;
 } editable_buffer;
 

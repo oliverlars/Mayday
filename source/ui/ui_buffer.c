@@ -15,9 +15,10 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 	int WindowHeight = Size.Y;
 	int WindowWidth = Size.X;
 
-	v2f BufferPosition = v2f(100, (f32)WindowHeight - 50 + UI->ScrollOffset.Y*15);
+	v2f BufferPosition = v2f(100, (f32)WindowHeight - 50);
+	BufferPosition.Y += Buffer->Offset.Y;
 
-	v2f NumbersPosition = v2f(10, (f32)WindowHeight - 50 + UI->ScrollOffset.Y*15);
+	v2f NumbersPosition = v2f(10, BufferPosition.Y);
 
 	f32 LineHeight = D_LineHeightFromFont(Font, Buffer->HeightInPixels);
 
@@ -104,6 +105,10 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 
 	// 	Edit->Cursors[0].Selection.Y = Index;
 	// }
+
+	v2f ScrollOffset = UI_Scroll(UI);
+	Buffer->Offset.X += ScrollOffset.X*15;
+	Buffer->Offset.Y += ScrollOffset.Y*15;
 
 	if(UI_LeftMouseWentUp(UI))
 	{

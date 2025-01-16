@@ -147,3 +147,4 @@ void UI_StatusBar(ui_context *UI, draw_context *Draw, edit_context *Edit,
 b32 UI_LeftMouseWentDown(ui_context *UI);
 b32 UI_LeftMouseWentDownWithModifiers(ui_context *UI, int Modifiers);
 b32 UI_LeftMouseWentUp(ui_context *UI);
+v2f UI_Scroll(ui_context *UI);

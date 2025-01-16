@@ -184,10 +184,10 @@ ui_tree_view_signal UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw,
 
 		if(TreeView->Info.Nodes[It.Index].IsFolder)
 		{
-			b32 Clicked = UI_TextButtonWrapping(UI, Draw,
+			b32 Clicked = UI_TextButton(UI, Draw,
 				Arena, Str8PushF(Arena, "?S##?u32", Str8FromLastCharacter(Arena, TreeView->Info.Nodes[It.Index].Name, '/'), It.Index),
 				FontSize,
-				v2f(TransformedPoint.X, TransformedPoint.Y), v4f(0.5, 0.1, 0.0, 1));
+				v2f(TransformedPoint.X, TransformedPoint.Y), v4f(0.5, 0.8, 0.0, 1));
 			if(Clicked)
 			{
 				Result.NodeIndex = It.Index;
@@ -199,12 +199,13 @@ ui_tree_view_signal UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw,
 
 		if(It.ParentIndex == ActiveNodeIndex)
 		{
+			FontSize = 30;
 			if(!TreeView->Info.Nodes[It.Index].IsFolder)
 			{
-				b32 Clicked = UI_TextButtonWrapping(UI, Draw,
+				b32 Clicked = UI_TextButton(UI, Draw,
 					Arena, Str8PushF(Arena, "?S##?u32", Str8FromLastCharacter(Arena, TreeView->Info.Nodes[It.Index].Name, '/'), It.Index),
 					FontSize,
-					v2f(TransformedPoint.X, TransformedPoint.Y), v4f(0.5, 0.1, 0.0, 1));
+					v2f(TransformedPoint.X, TransformedPoint.Y), v4f(0.5, 0.4, 0.0, 1));
 				if(Clicked)
 				{
 					Result.Clicked = True;

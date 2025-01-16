@@ -63,6 +63,14 @@ typedef enum ui_modifiers
 	MODIFIER_OPTION,
 } ui_modifiers;
 
+
+typedef struct ui_event
+{
+	sapp_event E;
+	struct ui_event *Next;
+	struct ui_event *Previous;
+} ui_event;
+
 typedef struct ui_context
 {
 	u64 Hot;
@@ -78,19 +86,15 @@ typedef struct ui_context
 
 	b32 MouseIsDragging;
 	v2i MousePosition;
-	b32 MouseWentDown;
-	b32 MouseWentUp;
 
-	b32 MouseButtonWasDown[MOUSE_BUTTON_COUNT];
-	b32 MouseButtonWasUp[MOUSE_BUTTON_COUNT];
-
-
-	str8 TextToInsert;
-
-	u8 MultiClickCount;
-	u64 TimeStampWhenMousePressed;
+	b32 LeftMouseIsDown;
+	u8 MultiLeftClickCount;
+	u64 TimeStampWhenLeftMousePressed;
 
 	ui_view View;
+
+	ui_event *EventFirst;
+	ui_event *EventLast;
 
 	ui_widget Widgets[UI_TABLE_SIZE];
 } ui_context;
@@ -114,7 +118,6 @@ int UI_GetTextWidth(d_font Font, draw_context *Draw, str8 String, f32 HeightInPi
 void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 			   m_arena *Arena, d_font Font,
 			   editable_buffer *Buffer,
-			   cursor *Cursors,
 			   v2i Size);
 
 void UI_TreeView(ui_context *UI, draw_context *Draw, shared_wave_info *Shared,
@@ -140,3 +143,7 @@ void UI_StatusBar(ui_context *UI, draw_context *Draw, edit_context *Edit,
 				  m_arena *Arena, d_font Font,
 				  cursor *Cursors, editable_buffer *Buffer,
 				  v2i Size);
+
+b32 UI_LeftMouseWentDown(ui_context *UI);
+b32 UI_LeftMouseWentDownWithModifiers(ui_context *UI, int Modifiers);
+b32 UI_LeftMouseWentUp(ui_context *UI);

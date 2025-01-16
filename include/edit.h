@@ -56,6 +56,8 @@ typedef struct edit_context
 	undo_stack *NewestAction;
 	undo_stack *OldestAction;
 
+	cursor *Cursors;
+
 	// HACK(Oliver): This is dumb, just add a pool allocator
 	u8* Temp;
 } edit_context;

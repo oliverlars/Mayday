@@ -1,3 +1,4 @@
+#include "os.h"
 #include "render.h"
 #include "ui.h"
 #include "maths.h"
@@ -6,6 +7,72 @@
 #include "strings.h"
 #include <assert.h>
 
+void RemoveEventFromList(ui_context *UI, ui_event *Event)
+{
+	assert(Event);
+	if(Event->Previous)
+	{
+		Event->Previous->Next = Event->Next;
+	}
+	else
+	{
+		UI->EventFirst = Event->Next;
+	}
+
+	if(Event->Next)
+	{
+		Event->Next->Previous = Event->Previous->Next;
+	}
+	else
+	{
+		UI->EventLast = Event->Previous;
+	}
+}
+
+b32 UI_LeftMouseWentDown(ui_context *UI)
+{
+	b32 Result = False;
+	for(ui_event *Event = UI->EventFirst; Event; Event = Event->Next)
+	{
+		if(Event->E.type == SAPP_EVENTTYPE_MOUSE_DOWN)
+		{
+			Result = True;
+			RemoveEventFromList(UI, Event);
+			break;
+		}
+	}
+	return Result;
+}
+
+b32 UI_LeftMouseWentDownWithModifiers(ui_context *UI, int Modifiers)
+{
+	b32 Result = False;
+	for(ui_event *Event = UI->EventFirst; Event; Event = Event->Next)
+	{
+		if(Event->E.type == SAPP_EVENTTYPE_MOUSE_DOWN && Event->E.modifiers & Modifiers)
+		{
+			Result = True;
+			RemoveEventFromList(UI, Event);
+			break;
+		}
+	}
+	return Result;
+}
+
+b32 UI_LeftMouseWentUp(ui_context *UI)
+{
+	b32 Result = False;
+	for(ui_event *Event = UI->EventFirst; Event; Event = Event->Next)
+	{
+		if(Event->E.type == SAPP_EVENTTYPE_MOUSE_UP)
+		{
+			Result = True;
+			RemoveEventFromList(UI, Event);
+			break;
+		}
+	}
+	return Result;
+}
 
 str8 UI_DisplayString(m_arena *Arena, str8 String)
 {
@@ -109,7 +176,7 @@ b32 UI_TextButton(ui_context *UI, draw_context *Draw, m_arena *Arena,
 	b32 Clicked = False;
 	if(UI->Hot == Hash)
 	{
-		if(UI->MouseWentUp)
+		if(UI_LeftMouseWentUp(UI))
 		{
 			Clicked = True;
 		}
@@ -120,7 +187,7 @@ b32 UI_TextButton(ui_context *UI, draw_context *Draw, m_arena *Arena,
 	else
 	{
 		//D_DrawQuad(Draw, Arena, BoxPosition, Width, Height, v4f(0, 0, 0, 1));
-		D_DrawStr8(Draw, Arena, UI->Font, Position, v4f(0.2, 0.5, 0.0, 1.0), HeightInPixels, DisplayString);
+		D_DrawStr8(Draw, Arena, UI->Font, Position, Colour, HeightInPixels, DisplayString);
 	}
 
 	return Clicked;
@@ -173,7 +240,7 @@ b32 UI_TextButtonWrapping(ui_context *UI, draw_context *Draw, m_arena *Arena,
 	b32 Clicked = False;
 	if(UI->Hot == Hash)
 	{
-		if(UI->MouseWentUp)
+		if(UI_LeftMouseWentUp(UI))
 		{
 			Clicked = True;
 		}

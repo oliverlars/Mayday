@@ -137,7 +137,6 @@ void OS_Update(void *Data)
 		UI_Buffer(M->UI, M->Draw, M->Edit,
 			   M->FrameArena, M->CodeFont,
 			   &M->Buffer,
-			   &M->Cursor,
 			   v2i(WindowWidth, WindowHeight));
 
 		UI_StatusBar(M->UI, M->Draw, M->Edit, M->FrameArena, M->StatusFont,
@@ -194,15 +193,15 @@ void OS_Update(void *Data)
 
 	R_PopTransform(M->Render);
 
-	if(OS_MilliSecondsFromTimeStamp(OS_TimeStampNow() - M->UI->TimeStampWhenMousePressed) > 150.0 &&
-	   M->UI->MouseClicked && M->UI->MultiClickCount == 0)
-	{
-		M->UI->MouseIsDragging = True;
-	}
-	else if(M->UI->MouseWentUp)
-	{
-		M->UI->MouseIsDragging = False;
-	}
+	// if(OS_MilliSecondsFromTimeStamp(OS_TimeStampNow() - M->UI->TimeStampWhenMousePressed) > 150.0 &&
+	//    M->UI->MouseClicked && M->UI->MultiClickCount == 0)
+	// {
+	// 	M->UI->MouseIsDragging = True;
+	// }
+	// else if(M->UI->MouseWentUp)
+	// {
+	// 	M->UI->MouseIsDragging = False;
+	// }
 
 	R_Update(M->Render, M->FrameArena);
 
@@ -213,13 +212,78 @@ void OS_Update(void *Data)
 	M->FrameArena = M->PreviousFrameArena;
 	M->PreviousFrameArena = TempArena;
 
-	M->UI->MouseWentDown = False;
-	M->UI->MouseWentUp = False;
+	M->UI->EventLast = Null;
+	M->UI->EventFirst = Null;
+
+	f32 MillisecondsSinceLastClick = OS_MilliSecondsFromTimeStamp(OS_TimeStampNow() - M->UI->TimeStampWhenLeftMousePressed);
+
+	if(MillisecondsSinceLastClick < 400 &&
+	   M->UI->MultiLeftClickCount == 0)
+	{
+		M->UI->MultiLeftClickCount += 1;
+	}
+	else if(MillisecondsSinceLastClick < 400 && M->UI->MultiLeftClickCount == 1)
+	{
+		M->UI->MultiLeftClickCount += 1;
+	}
+	else if(MillisecondsSinceLastClick < 400 && M->UI->MultiLeftClickCount == 2)
+	{
+		M->UI->MultiLeftClickCount += 1;
+	}
+	else if(MillisecondsSinceLastClick >= 400)
+	{
+		M->UI->MultiLeftClickCount = 0;
+	}
 }
 
 void OS_Event(const sapp_event *Event, void *Data)
 {
 	mayday_context *M = (mayday_context*)Data;
+
+	if(M->UI->EventLast)
+	{
+		M->UI->EventLast->Next = ArenaPushArrayZero(M->FrameArena, ui_event, 1);
+		M->UI->EventLast->E = Event[0];
+		M->UI->EventLast->Next->Previous = M->UI->EventLast;
+		M->UI->EventLast = M->UI->EventLast->Next;
+	}
+	else
+	{
+		M->UI->EventLast = ArenaPushArrayZero(M->FrameArena, ui_event, 1);
+		M->UI->EventLast->E = Event[0];
+		M->UI->EventFirst = M->UI->EventLast;
+	}
+
+	if(Event->type == SAPP_EVENTTYPE_MOUSE_MOVE)
+	{
+		M->UI->MousePosition.X = Event->mouse_x;
+		M->UI->MousePosition.Y = OS_WindowHeight(&M->Window) - Event->mouse_y;
+	}
+
+	if(Event->type == SAPP_EVENTTYPE_MOUSE_SCROLL)
+	{
+		M->UI->ScrollOffset.X += Event->scroll_x;
+		M->UI->ScrollOffset.Y -= Event->scroll_y;
+	}
+
+	if(Event->type == SAPP_EVENTTYPE_MOUSE_DOWN)
+	{
+		if(Event->mouse_button == SAPP_MOUSEBUTTON_LEFT)
+		{
+			M->UI->TimeStampWhenLeftMousePressed = OS_TimeStampNow();
+			M->UI->LeftMouseIsDown = True;
+		}
+	}
+
+	if(Event->type == SAPP_EVENTTYPE_MOUSE_UP)
+	{
+		if(Event->mouse_button == SAPP_MOUSEBUTTON_LEFT)
+		{
+			M->UI->LeftMouseIsDown = False;
+		}
+	}
+
+	return;
 
 	if(Event->type == SAPP_EVENTTYPE_MOUSE_DOWN)
 	{
@@ -248,9 +312,9 @@ void OS_Event(const sapp_event *Event, void *Data)
 				Cursor = &M->Cursor;
 			}
 
-			f32 MillisecondsSinceLastClick = OS_MilliSecondsFromTimeStamp(OS_TimeStampNow() - M->UI->TimeStampWhenMousePressed);
+			f32 MillisecondsSinceLastClick = OS_MilliSecondsFromTimeStamp(OS_TimeStampNow() - M->UI->TimeStampWhenLeftMousePressed);
 			if(MillisecondsSinceLastClick < 400 &&
-			   M->UI->MultiClickCount == 0)
+			   M->UI->MultiLeftClickCount == 0)
 			{
 				v2i InitialSelection = Cursor->Selection;
 				E_MoveCursors(M->Edit, M->Draw, M->CodeFont, Cursor, &M->Buffer, E_MOVE_WORD_RIGHT, E_MOVE_SELECTING);
@@ -258,7 +322,7 @@ void OS_Event(const sapp_event *Event, void *Data)
 				Cursor->Selection = InitialSelection;
 				E_MoveCursors(M->Edit, M->Draw, M->CodeFont, Cursor, &M->Buffer, E_MOVE_WORD_LEFT, E_MOVE_NOT_SELECTING);
 				Cursor->Selection = v2i(Cursor->Selection.X, Selection.Y);
-				M->UI->MultiClickCount++;
+				M->UI->MultiLeftClickCount++;
 
 				if(LastCursor != Cursor)
 				{
@@ -266,12 +330,12 @@ void OS_Event(const sapp_event *Event, void *Data)
 					LastCursor->Next = Null;
 				}
 			}
-			else if(MillisecondsSinceLastClick < 400 && M->UI->MultiClickCount == 1)
+			else if(MillisecondsSinceLastClick < 400 && M->UI->MultiLeftClickCount == 1)
 			{
 				int LineStart = E_LineStartFromIndex(M->Edit, Cursor->Selection.Y, &M->Buffer);
 				int LineEnd = E_LineEndFromIndex(M->Edit, Cursor->Selection.Y, &M->Buffer);
 				Cursor->Selection = v2i(LineStart, LineEnd);
-				M->UI->MultiClickCount++;
+				M->UI->MultiLeftClickCount++;
 
 				if(LastCursor != Cursor)
 				{
@@ -279,10 +343,10 @@ void OS_Event(const sapp_event *Event, void *Data)
 					LastCursor->Next = Null;
 				}
 			}
-			else if(MillisecondsSinceLastClick < 400 && M->UI->MultiClickCount == 2)
+			else if(MillisecondsSinceLastClick < 400 && M->UI->MultiLeftClickCount == 2)
 			{
 				Cursor->Selection = v2i(0, M->Buffer.String.Size);
-				M->UI->MultiClickCount++;
+				M->UI->MultiLeftClickCount++;
 
 				if(LastCursor != Cursor)
 				{
@@ -293,12 +357,10 @@ void OS_Event(const sapp_event *Event, void *Data)
 			else if(MillisecondsSinceLastClick >= 400)
 			{
 				Cursor->Selection = v2i(Index, Index);
-				M->UI->MultiClickCount = 0;
+				M->UI->MultiLeftClickCount = 0;
 			}
 
-			M->UI->MouseWentDown = True;
-			M->UI->MouseWentUp = False;
-			M->UI->TimeStampWhenMousePressed = OS_TimeStampNow();
+			M->UI->TimeStampWhenLeftMousePressed = OS_TimeStampNow();
 		}
 	}
 	else if(Event->type == SAPP_EVENTTYPE_MOUSE_SCROLL)
@@ -308,8 +370,7 @@ void OS_Event(const sapp_event *Event, void *Data)
 	}
 	else if(Event->type == SAPP_EVENTTYPE_MOUSE_UP)
 	{
-		M->UI->MouseWentUp = True;
-		M->UI->MouseWentDown = False;
+
 	}
 	else if(Event->type == SAPP_EVENTTYPE_KEY_DOWN)
 	{
@@ -497,6 +558,9 @@ int main()
 	M.Draw->Arena = Arena;
 	M.Edit->Arena = Arena;
 	M.Edit->Temp = ArenaPushZero(Arena, MegaBytes(1));
+
+	cursor Cursor = {0};
+	M.Edit->Cursors = &Cursor;
 
 	M.Window = OS_MakeWindow(Str8("Mayday!"), 3024, 1964);
 

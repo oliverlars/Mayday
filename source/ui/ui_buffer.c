@@ -108,7 +108,7 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 
 	v2f ScrollOffset = UI_Scroll(UI);
 	Buffer->Offset.X += ScrollOffset.X*15;
-	Buffer->Offset.Y += ScrollOffset.Y*15;
+	Buffer->Offset.Y = Max(Buffer->Offset.Y + ScrollOffset.Y*15, 0.0);
 
 	if(UI_LeftMouseWentUp(UI))
 	{

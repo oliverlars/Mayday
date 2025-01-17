@@ -148,3 +148,5 @@ b32 UI_LeftMouseWentDown(ui_context *UI);
 b32 UI_LeftMouseWentDownWithModifiers(ui_context *UI, int Modifiers);
 b32 UI_LeftMouseWentUp(ui_context *UI);
 v2f UI_Scroll(ui_context *UI);
+b32 UI_KeyUp(ui_context *UI, sapp_keycode Key, u32 Modifiers);
+b32 UI_KeyDown(ui_context *UI, sapp_keycode Key, u32 Modifiers);

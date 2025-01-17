@@ -41,10 +41,14 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 			D_DrawStr8(Draw, Arena, Font, NumbersPosition,
 				v4f(0.8, 0.3, 0, 1), LineHeight, Str8PushF(Arena, "?u32", LineCount + 1));
 		}
+
 		if(Buffer->String.Bytes[I] == '\n')
 		{
-			D_DrawStr8(Draw, Arena, Font, NumbersPosition,
-					   v4f(0.1, 0.04, 0, 1), LineHeight, Str8PushF(Arena, "?u32", LineCount + 1));
+			if(MainCursorLine != LineCount)
+			{
+				D_DrawStr8(Draw, Arena, Font, NumbersPosition,
+						   v4f(0.1, 0.04, 0, 1), LineHeight, Str8PushF(Arena, "?u32", LineCount + 1));
+			}
 			LineCount += 1;
 			NumbersPosition.Y -= LineHeight;
 		}
@@ -71,8 +75,12 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 
 
 	//if(UI->MouseIsDragging || UI->MouseWentDown)
-	if(False)
+	if(UI->MouseIsDragging)
 	{
+		int Index = E_IndexFromPosition(Edit, Draw, Font,
+										Buffer, BufferPosition, UI->MousePosition);
+		Edit->Cursors[0].Selection.Y = Index;
+
 		Edit->Cursors[0].TargetPosition = E_GetPositionFromEditableBuffer(Edit,
 																	Draw,
 																	Edit->Cursors[0].Selection.Y,
@@ -98,24 +106,38 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 		}
 	}
 
-	// if(UI->MouseIsDragging)
-	// {
-	// 	int Index = E_IndexFromPosition(Edit, Draw, Font,
-	// 									Buffer, BufferPosition, UI->MousePosition);
-
-	// 	Edit->Cursors[0].Selection.Y = Index;
-	// }
+	if(UI->MouseIsDragging)
+	{
+	}
 
 	v2f ScrollOffset = UI_Scroll(UI);
 	Buffer->Offset.X += ScrollOffset.X*15;
 	Buffer->Offset.Y = Max(Buffer->Offset.Y + ScrollOffset.Y*15, 0.0);
 
-	if(UI_LeftMouseWentUp(UI))
+	if(0) {}
+	else if(UI_KeyDown(UI, SAPP_KEYCODE_LEFT, 0))
+	{
+		edit_move_type MoveType = E_MOVE_NOT_SELECTING;
+		E_MoveCursors(Edit, Draw, Font, Edit->Cursors, Buffer, E_MOVE_LEFT, MoveType);
+	}
+	else if(UI_KeyDown(UI, SAPP_KEYCODE_UP, 0))
+	{
+
+	}
+	else if(UI_KeyDown(UI, SAPP_KEYCODE_RIGHT, 0))
+	{
+
+	}
+	else if(UI_KeyDown(UI, SAPP_KEYCODE_RIGHT, 0))
+	{
+
+	}
+
+	if(UI_LeftMouseWentDown(UI))
 	{
 		int Index = E_IndexFromPosition(Edit, Draw, Font,
 									Buffer, BufferPosition,
 									UI->MousePosition);
-		LogInfo("?u32", Index);
 		cursor *LastCursor = E_LastCursor(Edit, Edit->Cursors);
 		cursor *Cursor = LastCursor;
 		Edit->Cursors->Next = Null;
@@ -140,9 +162,9 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 }
 
 void UI_StatusBar(ui_context *UI, draw_context *Draw, edit_context *Edit,
-			   m_arena *Arena, d_font Font,
-			   cursor *Cursors, editable_buffer *Buffer,
-			   v2i Size)
+				  m_arena *Arena, d_font Font,
+				  cursor *Cursors, editable_buffer *Buffer,
+				  v2i Size)
 {
 	D_DrawQuad(Draw, Arena, v2f(0, 0), (f32)Size.X, 50, v4f(0.3, 0.08, 0, 1));
 

@@ -74,6 +74,37 @@ b32 UI_LeftMouseWentUp(ui_context *UI)
 	return Result;
 }
 
+b32 UI_KeyDown(ui_context *UI, sapp_keycode Key, u32 Modifiers)
+{
+	b32 Result = False;
+	for(ui_event *Event = UI->EventFirst; Event; Event = Event->Next)
+	{
+		if(Event->E.type == SAPP_EVENTTYPE_KEY_DOWN && Event->E.key_code == Key &&
+		   Event->E.modifiers == Modifiers)
+		{
+			Result = True;
+			RemoveEventFromList(UI, Event);
+			break;
+		}
+	}
+	return Result;
+}
+
+b32 UI_KeyUp(ui_context *UI, sapp_keycode Key, u32 Modifiers)
+{
+	b32 Result = False;
+	for(ui_event *Event = UI->EventFirst; Event; Event = Event->Next)
+	{
+		if(Event->E.type == SAPP_EVENTTYPE_KEY_DOWN && Event->E.key_code == Key)
+		{
+			Result = True;
+			RemoveEventFromList(UI, Event);
+			break;
+		}
+	}
+	return Result;
+}
+
 v2f UI_Scroll(ui_context *UI)
 {
 	v2f Result = {0};
@@ -81,8 +112,8 @@ v2f UI_Scroll(ui_context *UI)
 	{
 		if(Event->E.type == SAPP_EVENTTYPE_MOUSE_SCROLL)
 		{
-			Result.X = Event->E.scroll_x;
-			Result.Y = -Event->E.scroll_y;
+			Result.X +=  Event->E.scroll_x;
+			Result.Y += -Event->E.scroll_y;
 		}
 	}
 	return Result;

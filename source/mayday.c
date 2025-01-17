@@ -100,7 +100,7 @@ void OS_Update(void *Data)
 
 	f32 Size = M->ViewSize;
 	static f32 Angle = 0.0;
-	Angle += 0.001;
+	Angle += 0.001 / (f32)(M->TreeDepth*2 + 1);
 	m44f Rotation = M44FromYAngle(Angle);
 	m44f Transform = M44FOrthographic(-Size, +Size, +Size, -Size, -1000.0, 1000.0);
 	//m44f Transform = M44FPerspective(sapp_widthf()/sapp_heightf(), 70, 0.01, 10000.0);
@@ -193,15 +193,16 @@ void OS_Update(void *Data)
 
 	R_PopTransform(M->Render);
 
-	// if(OS_MilliSecondsFromTimeStamp(OS_TimeStampNow() - M->UI->TimeStampWhenMousePressed) > 150.0 &&
-	//    M->UI->MouseClicked && M->UI->MultiClickCount == 0)
-	// {
-	// 	M->UI->MouseIsDragging = True;
-	// }
-	// else if(M->UI->MouseWentUp)
-	// {
-	// 	M->UI->MouseIsDragging = False;
-	// }
+	if(OS_MilliSecondsFromTimeStamp(OS_TimeStampNow() - M->UI->TimeStampWhenLeftMousePressed) > 150.0 &&
+	   M->UI->LeftMouseIsDown)
+	{
+		M->UI->MouseIsDragging = True;
+	}
+
+	if(!M->UI->LeftMouseIsDown)
+	{
+		M->UI->MouseIsDragging = False;
+	}
 
 	R_Update(M->Render, M->FrameArena);
 
@@ -275,6 +276,7 @@ void OS_Event(const sapp_event *Event, void *Data)
 		{
 			M->UI->LeftMouseIsDown = False;
 		}
+		M->UI->TimeStampWhenLeftMousePressed = 0;
 	}
 
 	return;

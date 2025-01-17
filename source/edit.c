@@ -46,14 +46,14 @@ v2i E_GetSortedSelection(v2i Selection)
 
 void E_DeleteTo(edit_context *Edit, cursor *Cursor, editable_buffer *Buffer)
 {
-	// NOTE(Oliver): For each deletion, every subsequent cursor should be 
+	// NOTE(Oliver): For each deletion, every subsequent cursor should be
 	// offset by the previous cursors selection range
 	int PerCursorOffset = 0;
 	for(;Cursor; Cursor = Cursor->Next)
 	{
 		v2i Selection = E_GetSortedSelection(Cursor->Selection);
 		Selection = v2i(Max(Selection.X - PerCursorOffset, 0), Max(Selection.Y - PerCursorOffset, 0));
-		
+
 		if(Cursor->Selection.X != Cursor->Selection.Y)
 		{
 			PerCursorOffset += Selection.Y - Selection.X;
@@ -71,7 +71,7 @@ void E_DeleteTo(edit_context *Edit, cursor *Cursor, editable_buffer *Buffer)
 
 void E_InsertTo(edit_context *Edit, cursor *Cursor, editable_buffer *Buffer, str8 TextToInsert)
 {
-	// NOTE(Oliver): For each insertion, every subsequent cursor should be 
+	// NOTE(Oliver): For each insertion, every subsequent cursor should be
 	// offset by the previous cursors selection range
 	int PerCursorOffset = 0;
 	for(;Cursor; Cursor = Cursor->Next)
@@ -85,7 +85,7 @@ void E_InsertTo(edit_context *Edit, cursor *Cursor, editable_buffer *Buffer, str
 		}
 		E_InsertTextAtIndex(Edit, Selection.X, Buffer, TextToInsert);
 		Selection = v2i(Selection.X + TextToInsert.Size, Selection.X + TextToInsert.Size);
-		
+
 		Selection.X = ClampS32(Selection.X, 0, Buffer->String.Size);
 		Selection.Y = ClampS32(Selection.Y, 0, Buffer->String.Size);
 		Cursor->Selection = Selection;
@@ -123,7 +123,7 @@ void E_MoveCursors(edit_context *Edit, draw_context *Draw,
 			Selection = v2i(Selection.Y, Selection.Y);
 			Cursor->VisualX = 0;
 		}
-		
+
 		if(Movement == E_MOVE_LEFT)
 		{
 			Selection.X -= 1;
@@ -158,7 +158,7 @@ void E_MoveCursors(edit_context *Edit, draw_context *Draw,
 			Selection = E_GetSortedSelection(Cursor->Selection);
 			int Index = Selection.X;
 			int DistancePreviousNewLine = E_DistanceFromPreviousNewLine(Edit, Index, Buffer);
-			
+
 			int LineAboveEnd = Index - DistancePreviousNewLine - 1;
 			int LineAboveStart = LineAboveEnd - E_DistanceFromPreviousNewLine(Edit, LineAboveEnd, Buffer);
 
@@ -238,7 +238,7 @@ void E_InsertTextAtIndex(edit_context *E, int Index, editable_buffer *Buffer, st
 	//TODO(Oliver): Not implemented yet
 	assert(Buffer->String.Size + TextToInsert.Size < MegaBytes(1));
 	assert(E->Temp);
-	
+
 	MemoryCopy(E->Temp, Buffer->String.Bytes, At);
 	MemoryCopy(E->Temp + At, TextToInsert.Bytes, TextToInsert.Size);
 	MemoryCopy(E->Temp + At + TextToInsert.Size, Buffer->String.Bytes + At, Buffer->String.Size - At);
@@ -295,7 +295,7 @@ v2f E_GetPositionFromEditableBuffer(edit_context *E,
 
 int E_DistanceFromNextNewLine(edit_context *E, int Index, editable_buffer *Buffer)
 {
-	int At = Index; 
+	int At = Index;
 	int I = At;
 	for(;I < Buffer->String.Size; I++)
 	{
@@ -383,7 +383,7 @@ int E_GetMaxTextWidthFromRange(edit_context *E, draw_context *D,
 	for(int I = RangeStart; I < RangeEnd; I++)
 	{
 		u32 CodePoint =  Buffer->String.Bytes[I];
-		
+
 		if(CodePoint == '\n')
 		{
 			X = 0;
@@ -426,7 +426,7 @@ int E_IndexFromPosition(edit_context *Edit, draw_context *Draw, d_font Font,
 		}
 
 		d_atlas_glyph *Glyph  = D_GlyphFromCodePoint(Draw, Font, Buffer->HeightInPixels, CodePoint);
-		
+
 		if(Position.Y > (BufferPosition.Y + LineHeight))
 		{
 			break;
@@ -446,7 +446,7 @@ int E_IndexFromPosition(edit_context *Edit, draw_context *Draw, d_font Font,
 		BufferPosition.X += Glyph->AdvanceX * Scale * TabMultiplier;
 	}
 
-	return Result;	
+	return Result;
 }
 
 int E_IndexFromVisualXAndLineStart(edit_context *E, draw_context *D, d_font Font,
@@ -458,7 +458,7 @@ int E_IndexFromVisualXAndLineStart(edit_context *E, draw_context *D, d_font Font
 	for(;Index < Buffer->String.Size; Index++)
 	{
 		u32 CodePoint =  Buffer->String.Bytes[Index];
-		
+
 		if(CodePoint == '\n' || X >= VisualX)
 		{
 			break;

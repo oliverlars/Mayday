@@ -26,7 +26,7 @@ typedef struct d_atlas_glyph
 	struct d_atlas_glyph *PreviousInLRU;
 } d_atlas_glyph;
 
-#define D_GLYPH_TABLE_SIZE (4096)
+#define D_GLYPH_TABLE_SIZE (8192)
 
 #define D_FONT_ATLAS_SIZE (4096)
 

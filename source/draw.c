@@ -213,8 +213,7 @@ d_atlas_glyph *D_GlyphFromCodePoint(draw_context *D, d_font Font, s32 HeightInPi
 d_atlas_glyph *D_GlyphFromCodePoint2(draw_context *D, u64 FontHash, d_font Font, s32 HeightInPixels, u32 CodePoint)
 {
 	per_thread_context *ThreadContext = GetThreadContext();
-	u64 Hash = FontHash;
-	Hash = M_FNVHashBytes(Hash, (u8*)&CodePoint, sizeof(u32));
+	u64 Hash = M_FNVHashBytes(FontHash, (u8*)&CodePoint, sizeof(u32));
 
 	d_atlas_glyph *Glyph = D->GlyphTable + (Hash % D_GLYPH_TABLE_SIZE);
 	for(;Glyph->NextInHashSlot != Null && Glyph->Hash != Hash; Glyph = Glyph->NextInHashSlot);
@@ -350,7 +349,7 @@ void D_DrawStr8(draw_context *D,
 	Command.VerticesFormat = R_VF_POSITION | R_VF_UV;
 
 	u64 Hash = M_FNVHashBytes(M_FNV_HASH_START, (u8*)&Font, sizeof(d_font));
-	Hash = M_FNVHashBytes(Hash, (u8*)&HeightInPixels, sizeof(s32));
+	Hash = M_FNVHashBytes(Hash, (u8*)&HeightInPixels, sizeof(f32));
 
 	f32 StartX = Position.X;
 	r_vertex *R_Vertices = Command.Vertices;
@@ -385,7 +384,7 @@ void D_DrawStr8(draw_context *D,
 
 		//if(NewLine) CodePoint = 'N';
 
-		d_atlas_glyph *Glyph  = D_GlyphFromCodePoint2(D, Hash, Font, HeightInPixels, CodePoint);
+		d_atlas_glyph *Glyph  = D_GlyphFromCodePoint(D, Font, HeightInPixels, CodePoint);
 
 		f32 GlyphWidth = ((f32)(Glyph->Box.Z - Glyph->Box.X)*Scale);
 		f32 GlyphHeight = ((f32)(Glyph->Box.W - Glyph->Box.Y)*Scale);

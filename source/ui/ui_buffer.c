@@ -114,24 +114,6 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 	Buffer->Offset.X += ScrollOffset.X*15;
 	Buffer->Offset.Y = Max(Buffer->Offset.Y + ScrollOffset.Y*15, 0.0);
 
-	if(0) {}
-	else if(UI_KeyDown(UI, SAPP_KEYCODE_LEFT, 0))
-	{
-		edit_move_type MoveType = E_MOVE_NOT_SELECTING;
-		E_MoveCursors(Edit, Draw, Font, Edit->Cursors, Buffer, E_MOVE_LEFT, MoveType);
-	}
-	else if(UI_KeyDown(UI, SAPP_KEYCODE_UP, 0))
-	{
-
-	}
-	else if(UI_KeyDown(UI, SAPP_KEYCODE_RIGHT, 0))
-	{
-
-	}
-	else if(UI_KeyDown(UI, SAPP_KEYCODE_RIGHT, 0))
-	{
-
-	}
 
 	if(UI_DoubleClicked(UI))
 	{
@@ -154,6 +136,53 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 			LastCursor->Next = Null;
 		}
 	}
+	else if(UI_TripleClicked(UI))
+	{
+		int Index = E_IndexFromPosition(Edit, Draw, Font,
+										Buffer, BufferPosition,
+										UI->MousePosition);
+
+		cursor *LastCursor = E_LastCursor(Edit, Edit->Cursors);
+		cursor *Cursor = LastCursor;
+		if(False)
+		{
+			cursor NextCursor = Cursor[0];
+			NextCursor.Selection = v2i(Index, Index);
+			E_AppendCursor(Edit, Edit->Arena, Edit->Cursors, NextCursor);
+			Cursor = Cursor->Next;
+		}
+		else
+		{
+			Edit->Cursors[0].Next = Null;
+		}
+
+		int LineStart = E_LineStartFromIndex(Edit, Cursor->Selection.Y, Buffer);
+		int LineEnd = E_LineEndFromIndex(Edit, Cursor->Selection.Y, Buffer);
+		Cursor->Selection = v2i(LineStart, LineEnd);
+
+		if(LastCursor != Cursor)
+		{
+			LastCursor[0] = Cursor[0];
+			LastCursor->Next = Null;
+		}
+	}
+	else if(UI_QuadClicked(UI))
+	{
+		Edit->Cursors[0].Selection = v2i(0, Buffer->String.Size);
+
+		int Index = E_IndexFromPosition(Edit, Draw, Font,
+										Buffer, BufferPosition,
+										UI->MousePosition);
+
+		cursor *LastCursor = E_LastCursor(Edit, Edit->Cursors);
+		cursor *Cursor = LastCursor;
+
+		if(LastCursor != Cursor)
+		{
+			LastCursor[0] = Cursor[0];
+			LastCursor->Next = Null;
+		}
+	}
 	else if(UI_LeftMouseWentDown(UI))
 	{
 		int Index = E_IndexFromPosition(Edit, Draw, Font,
@@ -165,6 +194,48 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 		Cursor = Edit->Cursors;
 		Cursor->Selection = v2i(Index, Index);
 
+	}
+
+	if(UI_KeyDown(UI, SAPP_KEYCODE_DOWN, 0))
+	{
+		E_MoveCursors(Edit, Draw, Font, Edit->Cursors, Buffer, E_MOVE_DOWN, E_MOVE_NOT_SELECTING);
+	}
+	else if(UI_KeyDown(UI, SAPP_KEYCODE_DOWN, SAPP_MODIFIER_SUPER))
+	{
+		cursor *LastCursor = E_LastCursor(Edit, Edit->Cursors);
+		cursor NextCursor = LastCursor[0];
+		E_MoveCursors(Edit, Draw, Font, &NextCursor, Buffer, E_MOVE_DOWN, E_MOVE_NOT_SELECTING);
+		E_AppendCursor(Edit, Edit->Arena, Edit->Cursors, NextCursor);
+	}
+
+	if(UI_KeyDown(UI, SAPP_KEYCODE_UP, 0))
+	{
+		E_MoveCursors(Edit, Draw, Font, Edit->Cursors, Buffer, E_MOVE_UP, E_MOVE_NOT_SELECTING);
+	}
+	else if(UI_KeyDown(UI, SAPP_KEYCODE_UP, SAPP_MODIFIER_SUPER))
+	{
+		cursor *LastCursor = E_LastCursor(Edit, Edit->Cursors);
+		cursor NextCursor = LastCursor[0];
+		E_MoveCursors(Edit, Draw, Font, &NextCursor, Buffer, E_MOVE_UP, E_MOVE_NOT_SELECTING);
+		E_AppendCursor(Edit, Edit->Arena, Edit->Cursors, NextCursor);
+	}
+
+	if(UI_KeyDown(UI, SAPP_KEYCODE_LEFT, 0))
+	{
+		E_MoveCursors(Edit, Draw, Font, Edit->Cursors, Buffer, E_MOVE_LEFT, E_MOVE_NOT_SELECTING);
+	}
+	else if(UI_KeyDown(UI, SAPP_KEYCODE_LEFT, SAPP_MODIFIER_SHIFT))
+	{
+		E_MoveCursors(Edit, Draw, Font, Edit->Cursors, Buffer, E_MOVE_LEFT, E_MOVE_SELECTING);
+	}
+
+	if(UI_KeyDown(UI, SAPP_KEYCODE_RIGHT, 0))
+	{
+		E_MoveCursors(Edit, Draw, Font, Edit->Cursors, Buffer, E_MOVE_RIGHT, E_MOVE_NOT_SELECTING);
+	}
+	else if(UI_KeyDown(UI, SAPP_KEYCODE_RIGHT, SAPP_MODIFIER_SHIFT))
+	{
+		E_MoveCursors(Edit, Draw, Font, Edit->Cursors, Buffer, E_MOVE_RIGHT, E_MOVE_SELECTING);
 	}
 
 	// else if(UI_LeftMouseWentDownWithModifiers(UI, SAPP_MODIFIER_ALT))

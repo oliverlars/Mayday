@@ -19,7 +19,7 @@ void RemoveEventFromList(ui_context *UI, ui_event *Event)
 		UI->EventFirst = Event->Next;
 	}
 
-	if(Event->Next)
+	if(Event->Next && Event->Previous)
 	{
 		Event->Next->Previous = Event->Previous->Next;
 	}

@@ -119,6 +119,21 @@ v2f UI_Scroll(ui_context *UI)
 	return Result;
 }
 
+b32 UI_DoubleClicked(ui_context *UI)
+{
+	return UI->MultiLeftClickCount == 1 && UI_LeftMouseWentDown(UI);
+}
+
+b32 UI_TripleClicked(ui_context *UI)
+{
+	return UI->MultiLeftClickCount == 2  && UI_LeftMouseWentDown(UI);
+}
+
+b32 UI_QuadClicked(ui_context *UI)
+{
+	return UI->MultiLeftClickCount == 3  && UI_LeftMouseWentDown(UI);
+}
+
 str8 UI_DisplayString(m_arena *Arena, str8 String)
 {
 	str8 Result = {0};

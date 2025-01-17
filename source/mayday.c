@@ -113,7 +113,7 @@ void OS_Update(void *Data)
 
 		f32 LongestSide = Max((Bounds.Max.X - Bounds.Min.X), Max((Bounds.Max.Z - Bounds.Min.Z), (Bounds.Max.Y - Bounds.Min.Y)));
 
-		M->ViewSizeTarget = LongestSide/(f32)(M->TreeDepth + 1);
+		M->ViewSizeTarget = LongestSide/(f32)(M->TreeDepth*3 + 1);
 
 		Transform = MulM44FM44F(M44FLookAt(v3f(0, 0, 2.0*LongestSide), M->LookAt, v3f(0, 1, 0)), Transform);
 	}
@@ -217,21 +217,7 @@ void OS_Update(void *Data)
 	M->UI->EventFirst = Null;
 
 	f32 MillisecondsSinceLastClick = OS_MilliSecondsFromTimeStamp(OS_TimeStampNow() - M->UI->TimeStampWhenLeftMousePressed);
-
-	if(MillisecondsSinceLastClick < 400 &&
-	   M->UI->MultiLeftClickCount == 0)
-	{
-		M->UI->MultiLeftClickCount += 1;
-	}
-	else if(MillisecondsSinceLastClick < 400 && M->UI->MultiLeftClickCount == 1)
-	{
-		M->UI->MultiLeftClickCount += 1;
-	}
-	else if(MillisecondsSinceLastClick < 400 && M->UI->MultiLeftClickCount == 2)
-	{
-		M->UI->MultiLeftClickCount += 1;
-	}
-	else if(MillisecondsSinceLastClick >= 400)
+	if(MillisecondsSinceLastClick >= 400)
 	{
 		M->UI->MultiLeftClickCount = 0;
 	}
@@ -265,9 +251,27 @@ void OS_Event(const sapp_event *Event, void *Data)
 	{
 		if(Event->mouse_button == SAPP_MOUSEBUTTON_LEFT)
 		{
-			M->UI->TimeStampWhenLeftMousePressed = OS_TimeStampNow();
 			M->UI->LeftMouseIsDown = True;
+
+			f32 MillisecondsSinceLastClick = OS_MilliSecondsFromTimeStamp(OS_TimeStampNow() - M->UI->TimeStampWhenLeftMousePressed);
+
+			if(MillisecondsSinceLastClick < 400 &&
+			   M->UI->MultiLeftClickCount == 0)
+			{
+				M->UI->MultiLeftClickCount += 1;
+			}
+			else if(MillisecondsSinceLastClick < 400 && M->UI->MultiLeftClickCount == 1)
+			{
+				M->UI->MultiLeftClickCount += 1;
+			}
+			else if(MillisecondsSinceLastClick < 400 && M->UI->MultiLeftClickCount == 2)
+			{
+				M->UI->MultiLeftClickCount += 1;
+			}
+
+			M->UI->TimeStampWhenLeftMousePressed = OS_TimeStampNow();
 		}
+
 	}
 
 	if(Event->type == SAPP_EVENTTYPE_MOUSE_UP)
@@ -276,7 +280,6 @@ void OS_Event(const sapp_event *Event, void *Data)
 		{
 			M->UI->LeftMouseIsDown = False;
 		}
-		M->UI->TimeStampWhenLeftMousePressed = 0;
 	}
 
 	return;

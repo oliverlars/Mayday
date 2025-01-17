@@ -147,6 +147,11 @@ void UI_StatusBar(ui_context *UI, draw_context *Draw, edit_context *Edit,
 b32 UI_LeftMouseWentDown(ui_context *UI);
 b32 UI_LeftMouseWentDownWithModifiers(ui_context *UI, int Modifiers);
 b32 UI_LeftMouseWentUp(ui_context *UI);
+
+b32 UI_DoubleClicked(ui_context *UI);
+b32 UI_TripleClicked(ui_context *UI);
+b32 UI_QuadClicked(ui_context *UI);
+
 v2f UI_Scroll(ui_context *UI);
 b32 UI_KeyUp(ui_context *UI, sapp_keycode Key, u32 Modifiers);
 b32 UI_KeyDown(ui_context *UI, sapp_keycode Key, u32 Modifiers);

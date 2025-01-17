@@ -133,7 +133,30 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 
 	}
 
-	if(UI_LeftMouseWentDown(UI))
+	LogInfo("Click count: ?u32", UI->MultiLeftClickCount);
+
+	if(UI_DoubleClicked(UI))
+	{
+		int Index = E_IndexFromPosition(Edit, Draw, Font,
+									Buffer, BufferPosition,
+									UI->MousePosition);
+		cursor *LastCursor = E_LastCursor(Edit, Edit->Cursors);
+		cursor *Cursor = LastCursor;
+
+		v2i InitialSelection = Cursor->Selection;
+		E_MoveCursors(Edit, Draw, Font, Cursor, Buffer, E_MOVE_WORD_RIGHT, E_MOVE_SELECTING);
+		v2i Selection = Cursor->Selection;
+		Cursor->Selection = InitialSelection;
+		E_MoveCursors(Edit, Draw, Font, Cursor, Buffer, E_MOVE_WORD_LEFT, E_MOVE_NOT_SELECTING);
+		Cursor->Selection = v2i(Cursor->Selection.X, Selection.Y);
+
+		if(LastCursor != Cursor)
+		{
+			LastCursor[0] = Cursor[0];
+			LastCursor->Next = Null;
+		}
+	}
+	else if(UI_LeftMouseWentDown(UI))
 	{
 		int Index = E_IndexFromPosition(Edit, Draw, Font,
 									Buffer, BufferPosition,
@@ -145,6 +168,7 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 		Cursor->Selection = v2i(Index, Index);
 
 	}
+
 	// else if(UI_LeftMouseWentDownWithModifiers(UI, SAPP_MODIFIER_ALT))
 	// {
 	// 	int Index = E_IndexFromPosition(Edit, Draw, Font,

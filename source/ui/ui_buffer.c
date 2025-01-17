@@ -74,6 +74,14 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 			   Buffer->HeightInPixels, Buffer->String);
 
 
+	for(ui_event *Event = UI->EventFirst; Event; Event = Event->Next)
+	{
+		if(Event->E.type == SAPP_EVENTTYPE_KEY_DOWN && Event->E.key_code == SAPP_KEYCODE_BACKSPACE)
+		{
+			LogInfo("Backspace was found!!!");
+		}
+	}
+
 	//if(UI->MouseIsDragging || UI->MouseWentDown)
 	if(UI->MouseIsDragging)
 	{
@@ -237,6 +245,15 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 	{
 		E_MoveCursors(Edit, Draw, Font, Edit->Cursors, Buffer, E_MOVE_RIGHT, E_MOVE_SELECTING);
 	}
+
+	if(UI_KeyDown(UI, SAPP_KEYCODE_BACKSPACE, 0))
+	{
+		LogInfo("Hit backspace");
+		E_DeleteTo(Edit, Edit->Cursors, Buffer);
+	}
+
+	str8 TextToInsert = UI_Text(UI, Arena);
+	E_InsertTo(Edit, Edit->Cursors, Buffer, TextToInsert);
 
 	// else if(UI_LeftMouseWentDownWithModifiers(UI, SAPP_MODIFIER_ALT))
 	// {

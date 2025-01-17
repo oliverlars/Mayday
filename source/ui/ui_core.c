@@ -9,7 +9,6 @@
 
 void RemoveEventFromList(ui_context *UI, ui_event *Event)
 {
-	assert(Event);
 	if(Event->Previous)
 	{
 		Event->Previous->Next = Event->Next;
@@ -103,6 +102,24 @@ b32 UI_KeyUp(ui_context *UI, sapp_keycode Key, u32 Modifiers)
 		}
 	}
 	return Result;
+}
+
+str8 UI_Text(ui_context *UI, m_arena *Arena)
+{
+	v2f Result = {0};
+	u8 NoOneCanTypeThisManyCharactersInOneFrame[1024];
+	int Index = 0;
+	for(ui_event *Event = UI->EventFirst; Event; Event = Event->Next)
+	{
+		if(Event->E.type == SAPP_EVENTTYPE_CHAR && Event->E.char_code > 32 && Event->E.char_code <= 126)
+		{
+			NoOneCanTypeThisManyCharactersInOneFrame[Index++] = Event->E.char_code;
+			Result.X +=  Event->E.scroll_x;
+			Result.Y += -Event->E.scroll_y;
+		}
+	}
+	str8 Temporary = {Index, NoOneCanTypeThisManyCharactersInOneFrame};
+	return Str8Copy(Arena, Temporary);
 }
 
 v2f UI_Scroll(ui_context *UI)

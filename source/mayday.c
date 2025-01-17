@@ -144,7 +144,7 @@ void OS_Update(void *Data)
 					 v2i(WindowWidth, WindowHeight));
 
 		u64 End = OS_TimeStampNow();
-		LogInfo("Time: ?f32", OS_MilliSecondsFromTimeStamp(End - Start));
+		//LogInfo("Time: ?f32", OS_MilliSecondsFromTimeStamp(End - Start));
 		R_PopTransform(M->Render);
 	}
 	else if(M->UI->View == UI_VIEW_TREE)
@@ -227,18 +227,20 @@ void OS_Event(const sapp_event *Event, void *Data)
 {
 	mayday_context *M = (mayday_context*)Data;
 
-	if(M->UI->EventLast)
 	{
-		M->UI->EventLast->Next = ArenaPushArrayZero(M->FrameArena, ui_event, 1);
-		M->UI->EventLast->E = Event[0];
-		M->UI->EventLast->Next->Previous = M->UI->EventLast;
-		M->UI->EventLast = M->UI->EventLast->Next;
-	}
-	else
-	{
-		M->UI->EventLast = ArenaPushArrayZero(M->FrameArena, ui_event, 1);
-		M->UI->EventLast->E = Event[0];
-		M->UI->EventFirst = M->UI->EventLast;
+		ui_event *UIEvent = ArenaPushArrayZero(M->FrameArena, ui_event, 1);
+		UIEvent->E = Event[0];
+		if(M->UI->EventLast)
+		{
+			M->UI->EventLast->Next = UIEvent;
+			UIEvent->Previous = M->UI->EventLast;
+			M->UI->EventLast = UIEvent;
+		}
+		else
+		{
+			M->UI->EventLast = UIEvent;
+			M->UI->EventFirst = UIEvent;
+		}
 	}
 
 	if(Event->type == SAPP_EVENTTYPE_MOUSE_MOVE)
@@ -388,7 +390,6 @@ void OS_Event(const sapp_event *Event, void *Data)
 		if(Event->key_code == SAPP_KEYCODE_BACKSPACE)
 		{
 			E_DeleteTo(M->Edit, &M->Cursor, &M->Buffer);
-
 		}
 
 		if(Event->key_code == SAPP_KEYCODE_Z)

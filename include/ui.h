@@ -152,6 +152,8 @@ b32 UI_DoubleClicked(ui_context *UI);
 b32 UI_TripleClicked(ui_context *UI);
 b32 UI_QuadClicked(ui_context *UI);
 
+
+str8 UI_Text(ui_context *UI, m_arena *Arena);
 v2f UI_Scroll(ui_context *UI);
 b32 UI_KeyUp(ui_context *UI, sapp_keycode Key, u32 Modifiers);
 b32 UI_KeyDown(ui_context *UI, sapp_keycode Key, u32 Modifiers);

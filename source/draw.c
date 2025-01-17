@@ -210,6 +210,91 @@ d_atlas_glyph *D_GlyphFromCodePoint(draw_context *D, d_font Font, s32 HeightInPi
 	return ResultGlyph;
 }
 
+d_atlas_glyph *D_GlyphFromCodePoint2(draw_context *D, u64 FontHash, d_font Font, s32 HeightInPixels, u32 CodePoint)
+{
+	per_thread_context *ThreadContext = GetThreadContext();
+	u64 Hash = FontHash;
+	Hash = M_FNVHashBytes(Hash, (u8*)&CodePoint, sizeof(u32));
+
+	d_atlas_glyph *Glyph = D->GlyphTable + (Hash % D_GLYPH_TABLE_SIZE);
+	for(;Glyph->NextInHashSlot != Null && Glyph->Hash != Hash; Glyph = Glyph->NextInHashSlot);
+	d_atlas_glyph *ResultGlyph = Glyph;
+
+	float Scale = stbtt_ScaleForPixelHeight(&Font.Info, HeightInPixels);
+
+	if(Glyph->Hash != 0 && Glyph->Hash != Hash)
+	{
+		LogInfo("Glyph collision occured");
+		d_atlas_glyph *NextGlyph = ArenaPushArrayZero(D->Arena, d_atlas_glyph, 1);
+		Glyph->NextInHashSlot = NextGlyph;
+
+		int AdvanceX;
+		int LeftSideBearing;
+		stbtt_GetCodepointHMetrics(&Font.Info, CodePoint, &AdvanceX, &LeftSideBearing);
+		NextGlyph->AdvanceX = AdvanceX;
+		NextGlyph->Hash = Hash;
+		NextGlyph->CodePoint = CodePoint;
+		stbtt_GetCodepointBox(&Font.Info, CodePoint, &NextGlyph->Box.X, &NextGlyph->Box.Y,
+													 &NextGlyph->Box.Z, &NextGlyph->Box.W);
+
+		PushGlyphOntoLRU(D, NextGlyph);
+
+		v4i BitmapBox = {0};
+		stbtt_GetCodepointBitmapBox(&Font.Info,
+									CodePoint,
+									Scale, Scale,
+									&BitmapBox.X, &BitmapBox.Y,
+									&BitmapBox.Z, &BitmapBox.W);
+
+		int GlyphSizeInBytes = (BitmapBox.Z - BitmapBox.X)*(BitmapBox.W - BitmapBox.Y);
+		NextGlyph->Data = ArenaPushZero(D->Arena, GlyphSizeInBytes);
+		stbtt_MakeCodepointBitmap(&Font.Info,
+								  NextGlyph->Data,
+								  BitmapBox.Z - BitmapBox.X,
+								  BitmapBox.W - BitmapBox.Y,
+								  BitmapBox.Z - BitmapBox.X,
+								  Scale, Scale,
+								  NextGlyph->CodePoint);
+		NextGlyph->BitmapBox = BitmapBox;
+		ResultGlyph = NextGlyph;
+	}
+	else if(Glyph->Hash == 0)
+	{
+		int AdvanceX;
+		int LeftSideBearing;
+		stbtt_GetCodepointHMetrics(&Font.Info, CodePoint, &AdvanceX, &LeftSideBearing);
+
+		Glyph->AdvanceX = AdvanceX;
+		Glyph->Hash = Hash;
+		Glyph->CodePoint = CodePoint;
+		stbtt_GetCodepointBox(&Font.Info, Glyph->CodePoint, &Glyph->Box.X, &Glyph->Box.Y,
+															&Glyph->Box.Z, &Glyph->Box.W);
+		PushGlyphOntoLRU(D, Glyph);
+
+
+		v4i BitmapBox = {0};
+		stbtt_GetCodepointBitmapBox(&Font.Info,
+									CodePoint,
+									Scale, Scale,
+									&BitmapBox.X, &BitmapBox.Y,
+									&BitmapBox.Z, &BitmapBox.W);
+		int GlyphSizeInBytes = (BitmapBox.Z - BitmapBox.X)*(BitmapBox.W - BitmapBox.Y);
+		Glyph->Data = ArenaPushZero(D->Arena, GlyphSizeInBytes);
+		stbtt_MakeCodepointBitmap(&Font.Info,
+								  Glyph->Data,
+								  BitmapBox.Z - BitmapBox.X,
+								  BitmapBox.W - BitmapBox.Y,
+								  BitmapBox.Z - BitmapBox.X,
+								  Scale, Scale,
+								  Glyph->CodePoint);
+		Glyph->BitmapBox = BitmapBox;
+	}
+
+	assert(CodePoint == ResultGlyph->CodePoint);
+
+	return ResultGlyph;
+}
+
 void D_DrawQuad(draw_context *D,
 				m_arena *Arena, v2f Position,
 				f32 Width, f32 Height,
@@ -264,6 +349,9 @@ void D_DrawStr8(draw_context *D,
 	Command.VerticesCount = TotalTriangleCount;
 	Command.VerticesFormat = R_VF_POSITION | R_VF_UV;
 
+	u64 Hash = M_FNVHashBytes(M_FNV_HASH_START, (u8*)&Font, sizeof(d_font));
+	Hash = M_FNVHashBytes(Hash, (u8*)&HeightInPixels, sizeof(s32));
+
 	f32 StartX = Position.X;
 	r_vertex *R_Vertices = Command.Vertices;
 
@@ -297,7 +385,7 @@ void D_DrawStr8(draw_context *D,
 
 		//if(NewLine) CodePoint = 'N';
 
-		d_atlas_glyph *Glyph  = D_GlyphFromCodePoint(D,  Font, HeightInPixels, CodePoint);
+		d_atlas_glyph *Glyph  = D_GlyphFromCodePoint2(D, Hash, Font, HeightInPixels, CodePoint);
 
 		f32 GlyphWidth = ((f32)(Glyph->Box.Z - Glyph->Box.X)*Scale);
 		f32 GlyphHeight = ((f32)(Glyph->Box.W - Glyph->Box.Y)*Scale);

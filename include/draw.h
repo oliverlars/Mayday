@@ -51,6 +51,12 @@ d_atlas_glyph *D_GlyphFromCodePoint(draw_context *D_Context,
 									s32 Scale,
 									u32 CodePoint);
 
+d_atlas_glyph *D_GlyphFromCodePoint2(draw_context *D_Context,
+									u64 FontHash,
+									d_font Font,
+									s32 Scale,
+									u32 CodePoint);
+
 void D_EvictGlyphFromTable(draw_context *D_Context, d_atlas_glyph *Glyph);
 
 void D_GlyphsToAtlas(draw_context *D_Context);

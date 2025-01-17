@@ -133,8 +133,6 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 
 	}
 
-	LogInfo("Click count: ?u32", UI->MultiLeftClickCount);
-
 	if(UI_DoubleClicked(UI))
 	{
 		int Index = E_IndexFromPosition(Edit, Draw, Font,

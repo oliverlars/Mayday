@@ -664,5 +664,5 @@ void D_DrawGrid2D(draw_context *Draw, m_arena *Arena, f32 Size, s32 Count)
 		Lines[Index++] = v3f(X, HalfSize, 0);
 	}
 
-	D_DrawLinesArray(Draw, Arena, Lines, LineCount * 2, v4f(0.02, .0, 0, 1));
+	D_DrawLinesArray(Draw, Arena, Lines, LineCount * 2, v4f(0.03, .0, 0, 1));
 }

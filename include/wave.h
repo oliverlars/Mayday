@@ -33,7 +33,7 @@ typedef struct shared_wave_info
 	atomic_int WorkAvailable;
 	void (*Entry)(wave_info*, void*);
 	void *EntryData;
-	
+
 }
 shared_wave_info;
 
@@ -46,6 +46,8 @@ wave_info;
 
 void DispatchInitialise(shared_wave_info *Shared, s64 LaneCount);
 void Dispatch(shared_wave_info *Shared, void (*Entry)(wave_info* WaveInfo, void*), void* EntryData);
+
+void GetLaneCount();
 
 void WaveBarrier(barrier *Barrier);
 

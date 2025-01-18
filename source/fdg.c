@@ -1,4 +1,5 @@
 #include "fdg.h"
+#include <MacTypes.h>
 #include <assert.h>
 #include <float.h>
 #include <math.h>
@@ -267,7 +268,7 @@ v3f ForceDisplacementFromPosition(quadtree_header *QuadTree, fdg_node *Node, f32
 
 typedef struct parallel_force_displacement
 {
-	v3f *Displacements;
+	v3f **Displacements;
 	f32 K;
 	fdg_node *Nodes;
 	int NodeCount;
@@ -277,18 +278,29 @@ typedef struct parallel_force_displacement
 
 void ParallelForceDisplacement(wave_info *WaveInfo, void* Input)
 {
-
 	parallel_force_displacement *P = Input;
 	int Count = LaneValueFromTotal(WaveInfo, P->NodeCount);
 	int Index = ExclusiveWavePrefixSum(WaveInfo, Count);
 
-	for(int I = Index; I < Index + Count; I++)
+	u64 Start = OS_TimeStampNow();
+
+	m_scratch_arena Scratch = ScratchBegin(0, 0);
+	v3f *Displacements = ArenaPushArray(Scratch.Arena, v3f, Count);
+	//v3f Displacements[4096];
+	for(int I = 0; I < Count; I++)
 	{
-		P->Displacements[I] = ForceDisplacementFromPosition(P->QuadTree,
-															P->Nodes + I,
-															P->K);
+		Displacements[I] = ForceDisplacementFromPosition(P->QuadTree,
+														 P->Nodes + I,
+														 P->K);
 
 	}
+
+	ScratchEnd(Scratch);
+	u64 End = OS_TimeStampNow();
+	// if(WaveIsFirstLane(WaveInfo))
+	// {
+	// 	LogInfo("Lane 1 took: ?f32ms Count: ?u32", OS_MilliSecondsFromTimeStamp(End - Start), Count);
+	// }
 }
 #define PARALLEL_QUADTREE
 //#define QUADTREE
@@ -307,13 +319,14 @@ void SimulateForceDirectedGraphQuadTree(m_arena *Arena, fdg_node *Nodes, int Nod
 
 #if defined(PARALLEL_QUADTREE)
 	parallel_force_displacement P = {0};
-	P.Displacements = Displacements;
+	P.Displacements = ArenaPushArrayZero(Arena, v3f*, Shared->LaneCount);
 	P.K = K;
 	P.NodeCount = NodeCount;
 	P.Nodes = Nodes;
 	P.QuadTree = QuadTree;
 
 	Dispatch(Shared, ParallelForceDisplacement, &P);
+
 #elif defined(QUADTREE)
 
 	for(int I = 0; I < NodeCount; I++)

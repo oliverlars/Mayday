@@ -113,7 +113,7 @@ void OS_Update(void *Data)
 
 		f32 LongestSide = Max((Bounds.Max.X - Bounds.Min.X), Max((Bounds.Max.Z - Bounds.Min.Z), (Bounds.Max.Y - Bounds.Min.Y)));
 
-		M->ViewSizeTarget = LongestSide/(f32)(M->TreeDepth*3 + 1);
+		M->ViewSizeTarget = LongestSide/((f32)(M->TreeDepth)*3.0 + 1.5);
 
 		Transform = MulM44FM44F(M44FLookAt(v3f(0, 0, 2.0*LongestSide), M->LookAt, v3f(0, 1, 0)), Transform);
 	}
@@ -571,7 +571,7 @@ int main()
 	M.UI->Font = M.CodeFont;
 
 	M.CameraPosition = v3f(0.0);
-	M.ViewSize = 50.0;
+	M.ViewSize = 40.0;
 	M.ViewSizeTarget = M.ViewSize;
 
 	M.Shared.Arena = ArenaInitialise(GigaBytes(1));

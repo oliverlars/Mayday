@@ -30,7 +30,7 @@ void LogInfoF(char *FileName, char *FunctionName, u64 LineNumber, char *Format, 
 	Str8ListAppend(Logger->Arena, &List, StringToLog);
 
 	str8 Result = Str8ListJoin(Logger->Arena, &List);
-	Print("?S\n\n", Result);
+	Print("?S\n", Result);
 	ArenaReset(Logger->Arena);
 }
 
@@ -52,11 +52,11 @@ void LogWarnF(char *FileName, char *FunctionName, u64 LineNumber, char *Format, 
 	Str8ListAppend(Logger->Arena, &List, Str8PushF(Logger->Arena, StringStyle("?cstr", S_BLUE) "() at ", FunctionName));
 	Str8ListAppend(Logger->Arena, &List, Str8PushF(Logger->Arena, StringStyle("?cstr", S_GREEN) ":", FileName));
 	Str8ListAppend(Logger->Arena, &List, Str8PushF(Logger->Arena, StringStyle("?u64 ", S_YELLOW), LineNumber));
-	
+
 	Str8ListAppend(Logger->Arena, &List, StringToLog);
-	
+
 	str8 Result = Str8ListJoin(Logger->Arena, &List);
-	Print("?S\n\n", Result);
+	Print("?S\n", Result);
 	ArenaReset(Logger->Arena);
 }
 
@@ -82,6 +82,6 @@ void LogErrorF(char *FileName, char *FunctionName, u64 LineNumber, char *Format,
 	Str8ListAppend(Logger->Arena, &List, StringToLog);
 
 	str8 Result = Str8ListJoin(Logger->Arena, &List);
-	Print("?S\n\n", Result);
+	Print("?S\n", Result);
 	ArenaReset(Logger->Arena);
 }

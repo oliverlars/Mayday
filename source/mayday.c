@@ -73,22 +73,6 @@ mayday_context;
 
 #include "shaders.h"
 
-typedef struct label
-{
-	fdg_node *Node;
-	v2f LabelSize;
-
-} label;
-
-int LabelSortFunction(const void *A, const void *B)
-{
-	const label *X = A;
-	const label *Y = B;
-	if (X->Node->Position.Y < Y->Node->Position.Y) return 1;
-	if (X->Node->Position.Y > Y->Node->Position.Y) return -1;
-	return 0;
-}
-
 void OS_Update(void *Data)
 {
 	mayday_context *M = Data;
@@ -106,10 +90,11 @@ void OS_Update(void *Data)
 	//m44f Transform = M44FPerspective(sapp_widthf()/sapp_heightf(), 70, 0.01, 10000.0);
 	M->LookAt = LerpV3F(M->LookAt, M->LookAtTarget, 0.1);
 	M->ViewSize = LerpF32(M->ViewSize, M->ViewSizeTarget, 0.1);
-	if(M->TreeView.Info.Nodes)
+	if(M->TreeView.Info.NodeInfos)
 	{
-		bounds Bounds = GetBounds(M->TreeView.Info.Nodes, M->TreeView.Info.NodeCount);
-		M->LookAtTarget = M->TreeView.Info.Nodes[M->LookAtNodeIndex].Position;
+		bounds Bounds = GetBounds(M->TreeView.Info.NodeTargetPositions, M->TreeView.Info.NodeCount);
+		v4f P = M->TreeView.Info.NodePositions[M->LookAtNodeIndex];
+		M->LookAtTarget = v3f(P.X, P.Y, P.Z);
 
 		f32 LongestSide = Max((Bounds.Max.X - Bounds.Min.X), Max((Bounds.Max.Z - Bounds.Min.Z), (Bounds.Max.Y - Bounds.Min.Y)));
 
@@ -155,7 +140,7 @@ void OS_Update(void *Data)
 		D_DrawGrid2D(M->Draw, M->FrameArena, 50, 200);
 		R_PopTransform(M->Render);
 
-		if(M->TreeView.Info.Nodes)
+		if(M->TreeView.Info.NodePositions)
 		{
 			//Centre = SubV3F(v3f(sapp_widthf()/2.0, sapp_heightf()/2.0), M->TreeView.Info.Nodes[0].Position);
 		}
@@ -177,7 +162,6 @@ void OS_Update(void *Data)
 			// }
 			// else
 			//
-			bounds Bounds = GetBounds(M->TreeView.Info.Nodes, M->TreeView.Info.NodeCount);
 			M->LookAtNodeIndex = TreeSignal.NodeIndex;
 			M->TreeDepth = TreeSignal.NodeDepth;
 			if(TreeSignal.FileToLoad.Size > 0)
@@ -578,9 +562,9 @@ int main()
 
 	u64 Start = OS_TimeStampNow();
 
-	DispatchInitialise(&M.Shared, 12);
+	DispatchInitialise(&M.Shared, 15);
 
-	M.Folder = Str8("/Users/olivercruickshank/mayday");
+	M.Folder = Str8("/Users/olivercruickshank/embergen");
 
 	OS_Run(M.Window, &M);
 }

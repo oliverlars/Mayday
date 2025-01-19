@@ -7,30 +7,18 @@
 
 #include "wave.h"
 
-
-// Force directed graph node
-typedef struct fdg_node
+typedef struct fdg_node_info
 {
-	v3f TargetPosition;
-	v3f Position;
-	// These should probably not be stored here
 	str8 Name;
 	b32 IsFolder;
 	f32 Radius;
-} fdg_node;
-
-typedef struct fdg_link
-{
-	int From;
-	int To;
-} fdg_link;
+} fdg_node_info;
 
 typedef struct bounds
 {
 	v3f Min;
 	v3f Max;
 } bounds;
-
 
 typedef u32 QuadTree_index;
 
@@ -42,30 +30,30 @@ Quadrant;
 
 typedef struct Quadrant_node
 {
-	fdg_node *Node;
+	v4f NodePosition;
 	struct Quadrant_node *Next;
 } quadrant_node;
 
 typedef struct quadtree_header
 {
-	v3f          *Masses;
-	int          *ChildrenCounts;
+	_Alignas(128) v4f            *Masses;
+	int            *ChildrenCounts;
 	quadrant_node **Nodes;
-	bounds       *Bounds;
+	bounds         *Bounds;
 	Quadrant       *Quadrants;
-	int           Count;
-	int           NextQuadrantIndex;
+	int             Count;
+	int             NextQuadrantIndex;
 } quadtree_header;
 
-void SimulateForceDirectedGraphQuadTree(m_arena *Arena, fdg_node *Nodes, int NodeCount,
-								fdg_link *Links, int LinkCount,
+void SimulateForceDirectedGraphQuadTree(m_arena *Arena, v4f *NodePositions, int NodeCount,
+								int *Froms, int *Tos, int LinkCount,
 								f32 *Temperature,
 								quadtree_header *QuadTree, shared_wave_info *Shared);
 
-bounds GetBounds(fdg_node *Nodes, int NodeCount);
+bounds GetBounds(v4f *Positions, int Count);
 
-void QuadTreeBuild(m_arena *Arena, quadtree_header *QuadTree, QuadTree_index QuadrantIndex, fdg_node *Node, int Depth);
-v3f QuadTreeCalculateAttributes(quadtree_header *QuadTree, int QuadrantIndex);
+void QuadTreeBuild(m_arena *Arena, quadtree_header *QuadTree, QuadTree_index QuadrantIndex, v4f NodePosition, int Depth);
+v4f QuadTreeCalculateAttributes(quadtree_header *QuadTree, int QuadrantIndex);
 
 void DrawBounds(draw_context *Draw, m_arena *Arena, bounds Bounds);
 

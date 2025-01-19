@@ -26,10 +26,13 @@ typedef enum ui_view
 
 typedef struct ui_tree_info
 {
-	fdg_node *Nodes;
+	_Alignas(128) v4f *NodeTargetPositions;
+	_Alignas(128) v4f *NodePositions;
+	fdg_node_info *NodeInfos;
 	int NodeCount;
 
-	fdg_link *Links;
+	_Alignas(128) int *Froms;
+	_Alignas(128) int *Tos;
 	int LinkCount;
 
 	os_directory_tree Tree;

@@ -178,7 +178,7 @@ operating_system GetOperatingSystem();
 #include <dirent.h>
 #include <stdatomic.h>
 #include <spawn.h>
-#include <sys/wait.h> 
+#include <sys/wait.h>
 #include <pthread.h>
 #include <stdlib.h>
 #include <sys/mman.h>
@@ -255,10 +255,10 @@ str8 GetExecutableDirectory(memory_arena *Arena)
 void AppendSourceFilesInFolder(memory_arena *Arena, str8_list *SourceFilesFromFolder, str8 Path)
 {
 	str8 SourceFilesInDirectory = Str8PushF(Arena, "%.*s/", Str8ToPrintfArgs(Path));
-	
+
 	DIR *Directory = opendir((char*)SourceFilesInDirectory.Bytes);
 	struct dirent *Entry;
-	while((Entry = readdir(Directory))) 
+	while((Entry = readdir(Directory)))
 	{
 		if (Entry->d_name[0] != '.' && (Str8EndsWith(Str8(Entry->d_name), Str8(".c")) ||
 										Str8EndsWith(Str8(Entry->d_name), Str8(".m"))))
@@ -330,7 +330,7 @@ str8_list ListOfDirectoryEntriesFromPath(memory_arena *Arena, str8 Path)
 
 void DeleteFileFromDisk(memory_arena *Arena, str8 Filename)
 {
-	remove(CStrFromStr8(Arena, Filename));    
+	remove(CStrFromStr8(Arena, Filename));
 }
 
 /*
@@ -376,18 +376,18 @@ b32 ExecuteCommand(memory_arena *Arena, str8 EntireCommandAndArguments, b32 *Fai
 		waitpid(ProcessID, &ExitCode, 0);
 
 		FailedToExecute[0] = WEXITSTATUS(ExitCode) != 0;
-		
+
 		s64 NumberOfBytesRead = 0;
 		str8_list StdOutList = {0};
 
 		u8 *BackingMemory = ArenaPushZero(Arena, 4096);
-		while ((NumberOfBytesRead = read(Pipes[0], BackingMemory, 4096)) > 0) 
+		while ((NumberOfBytesRead = read(Pipes[0], BackingMemory, 4096)) > 0)
 		{
 			str8 String = {.Bytes = (s8*)BackingMemory, .Size = NumberOfBytesRead};
 			Str8ListAppend(Arena, &StdOutList, String);
 		}
 		str8 OutputString = Str8ListJoin(Arena, StdOutList);
-		printf("%.*s", Str8ToPrintfArgs(OutputString));   
+		printf("%.*s", Str8ToPrintfArgs(OutputString));
 	}
 
 	return ProcessStatus == 0;
@@ -413,9 +413,9 @@ b32 StartApplication(memory_arena *Arena, str8 PathToApplication)
 }
 
 str8 CompileCommandFromBuildOptions(memory_arena *Arena, build_options *BuildOptions, str8 HashedFilename, str8 SourceFilename)
-{   
+{
 	str8 DebugOrRelease[2] =
-	{ 
+	{
 		Str8("-g -O0"), Str8("-O2")
 	};
 
@@ -452,7 +452,7 @@ str8 CompileCommandFromBuildOptions(memory_arena *Arena, build_options *BuildOpt
 }
 
 str8 LinkCommandFromBuildOptions(memory_arena *Arena, build_options *BuildOptions, str8_array ObjectFiles)
-{   
+{
 	str8 LinkCommand = Str8PushF(
 		Arena,
 		"clang %.*s -o %.*s%.*s %.*s",
@@ -515,7 +515,7 @@ void WaveBarrier(barrier *Barrier)
 	{
 		while(atomic_load_explicit(&Barrier->Generation, memory_order_acquire) == Generation)
 		{
-			os_sync_wait_on_address(&Barrier->Generation, Generation, sizeof(atomic_llong), OS_SYNC_WAIT_ON_ADDRESS_SHARED);   
+			os_sync_wait_on_address(&Barrier->Generation, Generation, sizeof(atomic_llong), OS_SYNC_WAIT_ON_ADDRESS_SHARED);
 		}
 	}
 	else if(LanesWaiting == Barrier->LaneCount - 1)
@@ -544,7 +544,7 @@ void Dispatch(shared_wave_info *Shared, s64 LaneCount)
 {
 	wave_info *Entries = (wave_info*)ArenaPush(&Shared->Arena, LaneCount*sizeof(wave_info));
 	pthread_t *Waves = (pthread_t*)ArenaPush(&Shared->Arena, LaneCount*sizeof(pthread_t));
-	
+
 	barrier Barrier = {0};
 
 	Shared->LaneCount = LaneCount;
@@ -560,7 +560,7 @@ void Dispatch(shared_wave_info *Shared, s64 LaneCount)
 	for (s64 Lane = 0; Lane < LaneCount; Lane++)
 	{
 		pthread_join(Waves[Lane], Null);
-	} 
+	}
 }
 
 b32 WaveIsFirstLane(wave_info *WaveInfo)
@@ -712,7 +712,7 @@ str8 LoadEntireFileIntoMemory(memory_arena *Arena, str8 Filename)
 					FILE_ATTRIBUTE_NORMAL,
 					Null);
 
-	if (FileHandle == INVALID_HANDLE_VALUE) 
+	if (FileHandle == INVALID_HANDLE_VALUE)
 	{
 		printf("File: %.*s not found\n", Str8ToPrintfArgs(Filename));
 		return (str8){0};
@@ -759,7 +759,7 @@ void AppendSourceFilesInFolder(memory_arena *Arena, str8_list *SourceFilesFromFo
 	{
 		if(Str8EndsWith(Entry->String, Str8(".c")))
 		{
-			str8 SourceFilepath = Str8PushF(Arena, "%.*s/%.*s", 
+			str8 SourceFilepath = Str8PushF(Arena, "%.*s/%.*s",
 											Str8ToPrintfArgs(Path),
 											Str8ToPrintfArgs(Entry->String));
 			Str8ListAppend(Arena, SourceFilesFromFolder, SourceFilepath);
@@ -825,7 +825,7 @@ s64 GetNumberOfCPUs()
 
 void DeleteFileFromDisk(memory_arena *Arena, str8 Filename)
 {
-	DeleteFileA(CStrFromStr8(Arena, Filename));    
+	DeleteFileA(CStrFromStr8(Arena, Filename));
 }
 
 b32 ExecuteCommand(memory_arena *Arena, str8 EntireCommandAndArguments, b32 *FailedToExecute)
@@ -842,7 +842,7 @@ b32 ExecuteCommand(memory_arena *Arena, str8 EntireCommandAndArguments, b32 *Fai
 
 	CreatePipe(&StdOutHandleRead, &StdOutHandleWrite, &SecurityAttributes, 0);
 
-	b32 ProcessStatus = CreateProcessA(0, CStrFromStr8(Arena, EntireCommandAndArguments), 
+	b32 ProcessStatus = CreateProcessA(0, CStrFromStr8(Arena, EntireCommandAndArguments),
 									   0, 0, 1, 0, 0, 0, &StartupInfo, &ProcessInfo);
 	if (ProcessStatus)
 	{
@@ -877,9 +877,9 @@ b32 ExecuteCommand(memory_arena *Arena, str8 EntireCommandAndArguments, b32 *Fai
 }
 
 str8 CompileCommandFromBuildOptions(memory_arena *Arena, build_options *BuildOptions, str8 HashedFilename, str8 SourceFilename)
-{   
+{
 	str8 DebugOrRelease[2] =
-	{ 
+	{
 		Str8("/Zi /Od"), Str8("/O2")
 	};
 
@@ -909,7 +909,7 @@ str8 CompileCommandFromBuildOptions(memory_arena *Arena, build_options *BuildOpt
 }
 
 str8 LinkCommandFromBuildOptions(memory_arena *Arena, build_options *BuildOptions, str8_array ObjectFiles)
-{   
+{
 	str8 LinkCommand = Str8PushF(
 		Arena,
 		"link /nologo /INCREMENTAL:NO /DEBUG /PDB:build/%.*s.pdb /OUT:%.*s%.*s.exe %.*s",
@@ -972,7 +972,7 @@ void Dispatch(shared_wave_info *Shared, s64 LaneCount)
 {
 	wave_info *Entries = (wave_info*)ArenaPush(&Shared->Arena, LaneCount*sizeof(wave_info));
 	HANDLE *Waves = (HANDLE*)ArenaPush(&Shared->Arena, LaneCount*sizeof(HANDLE));
-	
+
 	RTL_BARRIER Barrier;
 
 	Shared->LaneCount = LaneCount;
@@ -1119,7 +1119,7 @@ str8_list ListOfDirectoryEntriesFromPath(memory_arena *Arena, str8 Path)
 
 str8_array ArrayOfDirectoryEntriesFromPath(memory_arena *Arena, str8 Path)
 {
-	
+
 	s64 Count = 0;
 	{
 		WIN32_FIND_DATAA FindData = {0};
@@ -1153,7 +1153,7 @@ str8_array ArrayOfDirectoryEntriesFromPath(memory_arena *Arena, str8 Path)
 			}
 		}
 	}
-	
+
 	return Result;
 }
 
@@ -1170,7 +1170,7 @@ u8* ArenaPush(memory_arena *Arena, s64 Bytes)
 	}
 	u8* Memory = Arena->Start + Arena->At;
 	Arena->At += Bytes;
-	
+
 	return Memory;
 }
 
@@ -1184,7 +1184,7 @@ u8 *ArenaPushTransient(memory_arena *Arena, s64 Bytes)
 		Arena->Committed += BytesToCommit;
 	}
 	u8* Memory = Arena->Start + Arena->At;
-	
+
 	return Memory;
 }
 
@@ -1433,7 +1433,7 @@ void FindAllIncludesInFile(memory_arena *Arena, str8 Filename, str8_list Include
 		u64 NextAt = At;
 		GobbleWhitespace(CurrentFile, &NextAt);
 		NextNonWhitespaceByte = CurrentFile.Bytes[NextAt+1];
-		
+
 		if(Byte == '/' && ((NextAt > At && (NextNonWhitespaceByte == '/') || NextNonWhitespaceByte == '*')))
 		{
 			CommentNesting += 1;
@@ -1448,7 +1448,7 @@ void FindAllIncludesInFile(memory_arena *Arena, str8 Filename, str8_list Include
 		}
 		else if (Byte == '#')
 		{
-			if (AdvanceN(CurrentFile, &At, 1) == False) 
+			if (AdvanceN(CurrentFile, &At, 1) == False)
 			{
 				return;
 			}
@@ -1488,7 +1488,7 @@ void FindAllIncludesInFile(memory_arena *Arena, str8 Filename, str8_list Include
 										"%.*s/%.*s",
 										Str8ToPrintfArgs(Str8UpToLastCharacter(Arena, Node->String, '/')),
 										Str8ToPrintfArgs(IncludePath));
-									
+
 									if(FileExists(Arena, FullPath))
 									{
 										FoundFile = True;
@@ -1535,8 +1535,8 @@ void EmbedFiles(memory_arena *Arena, str8_list SourcePaths, str8 DestinationPath
 			u8* Byte = (u8*)(File.Bytes + At);
 			if(At + 16 <= File.Size)
 			{
-				str8 Elements = Str8PushF(Arena, 
-					"    0x%02x, 0x%02x, 0x%02x, 0x%02x,\n" 
+				str8 Elements = Str8PushF(Arena,
+					"    0x%02x, 0x%02x, 0x%02x, 0x%02x,\n"
 					"    0x%02x, 0x%02x, 0x%02x, 0x%02x,\n"
 					"    0x%02x, 0x%02x, 0x%02x, 0x%02x,\n"
 					"    0x%02x, 0x%02x, 0x%02x, 0x%02x,\n",
@@ -1607,7 +1607,7 @@ u64 HashSourceFileAndIncludes(memory_arena *Arena, str8 SourceFilename, str8_lis
 b32 CompileTranslationUnit(memory_arena *Arena, build_options *BuildOptions, str8 SourceFilename, u64 Hash)
 {
 	str8 HashedFilename = Str8PushF(Arena, "%llu.o", Hash);
-	
+
 	b32 FoundFile = FileExists(Arena, Str8PushF(Arena, "build/%.*s", Str8ToPrintfArgs(HashedFilename)));
 
 	b32 FoundObjectFile = FoundFile;
@@ -1638,7 +1638,7 @@ b32 LinkObjectFiles(memory_arena *Arena, build_options *BuildOptions, str8_array
 
 	for (s64 I = 0; I < ObjectFilePaths.Count; I++)
 	{
-		ObjectFilePaths.Items[I] = Str8PushF(Arena, "%.*s%.*s ", 
+		ObjectFilePaths.Items[I] = Str8PushF(Arena, "%.*s%.*s ",
 											 Str8ToPrintfArgs(BuildOptions->OutputPath),
 											 Str8ToPrintfArgs(ObjectFileNames.Items[I]));
 	}
@@ -1647,7 +1647,7 @@ b32 LinkObjectFiles(memory_arena *Arena, build_options *BuildOptions, str8_array
 	for(str8_list_node *Entry = BuildDirectoryEntries.First; Entry != Null; Entry = Entry->Next)
 	{
 		if (Str8EndsWith(Entry->String, Str8(".o")))
-		{   
+		{
 			b32 FoundMatch = False;
 			str8 FilePathToCheck = Str8PushF(Arena, "%.*s%.*s", Str8ToPrintfArgs(BuildOptions->OutputPath),
 																 Str8ToPrintfArgs(Entry->String));
@@ -1706,7 +1706,7 @@ void Build(wave_info *WaveInfo, memory_arena *Arena, build_options BuildOptions)
 	{
 		PerLaneCount++;
 		u64 PerFileStart = TimeStampNow();
-		u64 Hash = HashSourceFileAndIncludes(Arena, 
+		u64 Hash = HashSourceFileAndIncludes(Arena,
 											  RelativeSourceFilePaths.Items[I],
 											  BuildOptions.IncludePaths,
 											  BuildOptions.Optimise,
@@ -1727,7 +1727,7 @@ void Build(wave_info *WaveInfo, memory_arena *Arena, build_options BuildOptions)
 		}
 
 	}
-	
+
 	b32 AnyFailedToBuild = WaveAnyTrue(WaveInfo, FailedToBuild);
 
 	b32 FailedToLink = False;
@@ -1736,7 +1736,7 @@ void Build(wave_info *WaveInfo, memory_arena *Arena, build_options BuildOptions)
 		printf("\nCompiled all TUs in %.2fms\n", MilliSecondsFromTimeStamp(TimeStampNow() - Start));
 		{
 			u64 LinkStart = TimeStampNow();
-			
+
 			FailedToLink = LinkObjectFiles(Arena, &BuildOptions, ObjectFileNames);
 			printf("Linking finished in %.2fms\n", MilliSecondsFromTimeStamp(TimeStampNow() - LinkStart));
 		}
@@ -1758,7 +1758,7 @@ void Build(wave_info *WaveInfo, memory_arena *Arena, build_options BuildOptions)
 
 		printf(STR_COLOUR_GREEN "\nSUCCESS\n" STR_COLOUR_RESET);
 	}
-	
+
 }
 
 
@@ -1793,16 +1793,16 @@ void EmitCompileCommandsJson(memory_arena *Arena, build_options BuildOptions)
 	str8_list Output = {0};
 
 	Str8ListAppend(Arena, &Output, Str8("[\n"));
-	
+
 	for(str8_list_node *SourceNode = BuildOptions.SourceFiles.First;
 		SourceNode != Null;
 		SourceNode = SourceNode->Next)
 	{
 		str8 FileName = ForwardSlashPathFromPath(SourceNode->String);
-		str8 ObjectFileName = Str8PushF(Arena, "%.*s.o", 
+		str8 ObjectFileName = Str8PushF(Arena, "%.*s.o",
 										Str8ToPrintfArgs(
-										Str8UpToLastCharacter(Arena, 
-															  FileName, 
+										Str8UpToLastCharacter(Arena,
+															  FileName,
 															  '.')));
 		Str8ListAppend(Arena, &Output, Str8("    {\n"));
 		Str8ListAppend(Arena, &Output, Str8PushF(Arena,
@@ -1813,7 +1813,7 @@ void EmitCompileCommandsJson(memory_arena *Arena, build_options BuildOptions)
 				   Str8PushF(Arena,
 				   "        \"command\": \"%.*s\",\n",
 				   Str8ToPrintfArgs(CompileCommandFromBuildOptions(Arena,
-									&BuildOptions, 
+									&BuildOptions,
 									ObjectFileName,
 									FileName))));
 		Str8ListAppend(Arena,
@@ -1831,7 +1831,7 @@ void EmitCompileCommandsJson(memory_arena *Arena, build_options BuildOptions)
 			Str8ListAppend(Arena, &Output, Str8("\n"));
 		}
 	}
-	
+
 	Str8ListAppend(Arena, &Output, Str8("]\n"));
 
 	WriteStringToDisk(Arena, Str8("compile_commands.json"), Str8ListJoin(Arena, Output));

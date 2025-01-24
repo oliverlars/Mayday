@@ -147,6 +147,20 @@ void UI_StatusBar(ui_context *UI, draw_context *Draw, edit_context *Edit,
 				  cursor *Cursors, editable_buffer *Buffer,
 				  v2i Size);
 
+typedef struct ui_textbox_signal
+{
+
+} ui_textbox_signal;
+
+ui_textbox_signal UI_TextBox(m_arena *Arena,
+							 v2f Position,
+							 ui_context *UI,
+							 draw_context *Draw,
+							 edit_context *Edit,
+							 f32 HeightInPixels,
+							 str8 String,
+							 editable_buffer *Buffer);
+
 b32 UI_LeftMouseWentDown(ui_context *UI);
 b32 UI_LeftMouseWentDownWithModifiers(ui_context *UI, int Modifiers);
 b32 UI_LeftMouseWentUp(ui_context *UI);

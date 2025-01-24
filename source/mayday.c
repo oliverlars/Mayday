@@ -49,6 +49,9 @@ typedef struct mayday_context
 	cursor Cursor;
 
 
+	editable_buffer TextBoxBuffer;
+
+
 	v3f CameraPosition;
 	f32 ViewSize;
 	f32 ViewSizeTarget;
@@ -145,23 +148,21 @@ void OS_Update(void *Data)
 			//Centre = SubV3F(v3f(sapp_widthf()/2.0, sapp_heightf()/2.0), M->TreeView.Info.Nodes[0].Position);
 		}
 
-		UI_TreeView(M->UI, M->Draw,  &M->Shared,
-					M->FrameArena, &M->TreeView, M->Folder, v3f(0.1, 0.1, 0.1));
+		// UI_TreeView(M->UI, M->Draw,  &M->Shared,
+		// 			M->FrameArena, &M->TreeView, M->Folder, v3f(0.1, 0.1, 0.1));
 
 		R_PushTransform(M->Render, M44FOrthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
 
-		ui_tree_view_signal TreeSignal = UI_TreeViewFolderLabels(M->UI, M->Draw, M->FrameArena,
-																 M->LookAtNodeIndex, &M->TreeView,
-																 Transform, M->Folder);
+		// ui_tree_view_signal TreeSignal = UI_TreeViewFolderLabels(M->UI, M->Draw, M->FrameArena,
+		// 														 M->LookAtNodeIndex, &M->TreeView,
+		// 														 Transform, M->Folder);
+		//
 
+		UI_TextBox(M->FrameArena, v2f(500, 500), M->UI, M->Draw, M->Edit, 40, Str8("TextBox"), &M->TextBoxBuffer);
+
+		ui_tree_view_signal TreeSignal = {0};
 		if(TreeSignal.Clicked)
 		{
-			// if(TreeSignal.NewPath.Size > 0)
-			// {
-			// 	M->Folder = TreeSignal.NewPath;
-			// }
-			// else
-			//
 			M->LookAtNodeIndex = TreeSignal.NodeIndex;
 			M->TreeDepth = TreeSignal.NodeDepth;
 			if(TreeSignal.FileToLoad.Size > 0)
@@ -171,7 +172,7 @@ void OS_Update(void *Data)
 			}
 		}
 
-		D_DrawStr8(M->Draw, M->FrameArena, M->LogoFont, v2f(50, 50), v4f(1.0, 0.05, 0.0, 1), 100, Str8("MAYDAY!"));
+		//D_DrawStr8(M->Draw, M->FrameArena, M->LogoFont, v2f(50, 50), v4f(1.0, 0.05, 0.0, 1), 100, Str8("MAYDAY!"));
 		R_PopTransform(M->Render);
 	}
 
@@ -546,6 +547,10 @@ int main()
 	cursor Cursor = {0};
 	M.Edit->Cursors = &Cursor;
 
+	cursor Cursor2 = {0};
+	M.TextBoxBuffer.Cursors = &Cursor2;
+	M.TextBoxBuffer.String.Bytes = ArenaPushArrayZero(Arena, u8, 8192);
+
 	M.Window = OS_MakeWindow(Str8("Mayday!"), 3024, 1964);
 
 	M.CodeFont = D_LoadFontFromTTF(M.Draw, G_BerkeleyMonoRegular);
@@ -564,7 +569,7 @@ int main()
 
 	DispatchInitialise(&M.Shared, 15);
 
-	M.Folder = Str8("/Users/olivercruickshank/embergen");
+	M.Folder = Str8("/Users/olivercruickshank/mayday");
 
 	OS_Run(M.Window, &M);
 }

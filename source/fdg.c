@@ -305,11 +305,6 @@ void ParallelForceDisplacement(wave_info *WaveInfo, void* Input)
 
 	}
 
-	// for(int I = 0; I < NodeCount; I++)
-	// {
-	// 	P->DisplacementsMerged[I + NodeIndex] = Displacements[I];
-	// }
-
 	WaveBarrier(WaveInfo->Shared->Barrier);
 
 	if(WaveIsFirstLane(WaveInfo))

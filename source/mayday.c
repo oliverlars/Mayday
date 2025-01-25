@@ -513,6 +513,9 @@ void OS_Initialise(void *Data)
 	M->Buffer.String.Size = sizeof(G_TriangleShader);
 	MemoryCopy(M->Buffer.String.Bytes, G_TriangleShader, sizeof(G_TriangleShader));
 
+	M->TextBoxBuffer.String.Bytes = ArenaPushArrayZero(M->PermanentArena, u8, 8192);
+	M->TextBoxBuffer.HeightInPixels = 40;
+
 	DarwinMenuBar();
 }
 
@@ -549,7 +552,6 @@ int main()
 
 	cursor Cursor2 = {0};
 	M.TextBoxBuffer.Cursors = &Cursor2;
-	M.TextBoxBuffer.String.Bytes = ArenaPushArrayZero(Arena, u8, 8192);
 
 	M.Window = OS_MakeWindow(Str8("Mayday!"), 3024, 1964);
 

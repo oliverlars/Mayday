@@ -261,15 +261,16 @@ v2f E_GetPositionFromEditableBuffer(edit_context *E,
 	v2f Result = Position;
 
 	int At = Index;
+	LogInfo("Buffer String Size: ?u32 | Index: ?u32", Buffer.String.Size, Index);
 	for(int I = 0; I < Buffer.String.Size; I++)
 	{
-		// TODO(Oliver): Needs to actually iterate utf-8
-		u32 CodePoint = Buffer.String.Bytes[I];
-
 		if(I == At)
 		{
 			break;
 		}
+
+		// TODO(Oliver): Needs to actually iterate utf-8
+		u32 CodePoint = Buffer.String.Bytes[I];
 
 		if(CodePoint == '\n')
 		{

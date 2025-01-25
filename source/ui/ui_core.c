@@ -5,6 +5,7 @@
 
 #include "draw.h"
 #include "strings.h"
+#include <MacTypes.h>
 #include <assert.h>
 
 void RemoveEventFromList(ui_context *UI, ui_event *Event)
@@ -372,6 +373,7 @@ ui_textbox_signal UI_TextBox(m_arena *Arena,
 	f32 Height = D_LineHeightFromFont(UI->Font, HeightInPixels);
 	f32 Width = UI_GetTextWidth(UI->Font, Draw, DisplayString, HeightInPixels);
 
+	f32 CursorXOffset = Max(0, Buffer->Cursors[0].Position.X - 250 - Position.X);
 	Width = Max(Width, 300);
 
 	v2f Min = AddV2F(Position, v2f(0, UI->Font.Descent * Scale));
@@ -440,10 +442,12 @@ ui_textbox_signal UI_TextBox(m_arena *Arena,
 
 	Position.Y -= UI->Font.Descent * Scale;
 
+	v2f StringPosition = Position;
+	StringPosition.X -= CursorXOffset;
 	R_PushScissor(Draw->Render, v4i(Position.X, sapp_height() - Position.Y - Height, Width, Height));
 	D_DrawStr8(Draw,
 			   Arena, UI->Font,
-			   Position, v4f(0.8, 0.3, 0, 1),
+			   StringPosition, v4f(0.8, 0.3, 0, 1),
 			   Height, Buffer->String);
 	R_PopScissor(Draw->Render);
 
@@ -488,7 +492,9 @@ ui_textbox_signal UI_TextBox(m_arena *Arena,
 			LogInfo("Cursor pos: ?v2f", Buffer->Cursors[0].TargetPosition);
 
 			Buffer->Cursors[0].Position = LerpV2F(Buffer->Cursors[0].Position, Buffer->Cursors[0].TargetPosition, 0.3);
-			D_DrawQuad(Draw, Arena, Buffer->Cursors[0].Position, 2, Height, v4f(0.3, 0.7, 0, 1));
+			v2f CursorPosition = Buffer->Cursors[0].Position;
+			CursorPosition.X -= CursorXOffset;
+			D_DrawQuad(Draw, Arena, CursorPosition, 2, Height, v4f(0.3, 0.7, 0, 1));
 
 		}
 

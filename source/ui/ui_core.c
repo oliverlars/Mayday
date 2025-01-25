@@ -372,7 +372,7 @@ ui_textbox_signal UI_TextBox(m_arena *Arena,
 	f32 Height = D_LineHeightFromFont(UI->Font, HeightInPixels);
 	f32 Width = UI_GetTextWidth(UI->Font, Draw, DisplayString, HeightInPixels);
 
-	Width = Max(Width, 200);
+	Width = Max(Width, 300);
 
 	v2f Min = AddV2F(Position, v2f(0, UI->Font.Descent * Scale));
 	v2f Max = v2f(Min.X + Width, Min.Y + Height);
@@ -412,7 +412,6 @@ ui_textbox_signal UI_TextBox(m_arena *Arena,
 		D_DrawStr8(Draw, Arena, UI->Font, Position, v4f(1, 0, 0, 1), HeightInPixels, DisplayString);
 	}
 
-
 	if(UI_KeyDown(UI, SAPP_KEYCODE_LEFT, 0))
 	{
 		E_MoveCursors(Edit, Draw, UI->Font, Buffer->Cursors, Buffer, E_MOVE_LEFT, E_MOVE_NOT_SELECTING);
@@ -437,12 +436,13 @@ ui_textbox_signal UI_TextBox(m_arena *Arena,
 		E_DeleteTo(Edit, Buffer->Cursors, Buffer);
 	}
 
-	UI_DrawBoxCorners(UI, Draw, Arena, Position, v2f(Width, HeightInPixels), 10);
+	UI_DrawBoxCorners(UI, Draw, Arena, Position, v2f(Width, Height), 10);
 
+	Position.Y -= UI->Font.Descent * Scale;
 	D_DrawStr8(Draw,
 			   Arena, UI->Font,
 			   Position, v4f(0.8, 0.3, 0, 1),
-			   HeightInPixels, Buffer->String);
+			   Height, Buffer->String);
 
 	//LogInfo("Cursor pos: ?u32", Buffer->Cursors[0].Selection.X);
 

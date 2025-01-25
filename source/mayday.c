@@ -80,6 +80,8 @@ void OS_Update(void *Data)
 {
 	mayday_context *M = Data;
 
+	R_PushScissor(M->Render, v4i(0, 0, sapp_width(), sapp_height()));
+
 	UI_Begin(M->UI);
 
 	int WindowHeight = OS_WindowHeight(&M->Window);
@@ -158,7 +160,7 @@ void OS_Update(void *Data)
 		// 														 Transform, M->Folder);
 		//
 
-		UI_TextBox(M->FrameArena, v2f(500, 500), M->UI, M->Draw, M->Edit, 40, Str8("TextBox"), &M->TextBoxBuffer);
+		UI_TextBox(M->FrameArena, v2f(500, 500), M->UI, M->Draw, M->Edit, 60, Str8("TextBox"), &M->TextBoxBuffer);
 
 		ui_tree_view_signal TreeSignal = {0};
 		if(TreeSignal.Clicked)
@@ -206,6 +208,7 @@ void OS_Update(void *Data)
 	{
 		M->UI->MultiLeftClickCount = 0;
 	}
+
 }
 
 void OS_Event(const sapp_event *Event, void *Data)
@@ -514,7 +517,7 @@ void OS_Initialise(void *Data)
 	MemoryCopy(M->Buffer.String.Bytes, G_TriangleShader, sizeof(G_TriangleShader));
 
 	M->TextBoxBuffer.String.Bytes = ArenaPushArrayZero(M->PermanentArena, u8, 8192);
-	M->TextBoxBuffer.HeightInPixels = 40;
+	M->TextBoxBuffer.HeightInPixels = 60;
 
 	DarwinMenuBar();
 }

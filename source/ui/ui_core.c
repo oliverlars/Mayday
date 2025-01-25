@@ -439,10 +439,13 @@ ui_textbox_signal UI_TextBox(m_arena *Arena,
 	UI_DrawBoxCorners(UI, Draw, Arena, Position, v2f(Width, Height), 10);
 
 	Position.Y -= UI->Font.Descent * Scale;
+
+	R_PushScissor(Draw->Render, v4i(Position.X, sapp_height() - Position.Y - Height, Width, Height));
 	D_DrawStr8(Draw,
 			   Arena, UI->Font,
 			   Position, v4f(0.8, 0.3, 0, 1),
 			   Height, Buffer->String);
+	R_PopScissor(Draw->Render);
 
 	//LogInfo("Cursor pos: ?u32", Buffer->Cursors[0].Selection.X);
 
@@ -458,10 +461,6 @@ ui_textbox_signal UI_TextBox(m_arena *Arena,
 							 Buffer->String,
 							 Selection.X,
 							 Selection.Y);
-		D_DrawStr8(Draw,
-				   Arena, UI->Font,
-				   Position, v4f(0.8, 0.3, 0, 1),
-				   Buffer->HeightInPixels, Buffer->String);
 		if(UI->MouseIsDragging)
 		{
 			int Index = E_IndexFromPosition(Edit, Draw, UI->Font,

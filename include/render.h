@@ -61,12 +61,14 @@ typedef struct r_command
 	r_texture Texture;
 
 	m44f Transform;
+	v4i Scissor;
 
 	struct r_command *Next;
 }
 r_command;
 
 #define MAX_TRANSFORMS (4096)
+#define MAX_SCISSORS   (4096)
 
 typedef struct render_context
 {
@@ -80,8 +82,11 @@ typedef struct render_context
 	m44f TransformStack[MAX_TRANSFORMS];
 	m44f InverseTransformStack[MAX_TRANSFORMS];
 	int TransformCount;
-}
-render_context;
+
+	v4i ScissorStack[MAX_SCISSORS];
+	int ScissorCount;
+
+} render_context;
 
 
 void R_Init(render_context *R, m_arena *Arena, v2i Size);
@@ -93,6 +98,10 @@ void R_PushCommand(render_context *R, m_arena *Arena, r_command Command);
 
 void R_PushTransform(render_context *Render, m44f Transform);
 void R_PopTransform(render_context *Render);
+
+void R_PushScissor(render_context *Render, v4i Scissor);
+void R_PopScissor(render_context *Render);
+v4i R_CurrentScissor(render_context *Render);
 
 m44f R_CurrentTransform(render_context *Render);
 m44f R_CurrentInverseTransform(render_context *Render);

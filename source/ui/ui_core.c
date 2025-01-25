@@ -196,7 +196,7 @@ int UI_GetTextWidth(d_font Font, draw_context *Draw, str8 String, f32 HeightInPi
 	return Width;
 }
 
-void UI_DrawBoxCorners(ui_context *UI, draw_context *Draw, m_arena *Arena, v2f Position, v2f Size, f32 LengthOfCornersInPixels)
+void UI_DrawBoxCorners(ui_context *UI, draw_context *Draw, m_arena *Arena, v2f Position, v2f Size, f32 LengthOfCornersInPixels, v4f Colour)
 {
 
 	f32 Width = Size.X;
@@ -208,17 +208,19 @@ void UI_DrawBoxCorners(ui_context *UI, draw_context *Draw, m_arena *Arena, v2f P
 		v2f(Position.X , Position.Y + Height),
 		v2f(Position.X + Width, Position.Y + Height),
 	};
-	D_DrawQuad(Draw, Arena, Corners[0], LengthOfCornersInPixels, 2, v4f(0.5, 0.5, 0.5, 1.0));
-	D_DrawQuad(Draw, Arena, Corners[0], 2, LengthOfCornersInPixels, v4f(0.5, 0.5, 0.5, 1.0));
 
-	D_DrawQuad(Draw, Arena, SubV2F(Corners[1], v2f(LengthOfCornersInPixels, 0)), LengthOfCornersInPixels, 2, v4f(0.5, 0.5, 0.5, 1.0));
-	D_DrawQuad(Draw, Arena, Corners[1], 2, LengthOfCornersInPixels, v4f(0.5, 0.5, 0.5, 1.0));
 
-	D_DrawQuad(Draw, Arena, Corners[2], LengthOfCornersInPixels, 2, v4f(0.5, 0.5, 0.5, 1.0));
-	D_DrawQuad(Draw, Arena, SubV2F(Corners[2], v2f(0, LengthOfCornersInPixels)), 2, LengthOfCornersInPixels, v4f(0.5, 0.5, 0.5, 1.0));
+	D_DrawQuad(Draw, Arena, Corners[0], LengthOfCornersInPixels, 2, Colour);
+	D_DrawQuad(Draw, Arena, Corners[0], 2, LengthOfCornersInPixels, Colour);
 
-	D_DrawQuad(Draw, Arena, SubV2F(Corners[3], v2f(LengthOfCornersInPixels, 0)), LengthOfCornersInPixels, 2, v4f(0.5, 0.5, 0.5, 1.0));
-	D_DrawQuad(Draw, Arena, SubV2F(Corners[3], v2f(0, LengthOfCornersInPixels)), 2, LengthOfCornersInPixels, v4f(0.5, 0.5, 0.5, 1.0));
+	D_DrawQuad(Draw, Arena, SubV2F(Corners[1], v2f(LengthOfCornersInPixels, 0)), LengthOfCornersInPixels, 2, Colour);
+	D_DrawQuad(Draw, Arena, Corners[1], 2, LengthOfCornersInPixels, Colour);
+
+	D_DrawQuad(Draw, Arena, Corners[2], LengthOfCornersInPixels, 2, Colour);
+	D_DrawQuad(Draw, Arena, SubV2F(Corners[2], v2f(0, LengthOfCornersInPixels)), 2, LengthOfCornersInPixels, Colour);
+
+	D_DrawQuad(Draw, Arena, SubV2F(Corners[3], v2f(LengthOfCornersInPixels, 0)), LengthOfCornersInPixels, 2, Colour);
+	D_DrawQuad(Draw, Arena, SubV2F(Corners[3], v2f(0, LengthOfCornersInPixels)), 2, LengthOfCornersInPixels, Colour);
 }
 
 b32 UI_TextButton(ui_context *UI, draw_context *Draw, m_arena *Arena,
@@ -359,6 +361,7 @@ void UI_Begin(ui_context *UI)
 
 ui_textbox_signal UI_TextBox(m_arena *Arena,
 							 v2f Position,
+							 f32 BoxWidth,
 							 ui_context *UI,
 							 draw_context *Draw,
 							 edit_context *Edit,
@@ -373,8 +376,8 @@ ui_textbox_signal UI_TextBox(m_arena *Arena,
 	f32 Height = D_LineHeightFromFont(UI->Font, HeightInPixels);
 	f32 Width = UI_GetTextWidth(UI->Font, Draw, DisplayString, HeightInPixels);
 
-	f32 CursorXOffset = Max(0, Buffer->Cursors[0].Position.X - 250 - Position.X);
-	Width = Max(Width, 300);
+	f32 CursorXOffset = Max(0, Buffer->Cursors[0].Position.X - BoxWidth*0.8 - Position.X);
+	Width = Max(Width, BoxWidth);
 
 	v2f Min = AddV2F(Position, v2f(0, UI->Font.Descent * Scale));
 	v2f Max = v2f(Min.X + Width, Min.Y + Height);
@@ -441,7 +444,11 @@ ui_textbox_signal UI_TextBox(m_arena *Arena,
 	v2f BoxPosition = Position;
 	BoxPosition.Y += UI->Font.Descent * Scale;
 
-	UI_DrawBoxCorners(UI, Draw, Arena, BoxPosition, v2f(Width, Height - UI->Font.Descent * Scale), 10);
+	{
+		v2f LargerBoxPosition = BoxPosition;
+		v2f LargerBoxSize = v2f(Width, Height - UI->Font.Descent * Scale);
+		UI_DrawBoxCorners(UI, Draw, Arena, LargerBoxPosition, LargerBoxSize, 15, v4f(0.4, 0.01, 0.0, 1.0));
+	}
 
 	v2f StringPosition = Position;
 	StringPosition.X -= CursorXOffset;

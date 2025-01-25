@@ -302,6 +302,44 @@ b32 Str8Equal(str8 A, str8 B)
 	return True;
 }
 
+b32  Str8EndsWith(str8 String, str8 EndsWith)
+{
+	str8 SubString = String;
+	SubString.Bytes += String.Size - EndsWith.Size;
+	SubString.Size = EndsWith.Size;
+	return Str8Equal(SubString, EndsWith);
+}
+
+
+b32 Str8HasSubString(str8 Haystack, str8 Needle)
+{
+	if (Needle.Size == 0)  return True;
+	if (Needle.Size > Haystack.Size) return False;
+
+	for (u64 I = 0; I <= Haystack.Size - Needle.Size; I++)
+	{
+		b32 Match = True;
+		for (u64 J = 0; J < Needle.Size; J++)
+		{
+			if (Haystack.Bytes[I + J] != Needle.Bytes[J])
+			{
+				Match = False;
+				break;
+			}
+		}
+		if (Match) return True;
+	}
+
+return False;
+}
+
+b32  Str8StartsWith(str8 String, str8 StartsWith)
+{
+	str8 SubString = String;
+	String.Size = Min(String.Size, StartsWith.Size);
+	return Str8Equal(SubString, StartsWith);
+}
+
 void Str8ListAppend(m_arena *Arena, str8_list *List, str8 String)
 {
 	if(String.Size <= 0 ) return;

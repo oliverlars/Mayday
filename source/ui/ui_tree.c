@@ -172,7 +172,7 @@ void UI_TreeView(ui_context *UI, draw_context *Draw, shared_wave_info *Shared,
 
 ui_tree_view_signal UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw,
 							 				m_arena *Arena, int ActiveNodeIndex,
-											ui_tree *TreeView, m44f TreeTransform, str8 CurrentPath)
+											ui_tree *TreeView, m44f TreeTransform, str8 CurrentPath, str8 Filter)
 {
 	ui_tree_view_signal Result = {0};
 
@@ -195,10 +195,16 @@ ui_tree_view_signal UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw,
 
 		if(TreeView->Info.NodeInfos[It.Index].IsFolder)
 		{
-			b32 Clicked = UI_TextButton(UI, Draw,
-				Arena, Str8PushF(Arena, "?S##?u32", Str8FromLastCharacter(Arena, TreeView->Info.NodeInfos[It.Index].Name, '/'), It.Index),
-				FontSize,
-				v2f(TransformedPoint.X, TransformedPoint.Y), v4f(0.5, 0.8, 0.0, 1));
+			b32 Clicked = False;
+			str8 FolderName = Str8FromLastCharacter(Arena, TreeView->Info.NodeInfos[It.Index].Name, '/');
+			if(Filter.Size == 0 || Str8HasSubString(FolderName, Filter))
+			{
+				Clicked = UI_TextButton(UI, Draw,
+					Arena, Str8PushF(Arena, "?S##?u32", FolderName, It.Index),
+					FontSize,
+					v2f(TransformedPoint.X, TransformedPoint.Y), v4f(0.5, 0.8, 0.0, 1));
+			}
+
 			if(Clicked)
 			{
 				Result.NodeIndex = It.Index;
@@ -211,12 +217,17 @@ ui_tree_view_signal UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw,
 		if(It.ParentIndex == ActiveNodeIndex)
 		{
 			FontSize = 30;
+			str8 FolderName = Str8FromLastCharacter(Arena, TreeView->Info.NodeInfos[It.Index].Name, '/');
 			if(!TreeView->Info.NodeInfos[It.Index].IsFolder)
 			{
-				b32 Clicked = UI_TextButton(UI, Draw,
-					Arena, Str8PushF(Arena, "?S##?u32", Str8FromLastCharacter(Arena, TreeView->Info.NodeInfos[It.Index].Name, '/'), It.Index),
-					FontSize,
-					v2f(TransformedPoint.X, TransformedPoint.Y), v4f(0.5, 0.4, 0.0, 1));
+				b32 Clicked = False;
+				if(Filter.Size == 0 || Str8HasSubString(FolderName, Filter))
+				{
+					Clicked = UI_TextButton(UI, Draw,
+						Arena, Str8PushF(Arena, "?S##?u32", Str8FromLastCharacter(Arena, TreeView->Info.NodeInfos[It.Index].Name, '/'), It.Index),
+						FontSize,
+						v2f(TransformedPoint.X, TransformedPoint.Y), v4f(0.5, 0.4, 0.0, 1));
+				}
 				if(Clicked)
 				{
 					Result.Clicked = True;

@@ -139,7 +139,7 @@ typedef struct ui_tree_view_signal
 
 ui_tree_view_signal UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw,
 											m_arena *Arena, int ActiveNodeIndex,
-											ui_tree *TreeView, m44f TreeTransform, str8 CurrentPath);
+											ui_tree *TreeView, m44f TreeTransform, str8 CurrentPath, str8 Filter);
 
 
 void UI_StatusBar(ui_context *UI, draw_context *Draw, edit_context *Edit,
@@ -154,6 +154,7 @@ typedef struct ui_textbox_signal
 
 ui_textbox_signal UI_TextBox(m_arena *Arena,
 							 v2f Position,
+							 f32 BoxWidth,
 							 ui_context *UI,
 							 draw_context *Draw,
 							 edit_context *Edit,

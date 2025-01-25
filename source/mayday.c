@@ -150,19 +150,17 @@ void OS_Update(void *Data)
 			//Centre = SubV3F(v3f(sapp_widthf()/2.0, sapp_heightf()/2.0), M->TreeView.Info.Nodes[0].Position);
 		}
 
-		// UI_TreeView(M->UI, M->Draw,  &M->Shared,
-		// 			M->FrameArena, &M->TreeView, M->Folder, v3f(0.1, 0.1, 0.1));
+		UI_TreeView(M->UI, M->Draw,  &M->Shared,
+					M->FrameArena, &M->TreeView, M->Folder, v3f(0.1, 0.1, 0.1));
 
 		R_PushTransform(M->Render, M44FOrthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
 
-		// ui_tree_view_signal TreeSignal = UI_TreeViewFolderLabels(M->UI, M->Draw, M->FrameArena,
-		// 														 M->LookAtNodeIndex, &M->TreeView,
-		// 														 Transform, M->Folder);
-		//
+		UI_TextBox(M->FrameArena, v2f(sapp_widthf()/2.0 - 500, 100), 1000, M->UI, M->Draw, M->Edit, 60, Str8("TextBox"), &M->TextBoxBuffer);
 
-		UI_TextBox(M->FrameArena, v2f(500, 500), M->UI, M->Draw, M->Edit, 60, Str8("TextBox"), &M->TextBoxBuffer);
+		ui_tree_view_signal TreeSignal = UI_TreeViewFolderLabels(M->UI, M->Draw, M->FrameArena,
+																 M->LookAtNodeIndex, &M->TreeView,
+																 Transform, M->Folder, M->TextBoxBuffer.String);
 
-		ui_tree_view_signal TreeSignal = {0};
 		if(TreeSignal.Clicked)
 		{
 			M->LookAtNodeIndex = TreeSignal.NodeIndex;

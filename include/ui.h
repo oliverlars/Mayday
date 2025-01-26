@@ -137,9 +137,9 @@ typedef struct ui_tree_view_signal
 	int NodeIndex;
 } ui_tree_view_signal;
 
-ui_tree_view_signal UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw,
-											m_arena *Arena, int ActiveNodeIndex,
-											ui_tree *TreeView, m44f TreeTransform, str8 CurrentPath, str8 Filter);
+ui_tree_view_signal UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw, edit_context *Edit,
+							 				m_arena *Arena, int ActiveNodeIndex,
+											ui_tree *TreeView, m44f TreeTransform, str8 CurrentPath, editable_buffer* SearchBuffer);
 
 
 void UI_StatusBar(ui_context *UI, draw_context *Draw, edit_context *Edit,
@@ -149,7 +149,8 @@ void UI_StatusBar(ui_context *UI, draw_context *Draw, edit_context *Edit,
 
 typedef struct ui_textbox_signal
 {
-
+	b32 Submitted;
+	str8 String;
 } ui_textbox_signal;
 
 ui_textbox_signal UI_TextBox(m_arena *Arena,

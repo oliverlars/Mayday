@@ -155,11 +155,10 @@ void OS_Update(void *Data)
 
 		R_PushTransform(M->Render, M44FOrthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
 
-		UI_TextBox(M->FrameArena, v2f(sapp_widthf()/2.0 - 500, 100), 1000, M->UI, M->Draw, M->Edit, 60, Str8("TextBox"), &M->TextBoxBuffer);
 
-		ui_tree_view_signal TreeSignal = UI_TreeViewFolderLabels(M->UI, M->Draw, M->FrameArena,
+		ui_tree_view_signal TreeSignal = UI_TreeViewFolderLabels(M->UI, M->Draw, M->Edit, M->FrameArena,
 																 M->LookAtNodeIndex, &M->TreeView,
-																 Transform, M->Folder, M->TextBoxBuffer.String);
+																 Transform, M->Folder, &M->TextBoxBuffer);
 
 		if(TreeSignal.Clicked)
 		{

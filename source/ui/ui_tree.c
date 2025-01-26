@@ -170,11 +170,16 @@ void UI_TreeView(ui_context *UI, draw_context *Draw, shared_wave_info *Shared,
 }
 
 
-ui_tree_view_signal UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw,
+ui_tree_view_signal UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw, edit_context *Edit,
 							 				m_arena *Arena, int ActiveNodeIndex,
-											ui_tree *TreeView, m44f TreeTransform, str8 CurrentPath, str8 Filter)
+											ui_tree *TreeView, m44f TreeTransform, str8 CurrentPath, editable_buffer* SearchBuffer)
 {
 	ui_tree_view_signal Result = {0};
+
+	ui_textbox_signal SearchSignal = UI_TextBox(Arena, v2f(sapp_widthf()/2.0 - 500, 100), 1000,
+												UI, Draw, Edit, 60, Str8("TextBox"), SearchBuffer);
+
+	str8 Filter = SearchSignal.String;
 
 	m_scratch_arena Scratch = ScratchBegin(0, 0);
 	for(os_directory_tree_iterator It = {0};
@@ -195,43 +200,41 @@ ui_tree_view_signal UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw,
 
 		if(TreeView->Info.NodeInfos[It.Index].IsFolder)
 		{
-			b32 Clicked = False;
 			str8 FolderName = Str8FromLastCharacter(Arena, TreeView->Info.NodeInfos[It.Index].Name, '/');
 			if(Filter.Size == 0 || Str8HasSubString(FolderName, Filter))
 			{
-				Clicked = UI_TextButton(UI, Draw,
+				b32 Clicked = UI_TextButton(UI, Draw,
 					Arena, Str8PushF(Arena, "?S##?u32", FolderName, It.Index),
 					FontSize,
 					v2f(TransformedPoint.X, TransformedPoint.Y), v4f(0.5, 0.8, 0.0, 1));
-			}
 
-			if(Clicked)
-			{
-				Result.NodeIndex = It.Index;
-				Result.NodeDepth = It.Depth;
-				Result.Clicked = True;
-				Result.NewPath = Str8Copy(TreeView->Arena, TreeView->Info.NodeInfos[It.Index].Name);
+				if(Clicked || (SearchSignal.Submitted && Filter.Size > 0))
+				{
+					Result.NodeIndex = It.Index;
+					Result.NodeDepth = It.Depth;
+					Result.Clicked = True;
+					Result.NewPath = Str8Copy(TreeView->Arena, TreeView->Info.NodeInfos[It.Index].Name);
+				}
 			}
 		}
 
 		if(It.ParentIndex == ActiveNodeIndex)
 		{
 			FontSize = 30;
-			str8 FolderName = Str8FromLastCharacter(Arena, TreeView->Info.NodeInfos[It.Index].Name, '/');
+			str8 FileName = Str8FromLastCharacter(Arena, TreeView->Info.NodeInfos[It.Index].Name, '/');
 			if(!TreeView->Info.NodeInfos[It.Index].IsFolder)
 			{
-				b32 Clicked = False;
-				if(Filter.Size == 0 || Str8HasSubString(FolderName, Filter))
+				if(Filter.Size == 0 || Str8HasSubString(FileName, Filter))
 				{
-					Clicked = UI_TextButton(UI, Draw,
-						Arena, Str8PushF(Arena, "?S##?u32", Str8FromLastCharacter(Arena, TreeView->Info.NodeInfos[It.Index].Name, '/'), It.Index),
+					b32 Clicked = UI_TextButton(UI, Draw,
+						Arena, Str8PushF(Arena, "?S##?u32", FileName, It.Index),
 						FontSize,
 						v2f(TransformedPoint.X, TransformedPoint.Y), v4f(0.5, 0.4, 0.0, 1));
-				}
-				if(Clicked)
-				{
-					Result.Clicked = True;
-					Result.FileToLoad = Str8Copy(TreeView->Arena, TreeView->Info.NodeInfos[It.Index].Name);
+					if(Clicked || (SearchSignal.Submitted && Filter.Size > 0))
+					{
+						Result.Clicked = True;
+						Result.FileToLoad = Str8Copy(TreeView->Arena, TreeView->Info.NodeInfos[It.Index].Name);
+					}
 				}
 			}
 		}

@@ -435,6 +435,16 @@ ui_textbox_signal UI_TextBox(m_arena *Arena,
 		E_MoveCursors(Edit, Draw, UI->Font, Buffer->Cursors, Buffer, E_MOVE_RIGHT, E_MOVE_SELECTING);
 	}
 
+	ui_textbox_signal Result = {0};
+	Result.String = Str8Copy(Arena, Buffer->String);
+
+	if(UI_KeyDown(UI, SAPP_KEYCODE_ENTER, 0))
+	{
+		Result.Submitted = True;
+		Buffer->String.Size = 0;
+		Buffer->Cursors[0].Selection = v2i(0, 0);
+	}
+
 
 	if(UI_KeyDown(UI, SAPP_KEYCODE_BACKSPACE, 0))
 	{
@@ -558,5 +568,5 @@ ui_textbox_signal UI_TextBox(m_arena *Arena,
 		//UI_DrawBoxCorners(UI, Draw, Arena, Position, v2f(Width, HeightInPixels), 10);
 	}
 
-	return (ui_textbox_signal){};
+	return Result;
 }

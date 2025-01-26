@@ -261,7 +261,6 @@ v2f E_GetPositionFromEditableBuffer(edit_context *E,
 	v2f Result = Position;
 
 	int At = Index;
-	LogInfo("Buffer String Size: ?u32 | Index: ?u32", Buffer.String.Size, Index);
 	for(int I = 0; I < Buffer.String.Size; I++)
 	{
 		if(I == At)

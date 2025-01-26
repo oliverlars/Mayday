@@ -7,7 +7,37 @@
 
 #include "maths.h"
 
+#include "log.h"
 
+b32 CharIsUpper(u8 Char)
+{
+	return 'A' <= Char && Char <= 'Z';
+}
+
+b32 CharIsLower(u8 Char)
+{
+	return 'a' <= Char && Char <= 'z';
+}
+
+u8 CharToLower(u8 Char)
+{
+	u8 Result = Char;
+	if(CharIsUpper(Char))
+	{
+		Result += 'a' - 'A';
+	}
+	return Result;
+}
+
+u8 CharToUpper(u8 Char)
+{
+	u8 Result = Char;
+	if(CharIsLower(Char))
+	{
+		Result += 'A' - 'z';
+	}
+	return Result;
+}
 
 str8 Str8PushFV(m_arena *Arena, char *Format, va_list InputArgList)
 {
@@ -289,6 +319,26 @@ str8 Str8Copy(m_arena *Arena, str8 String)
 	return Result;
 }
 
+b32 Str8FuzzyMatch(str8 Haystack, str8 Needle)
+{
+	m_scratch_arena Scratch = ScratchBegin(0, 0);
+	str8_list Needles = Str8Split(Scratch.Arena, Needle, ' ');
+
+
+	int Matches = 0;
+	int NeedleCount = 0;
+	for(str8_list_node *Needle = Needles.First; Needle != Null; Needle = Needle->Next)
+	{
+		LogInfo("Needle ?u32: ?S", NeedleCount, Needle->String);
+		Matches += (int)Str8HasCaseInsensitiveSubString(Haystack, Needle->String);
+		NeedleCount += 1;
+	}
+
+	ScratchEnd(Scratch);
+
+	return NeedleCount > 0 && Matches == NeedleCount;
+}
+
 b32 Str8Equal(str8 A, str8 B)
 {
 	if(A.Size != B.Size) return False;
@@ -302,6 +352,21 @@ b32 Str8Equal(str8 A, str8 B)
 	return True;
 }
 
+b32 Str8CaseInsensitiveEqual(str8 A, str8 B)
+{
+	if(A.Size != B.Size) return False;
+	for(u64 Index = 0; Index < A.Size; Index++)
+	{
+		if(CharToLower(A.Bytes[Index]) != CharToLower(B.Bytes[Index]))
+		{
+			return False;
+		}
+	}
+	return True;
+}
+
+
+
 b32  Str8EndsWith(str8 String, str8 EndsWith)
 {
 	str8 SubString = String;
@@ -310,6 +375,38 @@ b32  Str8EndsWith(str8 String, str8 EndsWith)
 	return Str8Equal(SubString, EndsWith);
 }
 
+str8_list Str8Split(m_arena *Arena, str8 String, char SplitBy)
+{
+	str8_list Result = {0};
+
+	int Start = 0;
+	for(int End = 0; End < String.Size; End++)
+	{
+		if(String.Bytes[End] == SplitBy)
+		{
+			int Length = End - Start;
+			if(Length > 1)
+			{
+				str8 StringToAppend = {.Size = Length, .Bytes = String.Bytes + Start };
+				Str8ListAppend(Arena, &Result, StringToAppend);
+			}
+			Start = End + 1;
+		}
+	}
+
+	int Length = String.Size - Start;
+	if (Length > 0)
+	{
+		str8 StringToAppend = {
+			.Size = Length,
+			.Bytes = String.Bytes + Start
+		};
+		Str8ListAppend(Arena, &Result, StringToAppend);
+	}
+
+
+	return Result;
+}
 
 b32 Str8HasSubString(str8 Haystack, str8 Needle)
 {
@@ -330,7 +427,29 @@ b32 Str8HasSubString(str8 Haystack, str8 Needle)
 		if (Match) return True;
 	}
 
-return False;
+	return False;
+}
+
+b32 Str8HasCaseInsensitiveSubString(str8 Haystack, str8 Needle)
+{
+	if (Needle.Size == 0)  return True;
+	if (Needle.Size > Haystack.Size) return False;
+
+	for (u64 I = 0; I <= Haystack.Size - Needle.Size; I++)
+	{
+		b32 Match = True;
+		for (u64 J = 0; J < Needle.Size; J++)
+		{
+			if (CharToLower(Haystack.Bytes[I + J]) != CharToLower(Needle.Bytes[J]))
+			{
+				Match = False;
+				break;
+			}
+		}
+		if (Match) return True;
+	}
+
+	return False;
 }
 
 b32  Str8StartsWith(str8 String, str8 StartsWith)

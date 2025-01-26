@@ -48,7 +48,6 @@ void R_PushCommand(render_context *R, m_arena *Arena, r_command Command)
 	assert(R->TransformCount >= 1);
 	NextCommand->Transform = R->TransformStack[R->TransformCount - 1];
 	NextCommand->Scissor = R->ScissorStack[R->ScissorCount - 1];
-	LogInfo("Scissor: ?v4i", NextCommand->Scissor);
 }
 
 void R_PushTransform(render_context *Render, m44f Transform)

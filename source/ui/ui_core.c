@@ -435,6 +435,16 @@ ui_textbox_signal UI_TextBox(m_arena *Arena,
 		E_MoveCursors(Edit, Draw, UI->Font, Buffer->Cursors, Buffer, E_MOVE_RIGHT, E_MOVE_SELECTING);
 	}
 
+	if(UI_KeyDown(UI, SAPP_KEYCODE_TAB, 0))
+	{
+		E_InsertTo(Edit, Buffer->Cursors, Buffer, Str8("\t"));
+	}
+
+	if(UI_KeyDown(UI, SAPP_KEYCODE_SPACE, 0))
+	{
+		E_InsertTo(Edit, Buffer->Cursors, Buffer, Str8(" "));
+	}
+
 	ui_textbox_signal Result = {0};
 	Result.String = Str8Copy(Arena, Buffer->String);
 

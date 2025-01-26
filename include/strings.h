@@ -44,36 +44,32 @@ str8_list;
 
 #define Str8(String) (str8){strlen(String), (u8*)String}
 
+b32 CharIsUpper(u8 Char);
+b32 CharIsLower(u8 Char);
+u8 CharToLower(u8 Char);
+u8 CharToUpper(u8 Char);
+
 str8 Str8PushFV(m_arena *Arena, char *Format, va_list InputArgList);
-
 str8 Str8PushF(m_arena *Arena, char *Format, ...);
-
 char* CStrFromStr8(m_arena *Arena, str8 String);
-
+str8 Str8UpToLastCharacter(m_arena *Arena, str8 InputPath, u8 Character);
+str8 Str8FromLastCharacter(m_arena *Arena, str8 InputPath, u8 Character);
 str8 Str8Copy(m_arena *Arena, str8 String);
-
 b32 Str8Equal(str8 A, str8 B);
-
+b32 Str8CaseInsensitiveEqual(str8 A, str8 B);
 b32  Str8EndsWith(str8 String, str8 EndsWith);
 b32  Str8StartsWith(str8 String, str8 StartsWith);
-
 b32 Str8HasSubString(str8 Haystack, str8 Needle);
+b32 Str8HasCaseInsensitiveSubString(str8 Haystack, str8 Needle);
+str8_list Str8Split(m_arena *Arena, str8 String, char SplitBy);
+b32 Str8FuzzyMatch(str8 HayStack, str8 Needle);
 
 void Str8ListAppend(m_arena *Arena, str8_list *List, str8 String);
-
 void Str8ListPrepend(m_arena *Arena, str8_list *List, str8 String);
-
 void Str8ListInsertBefore(m_arena *Arena, str8_list *List, str8_list_node* Node, str8 String);
-
 void Str8ListInsertAfter(m_arena *Arena, str8_list *List, str8_list_node* Node, str8 String);
-
 str8 Str8ListJoin(m_arena *Arena, str8_list *List);
-
 b32 NextInStr8List(str8_list_node **Node);
-
-str8 Str8UpToLastCharacter(m_arena *Arena, str8 InputPath, u8 Character);
-
-str8 Str8FromLastCharacter(m_arena *Arena, str8 InputPath, u8 Character);
 
 void Print(char *Format, ...);
 void PrintLn(char *Format, ...);

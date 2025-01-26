@@ -195,6 +195,21 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 
 	}
 
+	if(UI_KeyDown(UI, SAPP_KEYCODE_ENTER, 0))
+	{
+		E_InsertTo(Edit, Edit->Cursors, Buffer, Str8("\n"));
+	}
+
+	if(UI_KeyDown(UI, SAPP_KEYCODE_TAB, 0))
+	{
+		E_InsertTo(Edit, Edit->Cursors, Buffer, Str8("\t"));
+	}
+
+	if(UI_KeyDown(UI, SAPP_KEYCODE_SPACE, 0))
+	{
+		E_InsertTo(Edit, Edit->Cursors, Buffer, Str8(" "));
+	}
+
 	if(UI_KeyDown(UI, SAPP_KEYCODE_DOWN, 0))
 	{
 		E_MoveCursors(Edit, Draw, Font, Edit->Cursors, Buffer, E_MOVE_DOWN, E_MOVE_NOT_SELECTING);

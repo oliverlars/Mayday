@@ -201,7 +201,7 @@ ui_tree_view_signal UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw, 
 		if(TreeView->Info.NodeInfos[It.Index].IsFolder)
 		{
 			str8 FolderName = Str8FromLastCharacter(Arena, TreeView->Info.NodeInfos[It.Index].Name, '/');
-			if(Filter.Size == 0 || Str8HasSubString(FolderName, Filter))
+			if(Filter.Size == 0 || Str8FuzzyMatch(FolderName, Filter))
 			{
 				b32 Clicked = UI_TextButton(UI, Draw,
 					Arena, Str8PushF(Arena, "?S##?u32", FolderName, It.Index),
@@ -224,7 +224,7 @@ ui_tree_view_signal UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw, 
 			str8 FileName = Str8FromLastCharacter(Arena, TreeView->Info.NodeInfos[It.Index].Name, '/');
 			if(!TreeView->Info.NodeInfos[It.Index].IsFolder)
 			{
-				if(Filter.Size == 0 || Str8HasSubString(FileName, Filter))
+				if(Filter.Size == 0 || Str8FuzzyMatch(FileName, Filter))
 				{
 					b32 Clicked = UI_TextButton(UI, Draw,
 						Arena, Str8PushF(Arena, "?S##?u32", FileName, It.Index),

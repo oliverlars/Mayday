@@ -198,6 +198,25 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 	if(UI_KeyDown(UI, SAPP_KEYCODE_ENTER, 0))
 	{
 		E_InsertTo(Edit, Edit->Cursors, Buffer, Str8("\n"));
+
+		int TotalWhiteSpaceInserted = 0;
+		for(cursor *Cursor = Edit->Cursors; Cursor; Cursor = Cursor->Next)
+		{
+			int LineStart = E_LineStartFromIndex(Edit, Cursor->Selection.Y, Buffer);
+
+			int FirstNonWhitespace = LineStart;
+			for(;Buffer->String.Bytes[FirstNonWhitespace] == ' ' ||
+				 Buffer->String.Bytes[FirstNonWhitespace] == '\t';)
+			{
+				FirstNonWhitespace++;
+			}
+			str8 WhiteSpaceToInsert = (str8){	FirstNonWhitespace - LineStart, Buffer->String.Bytes + LineStart};
+
+			E_InsertTextAtIndex(Edit, Cursor->Selection.Y, Buffer, WhiteSpaceToInsert);
+			TotalWhiteSpaceInserted += WhiteSpaceToInsert.Size;
+			Cursor->Selection.Y += TotalWhiteSpaceInserted;
+			Cursor->Selection.X = Cursor->Selection.Y;
+		}
 	}
 
 	if(UI_KeyDown(UI, SAPP_KEYCODE_TAB, 0))

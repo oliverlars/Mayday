@@ -329,7 +329,6 @@ b32 Str8FuzzyMatch(str8 Haystack, str8 Needle)
 	int NeedleCount = 0;
 	for(str8_list_node *Needle = Needles.First; Needle != Null; Needle = Needle->Next)
 	{
-		LogInfo("Needle ?u32: ?S", NeedleCount, Needle->String);
 		Matches += (int)Str8HasCaseInsensitiveSubString(Haystack, Needle->String);
 		NeedleCount += 1;
 	}

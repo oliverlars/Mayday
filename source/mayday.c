@@ -155,7 +155,6 @@ void OS_Update(void *Data)
 
 		R_PushTransform(M->Render, M44FOrthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
 
-
 		ui_tree_view_signal TreeSignal = UI_TreeViewFolderLabels(M->UI, M->Draw, M->Edit, M->FrameArena,
 																 M->LookAtNodeIndex, &M->TreeView,
 																 Transform, M->Folder, &M->TextBoxBuffer);
@@ -571,7 +570,7 @@ int main()
 
 	DispatchInitialise(&M.Shared, 15);
 
-	M.Folder = Str8("/Users/olivercruickshank/mayday");
+	M.Folder = Str8("");
 
 	OS_Run(M.Window, &M);
 }

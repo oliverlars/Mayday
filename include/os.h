@@ -30,7 +30,7 @@ typedef struct os_directory_entry
 	os_directory_entry_type Type;
 	struct os_directory_entry *First;
 	struct os_directory_entry *Last;
-	
+
 	struct os_directory_entry *Next;
 	struct os_directory_entry *Parent;
 }
@@ -74,6 +74,8 @@ int OS_WindowHeight(os_window *Window);
 str8 OS_LoadEntireFileIntoMemory(m_arena *Arena, str8 Filename);
 
 
+
+b32 OS_ValidPath(str8 Path);
 b32 OS_DirectoryTreeIterate(os_directory_tree Tree, os_directory_tree_iterator *Iterator);
 b32 OS_DirectoryTreeIterateWithStack(m_arena *Arena, os_directory_tree Tree, os_directory_tree_iterator *Iterator);
 int OS_CountAllEntriesInDirectoryTree(os_directory_tree Tree);

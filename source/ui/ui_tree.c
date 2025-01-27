@@ -65,6 +65,7 @@ ui_tree_info TreeInfoFromPath(m_arena *Arena, str8 Path, v3f Size)
 void UI_TreeView(ui_context *UI, draw_context *Draw, shared_wave_info *Shared,
 				 m_arena *Arena, ui_tree *TreeView, str8 Path, v3f Size)
 {
+	if(!OS_ValidPath(Path)) return;
 	u64 Hash = M_FNVHashString(M_FNV_HASH_START, Path);
 	if(Hash != TreeView->TreeHash)
 	{
@@ -175,6 +176,8 @@ ui_tree_view_signal UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw, 
 											ui_tree *TreeView, m44f TreeTransform, str8 CurrentPath, editable_buffer* SearchBuffer)
 {
 	ui_tree_view_signal Result = {0};
+
+	if(!OS_ValidPath(CurrentPath)) return Result;
 
 	ui_textbox_signal SearchSignal = UI_TextBox(Arena, v2f(sapp_widthf()/2.0 - 500, 100), 1000,
 												UI, Draw, Edit, 60, Str8("TextBox"), SearchBuffer);

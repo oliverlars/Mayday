@@ -334,4 +334,7 @@ void UI_StatusBar(ui_context *UI, draw_context *Draw, edit_context *Edit,
 				   v4f(0.009, 0.00, 0, 1.0), 35,
 				   Str8PushF(Arena, "?u32 SELECTIONS", Count));
 	}
+
+	v3f Position = v3f(Size.X - 100, 25, 0.0);
+	D_DrawPointsArray(Draw, Arena, &Position, 1, v4f(1, 0.2, 0, 1));
 }

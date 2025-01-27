@@ -175,6 +175,14 @@ os_directory_tree OS_DirectoryTreeFromPath(m_arena *Arena, str8 Path)
 	return Result;
 }
 
+b32 OS_ValidPath(str8 Path)
+{
+	m_scratch_arena Scratch = ScratchBegin(0, 0);
+	b32 Result = access(CStrFromStr8(Scratch.Arena, Path), F_OK) == 0;
+	ScratchEnd(Scratch);
+	return Result;
+}
+
 void OS_CountAllEntriesInDirectoryTreeHelper(os_directory_entry *Entry, int *Count)
 {
 	for(; Entry; Entry = Entry->Next)

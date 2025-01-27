@@ -210,6 +210,11 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 		E_InsertTo(Edit, Edit->Cursors, Buffer, Str8(" "));
 	}
 
+	if(UI_KeyDown(UI, SAPP_KEYCODE_P, SAPP_MODIFIER_SUPER))
+	{
+		UI->View = UI_VIEW_TREE;
+	}
+
 	if(UI_KeyDown(UI, SAPP_KEYCODE_DOWN, 0))
 	{
 		E_MoveCursors(Edit, Draw, Font, Edit->Cursors, Buffer, E_MOVE_DOWN, E_MOVE_NOT_SELECTING);

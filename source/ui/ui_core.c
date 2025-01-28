@@ -359,6 +359,11 @@ void UI_Begin(ui_context *UI)
 	UI->Hot = 0;
 }
 
+u64 UI_IDFromString(str8 String)
+{
+	return M_FNVHashString(M_FNV_HASH_START, String);
+}
+
 ui_textbox_signal UI_TextBox(m_arena *Arena,
 							 d_font Font,
 							 v2f Position,

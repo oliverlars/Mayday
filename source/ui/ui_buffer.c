@@ -231,6 +231,7 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 
 	if(UI_KeyDown(UI, SAPP_KEYCODE_P, SAPP_MODIFIER_SUPER))
 	{
+		UI->Active = UI_IDFromString(Str8("TreeViewTextBox"));
 		UI->View = UI_VIEW_TREE;
 	}
 

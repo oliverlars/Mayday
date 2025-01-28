@@ -546,6 +546,28 @@ str8 Str8ListJoin(m_arena *Arena, str8_list *List)
 	return Result;
 }
 
+str8 Str8ListJoinBy(m_arena *Arena, str8_list *List, char Char)
+{
+	u64 BytesToAllocate = 1;
+	for(str8_list_node *Node = List->First; Node != Null; Node = Node->Next)
+	{
+		BytesToAllocate += (Node->String.Size + 1);
+	}
+	u8 *Bytes = ArenaPush(Arena, BytesToAllocate);
+	u64 At = 0;
+	for(str8_list_node *Node = List->First; Node != Null; Node = Node->Next)
+	{
+		MemoryCopy(Bytes + At, Node->String.Bytes, Node->String.Size);
+		At += Node->String.Size + 1;
+		Bytes[At] = Char;
+	}
+	str8 Result = { .Bytes = Bytes, .Size = BytesToAllocate };
+
+	Result.Bytes[BytesToAllocate] = '0';
+
+	return Result;
+}
+
 b32 NextInStr8List(str8_list_node **Node)
 {
 	if(*Node != Null)

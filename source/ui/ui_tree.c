@@ -40,11 +40,6 @@ ui_tree_info TreeInfoFromPath(m_arena *Arena, str8 Path, v3f Size)
 
 	}
 
-	for(int I = 0; I < Info.Tree.Count; I++)
-	{
-		LogInfo("ENTRY: ?S", Info.NodeInfos[I].Name);
-	}
-
 	Info.NodeCount = Info.Tree.Count;
 
 	int LinkCount = 0;

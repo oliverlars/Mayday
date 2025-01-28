@@ -425,5 +425,5 @@ void SimulateForceDirectedGraphQuadTree(m_arena *Arena, v4f *NodePositions, int 
 
 	Temperature[0] = LerpF32(Temperature[0], 0.0, 0.05);
 
-	LogInfo("Time to simulate: ?f32", OS_MilliSecondsFromTimeStamp(OS_TimeStampNow() - Start));
+	//LogInfo("Time to simulate: ?f32", OS_MilliSecondsFromTimeStamp(OS_TimeStampNow() - Start));
 }

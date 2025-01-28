@@ -40,6 +40,7 @@ void OS_Run(os_window Window, void *Data)
 		.height = Window.Height,
 		.user_data = Data,
 		.high_dpi = true,
+		.cleanup_userdata_cb = OS_Exit,
 	};
 	sapp_run(&SAPPDesc);
 }
@@ -317,6 +318,12 @@ b32 OS_DirectoryTreeIterate(os_directory_tree Tree, os_directory_tree_iterator *
 		}
 	}
 	return Result;
+}
+
+void OS_WriteStringToDisk(m_arena *Arena, str8 DestinationPath, str8 StringToWrite)
+{
+	s32 FileDescriptor = creat(CStrFromStr8(Arena, DestinationPath), S_IRUSR | S_IWUSR );
+	s64 BytesWritten = write(FileDescriptor, StringToWrite.Bytes, StringToWrite.Size);
 }
 
 str8 OS_LoadEntireFileIntoMemory(m_arena *Arena, str8 Filename)

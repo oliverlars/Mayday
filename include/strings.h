@@ -69,6 +69,7 @@ void Str8ListPrepend(m_arena *Arena, str8_list *List, str8 String);
 void Str8ListInsertBefore(m_arena *Arena, str8_list *List, str8_list_node* Node, str8 String);
 void Str8ListInsertAfter(m_arena *Arena, str8_list *List, str8_list_node* Node, str8 String);
 str8 Str8ListJoin(m_arena *Arena, str8_list *List);
+str8 Str8ListJoinBy(m_arena *Arena, str8_list *List, char Char);
 b32 NextInStr8List(str8_list_node **Node);
 
 void Print(char *Format, ...);

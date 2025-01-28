@@ -71,6 +71,9 @@ typedef struct mayday_context
 	str8 Folder;
 
 	shared_wave_info Shared;
+
+
+	str8_list RecentlyLoadedFolders;
 }
 mayday_context;
 
@@ -170,6 +173,8 @@ void OS_Update(void *Data)
 				// HACK(Oliver): This is leaking memory
 				M->Folder = Str8Copy(M->PermanentArena, SearchSignal.String);
 				M->UI->Active = UI_IDFromString(Str8("TreeViewTextBox"));
+				Str8ListAppend(M->PermanentArena, &M->RecentlyLoadedFolders, SearchSignal.String);
+				LogInfo("M->RecentlyLoadedFolders: ?S", M->RecentlyLoadedFolders.First->String);
 			}
 		}
 
@@ -531,7 +536,23 @@ void OS_Initialise(void *Data)
 
 	M->UI->Active =  UI_IDFromString(Str8("FolderTextBox"));
 
+
+
+	str8 File = OS_LoadEntireFileIntoMemory(M->PermanentArena, Str8("/users/olivercruickshank/nomoretext/recent.txt"));
+	M->RecentlyLoadedFolders = Str8Split(M->PermanentArena, File, '\n');
+
+
 	DarwinMenuBar();
+}
+
+void OS_Exit(void *Data)
+{
+	mayday_context *M = Data;
+
+
+	str8 RecentlyOpened = Str8ListJoinBy(M->PermanentArena, &M->RecentlyLoadedFolders, '\n');
+
+	OS_WriteStringToDisk(M->PermanentArena, Str8("/users/olivercruickshank/nomoretext/recent.txt"), RecentlyOpened);
 }
 
 int main()

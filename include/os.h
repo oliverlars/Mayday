@@ -63,6 +63,7 @@ f32 OS_MilliSecondsFromTimeStamp(u64 TimeStamp);
 void OS_Update(void *Data);
 void OS_Initialise(void *Data);
 void OS_Event(const sapp_event *Event, void *Data);
+void OS_Exit(void *Data);
 
 
 
@@ -72,7 +73,7 @@ int OS_WindowHeight(os_window *Window);
 
 
 str8 OS_LoadEntireFileIntoMemory(m_arena *Arena, str8 Filename);
-
+void OS_WriteStringToDisk(m_arena *Arena, str8 DestinationPath, str8 StringToWrite);
 
 
 b32 OS_ValidPath(str8 Path);

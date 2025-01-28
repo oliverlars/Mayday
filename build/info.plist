@@ -13,10 +13,12 @@
     <key>CFBundleShortVersionString</key>
     <string>MKI</string>
     <key>CFBundleExecutable</key>
-    <string>Mayday!</string>
+    <string>mayday</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>LSMinimumSystemVersion</key>
     <string>10.15</string>
+    <key>CFBundleIconFile</key>
+    <string>Icon</string>
 </dict>
 </plist>

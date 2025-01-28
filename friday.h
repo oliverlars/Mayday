@@ -279,7 +279,7 @@ void MakeDirectoryFromPath(memory_arena *Arena, str8 Path)
 	mkdir(CStrFromStr8(Arena, Path), 0755);
 }
 
-b32 FileExists(memory_arena *Arena, str8 Filename)
+b32 PathExists(memory_arena *Arena, str8 Filename)
 {
 	return access(CStrFromStr8(Arena, Filename), F_OK) == 0;
 }
@@ -331,6 +331,11 @@ str8_list ListOfDirectoryEntriesFromPath(memory_arena *Arena, str8 Path)
 void DeleteFileFromDisk(memory_arena *Arena, str8 Filename)
 {
 	remove(CStrFromStr8(Arena, Filename));
+}
+
+int MoveFileOnDisk(memory_arena *Arena, str8 Source, str8 Destination)
+{
+	return rename(CStrFromStr8(Arena, Source), CStrFromStr8(Arena, Destination));
 }
 
 /*
@@ -787,7 +792,7 @@ void MakeDirectoryFromPath(memory_arena *Arena, str8 Path)
 	CreateDirectoryA(CStrFromStr8(Arena, Path), Null);
 }
 
-b32 FileExists(memory_arena *Arena, str8 Filename)
+b32 PathExists(memory_arena *Arena, str8 Filename)
 {
 	DWORD FileAttributes = GetFileAttributesA((LPCSTR)CStrFromStr8(Arena, Filename));
 
@@ -1333,7 +1338,7 @@ void FNVHash64(u64 *Hash, str8 String)
 
 b32 AdvanceN(str8 File, u64 *At, u64 N)
 {
-	if (*At + N < File.Size)
+	if (*At + N <= File.Size)
 	{
 		*At += N;
 		return True;
@@ -1474,7 +1479,7 @@ void FindAllIncludesInFile(memory_arena *Arena, str8 Filename, str8_list Include
 							str8 SourceDirPlusIncludePath = Str8PushF(Arena, "%.*s/%.*s", Str8ToPrintfArgs(SourceDir), Str8ToPrintfArgs(IncludePath));
 							b32 FoundFile = False;
 							str8_list AttemptedIncludes = {0};
-							if (FileExists(Arena, SourceDirPlusIncludePath))
+							if (PathExists(Arena, SourceDirPlusIncludePath))
 							{
 								FoundFile = True;
 								FindAllIncludesInFile(Arena, SourceDirPlusIncludePath, IncludePaths, IncludeChainFiles);
@@ -1489,7 +1494,7 @@ void FindAllIncludesInFile(memory_arena *Arena, str8 Filename, str8_list Include
 										Str8ToPrintfArgs(Str8UpToLastCharacter(Arena, Node->String, '/')),
 										Str8ToPrintfArgs(IncludePath));
 
-									if(FileExists(Arena, FullPath))
+									if(PathExists(Arena, FullPath))
 									{
 										FoundFile = True;
 										FindAllIncludesInFile(Arena, FullPath, IncludePaths, IncludeChainFiles);
@@ -1608,7 +1613,7 @@ b32 CompileTranslationUnit(memory_arena *Arena, build_options *BuildOptions, str
 {
 	str8 HashedFilename = Str8PushF(Arena, "%llu.o", Hash);
 
-	b32 FoundFile = FileExists(Arena, Str8PushF(Arena, "build/%.*s", Str8ToPrintfArgs(HashedFilename)));
+	b32 FoundFile = PathExists(Arena, Str8PushF(Arena, "build/%.*s", Str8ToPrintfArgs(HashedFilename)));
 
 	b32 FoundObjectFile = FoundFile;
 	if (FoundObjectFile && !BuildOptions->FullRebuild)
@@ -1681,7 +1686,7 @@ b32 LinkObjectFiles(memory_arena *Arena, build_options *BuildOptions, str8_array
 	return FailedToLink || FailedToExecute;
 }
 
-void Build(wave_info *WaveInfo, memory_arena *Arena, build_options BuildOptions)
+b32 Build(wave_info *WaveInfo, memory_arena *Arena, build_options BuildOptions)
 {
 	u64 Start = TimeStampNow();
 
@@ -1758,6 +1763,8 @@ void Build(wave_info *WaveInfo, memory_arena *Arena, build_options BuildOptions)
 
 		printf(STR_COLOUR_GREEN "\nSUCCESS\n" STR_COLOUR_RESET);
 	}
+
+	return (AnyFailedToBuild || AnyFailedToLink);
 
 }
 

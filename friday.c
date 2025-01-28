@@ -153,18 +153,44 @@ Entry(InputWaveInfo)
 	BroadcastToAllLanes(WaveInfo, PrintHelpMenu);
 	BroadcastToAllLanes(WaveInfo, ShouldRun);
 
+	b32 FailedToBuild = False;
 	if(!PrintHelpMenu)
 	{
-		Build(WaveInfo, &Arena, BuildOptions);
+		FailedToBuild = Build(WaveInfo, &Arena, BuildOptions);
 	}
 
 	if(WaveIsFirstLane(WaveInfo))
 	{
-		if(ShouldRun)
+		str8 OldPathToExecutable = Str8PushF(&Arena, "%.*s/%.*s",
+							   Str8ToPrintfArgs(BuildOptions.OutputPath),
+							   Str8ToPrintfArgs(BuildOptions.OutputName));
+
+		str8 PathToExecutable = Str8("build/Mayday.app/Contents/MacOS/Mayday");
+		str8 PathToBundle = Str8("build/Mayday");
+
+		MoveFileOnDisk(&Arena, OldPathToExecutable, PathToExecutable);
+
+		if(ShouldRun && !FailedToBuild)
 		{
-			StartApplication(&Arena, Str8PushF(&Arena, "%.*s/%.*s",
-								   Str8ToPrintfArgs(BuildOptions.OutputPath),
-								   Str8ToPrintfArgs(BuildOptions.OutputName)));
+			StartApplication(&Arena, PathToExecutable);
+		}
+
+		if(!FailedToBuild)
+		{
+			if(PathExists(&Arena, Str8("build/Icon.iconset")))
+			{
+				b32 FailedToExecute = False;
+				b32 ProcessSucceeded = ExecuteCommand(&Arena, Str8("iconutil -c icns build/Icon.iconset"), &FailedToExecute);
+				if(!FailedToExecute && ProcessSucceeded)
+				{
+					MoveFileOnDisk(&Arena, Str8("build/Icon.icns"), Str8("build/Mayday.app/Contents/Resources/Icon.icns"));
+				}
+			}
+			else
+			{
+				printf(STR_COLOUR_RED "ERROR: " STR_COLOUR_RESET);
+				printf("build/Icon.iconset folder not found. Put \n");
+			}
 		}
 	}
 

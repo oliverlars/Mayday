@@ -137,7 +137,7 @@ typedef struct ui_tree_view_signal
 	int NodeIndex;
 } ui_tree_view_signal;
 
-ui_tree_view_signal UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw, edit_context *Edit,
+ui_tree_view_signal UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw, edit_context *Edit, d_font Font,
 							 				m_arena *Arena, int ActiveNodeIndex,
 											ui_tree *TreeView, m44f TreeTransform, str8 CurrentPath, editable_buffer* SearchBuffer);
 
@@ -154,6 +154,7 @@ typedef struct ui_textbox_signal
 } ui_textbox_signal;
 
 ui_textbox_signal UI_TextBox(m_arena *Arena,
+							 d_font Font,
 							 v2f Position,
 							 f32 BoxWidth,
 							 ui_context *UI,

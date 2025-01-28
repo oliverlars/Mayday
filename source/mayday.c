@@ -159,6 +159,19 @@ void OS_Update(void *Data)
 																 M->LookAtNodeIndex, &M->TreeView,
 																 Transform, M->Folder, &M->TextBoxBuffer);
 
+		if(!OS_ValidPath(M->Folder))
+		{
+			f32 CentreX = sapp_widthf()/2.0 - UI_GetTextWidth(M->LogoFont, M->Draw, Str8("MAYDAY!"), 200)/2.0;
+			D_DrawStr8(M->Draw, M->FrameArena, M->LogoFont, v2f(CentreX, sapp_heightf()/1.5), v4f(0.8, 0.05, 0.0, 1.0), 200, Str8("MAYDAY!"));
+			ui_textbox_signal SearchSignal = UI_TextBox(M->FrameArena, v2f(sapp_widthf()/2.0 - 500, 100), 1000,
+														M->UI, M->Draw, M->Edit, 60, Str8("TextBox"), &M->TextBoxBuffer);
+			if(SearchSignal.Submitted)
+			{
+				// HACK(Oliver): This is leaking memory
+				M->Folder = Str8Copy(M->PermanentArena, SearchSignal.String);
+			}
+		}
+
 		if(TreeSignal.Clicked)
 		{
 			M->LookAtNodeIndex = TreeSignal.NodeIndex;

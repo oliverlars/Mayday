@@ -364,6 +364,12 @@ u64 UI_IDFromString(str8 String)
 	return M_FNVHashString(M_FNV_HASH_START, String);
 }
 
+void UI_SetActive(ui_context *UI, u64 Hash)
+{
+	UI->LastActive = UI->Active;
+	UI->Active = Hash;
+}
+
 ui_textbox_signal UI_TextBox(m_arena *Arena,
 							 d_font Font,
 							 v2f Position,
@@ -411,7 +417,7 @@ ui_textbox_signal UI_TextBox(m_arena *Arena,
 		if(UI_LeftMouseWentUp(UI))
 		{
 			Clicked = True;
-			UI->Active = Hash;
+			UI_SetActive(UI, Hash);
 		}
 
 		UI->HotAnimation = LerpF32(UI->HotAnimation, 1.0, 0.1);

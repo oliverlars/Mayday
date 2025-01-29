@@ -174,7 +174,22 @@ void OS_Update(void *Data)
 				M->Folder = Str8Copy(M->PermanentArena, SearchSignal.String);
 				M->UI->Active = UI_IDFromString(Str8("TreeViewTextBox"));
 				Str8ListAppend(M->PermanentArena, &M->RecentlyLoadedFolders, SearchSignal.String);
-				LogInfo("M->RecentlyLoadedFolders: ?S", M->RecentlyLoadedFolders.First->String);
+			}
+
+			v2f Pos = v2f(0, 800);
+			for(str8_list_node *Node = M->RecentlyLoadedFolders.Last; Node; Node = Node->Previous)
+			{
+				CentreX = sapp_widthf()/2.0 - UI_GetTextWidth(M->UI->Font, M->Draw, Node->String, 50)/2.0;
+				Pos.X = CentreX;
+
+				str8 Folder = Str8PushF(M->FrameArena, "?S##f32", Node->String, Pos.Y);
+				b32 Clicked = UI_TextButton(M->UI, M->Draw, M->FrameArena, Folder, 50, Pos, v4f(0.7, 0.1, 0.0, 1));
+				if(Clicked)
+				{
+					M->Folder = Str8Copy(M->PermanentArena, Node->String);
+					M->UI->Active = UI_IDFromString(Str8("TreeViewTextBox"));
+				}
+				Pos.Y -= 60;
 			}
 		}
 
@@ -534,11 +549,10 @@ void OS_Initialise(void *Data)
 	M->TextBoxBuffer.String.Bytes = ArenaPushArrayZero(M->PermanentArena, u8, 8192);
 	M->TextBoxBuffer.HeightInPixels = 60;
 
-	M->UI->Active =  UI_IDFromString(Str8("FolderTextBox"));
-
-
+	UI_SetActive(M->UI, UI_IDFromString(Str8("FolderTextBox")));
 
 	str8 File = OS_LoadEntireFileIntoMemory(M->PermanentArena, Str8("/users/olivercruickshank/nomoretext/recent.txt"));
+
 	M->RecentlyLoadedFolders = Str8Split(M->PermanentArena, File, '\n');
 
 
@@ -550,7 +564,31 @@ void OS_Exit(void *Data)
 	mayday_context *M = Data;
 
 
-	str8 RecentlyOpened = Str8ListJoinBy(M->PermanentArena, &M->RecentlyLoadedFolders, '\n');
+	int Count = Str8ListCount(M->RecentlyLoadedFolders);
+
+	u64 *Hashes = ArenaPushArrayZero(M->PermanentArena, u64, Count);
+	int HashesSoFar = 0;
+
+	str8_list FinalList = {0};
+	for(str8_list_node *Node = M->RecentlyLoadedFolders.First; Node; Node = Node->Next)
+	{
+		int AlreadyExists = False;
+		for(int I = 0; I < HashesSoFar; I++)
+		{
+			if(Hashes[I] == M_FNVHashString(M_FNV_HASH_START, Node->String))
+			{
+				AlreadyExists = True;
+			}
+		}
+		if(!AlreadyExists)
+		{
+			Str8ListAppend(M->PermanentArena, &FinalList, Node->String);
+			Hashes[HashesSoFar++] = M_FNVHashString(M_FNV_HASH_START, Node->String);
+		}
+	}
+
+	str8 RecentlyOpened = Str8ListJoinBy(M->PermanentArena, &FinalList, '\n');
+
 
 	OS_WriteStringToDisk(M->PermanentArena, Str8("/users/olivercruickshank/nomoretext/recent.txt"), RecentlyOpened);
 }

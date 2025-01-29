@@ -78,6 +78,7 @@ typedef struct ui_context
 {
 	u64 Hot;
 	u64 Active;
+	u64 LastActive;
 
 	f32 HotAnimation;
 
@@ -104,6 +105,8 @@ typedef struct ui_context
 
 
 void UI_Begin(ui_context *UI);
+
+void UI_SetActive(ui_context *UI, u64 Hash);
 
 
 b32 UI_TextButton(ui_context *UI, draw_context *Draw,
@@ -142,7 +145,7 @@ ui_tree_view_signal UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw, 
 											ui_tree *TreeView, m44f TreeTransform, str8 CurrentPath, editable_buffer* SearchBuffer);
 
 
-u64 UI_IDFromString(str8 ID);
+u64 UI_IDFromString(str8 String);
 
 void UI_StatusBar(ui_context *UI, draw_context *Draw, edit_context *Edit,
 				  m_arena *Arena, d_font Font,

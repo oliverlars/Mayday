@@ -364,6 +364,16 @@ b32 Str8CaseInsensitiveEqual(str8 A, str8 B)
 	return True;
 }
 
+int Str8ListCount(str8_list List)
+{
+	int Result = 0;
+	for(str8_list_node *Node = List.First; Node; Node = Node->Next)
+	{
+		Result += 1;
+	}
+
+	return Result;
+}
 
 
 b32  Str8EndsWith(str8 String, str8 EndsWith)
@@ -548,7 +558,7 @@ str8 Str8ListJoin(m_arena *Arena, str8_list *List)
 
 str8 Str8ListJoinBy(m_arena *Arena, str8_list *List, char Char)
 {
-	u64 BytesToAllocate = 1;
+	u64 BytesToAllocate = 0;
 	for(str8_list_node *Node = List->First; Node != Null; Node = Node->Next)
 	{
 		BytesToAllocate += (Node->String.Size + 1);
@@ -558,12 +568,11 @@ str8 Str8ListJoinBy(m_arena *Arena, str8_list *List, char Char)
 	for(str8_list_node *Node = List->First; Node != Null; Node = Node->Next)
 	{
 		MemoryCopy(Bytes + At, Node->String.Bytes, Node->String.Size);
-		At += Node->String.Size + 1;
+		At += Node->String.Size;
 		Bytes[At] = Char;
+		At += 1;
 	}
 	str8 Result = { .Bytes = Bytes, .Size = BytesToAllocate };
-
-	Result.Bytes[BytesToAllocate] = '0';
 
 	return Result;
 }

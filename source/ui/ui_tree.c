@@ -196,15 +196,23 @@ ui_tree_view_signal UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw, 
 		TransformedPoint.X *= sapp_widthf();
 		TransformedPoint.Y *= sapp_heightf();
 
+		v4f Colour = v4f(0.8, 0.3, 0.0, 1);
+		if(It.Index == ActiveNodeIndex)
+		{
+			Colour = v4f(0.8, 0.6, 0.4, 1.0);
+			FontSize = 40;
+		}
+
 		if(TreeView->Info.NodeInfos[It.Index].IsFolder)
 		{
 			str8 FolderName = Str8FromLastCharacter(Arena, TreeView->Info.NodeInfos[It.Index].Name, '/');
 			if(Filter.Size == 0 || Str8FuzzyMatch(FolderName, Filter))
 			{
+
 				b32 Clicked = UI_TextButton(UI, Draw,
 					Arena, Str8PushF(Arena, "?S##?u32", FolderName, It.Index),
 					FontSize,
-					v2f(TransformedPoint.X, TransformedPoint.Y), v4f(0.8, 0.3, 0.0, 1));
+					v2f(TransformedPoint.X, TransformedPoint.Y), Colour);
 
 				if(Clicked || (SearchSignal.Submitted && Filter.Size > 0))
 				{
@@ -227,7 +235,7 @@ ui_tree_view_signal UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw, 
 					b32 Clicked = UI_TextButton(UI, Draw,
 						Arena, Str8PushF(Arena, "?S##?u32", FileName, It.Index),
 						FontSize,
-						v2f(TransformedPoint.X, TransformedPoint.Y), v4f(0.8, 0.3, 0.0, 1));
+						v2f(TransformedPoint.X, TransformedPoint.Y), Colour);
 					if(Clicked || (SearchSignal.Submitted && Filter.Size > 0))
 					{
 						Result.Clicked = True;

@@ -97,7 +97,18 @@ void OS_Update(void *Data)
 
 	f32 Size = M->ViewSize;
 	static f32 Angle = 0.0;
-	Angle += 0.001 / (f32)(M->TreeDepth*2 + 1);
+
+	static f32 AngleTarget = 0.0;
+
+	v2f Scroll = UI_Scroll(M->UI);
+	AngleTarget -= 0.001 / (f32)(M->TreeDepth*2 + 1) + Scroll.X*0.01;
+
+
+
+	Angle = LerpF32(Angle, AngleTarget, 0.1);
+
+
+
 	m44f Rotation = M44FromYAngle(Angle);
 	m44f Transform = M44FOrthographic(-Size, +Size, +Size, -Size, -1000.0, 1000.0);
 	//m44f Transform = M44FPerspective(sapp_widthf()/sapp_heightf(), 70, 0.01, 10000.0);
@@ -111,7 +122,9 @@ void OS_Update(void *Data)
 
 		f32 LongestSide = Max((Bounds.Max.X - Bounds.Min.X), Max((Bounds.Max.Z - Bounds.Min.Z), (Bounds.Max.Y - Bounds.Min.Y)));
 
-		M->ViewSizeTarget = LongestSide/((f32)(M->TreeDepth)*3.0 + 1.5);
+		M->ViewSizeTarget = Max(0.1, LongestSide/((f32)(M->TreeDepth)*3.0 + 1.5) + M->UI->ScrollOffset.Y*0.1);
+
+
 
 		Transform = MulM44FM44F(M44FLookAt(v3f(0, 0, 2.0*LongestSide), M->LookAt, v3f(0, 1, 0)), Transform);
 	}
@@ -268,6 +281,12 @@ void OS_Event(const sapp_event *Event, void *Data)
 		}
 	}
 
+	if(Event->type == SAPP_EVENTTYPE_MOUSE_SCROLL)
+	{
+		M->UI->ScrollOffset.Y -= Event->scroll_y;
+		M->UI->ScrollOffset.X += Event->scroll_x;
+	}
+
 	if(Event->type == SAPP_EVENTTYPE_FOCUSED)
 	{
 		M->UnFocused = False;
@@ -282,6 +301,9 @@ void OS_Event(const sapp_event *Event, void *Data)
 	{
 		M->UI->MousePosition.X = Event->mouse_x;
 		M->UI->MousePosition.Y = OS_WindowHeight(&M->Window) - Event->mouse_y;
+
+		M->UI->MouseDelta.X = Event->mouse_dx;
+		M->UI->MouseDelta.Y = Event->mouse_dy;
 	}
 
 	if(Event->type == SAPP_EVENTTYPE_MOUSE_DOWN)
@@ -399,12 +421,8 @@ void OS_Event(const sapp_event *Event, void *Data)
 			M->UI->TimeStampWhenLeftMousePressed = OS_TimeStampNow();
 		}
 	}
-	else if(Event->type == SAPP_EVENTTYPE_MOUSE_SCROLL)
-	{
-		M->UI->ScrollOffset.Y -= Event->scroll_y;
-		M->UI->ScrollOffset.X += Event->scroll_x;
-	}
-	else if(Event->type == SAPP_EVENTTYPE_MOUSE_UP)
+
+	if(Event->type == SAPP_EVENTTYPE_MOUSE_UP)
 	{
 
 	}

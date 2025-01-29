@@ -74,6 +74,9 @@ typedef struct mayday_context
 
 
 	str8_list RecentlyLoadedFolders;
+
+
+	b32 UnFocused;
 }
 mayday_context;
 
@@ -82,6 +85,8 @@ mayday_context;
 void OS_Update(void *Data)
 {
 	mayday_context *M = Data;
+
+	if(M->UnFocused) return;
 
 	R_PushScissor(M->Render, v4i(0, 0, sapp_width(), sapp_height()));
 
@@ -245,6 +250,8 @@ void OS_Event(const sapp_event *Event, void *Data)
 {
 	mayday_context *M = (mayday_context*)Data;
 
+
+
 	{
 		ui_event *UIEvent = ArenaPushArrayZero(M->FrameArena, ui_event, 1);
 		UIEvent->E = Event[0];
@@ -259,6 +266,16 @@ void OS_Event(const sapp_event *Event, void *Data)
 			M->UI->EventLast = UIEvent;
 			M->UI->EventFirst = UIEvent;
 		}
+	}
+
+	if(Event->type == SAPP_EVENTTYPE_FOCUSED)
+	{
+		M->UnFocused = False;
+	}
+
+	if(Event->type == SAPP_EVENTTYPE_UNFOCUSED)
+	{
+		M->UnFocused = True;
 	}
 
 	if(Event->type == SAPP_EVENTTYPE_MOUSE_MOVE)

@@ -122,7 +122,7 @@ void OS_Update(void *Data)
 
 		f32 LongestSide = Max((Bounds.Max.X - Bounds.Min.X), Max((Bounds.Max.Z - Bounds.Min.Z), (Bounds.Max.Y - Bounds.Min.Y)));
 
-		M->ViewSizeTarget = Max(0.1, LongestSide/((f32)(M->TreeDepth)*3.0 + 1.5) + M->UI->ScrollOffset.Y*0.1);
+		M->ViewSizeTarget = 2.0;
 
 
 

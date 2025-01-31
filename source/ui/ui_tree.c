@@ -1,3 +1,5 @@
+#include <math.h>
+
 #include "fdg.h"
 #include "log.h"
 #include "maths.h"

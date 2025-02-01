@@ -187,10 +187,11 @@ void OS_Update(void *Data)
 
 		R_PushTransform(M->Render, M44FOrthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
 
+		ui_orbit_signal OrbitSignal = {0};
 		if(OS_ValidPath(M->Folder))
 		{
-			UI_OrbitLabels(M->UI, M->Draw, M->Edit,
-						   M->UI->Font, M->FrameArena, Orbit, M->FolderTree,
+			OrbitSignal = UI_OrbitLabels(M->UI, M->Draw, M->Edit,
+						   M->UI->Font, M->FrameArena, Orbit, M->FolderTree, M->LookAtNodeIndex,
 						   Transform, &M->TextBoxBuffer);
 		}
 		// ui_tree_view_signal TreeSignal = UI_TreeViewFolderLabels(M->UI, M->Draw, M->Edit, M->StatusFont, M->FrameArena,
@@ -229,13 +230,13 @@ void OS_Update(void *Data)
 			}
 		}
 
-		if(TreeSignal.Clicked)
+		if(OrbitSignal.Clicked)
 		{
-			M->LookAtNodeIndex = TreeSignal.NodeIndex;
-			M->TreeDepth = TreeSignal.NodeDepth;
-			if(TreeSignal.FileToLoad.Size > 0)
+			M->LookAtNodeIndex = OrbitSignal.ActiveItem;
+			// M->TreeDepth = TreeSignal.NodeDepth;
+			if(OrbitSignal.FileToLoad.Size > 0)
 			{
-				M->Buffer.String = OS_LoadEntireFileIntoMemory(M->PermanentArena, TreeSignal.FileToLoad);
+				M->Buffer.String = OS_LoadEntireFileIntoMemory(M->PermanentArena, OrbitSignal.FileToLoad);
 				M->UI->View = UI_VIEW_EDIT;
 			}
 		}

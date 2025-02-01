@@ -57,12 +57,14 @@ ui_orbit UI_OrbitView(ui_context *UI, draw_context *Draw, m_arena *Arena, os_dir
 	return Result;
 }
 
-void UI_OrbitLabels(ui_context *UI, draw_context *Draw, edit_context *Edit,
+ui_orbit_signal UI_OrbitLabels(ui_context *UI, draw_context *Draw, edit_context *Edit,
 					d_font Font, m_arena *Arena, ui_orbit Orbit, os_directory_tree Tree,
-					m44f OrbitTransform, editable_buffer* SearchBuffer)
+					int ActiveItem, m44f OrbitTransform, editable_buffer* SearchBuffer)
 {
 	ui_textbox_signal SearchSignal = UI_TextBox(Arena, Font, v2f(sapp_widthf()/2.0 - 500, 100), 1000,
 												UI, Draw, Edit, 60, Str8("TreeViewTextBox"), SearchBuffer);
+
+	ui_orbit_signal Result = {0};
 
 	str8 Filter = SearchSignal.String;
 
@@ -86,11 +88,11 @@ void UI_OrbitLabels(ui_context *UI, draw_context *Draw, edit_context *Edit,
 		TransformedPoint.Y *= sapp_heightf();
 
 		v4f Colour = v4f(0.8, 0.3, 0.0, 1);
-		// if(It.Index == ActiveNodeIndex)
-		// {
-		// 	Colour = v4f(0.8, 0.6, 0.4, 1.0);
-		// 	FontSize = 40;
-		// }
+		if(It.Index == ActiveItem)
+		{
+			Colour = v4f(0.8, 0.6, 0.4, 1.0);
+			FontSize = 40;
+		}
 
 
 		{
@@ -105,10 +107,10 @@ void UI_OrbitLabels(ui_context *UI, draw_context *Draw, edit_context *Edit,
 
 				if(Clicked || (SearchSignal.Submitted && Filter.Size > 0))
 				{
-					// Result.NodeIndex = It.Index;
-					// Result.NodeDepth = It.Depth;
-					// Result.Clicked = True;
-					// Result.NewPath = Str8Copy(Arena, It.Current->PathAndName);
+					Result.ActiveItem = It.Index;
+					//Result.NodeDepth = It.Depth;
+					Result.Clicked = True;
+					Result.Path = Str8Copy(Arena, It.Current->PathAndName);
 				}
 			}
 		}
@@ -126,8 +128,8 @@ void UI_OrbitLabels(ui_context *UI, draw_context *Draw, edit_context *Edit,
 						v2f(TransformedPoint.X, TransformedPoint.Y), Colour);
 					if(Clicked || (SearchSignal.Submitted && Filter.Size > 0))
 					{
-						// Result.Clicked = True;
-						// Result.FileToLoad = Str8Copy(Arena, It.Current->PathAndName);
+						Result.Clicked = True;
+						Result.FileToLoad = Str8Copy(Arena, It.Current->PathAndName);
 					}
 				}
 			}
@@ -136,17 +138,17 @@ void UI_OrbitLabels(ui_context *UI, draw_context *Draw, edit_context *Edit,
 
 	if(UI_KeyDown(UI, SAPP_KEYCODE_RIGHT, 0))
 	{
-		//Result.Clicked = True;
-		//Result.NodeIndex = ActiveNodeIndex + 1;
+		Result.Clicked = True;
+		Result.ActiveItem = ActiveItem + 1;
 	}
 
 	if(UI_KeyDown(UI, SAPP_KEYCODE_LEFT, 0))
 	{
-		//Result.Clicked = True;
-		//Result.NodeIndex = Max(ActiveNodeIndex - 1, 0);
+		Result.Clicked = True;
+		Result.ActiveItem = Max(ActiveItem - 1, 0);
 	}
 
 	ScratchEnd(Scratch);
 
-	return;// Result;
+	return Result;
 }

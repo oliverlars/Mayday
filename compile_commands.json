@@ -46,6 +46,11 @@
     },
     {
         "directory": "/Users/olivercruickshank/Mayday",
+        "command": "clang  -c source/ui/ui_orbit.c -O2 -obuild/source/ui/ui_orbit.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "file": "source/ui/ui_orbit.c"
+    },
+    {
+        "directory": "/Users/olivercruickshank/Mayday",
         "command": "clang  -c source/ui/ui_buffer.c -O2 -obuild/source/ui/ui_buffer.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/ui/ui_buffer.c"
     },

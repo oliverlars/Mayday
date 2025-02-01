@@ -68,7 +68,9 @@ typedef struct mayday_context
 	int TreeParentIndex;
 
 
+	os_directory_tree FolderTree;
 	str8 Folder;
+	u64 FolderHash;
 
 	shared_wave_info Shared;
 
@@ -122,7 +124,7 @@ void OS_Update(void *Data)
 
 		f32 LongestSide = Max((Bounds.Max.X - Bounds.Min.X), Max((Bounds.Max.Z - Bounds.Min.Z), (Bounds.Max.Y - Bounds.Min.Y)));
 
-		M->ViewSizeTarget = 2.0;
+		M->ViewSizeTarget = 0.5;
 
 
 
@@ -160,26 +162,42 @@ void OS_Update(void *Data)
 	}
 	else if(M->UI->View == UI_VIEW_TREE)
 	{
+		u64 FolderHash = M_FNVHashString(M_FNV_HASH_START, M->Folder);
+		if(FolderHash != M->FolderHash && M->Folder.Size > 0)
+		{
+			LogInfo("?S", M->Folder);
+			M->FolderTree = OS_DirectoryTreeFromPath(M->PermanentArena, M->Folder);
+			M->FolderHash = FolderHash;
+		}
+
 		v2f Centre = {0};
 		R_PushTransform(M->Render, M44FOrthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
 		D_DrawQuad(M->Draw, M->FrameArena, v2f(0, 0),  WindowWidth, WindowHeight, v4f(0.008, 0.00, 0, 1.0));
 		D_DrawGrid2D(M->Draw, M->FrameArena, 50, 200);
 		R_PopTransform(M->Render);
 
-		if(M->TreeView.Info.NodePositions)
+		ui_orbit Orbit = {0};
+		if(OS_ValidPath(M->Folder))
 		{
-			//Centre = SubV3F(v3f(sapp_widthf()/2.0, sapp_heightf()/2.0), M->TreeView.Info.Nodes[0].Position);
+			Orbit = UI_OrbitView(M->UI, M->Draw, M->FrameArena, M->FolderTree);
 		}
 
-		UI_TreeView(M->UI, M->Draw,  &M->Shared,
-					M->FrameArena, &M->TreeView, M->Folder, v3f(0.1, 0.1, 0.1));
+		// UI_TreeView(M->UI, M->Draw,  &M->Shared,
+		// 			M->FrameArena, &M->TreeView, M->Folder, v3f(0.1, 0.1, 0.1));
 
 		R_PushTransform(M->Render, M44FOrthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
 
-		ui_tree_view_signal TreeSignal = UI_TreeViewFolderLabels(M->UI, M->Draw, M->Edit, M->StatusFont, M->FrameArena,
-																 M->LookAtNodeIndex, &M->TreeView,
-																 Transform, M->Folder, &M->TextBoxBuffer);
+		if(OS_ValidPath(M->Folder))
+		{
+			UI_OrbitLabels(M->UI, M->Draw, M->Edit,
+						   M->UI->Font, M->FrameArena, Orbit, M->FolderTree,
+						   Transform, &M->TextBoxBuffer);
+		}
+		// ui_tree_view_signal TreeSignal = UI_TreeViewFolderLabels(M->UI, M->Draw, M->Edit, M->StatusFont, M->FrameArena,
+		// 														 M->LookAtNodeIndex, &M->TreeView,
+		// 														 Transform, M->Folder, &M->TextBoxBuffer);
 
+		ui_tree_view_signal TreeSignal = {0};
 		if(!OS_ValidPath(M->Folder))
 		{
 			f32 CentreX = sapp_widthf()/2.0 - UI_GetTextWidth(M->LogoFont, M->Draw, Str8("MAYDAY!"), 200)/2.0;

@@ -147,6 +147,18 @@ ui_tree_view_signal UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw, 
 											ui_tree *TreeView, m44f TreeTransform, str8 CurrentPath, editable_buffer* SearchBuffer);
 
 
+typedef struct ui_orbit
+{
+	v3f *Positions;
+	int Count;
+} ui_orbit;
+
+void UI_OrbitLabels(ui_context *UI, draw_context *Draw, edit_context *Edit,
+					d_font Font, m_arena *Arena, ui_orbit Orbit, os_directory_tree Tree,
+					m44f OrbitTransform, editable_buffer* SearchBuffer);
+
+ui_orbit UI_OrbitView(ui_context *UI, draw_context *Draw, m_arena *Arena, os_directory_tree Tree);
+
 u64 UI_IDFromString(str8 String);
 
 void UI_StatusBar(ui_context *UI, draw_context *Draw, edit_context *Edit,

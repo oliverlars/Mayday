@@ -156,6 +156,7 @@ typedef struct ui_orbit
 typedef struct ui_orbit_signal
 {
 	int ActiveItem;
+	int ActiveItemDepth;
 	str8 Path;
 	str8 FileToLoad;
 	b32 Clicked;

@@ -108,7 +108,7 @@ ui_orbit_signal UI_OrbitLabels(ui_context *UI, draw_context *Draw, edit_context 
 				if(Clicked || (SearchSignal.Submitted && Filter.Size > 0))
 				{
 					Result.ActiveItem = It.Index;
-					//Result.NodeDepth = It.Depth;
+					Result.ActiveItemDepth = It.Depth;
 					Result.Clicked = True;
 					Result.Path = Str8Copy(Arena, It.Current->PathAndName);
 				}
@@ -136,17 +136,17 @@ ui_orbit_signal UI_OrbitLabels(ui_context *UI, draw_context *Draw, edit_context 
 		}
 	}
 
-	if(UI_KeyDown(UI, SAPP_KEYCODE_RIGHT, 0))
-	{
-		Result.Clicked = True;
-		Result.ActiveItem = ActiveItem + 1;
-	}
+	// if(UI_KeyDown(UI, SAPP_KEYCODE_RIGHT, 0))
+	// {
+	// 	Result.Clicked = True;
+	// 	//Result.ActiveItem = ActiveItem + 1;
+	// }
 
-	if(UI_KeyDown(UI, SAPP_KEYCODE_LEFT, 0))
-	{
-		Result.Clicked = True;
-		Result.ActiveItem = Max(ActiveItem - 1, 0);
-	}
+	// if(UI_KeyDown(UI, SAPP_KEYCODE_LEFT, 0))
+	// {
+	// 	Result.Clicked = True;
+	// 	//Result.ActiveItem = Max(ActiveItem - 1, 0);
+	// }
 
 	ScratchEnd(Scratch);
 

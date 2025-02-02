@@ -56,7 +56,6 @@ typedef struct mayday_context
 	f32 ViewSize;
 	f32 ViewSizeTarget;
 
-	int LookAtNodeIndex;
 	v3f LookAtTarget;
 	v3f LookAt;
 
@@ -64,7 +63,9 @@ typedef struct mayday_context
 	v3f LookFrom;
 
 	ui_tree TreeView;
-	int TreeDepth;
+
+	int OrbitItem;
+	int OrbitDepth;
 	int TreeParentIndex;
 
 
@@ -103,7 +104,7 @@ void OS_Update(void *Data)
 	static f32 AngleTarget = 0.0;
 
 	v2f Scroll = UI_Scroll(M->UI);
-	AngleTarget -= 0.001 / (f32)(M->TreeDepth*2 + 1) + Scroll.X*0.01;
+	AngleTarget -= 0.001 / (f32)(M->OrbitDepth*2 + 1) + Scroll.X*0.01;
 
 
 
@@ -112,29 +113,13 @@ void OS_Update(void *Data)
 
 
 	m44f Rotation = M44FromYAngle(Angle);
-	m44f Transform = M44FOrthographic(-Size, +Size, +Size, -Size, -1000.0, 1000.0);
-	//m44f Transform = M44FPerspective(sapp_widthf()/sapp_heightf(), 70, 0.01, 10000.0);
+	//m44f Transform = M44FOrthographic(-Size, +Size, +Size, -Size, -1000.0, 1000.0);
+	m44f Transform = M44FPerspective(sapp_widthf()/sapp_heightf(), 70, 0.01, 10000.0);
 	M->LookAt = LerpV3F(M->LookAt, M->LookAtTarget, 0.1);
 	M->ViewSize = LerpF32(M->ViewSize, M->ViewSizeTarget, 0.1);
-	if(M->TreeView.Info.NodeInfos)
-	{
-		bounds Bounds = GetBounds(M->TreeView.Info.NodeTargetPositions, M->TreeView.Info.NodeCount);
-		v4f P = M->TreeView.Info.NodePositions[M->LookAtNodeIndex];
-		M->LookAtTarget = v3f(P.X, P.Y, P.Z);
 
-		f32 LongestSide = Max((Bounds.Max.X - Bounds.Min.X), Max((Bounds.Max.Z - Bounds.Min.Z), (Bounds.Max.Y - Bounds.Min.Y)));
-
-		M->ViewSizeTarget = 0.5;
-
-
-
-		Transform = MulM44FM44F(M44FLookAt(v3f(0, 0, 2.0*LongestSide), M->LookAt, v3f(0, 1, 0)), Transform);
-	}
-	else
-	{
-		Transform = MulM44FM44F(M44FLookAt(v3f(0, 0, 10), v3f(0, 0, 0), v3f(0, 1, 0)), Transform);
-	}
-
+	//Transform = MulM44FM44F(M44FLookAt(v3f(0, 0, 10), v3f(0, 0, 0), v3f(0, 1, 0)), Transform);
+	Transform = MulM44FM44F(M44FLookAt(v3f(0, 0, 50.0), M->LookAt, v3f(0, 1, 0)), Transform);
 
 	Transform = MulM44FM44F(M44FTranslate(M->LookAt), Transform);
 	Transform = MulM44FM44F(Rotation, Transform);
@@ -170,6 +155,8 @@ void OS_Update(void *Data)
 			M->FolderHash = FolderHash;
 		}
 
+		M->ViewSizeTarget = (f32)(1.0 + M->OrbitDepth)/10.0;
+
 		v2f Centre = {0};
 		R_PushTransform(M->Render, M44FOrthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
 		D_DrawQuad(M->Draw, M->FrameArena, v2f(0, 0),  WindowWidth, WindowHeight, v4f(0.008, 0.00, 0, 1.0));
@@ -191,7 +178,7 @@ void OS_Update(void *Data)
 		if(OS_ValidPath(M->Folder))
 		{
 			OrbitSignal = UI_OrbitLabels(M->UI, M->Draw, M->Edit,
-						   M->UI->Font, M->FrameArena, Orbit, M->FolderTree, M->LookAtNodeIndex,
+						   M->UI->Font, M->FrameArena, Orbit, M->FolderTree, M->OrbitItem,
 						   Transform, &M->TextBoxBuffer);
 		}
 		// ui_tree_view_signal TreeSignal = UI_TreeViewFolderLabels(M->UI, M->Draw, M->Edit, M->StatusFont, M->FrameArena,
@@ -232,7 +219,9 @@ void OS_Update(void *Data)
 
 		if(OrbitSignal.Clicked)
 		{
-			M->LookAtNodeIndex = OrbitSignal.ActiveItem;
+			M->OrbitItem = OrbitSignal.ActiveItem;
+			M->OrbitDepth = OrbitSignal.ActiveItemDepth;
+			M->LookAtTarget = Orbit.Positions[M->OrbitItem];
 			// M->TreeDepth = TreeSignal.NodeDepth;
 			if(OrbitSignal.FileToLoad.Size > 0)
 			{
@@ -691,7 +680,7 @@ int main()
 
 	M.CameraPosition = v3f(0.0);
 	M.ViewSize = 40.0;
-	M.ViewSizeTarget = M.ViewSize;
+	M.ViewSizeTarget = 1.0;
 
 	M.Shared.Arena = ArenaInitialise(GigaBytes(1));
 

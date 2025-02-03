@@ -160,6 +160,7 @@ typedef struct ui_orbit_signal
 	str8 Path;
 	str8 FileToLoad;
 	b32 Clicked;
+	v3f ActiveItemPosition;
 } ui_orbit_signal;
 
 ui_orbit_signal UI_OrbitLabels(ui_context *UI, draw_context *Draw, edit_context *Edit,

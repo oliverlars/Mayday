@@ -26,7 +26,7 @@ ui_orbit UI_OrbitView(ui_context *UI, draw_context *Draw, m_arena *Arena, os_dir
 		}
 	}
 
-	LogInfo("Count: ?u32", Count);
+
 
 	f32 Phi = (1.0 + sqrt(5.0)) / 2.0;
 	f32 GoldenAngle = 2.0 * M_PI * (1.0 - 1.0 / Phi);
@@ -94,7 +94,7 @@ ui_orbit_signal UI_OrbitLabels(ui_context *UI, draw_context *Draw, edit_context 
 			FontSize = 40;
 		}
 
-
+		if(It.Current->Type == OS_DIR_ENTRY_FOLDER)
 		{
 			str8 FolderName = Str8FromLastCharacter(Arena, It.Current->PathAndName, '/');
 			if(Filter.Size == 0 || Str8FuzzyMatch(FolderName, Filter))
@@ -109,8 +109,10 @@ ui_orbit_signal UI_OrbitLabels(ui_context *UI, draw_context *Draw, edit_context 
 				{
 					Result.ActiveItem = It.Index;
 					Result.ActiveItemDepth = It.Depth;
+					Result.ActiveItemPosition = P;
 					Result.Clicked = True;
 					Result.Path = Str8Copy(Arena, It.Current->PathAndName);
+					LogInfo("CLICKED!!!!");
 				}
 			}
 		}

@@ -169,29 +169,11 @@ void OS_Update(void *Data)
 
 			Orbit = UI_OrbitView(M->UI, M->Draw, M->FrameArena, M->FolderTree);
 
-			{
-				v4f P4D = v4f(Orbit.Positions[0].X, Orbit.Positions[0].Y, Orbit.Positions[0].Z, 1.0);
-				P4D = MulM44FV4F(Model, P4D);
 
-				MinPos = v3f(P4D.X, P4D.Y, P4D.Z);
-				MaxPos = v3f(P4D.X, P4D.Y, P4D.Z);
-			}
-
-			for(int I = 1; I < Orbit.Count; I++)
-			{
-				v4f P4D = v4f(Orbit.Positions[I].X, Orbit.Positions[I].Y, Orbit.Positions[I].Z, 1.0);
-				P4D = MulM44FV4F(Model, P4D);
-				v3f P3D = v3f(P4D.X, P4D.Y, P4D.Z);
-				if(P3D.Z < MinPos.Z)
-				{
-					MinPos = P3D;
-				}
-				else if(P3D.Z > MaxPos.Z)
-				{
-					MaxPos = P3D;
-				}
-			}
-			LogInfo("Min: ?v3f Max: ?v3f", MinPos, MaxPos);
+			bounds Bounds = GetBoundsV3F(Orbit.Positions, Orbit.Count);
+			MinPos = Bounds.Min;
+			MaxPos = Bounds.Max;
+			LogInfo("Min: ?v3f", MinPos);
 		}
 
 		R_PushTransform(M->Render, M44FOrthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));

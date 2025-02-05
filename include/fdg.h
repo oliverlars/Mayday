@@ -50,7 +50,8 @@ void SimulateForceDirectedGraphQuadTree(m_arena *Arena, v4f *NodePositions, int 
 								f32 *Temperature,
 								quadtree_header *QuadTree, shared_wave_info *Shared);
 
-bounds GetBounds(v4f *Positions, int Count);
+bounds GetBoundsV4F(v4f *Positions, int Count);
+bounds GetBoundsV3F(v3f *Positions, int Count);
 
 void QuadTreeBuild(m_arena *Arena, quadtree_header *QuadTree, QuadTree_index QuadrantIndex, v4f NodePosition, int Depth);
 v4f QuadTreeCalculateAttributes(quadtree_header *QuadTree, int QuadrantIndex);

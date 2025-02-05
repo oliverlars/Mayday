@@ -110,7 +110,7 @@ void UI_TreeView(ui_context *UI, draw_context *Draw, shared_wave_info *Shared,
 	QuadTree->Masses = ArenaPushArrayZero(Arena, v4f, TreeView->Info.NodeCount*4);
 	QuadTree->Quadrants = ArenaPushArrayZero(Arena, Quadrant, TreeView->Info.NodeCount*4);
 
-	QuadTree->Bounds[0] = GetBounds(TreeView->Info.NodeTargetPositions, TreeView->Info.NodeCount);
+	QuadTree->Bounds[0] = GetBoundsV4F(TreeView->Info.NodeTargetPositions, TreeView->Info.NodeCount);
 	QuadTree->NextQuadrantIndex = 1;
 
 	for(int I = 0; I < TreeView->Info.NodeCount; I++)
@@ -153,7 +153,7 @@ void UI_TreeView(ui_context *UI, draw_context *Draw, shared_wave_info *Shared,
 	D_DrawPointsArray(Draw, Arena, Positions, TreeView->Info.NodeCount, v4f(1, 0, 0, 1));
 	D_DrawLinesArray(Draw, Arena, LinePositions, TreeView->Info.LinkCount*2, v4f(0.5, 0.1, 0, 1));
 
-	bounds TotalBounds = GetBounds(TreeView->Info.NodeTargetPositions, TreeView->Info.NodeCount);
+	bounds TotalBounds = GetBoundsV4F(TreeView->Info.NodeTargetPositions, TreeView->Info.NodeCount);
 	v3f Centre = DivV3F(AddV3F(TotalBounds.Min, TotalBounds.Max), v3f(2.0, 2.0, 2.0));
 
 	//DrawQuadTree(Draw, Arena, QuadTree, 0);

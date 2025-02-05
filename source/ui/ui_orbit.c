@@ -88,7 +88,8 @@ ui_orbit_signal UI_OrbitLabels(ui_context *UI, draw_context *Draw, edit_context 
 		P4D = MulM44FV4F(ModelTransform, P4D);
 
 		f32 NormalizedDistance = (P4D.Z - MinPos.Z) / (MaxPos.Z - MinPos.Z);
-		LogInfo("ND: ?f32", NormalizedDistance);
+		NormalizedDistance = NormalizedDistance * NormalizedDistance * (3.0f - 2.0f * NormalizedDistance);
+		//LogInfo("ND: ?f32", NormalizedDistance);
 
 		v4f Position4D = v4f(P.X, P.Y, P.Z, 1.0);
 		v4f TransformedPoint = MulM44FV4F(M44FTranspose(MVP), Position4D);

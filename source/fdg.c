@@ -74,7 +74,25 @@ void DrawQuadTree(draw_context *Draw, m_arena *Arena, quadtree_header *QuadTree,
 	}
 }
 
-bounds GetBounds(v4f *Positions, int Count)
+bounds GetBoundsV4F(v4f *Positions, int Count)
+{
+	v3f Min = v3f(FLT_MAX, FLT_MAX, FLT_MAX);
+	v3f Max = v3f(-FLT_MAX, -FLT_MAX, -FLT_MAX);
+	for(int I = 0; I < Count; I++)
+	{
+		Min.X = Min(Min.X, Positions[I].X);
+		Min.Y = Min(Min.Y, Positions[I].Y);
+		Min.Z = Min(Min.Z, Positions[I].Z);
+
+		Max.X = Max(Max.X, Positions[I].X);
+		Max.Y = Max(Max.Y, Positions[I].Y);
+		Max.Z = Max(Max.Z, Positions[I].Z);
+
+	}
+	return (bounds){Min, Max};
+}
+
+bounds GetBoundsV3F(v3f *Positions, int Count)
 {
 	v3f Min = v3f(FLT_MAX, FLT_MAX, FLT_MAX);
 	v3f Max = v3f(-FLT_MAX, -FLT_MAX, -FLT_MAX);

@@ -165,7 +165,8 @@ typedef struct ui_orbit_signal
 
 ui_orbit_signal UI_OrbitLabels(ui_context *UI, draw_context *Draw, edit_context *Edit,
 					d_font Font, m_arena *Arena, ui_orbit Orbit, os_directory_tree Tree,
-					int ActiveItem, m44f OrbitTransform, editable_buffer* SearchBuffer);
+					v3f MinPos, v3f MaxPos,
+					int ActiveItem, m44f MVp, m44f ModelTransform, editable_buffer* SearchBuffer);
 
 ui_orbit UI_OrbitView(ui_context *UI, draw_context *Draw, m_arena *Arena, os_directory_tree Tree);
 

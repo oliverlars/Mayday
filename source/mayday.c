@@ -26,6 +26,8 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#include <float.h>
+
 typedef struct mayday_context
 {
 	m_arena *FrameArena;
@@ -111,16 +113,12 @@ void OS_Update(void *Data)
 	Angle = LerpF32(Angle, AngleTarget, 0.1);
 
 
+	m44f Perspective = M44FPerspective(sapp_widthf()/sapp_heightf(), 70, 0.01, 10000.0);
+	v3f CameraPosition = v3f(0, 0, M->ViewSize);
+	m44f View = M44FLookAt(CameraPosition, v3f(0, 0, 0), v3f(0, 1, 0));
+	m44f Model = M44FromYAngle(Angle);
+	m44f Transform = MulM44FM44F(MulM44FM44F(Model, View), Perspective);
 
-	m44f Rotation = M44FromYAngle(Angle);
-	//m44f Transform = M44FOrthographic(-Size, +Size, +Size, -Size, -1000.0, 1000.0);
-	m44f Transform = M44FPerspective(sapp_widthf()/sapp_heightf(), 70, 0.01, 10000.0);
-
-	Transform = MulM44FM44F(M44FLookAt(v3f(0, 0, M->ViewSize), M->LookAt, v3f(0, 1, 0)), Transform);
-
-	Transform = MulM44FM44F(M44FTranslate(M->LookAt), Transform);
-	Transform = MulM44FM44F(Rotation, Transform);
-	Transform = MulM44FM44F(M44FTranslate(MulV3F(M->LookAt, v3f(-1,-1,-1))), Transform);
 	R_PushTransform(M->Render, Transform);
 
 	if(M->UI->View == UI_VIEW_EDIT)
@@ -159,6 +157,8 @@ void OS_Update(void *Data)
 		R_PopTransform(M->Render);
 
 		ui_orbit Orbit = {0};
+		v3f MinPos = v3f(FLT_MAX, FLT_MAX, FLT_MAX);
+		v3f MaxPos = v3f(-FLT_MAX, -FLT_MAX, -FLT_MAX);
 		if(OS_ValidPath(M->Folder))
 		{
 			// HACK(Oliver): This is only here because i'm too lazy to make a new view
@@ -168,6 +168,30 @@ void OS_Update(void *Data)
 
 
 			Orbit = UI_OrbitView(M->UI, M->Draw, M->FrameArena, M->FolderTree);
+
+			{
+				v4f P4D = v4f(Orbit.Positions[0].X, Orbit.Positions[0].Y, Orbit.Positions[0].Z, 1.0);
+				P4D = MulM44FV4F(Model, P4D);
+
+				MinPos = v3f(P4D.X, P4D.Y, P4D.Z);
+				MaxPos = v3f(P4D.X, P4D.Y, P4D.Z);
+			}
+
+			for(int I = 1; I < Orbit.Count; I++)
+			{
+				v4f P4D = v4f(Orbit.Positions[I].X, Orbit.Positions[I].Y, Orbit.Positions[I].Z, 1.0);
+				P4D = MulM44FV4F(Model, P4D);
+				v3f P3D = v3f(P4D.X, P4D.Y, P4D.Z);
+				if(P3D.Z < MinPos.Z)
+				{
+					MinPos = P3D;
+				}
+				else if(P3D.Z > MaxPos.Z)
+				{
+					MaxPos = P3D;
+				}
+			}
+			LogInfo("Min: ?v3f Max: ?v3f", MinPos, MaxPos);
 		}
 
 		R_PushTransform(M->Render, M44FOrthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
@@ -176,8 +200,9 @@ void OS_Update(void *Data)
 		if(OS_ValidPath(M->Folder))
 		{
 			OrbitSignal = UI_OrbitLabels(M->UI, M->Draw, M->Edit,
-						   M->UI->Font, M->FrameArena, Orbit, M->FolderTree, M->OrbitItem,
-						   Transform, &M->TextBoxBuffer);
+						   M->UI->Font, M->FrameArena, Orbit, M->FolderTree,
+						   MinPos, MaxPos, M->OrbitItem,
+						   Transform, Model, &M->TextBoxBuffer);
 		}
 
 		ui_tree_view_signal TreeSignal = {0};
@@ -677,8 +702,8 @@ int main()
 	M.UI->Font = M.CodeFont;
 
 	M.CameraPosition = v3f(0.0);
-	M.ViewSize = 100.0;
-	M.ViewSizeTarget = 50.0;
+	M.ViewSize = 50.0;
+	M.ViewSizeTarget = 30.0;
 
 	M.Shared.Arena = ArenaInitialise(GigaBytes(1));
 

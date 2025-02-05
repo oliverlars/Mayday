@@ -27,7 +27,6 @@ ui_orbit UI_OrbitView(ui_context *UI, draw_context *Draw, m_arena *Arena, os_dir
 	}
 
 
-
 	f32 Phi = (1.0 + sqrt(5.0)) / 2.0;
 	f32 GoldenAngle = 2.0 * M_PI * (1.0 - 1.0 / Phi);
 
@@ -59,7 +58,8 @@ ui_orbit UI_OrbitView(ui_context *UI, draw_context *Draw, m_arena *Arena, os_dir
 
 ui_orbit_signal UI_OrbitLabels(ui_context *UI, draw_context *Draw, edit_context *Edit,
 					d_font Font, m_arena *Arena, ui_orbit Orbit, os_directory_tree Tree,
-					int ActiveItem, m44f OrbitTransform, editable_buffer* SearchBuffer)
+					v3f MinPos, v3f MaxPos,
+					int ActiveItem, m44f MVP, m44f ModelTransform, editable_buffer* SearchBuffer)
 {
 	ui_textbox_signal SearchSignal = UI_TextBox(Arena, Font, v2f(sapp_widthf()/2.0 - 500, 100), 1000,
 												UI, Draw, Edit, 60, Str8("TreeViewTextBox"), SearchBuffer);
@@ -67,6 +67,13 @@ ui_orbit_signal UI_OrbitLabels(ui_context *UI, draw_context *Draw, edit_context 
 	ui_orbit_signal Result = {0};
 
 	str8 Filter = SearchSignal.String;
+
+	f32 FontSizes[2] = {10, 30};
+	v3f Colours[2] = { v3f(0.8, 0.3, 0.0), v3f(0.4, 0.1, 0.0) };
+
+	f32 DistanceBetweenMinAndMax = LengthV3F(SubV3F(MinPos, MaxPos));
+
+	LogInfo("?f32", DistanceBetweenMinAndMax);
 
 	m_scratch_arena Scratch = ScratchBegin(0, 0);
 	int Index = 0;
@@ -77,8 +84,14 @@ ui_orbit_signal UI_OrbitLabels(ui_context *UI, draw_context *Draw, edit_context 
 		f32 FontSize = 30;
 		v3f P = Orbit.Positions[Index++];
 
+		v4f P4D = v4f(P.X, P.Y, P.Z, 1.0);
+		P4D = MulM44FV4F(ModelTransform, P4D);
+
+		f32 NormalizedDistance = (P4D.Z - MinPos.Z) / (MaxPos.Z - MinPos.Z);
+		LogInfo("ND: ?f32", NormalizedDistance);
+
 		v4f Position4D = v4f(P.X, P.Y, P.Z, 1.0);
-		v4f TransformedPoint = MulM44FV4F(M44FTranspose(OrbitTransform), Position4D);
+		v4f TransformedPoint = MulM44FV4F(M44FTranspose(MVP), Position4D);
 		TransformedPoint.X /= TransformedPoint.W;
 		TransformedPoint.Y /= TransformedPoint.W;
 		TransformedPoint.X = TransformedPoint.X*0.5 + 0.5;
@@ -88,11 +101,16 @@ ui_orbit_signal UI_OrbitLabels(ui_context *UI, draw_context *Draw, edit_context 
 		TransformedPoint.Y *= sapp_heightf();
 
 		v4f Colour = v4f(0.8, 0.3, 0.0, 1);
+		v3f C = LerpV3F(v3f(0, 0, 0), v3f(1, 1, 1), NormalizedDistance);
+		Colour = v4f(C.X, C.Y, C.Z, 1.0);
+
+
 		if(It.Index == ActiveItem)
 		{
 			Colour = v4f(0.8, 0.6, 0.4, 1.0);
 			FontSize = 40;
 		}
+
 
 		if(It.Current->Type == OS_DIR_ENTRY_FOLDER)
 		{
@@ -112,7 +130,6 @@ ui_orbit_signal UI_OrbitLabels(ui_context *UI, draw_context *Draw, edit_context 
 					Result.ActiveItemPosition = P;
 					Result.Clicked = True;
 					Result.Path = Str8Copy(Arena, It.Current->PathAndName);
-					LogInfo("CLICKED!!!!");
 				}
 			}
 		}

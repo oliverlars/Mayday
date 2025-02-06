@@ -78,6 +78,13 @@ typedef struct mayday_context
 	shared_wave_info Shared;
 
 
+	f32 ScrollAccumulation;
+	f32 ScrollAccumulationTarget;
+
+	f32 ZoomLevel;
+	f32 ZoomLevelTarget;
+
+
 	str8_list RecentlyLoadedFolders;
 
 
@@ -97,6 +104,24 @@ void OS_Update(void *Data)
 
 	UI_Begin(M->UI);
 
+	v2f Scroll = UI_Scroll(M->UI);
+	M->ScrollAccumulationTarget += Max(0.0, Scroll.Y)/5.0;
+
+	if(M->ScrollAccumulationTarget >= 5.0)
+	{
+		M->ScrollAccumulationTarget = 0;
+		M->ZoomLevelTarget += 5.0;
+	}
+
+	M->ScrollAccumulationTarget = LerpF32(M->ScrollAccumulationTarget, 0.0, 0.3);
+
+
+	M->ScrollAccumulation = LerpF32(M->ScrollAccumulation, M->ScrollAccumulationTarget, 0.1);
+
+	M->ZoomLevel = LerpF32(M->ZoomLevel, M->ZoomLevelTarget, 0.1);
+
+	M->ZoomLevel += M->ScrollAccumulation;
+
 	int WindowHeight = OS_WindowHeight(&M->Window);
 	int WindowWidth = OS_WindowWidth(&M->Window);
 
@@ -105,7 +130,6 @@ void OS_Update(void *Data)
 
 	static f32 AngleTarget = 0.0;
 
-	v2f Scroll = UI_Scroll(M->UI);
 	AngleTarget -= 0.001 / (f32)(M->OrbitDepth*2 + 1) + Scroll.X*0.01;
 
 
@@ -115,6 +139,7 @@ void OS_Update(void *Data)
 
 	m44f Perspective = M44FPerspective(sapp_widthf()/sapp_heightf(), 70, 0.01, 10000.0);
 	v3f CameraPosition = M->LookFrom;
+	CameraPosition.Z += M->ZoomLevel;
 	m44f View = M44FLookAt(CameraPosition, M->LookAt, v3f(0, 1, 0));
 
 	m44f TranslateToOrigin = M44FTranslate(v3f(-M->LookAt.X, -M->LookAt.Y, -M->LookAt.Z));

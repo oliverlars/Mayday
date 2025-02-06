@@ -114,9 +114,17 @@ void OS_Update(void *Data)
 
 
 	m44f Perspective = M44FPerspective(sapp_widthf()/sapp_heightf(), 70, 0.01, 10000.0);
-	v3f CameraPosition = v3f(0, 0, M->ViewSize);
-	m44f View = M44FLookAt(CameraPosition, v3f(0, 0, 0), v3f(0, 1, 0));
-	m44f Model = M44FromYAngle(Angle);
+	v3f CameraPosition = M->LookFrom;
+	m44f View = M44FLookAt(CameraPosition, M->LookAt, v3f(0, 1, 0));
+
+	m44f TranslateToOrigin = M44FTranslate(v3f(-M->LookAt.X, -M->LookAt.Y, -M->LookAt.Z));
+
+	m44f Rotation = M44FromYAngle(Angle);
+
+	m44f TranslateBack = M44FTranslate(M->LookAt);
+
+	m44f Model = MulM44FM44F(TranslateToOrigin, MulM44FM44F(Rotation, TranslateBack));
+
 	m44f Transform = MulM44FM44F(MulM44FM44F(Model, View), Perspective);
 
 	R_PushTransform(M->Render, Transform);
@@ -165,6 +173,7 @@ void OS_Update(void *Data)
 			// for the homescreen
 			M->ViewSize = LerpF32(M->ViewSize, M->ViewSizeTarget, 0.1);
 			M->LookAt = LerpV3F(M->LookAt, M->LookAtTarget, 0.1);
+			M->LookFrom = LerpV3F(M->LookFrom, M->LookFromTarget, 0.1);
 
 
 			Orbit = UI_OrbitView(M->UI, M->Draw, M->FrameArena, M->FolderTree);
@@ -226,6 +235,8 @@ void OS_Update(void *Data)
 			M->OrbitItem = OrbitSignal.ActiveItem;
 			M->OrbitDepth = OrbitSignal.ActiveItemDepth;
 			M->LookAtTarget = OrbitSignal.ActiveItemPosition;
+			M->LookFromTarget = OrbitSignal.ActiveItemPosition;
+			M->LookFromTarget.Z += 5;
 
 			if(OrbitSignal.FileToLoad.Size > 0)
 			{
@@ -684,8 +695,8 @@ int main()
 	M.UI->Font = M.CodeFont;
 
 	M.CameraPosition = v3f(0.0);
-	M.ViewSize = 50.0;
-	M.ViewSizeTarget = 30.0;
+	M.LookFrom.Z = 50;
+	M.LookFromTarget.Z = 30.0;
 
 	M.Shared.Arena = ArenaInitialise(GigaBytes(1));
 

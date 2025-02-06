@@ -360,6 +360,7 @@ void D_DrawStr8(draw_context *D,
 	{
 		// TODO(Oliver): Needs to actually iterate utf-8
 		u32 CodePoint = String.Bytes[I];
+		u32 NextCodePoint = String.Bytes[Min(String.Size, I + 1)];
 
 
 
@@ -435,7 +436,9 @@ void D_DrawStr8(draw_context *D,
 			Position.X = StartX;
 			continue;
 		}
-		Position.X += Glyph->AdvanceX * Scale * TabMultiplier;
+
+		int Kern = stbtt_GetCodepointKernAdvance(&Font.Info, CodePoint, NextCodePoint);
+		Position.X += (Kern + Glyph->AdvanceX) * Scale * TabMultiplier;
 	}
 
 	Command.Type = R_COMMAND_GLYPH;

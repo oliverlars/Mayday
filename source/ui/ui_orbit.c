@@ -12,7 +12,7 @@
 
 
 
-ui_orbit UI_OrbitView(ui_context *UI, draw_context *Draw, m_arena *Arena, os_directory_tree Tree)
+ui_orbit UI_OrbitView(ui_context *UI, draw_context *Draw, m_arena *Arena, os_directory_tree Tree, int Active, int Depth)
 {
 	ui_orbit Result = {0};
 	if(Tree.Count == 0) return Result;
@@ -20,7 +20,7 @@ ui_orbit UI_OrbitView(ui_context *UI, draw_context *Draw, m_arena *Arena, os_dir
 	int Count = 0;
 	for(os_directory_tree_iterator It = {0}; OS_DirectoryTreeIterate(Tree, &It);)
 	{
-		if(It.Depth == 1)
+		if(It.Depth == 1 || (It.Depth == Max(Depth, 1) && It.Index >= Active))
 		{
 			Count++;
 		}
@@ -34,6 +34,7 @@ ui_orbit UI_OrbitView(ui_context *UI, draw_context *Draw, m_arena *Arena, os_dir
 	v3f *Positions = ArenaPushArrayZero(Arena, v3f, Count);
 
 	int Index = 0;
+	v3f PositionOfActive = v3f(0);
 	for(os_directory_tree_iterator It = {0}; OS_DirectoryTreeIterate(Tree, &It);)
 	{
 		if(It.Depth == 1)
@@ -44,6 +45,24 @@ ui_orbit UI_OrbitView(ui_context *UI, draw_context *Draw, m_arena *Arena, os_dir
 			Positions[Index].X = 15.0 * R * cos(theta);
 			Positions[Index].Y = 15.0 * R * sin(theta);
 			Positions[Index].Z = 15.0 * Z;
+			if(It.Index == Active)
+			{
+				PositionOfActive = Positions[Index];
+			}
+			Index++;
+		}
+	}
+
+	for(os_directory_tree_iterator It = {0}; OS_DirectoryTreeIterate(Tree, &It);)
+	{
+		if(It.Depth != 1 && It.Depth == Depth && It.Index >= Active)
+		{
+			f32 Z = 1.0 - 2.0 * (((f32)Index + 0.5) / (f32)Count);
+			f32 R = sqrt(1.0 - Z * Z);
+			f32 theta = (f32)Index * GoldenAngle;
+			Positions[Index].X = 5.0 * R * cos(theta) + PositionOfActive.X;
+			Positions[Index].Y = 5.0 * R * sin(theta) + PositionOfActive.Y;
+			Positions[Index].Z = 5.0 * Z + PositionOfActive.Z;
 			Index++;
 		}
 	}
@@ -59,7 +78,7 @@ ui_orbit UI_OrbitView(ui_context *UI, draw_context *Draw, m_arena *Arena, os_dir
 ui_orbit_signal UI_OrbitLabels(ui_context *UI, draw_context *Draw, edit_context *Edit,
 					d_font Font, m_arena *Arena, ui_orbit Orbit, os_directory_tree Tree,
 					v3f MinPos, v3f MaxPos,
-					int ActiveItem, m44f MVP, m44f ModelTransform, editable_buffer* SearchBuffer)
+					int ActiveItem, int ActiveDepth, m44f MVP, m44f ModelTransform, editable_buffer* SearchBuffer)
 {
 	ui_textbox_signal SearchSignal = UI_TextBox(Arena, Font, v2f(sapp_widthf()/2.0 - 500, 100), 1000,
 												UI, Draw, Edit, 60, Str8("TreeViewTextBox"), SearchBuffer);
@@ -73,14 +92,14 @@ ui_orbit_signal UI_OrbitLabels(ui_context *UI, draw_context *Draw, edit_context 
 
 	f32 DistanceBetweenMinAndMax = LengthV3F(SubV3F(MinPos, MaxPos));
 
-	LogInfo("?f32", DistanceBetweenMinAndMax);
+
 
 	m_scratch_arena Scratch = ScratchBegin(0, 0);
 	int Index = 0;
 	for(os_directory_tree_iterator It = {0};
 		OS_DirectoryTreeIterate(Tree, &It);)
 	{
-		if(It.Depth != 1) continue;
+		if(!(It.Depth == Max(ActiveDepth, 1) && It.Index >= ActiveItem)) continue;
 		f32 FontSize = 30;
 		v3f P = Orbit.Positions[Index++];
 
@@ -89,7 +108,8 @@ ui_orbit_signal UI_OrbitLabels(ui_context *UI, draw_context *Draw, edit_context 
 
 		f32 NormalizedDistance = (P4D.Z - MinPos.Z) / (MaxPos.Z - MinPos.Z);
 		NormalizedDistance = NormalizedDistance * NormalizedDistance * (3.0f - 2.0f * NormalizedDistance);
-		//LogInfo("ND: ?f32", NormalizedDistance);
+
+		LogInfo("?f32", NormalizedDistance);
 
 		v4f Position4D = v4f(P.X, P.Y, P.Z, 1.0);
 		v4f TransformedPoint = MulM44FV4F(M44FTranspose(MVP), Position4D);

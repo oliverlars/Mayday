@@ -110,7 +110,15 @@ void OS_Update(void *Data)
 	if(M->ScrollAccumulationTarget >= 5.0)
 	{
 		M->ScrollAccumulationTarget = 0;
-		M->ZoomLevelTarget += 5.0;
+		//M->ZoomLevelTarget += 5.0;
+		M->LookFromTarget.X = 0.0f;
+		M->LookFromTarget.Y = 0.0f;
+		M->LookFromTarget.Z = 30;
+
+		M->LookAtTarget = v3f(0, 0, 0);
+
+		M->OrbitItem = 0;
+		M->OrbitDepth = 0;
 	}
 
 	M->ScrollAccumulationTarget = LerpF32(M->ScrollAccumulationTarget, 0.0, 0.3);
@@ -201,12 +209,27 @@ void OS_Update(void *Data)
 			M->LookFrom = LerpV3F(M->LookFrom, M->LookFromTarget, 0.1);
 
 
-			Orbit = UI_OrbitView(M->UI, M->Draw, M->FrameArena, M->FolderTree);
+			Orbit = UI_OrbitView(M->UI, M->Draw, M->FrameArena, M->FolderTree, M->OrbitItem, M->OrbitDepth);
 
 
-			bounds Bounds = GetBoundsV3F(Orbit.Positions, Orbit.Count);
-			MinPos = Bounds.Min;
-			MaxPos = Bounds.Max;
+			// bounds Bounds = GetBoundsV3F(Orbit.Positions, Orbit.Count);
+			// MinPos = Bounds.Min;
+			// MaxPos = Bounds.Max;
+			//
+			for(int I = 0; I < Orbit.Count; I++)
+			{
+				v4f P4D = v4f(Orbit.Positions[I].X, Orbit.Positions[I].Y, Orbit.Positions[I].Z, 1.0);
+				P4D = MulM44FV4F(Model, P4D);
+				v3f P3D = v3f(P4D.X, P4D.Y, P4D.Z);
+				if(P3D.Z < MinPos.Z)
+				{
+					MinPos = P3D;
+				}
+				else if(P3D.Z > MaxPos.Z)
+				{
+					MaxPos = P3D;
+				}
+			}
 			LogInfo("Min: ?v3f", MinPos);
 		}
 
@@ -217,7 +240,7 @@ void OS_Update(void *Data)
 		{
 			OrbitSignal = UI_OrbitLabels(M->UI, M->Draw, M->Edit,
 						   M->UI->Font, M->FrameArena, Orbit, M->FolderTree,
-						   MinPos, MaxPos, M->OrbitItem,
+						   MinPos, MaxPos, M->OrbitItem, M->OrbitDepth,
 						   Transform, Model, &M->TextBoxBuffer);
 		}
 
@@ -261,7 +284,7 @@ void OS_Update(void *Data)
 			M->OrbitDepth = OrbitSignal.ActiveItemDepth;
 			M->LookAtTarget = OrbitSignal.ActiveItemPosition;
 			M->LookFromTarget = OrbitSignal.ActiveItemPosition;
-			M->LookFromTarget.Z += 5;
+			M->LookFromTarget.Z *= 1.1;
 
 			if(OrbitSignal.FileToLoad.Size > 0)
 			{

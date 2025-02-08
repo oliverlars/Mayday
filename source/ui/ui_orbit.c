@@ -10,6 +10,32 @@
 #include "ui.h"
 #include "wave.h"
 
+/*
+
+BIG NOTE!!!
+
+There's a clear algorithm here that should essentially look like this:
+
+- We open a folder that the user requested
+- We render the root folder initially at (0, 0, 0)
+- All of its immediate children follow the fibonacci lattice sequence on the surface
+- If one of these children are clicked either open the file or enter the subdirectory
+- If a subdirectory is selected, show the immediate children of that subdirectory as well as the siblings
+- This is recursive
+
+
+We essentially need a way to say:
+- Get orbital/fibonacci positions for a given depth
+- Increase depth for every subdir visited
+- Decrease depth for every scroll up
+- Orbit selected (index + depth) look up
+
+Using OS directory code for this seems like a problem, but maybe it's fine. Ideally
+we only need to process Depth +/- 2 levels and not need to traverse the entire tree everytime
+
+
+*/
+
 
 
 ui_orbit UI_OrbitView(ui_context *UI, draw_context *Draw, m_arena *Arena,

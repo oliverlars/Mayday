@@ -12,7 +12,9 @@
 
 
 
-ui_orbit UI_OrbitView(ui_context *UI, draw_context *Draw, m_arena *Arena, os_directory_tree Tree, int Active, int Depth)
+ui_orbit UI_OrbitView(ui_context *UI, draw_context *Draw, m_arena *Arena,
+					  os_directory_tree Tree, int Active, int Depth,
+					  os_directory_entry *ActiveEntry)
 {
 	ui_orbit Result = {0};
 	if(Tree.Count == 0) return Result;
@@ -20,7 +22,7 @@ ui_orbit UI_OrbitView(ui_context *UI, draw_context *Draw, m_arena *Arena, os_dir
 	int Count = 0;
 	for(os_directory_tree_iterator It = {0}; OS_DirectoryTreeIterate(Tree, &It);)
 	{
-		if(It.Depth == 1 || (It.Depth == Max(Depth, 1) && It.Index >= Active))
+		if(It.Depth == 1)
 		{
 			Count++;
 		}
@@ -53,17 +55,28 @@ ui_orbit UI_OrbitView(ui_context *UI, draw_context *Draw, m_arena *Arena, os_dir
 		}
 	}
 
-	for(os_directory_tree_iterator It = {0}; OS_DirectoryTreeIterate(Tree, &It);)
+
+	if(ActiveEntry)
 	{
-		if(It.Depth != 1 && It.Depth == Depth && It.Index >= Active)
+		for(os_directory_entry *Entry = ActiveEntry->First; Entry != Null; Entry = Entry->Next)
 		{
-			f32 Z = 1.0 - 2.0 * (((f32)Index + 0.5) / (f32)Count);
-			f32 R = sqrt(1.0 - Z * Z);
-			f32 theta = (f32)Index * GoldenAngle;
-			Positions[Index].X = 5.0 * R * cos(theta) + PositionOfActive.X;
-			Positions[Index].Y = 5.0 * R * sin(theta) + PositionOfActive.Y;
-			Positions[Index].Z = 5.0 * Z + PositionOfActive.Z;
-			Index++;
+			Count++;
+		}
+	}
+
+	if(ActiveEntry)
+	{
+		for(os_directory_entry *Entry = ActiveEntry->First; Entry != Null; Entry = Entry->Next)
+		{
+			{
+				f32 Z = 1.0 - 2.0 * (((f32)Index + 0.5) / (f32)Count);
+				f32 R = sqrt(1.0 - Z * Z);
+				f32 theta = (f32)Index * GoldenAngle;
+				Positions[Index].X = 5.0 * R * cos(theta) + PositionOfActive.X;
+				Positions[Index].Y = 5.0 * R * sin(theta) + PositionOfActive.Y;
+				Positions[Index].Z = 5.0 * Z + PositionOfActive.Z;
+				Index++;
+			}
 		}
 	}
 
@@ -78,7 +91,8 @@ ui_orbit UI_OrbitView(ui_context *UI, draw_context *Draw, m_arena *Arena, os_dir
 ui_orbit_signal UI_OrbitLabels(ui_context *UI, draw_context *Draw, edit_context *Edit,
 					d_font Font, m_arena *Arena, ui_orbit Orbit, os_directory_tree Tree,
 					v3f MinPos, v3f MaxPos,
-					int ActiveItem, int ActiveDepth, m44f MVP, m44f ModelTransform, editable_buffer* SearchBuffer)
+					int ActiveItem, int ActiveDepth, os_directory_entry *ActiveEntry,
+					m44f MVP, m44f ModelTransform, editable_buffer* SearchBuffer)
 {
 	ui_textbox_signal SearchSignal = UI_TextBox(Arena, Font, v2f(sapp_widthf()/2.0 - 500, 100), 1000,
 												UI, Draw, Edit, 60, Str8("TreeViewTextBox"), SearchBuffer);
@@ -146,6 +160,7 @@ ui_orbit_signal UI_OrbitLabels(ui_context *UI, draw_context *Draw, edit_context 
 
 				if(Clicked || (SearchSignal.Submitted && Filter.Size > 0))
 				{
+					Result.ActiveEntry = It.Current;
 					Result.ActiveItem = It.Index;
 					Result.ActiveItemDepth = It.Depth;
 					Result.ActiveItemPosition = P;

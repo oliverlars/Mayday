@@ -68,7 +68,9 @@ typedef struct mayday_context
 
 	int OrbitItem;
 	int OrbitDepth;
-	int TreeParentIndex;
+	// HACK(Oliver): We probably don't want to rely
+	// on this
+	os_directory_entry *ActiveEntry;
 
 
 	os_directory_tree FolderTree;
@@ -209,7 +211,7 @@ void OS_Update(void *Data)
 			M->LookFrom = LerpV3F(M->LookFrom, M->LookFromTarget, 0.1);
 
 
-			Orbit = UI_OrbitView(M->UI, M->Draw, M->FrameArena, M->FolderTree, M->OrbitItem, M->OrbitDepth);
+			Orbit = UI_OrbitView(M->UI, M->Draw, M->FrameArena, M->FolderTree, M->OrbitItem, M->OrbitDepth, M->ActiveEntry);
 
 
 			// bounds Bounds = GetBoundsV3F(Orbit.Positions, Orbit.Count);
@@ -240,7 +242,7 @@ void OS_Update(void *Data)
 		{
 			OrbitSignal = UI_OrbitLabels(M->UI, M->Draw, M->Edit,
 						   M->UI->Font, M->FrameArena, Orbit, M->FolderTree,
-						   MinPos, MaxPos, M->OrbitItem, M->OrbitDepth,
+						   MinPos, MaxPos, M->OrbitItem, M->OrbitDepth, M->ActiveEntry,
 						   Transform, Model, &M->TextBoxBuffer);
 		}
 
@@ -280,6 +282,7 @@ void OS_Update(void *Data)
 
 		if(OrbitSignal.Clicked)
 		{
+			M->ActiveEntry = OrbitSignal.ActiveEntry;
 			M->OrbitItem = OrbitSignal.ActiveItem;
 			M->OrbitDepth = OrbitSignal.ActiveItemDepth;
 			M->LookAtTarget = OrbitSignal.ActiveItemPosition;

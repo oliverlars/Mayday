@@ -117,6 +117,8 @@ void OS_Update(void *Data)
 		M->LookFromTarget.Y = 0.0f;
 		M->LookFromTarget.Z = 30;
 
+		M->ActiveEntry = Null;
+
 		M->LookAtTarget = v3f(0, 0, 0);
 
 		M->OrbitItem = 0;

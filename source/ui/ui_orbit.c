@@ -19,15 +19,25 @@ ui_orbit UI_OrbitView(ui_context *UI, draw_context *Draw, m_arena *Arena,
 	ui_orbit Result = {0};
 	if(Tree.Count == 0) return Result;
 
-	int Count = 0;
+	int CountParent = 0;
 	for(os_directory_tree_iterator It = {0}; OS_DirectoryTreeIterate(Tree, &It);)
 	{
 		if(It.Depth == 1)
 		{
-			Count++;
+			CountParent++;
 		}
 	}
 
+	int CountChild = 0;
+	if(ActiveEntry)
+	{
+		for(os_directory_entry *Entry = ActiveEntry->First; Entry != Null; Entry = Entry->Next)
+		{
+			CountChild++;
+		}
+	}
+
+	int Count = CountChild + CountParent;
 
 	f32 Phi = (1.0 + sqrt(5.0)) / 2.0;
 	f32 GoldenAngle = 2.0 * M_PI * (1.0 - 1.0 / Phi);
@@ -35,46 +45,39 @@ ui_orbit UI_OrbitView(ui_context *UI, draw_context *Draw, m_arena *Arena,
 
 	v3f *Positions = ArenaPushArrayZero(Arena, v3f, Count);
 
-	int Index = 0;
+	int PositionIndex = 0;
 	v3f PositionOfActive = v3f(0);
 	for(os_directory_tree_iterator It = {0}; OS_DirectoryTreeIterate(Tree, &It);)
 	{
 		if(It.Depth == 1)
 		{
-			f32 Z = 1.0 - 2.0 * (((f32)Index + 0.5) / (f32)Count);
+			f32 Z = 1.0 - 2.0 * (((f32)PositionIndex + 0.5) / (f32)CountParent);
 			f32 R = sqrt(1.0 - Z * Z);
-			f32 theta = (f32)Index * GoldenAngle;
-			Positions[Index].X = 15.0 * R * cos(theta);
-			Positions[Index].Y = 15.0 * R * sin(theta);
-			Positions[Index].Z = 15.0 * Z;
+			f32 theta = (f32)PositionIndex * GoldenAngle;
+			Positions[PositionIndex].X = 15.0 * R * cos(theta);
+			Positions[PositionIndex].Y = 15.0 * R * sin(theta);
+			Positions[PositionIndex].Z = 15.0 * Z;
 			if(It.Index == Active)
 			{
-				PositionOfActive = Positions[Index];
+				PositionOfActive = Positions[PositionIndex];
 			}
-			Index++;
-		}
-	}
-
-
-	if(ActiveEntry)
-	{
-		for(os_directory_entry *Entry = ActiveEntry->First; Entry != Null; Entry = Entry->Next)
-		{
-			Count++;
+			PositionIndex++;
 		}
 	}
 
 	if(ActiveEntry)
 	{
+		int Index = 0;
 		for(os_directory_entry *Entry = ActiveEntry->First; Entry != Null; Entry = Entry->Next)
 		{
 			{
-				f32 Z = 1.0 - 2.0 * (((f32)Index + 0.5) / (f32)Count);
+				f32 Z = 1.0 - 2.0 * (((f32)Index + 0.5) / (f32)CountChild);
 				f32 R = sqrt(1.0 - Z * Z);
 				f32 theta = (f32)Index * GoldenAngle;
-				Positions[Index].X = 5.0 * R * cos(theta) + PositionOfActive.X;
-				Positions[Index].Y = 5.0 * R * sin(theta) + PositionOfActive.Y;
-				Positions[Index].Z = 5.0 * Z + PositionOfActive.Z;
+				Positions[PositionIndex].X = 5.0 * R * cos(theta) + PositionOfActive.X;
+				Positions[PositionIndex].Y = 5.0 * R * sin(theta) + PositionOfActive.Y;
+				Positions[PositionIndex].Z = 5.0 * Z + PositionOfActive.Z;
+				PositionIndex++;
 				Index++;
 			}
 		}

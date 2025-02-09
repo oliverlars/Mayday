@@ -289,7 +289,14 @@ void OS_Update(void *Data)
 			M->OrbitDepth = OrbitSignal.ActiveItemDepth;
 			M->LookAtTarget = OrbitSignal.ActiveItemPosition;
 			M->LookFromTarget = OrbitSignal.ActiveItemPosition;
-			M->LookFromTarget.Z *= 1.1;
+			if(M->LookFromTarget.Z < 0.0)
+			{
+				M->LookFromTarget.Z -= 5.0;
+			}
+			else
+			{
+				M->LookFromTarget.Z += 5.0;
+			}
 
 			if(OrbitSignal.FileToLoad.Size > 0)
 			{

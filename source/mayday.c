@@ -152,7 +152,10 @@ void OS_Update(void *Data)
 	m44f Perspective = M44FPerspective(sapp_widthf()/sapp_heightf(), 70, 0.01, 10000.0);
 	v3f CameraPosition = M->LookFrom;
 	CameraPosition.Z += M->ZoomLevel;
+	v3f CameraForward = NormalizeV3F(SubV3F(M->LookAt, CameraPosition));
 	m44f View = M44FLookAt(CameraPosition, M->LookAt, v3f(0, 1, 0));
+
+	//LogInfo("?v3f", CameraForward);
 
 	m44f TranslateToOrigin = M44FTranslate(v3f(-M->LookAt.X, -M->LookAt.Y, -M->LookAt.Z));
 
@@ -162,7 +165,9 @@ void OS_Update(void *Data)
 
 	m44f Model = MulM44FM44F(TranslateToOrigin, MulM44FM44F(Rotation, TranslateBack));
 
-	m44f Transform = MulM44FM44F(MulM44FM44F(Model, View), Perspective);
+	m44f ModelView = MulM44FM44F(Model, View);
+
+	m44f Transform = MulM44FM44F(ModelView, Perspective);
 
 	R_PushTransform(M->Render, Transform);
 
@@ -202,8 +207,8 @@ void OS_Update(void *Data)
 		R_PopTransform(M->Render);
 
 		ui_orbit Orbit = {0};
-		v3f MinPos = v3f(FLT_MAX, FLT_MAX, FLT_MAX);
-		v3f MaxPos = v3f(-FLT_MAX, -FLT_MAX, -FLT_MAX);
+		f32 MinDepth = 0.0f;
+		f32 MaxDepth = 0.0f;
 		if(OS_ValidPath(M->Folder))
 		{
 			// HACK(Oliver): This is only here because i'm too lazy to make a new view
@@ -213,28 +218,39 @@ void OS_Update(void *Data)
 			M->LookFrom = LerpV3F(M->LookFrom, M->LookFromTarget, 0.1);
 
 
+
 			Orbit = UI_OrbitView(M->UI, M->Draw, M->FrameArena, M->FolderTree, M->OrbitItem, M->OrbitDepth, M->ActiveEntry);
 
+			{
+				v4f P4D = v4f(Orbit.Positions[0].X, Orbit.Positions[0].Y, Orbit.Positions[0].Z, 1.0);
+				P4D = MulM44FV4F(ModelView, P4D);
 
-			// bounds Bounds = GetBoundsV3F(Orbit.Positions, Orbit.Count);
-			// MinPos = Bounds.Min;
-			// MaxPos = Bounds.Max;
-			//
-			for(int I = 0; I < Orbit.Count; I++)
+				v3f P3D = v3f(P4D.X, P4D.Y, P4D.Z);
+
+				MinDepth = DotV3F(SubV3F(P3D, CameraPosition), CameraForward);
+				MaxDepth = MinDepth;
+			}
+
+			for(int I = 1; I < Orbit.Count; I++)
 			{
 				v4f P4D = v4f(Orbit.Positions[I].X, Orbit.Positions[I].Y, Orbit.Positions[I].Z, 1.0);
-				P4D = MulM44FV4F(Model, P4D);
+				P4D = MulM44FV4F(ModelView, P4D);
+
 				v3f P3D = v3f(P4D.X, P4D.Y, P4D.Z);
-				if(P3D.Z < MinPos.Z)
+
+				f32 Depth = DotV3F(SubV3F(P3D, CameraPosition), CameraForward);
+
+				if(Depth < MinDepth)
 				{
-					MinPos = P3D;
+					MinDepth = Depth;
 				}
-				else if(P3D.Z > MaxPos.Z)
+
+				if(Depth > MaxDepth)
 				{
-					MaxPos = P3D;
+					MaxDepth = Depth;
 				}
 			}
-			LogInfo("Min: ?v3f", MinPos);
+			LogInfo("Min: ?f32", MaxDepth);
 		}
 
 		R_PushTransform(M->Render, M44FOrthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
@@ -244,8 +260,8 @@ void OS_Update(void *Data)
 		{
 			OrbitSignal = UI_OrbitLabels(M->UI, M->Draw, M->Edit,
 						   M->UI->Font, M->FrameArena, Orbit, M->FolderTree,
-						   MinPos, MaxPos, M->OrbitItem, M->OrbitDepth, M->ActiveEntry,
-						   Transform, Model, &M->TextBoxBuffer);
+						   CameraPosition, CameraForward, MinDepth, MaxDepth, M->OrbitItem, M->OrbitDepth, M->ActiveEntry,
+						   Transform, ModelView, &M->TextBoxBuffer);
 		}
 
 		ui_tree_view_signal TreeSignal = {0};

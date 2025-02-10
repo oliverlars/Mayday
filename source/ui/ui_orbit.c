@@ -119,7 +119,7 @@ ui_orbit UI_OrbitView(ui_context *UI, draw_context *Draw, m_arena *Arena,
 
 ui_orbit_signal UI_OrbitLabels(ui_context *UI, draw_context *Draw, edit_context *Edit,
 					d_font Font, m_arena *Arena, ui_orbit Orbit, os_directory_tree Tree,
-					v3f MinPos, v3f MaxPos,
+					v3f CameraPosition, v3f CameraForward, f32 MinDepth, f32 MaxDepth,
 					int ActiveItem, int ActiveDepth, os_directory_entry *ActiveEntry,
 					m44f MVP, m44f ModelTransform, editable_buffer* SearchBuffer)
 {
@@ -133,10 +133,6 @@ ui_orbit_signal UI_OrbitLabels(ui_context *UI, draw_context *Draw, edit_context 
 	f32 FontSizes[2] = {10, 30};
 	v3f Colours[2] = { v3f(0.8, 0.3, 0.0), v3f(0.4, 0.1, 0.0) };
 
-	f32 DistanceBetweenMinAndMax = LengthV3F(SubV3F(MinPos, MaxPos));
-
-
-
 	m_scratch_arena Scratch = ScratchBegin(0, 0);
 	int Index = 0;
 	for(os_directory_tree_iterator It = {0};
@@ -148,11 +144,13 @@ ui_orbit_signal UI_OrbitLabels(ui_context *UI, draw_context *Draw, edit_context 
 
 		v4f P4D = v4f(P.X, P.Y, P.Z, 1.0);
 		P4D = MulM44FV4F(ModelTransform, P4D);
+		v3f P3D = v3f(P4D.X, P4D.Y, P4D.Z);
 
-		f32 NormalizedDistance = (P4D.Z - MinPos.Z) / (MaxPos.Z - MinPos.Z);
-		NormalizedDistance = NormalizedDistance * NormalizedDistance * (3.0f - 2.0f * NormalizedDistance);
+		f32 Depth = DotV3F(SubV3F(P3D, CameraPosition), CameraForward);
 
-		LogInfo("?f32", NormalizedDistance);
+		f32 NormalizedDistance = 1.0 - ClampF32((Depth - MinDepth) / (MaxDepth - MinDepth), 0.0, 1.0);
+
+		//LogInfo("?f32", NormalizedDistance);
 
 		v4f Position4D = v4f(P.X, P.Y, P.Z, 1.0);
 		v4f TransformedPoint = MulM44FV4F(M44FTranspose(MVP), Position4D);

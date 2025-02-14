@@ -148,7 +148,7 @@ ui_orbit_signal UI_OrbitLabels(ui_context *UI, draw_context *Draw, edit_context 
 
 		f32 Depth = DotV3F(SubV3F(P3D, CameraPosition), CameraForward);
 
-		f32 NormalizedDistance = 1.0 - ClampF32((Depth - MinDepth) / (MaxDepth - MinDepth), 0.0, 1.0);
+		f32 NormalizedDistance = ClampF32((Depth - MinDepth) / (MaxDepth - MinDepth), 0.0, 1.0);
 
 		//LogInfo("?f32", NormalizedDistance);
 
@@ -218,17 +218,17 @@ ui_orbit_signal UI_OrbitLabels(ui_context *UI, draw_context *Draw, edit_context 
 		}
 	}
 
-	// if(UI_KeyDown(UI, SAPP_KEYCODE_RIGHT, 0))
-	// {
-	// 	Result.Clicked = True;
-	// 	//Result.ActiveItem = ActiveItem + 1;
-	// }
+	if(UI_KeyDown(UI, SAPP_KEYCODE_RIGHT, 0))
+	{
+		Result.Clicked = True;
+		//Result.ActiveItem = ActiveItem + 1;
+	}
 
-	// if(UI_KeyDown(UI, SAPP_KEYCODE_LEFT, 0))
-	// {
-	// 	Result.Clicked = True;
-	// 	//Result.ActiveItem = Max(ActiveItem - 1, 0);
-	// }
+	if(UI_KeyDown(UI, SAPP_KEYCODE_LEFT, 0))
+	{
+		Result.Clicked = True;
+		//Result.ActiveItem = Max(ActiveItem - 1, 0);
+	}
 
 	ScratchEnd(Scratch);
 

@@ -112,7 +112,6 @@ void OS_Update(void *Data)
 	if(M->ScrollAccumulationTarget >= 5.0)
 	{
 		M->ScrollAccumulationTarget = 0;
-		//M->ZoomLevelTarget += 5.0;
 		M->LookFromTarget.X = 0.0f;
 		M->LookFromTarget.Y = 0.0f;
 		M->LookFromTarget.Z = 30;
@@ -126,7 +125,6 @@ void OS_Update(void *Data)
 	}
 
 	M->ScrollAccumulationTarget = LerpF32(M->ScrollAccumulationTarget, 0.0, 0.3);
-
 
 	M->ScrollAccumulation = LerpF32(M->ScrollAccumulation, M->ScrollAccumulationTarget, 0.1);
 
@@ -144,12 +142,10 @@ void OS_Update(void *Data)
 
 	AngleTarget -= 0.001 / (f32)(M->OrbitDepth*2 + 1) + Scroll.X*0.01;
 
-
-
 	Angle = LerpF32(Angle, AngleTarget, 0.1);
 
 
-	m44f Perspective = M44FPerspective(sapp_widthf()/sapp_heightf(), 70, 0.01, 10000.0);
+	m44f Perspective = M44FPerspective(sapp_widthf()/sapp_heightf(), 35, 0.01, 10000.0);
 	v3f CameraPosition = M->LookFrom;
 	CameraPosition.Z += M->ZoomLevel;
 	v3f CameraForward = NormalizeV3F(SubV3F(M->LookAt, CameraPosition));
@@ -305,7 +301,7 @@ void OS_Update(void *Data)
 			M->OrbitDepth = OrbitSignal.ActiveItemDepth;
 			M->LookAtTarget = OrbitSignal.ActiveItemPosition;
 			M->LookFromTarget = OrbitSignal.ActiveItemPosition;
-			M->LookFromTarget.Z = (f32)(1.0 + M->OrbitDepth*15.0);
+			M->LookFromTarget.Z = (f32)(1.0 + M->OrbitDepth*35.0);
 
 			if(OrbitSignal.FileToLoad.Size > 0)
 			{
@@ -764,8 +760,8 @@ int main()
 	M.UI->Font = M.CodeFont;
 
 	M.CameraPosition = v3f(0.0);
-	M.LookFrom.Z = 50;
-	M.LookFromTarget.Z = 30.0;
+	M.LookFrom.Z = 100;
+	M.LookFromTarget.Z = 50.0;
 
 	M.Shared.Arena = ArenaInitialise(GigaBytes(1));
 

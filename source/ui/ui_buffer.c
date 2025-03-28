@@ -267,6 +267,10 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 	{
 		E_MoveCursors(Edit, Draw, Font, Edit->Cursors, Buffer, E_MOVE_LEFT, E_MOVE_SELECTING);
 	}
+	else if(UI_KeyDown(UI, SAPP_KEYCODE_LEFT, SAPP_MODIFIER_SUPER))
+	{
+		E_MoveCursors(Edit, Draw, Font, Edit->Cursors, Buffer, E_MOVE_LINE_START, E_MOVE_NOT_SELECTING);
+	}
 
 	if(UI_KeyDown(UI, SAPP_KEYCODE_RIGHT, 0))
 	{
@@ -275,6 +279,10 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 	else if(UI_KeyDown(UI, SAPP_KEYCODE_RIGHT, SAPP_MODIFIER_SHIFT))
 	{
 		E_MoveCursors(Edit, Draw, Font, Edit->Cursors, Buffer, E_MOVE_RIGHT, E_MOVE_SELECTING);
+	}
+	else if(UI_KeyDown(UI, SAPP_KEYCODE_RIGHT, SAPP_MODIFIER_SUPER))
+	{
+		E_MoveCursors(Edit, Draw, Font, Edit->Cursors, Buffer, E_MOVE_LINE_END, E_MOVE_NOT_SELECTING);
 	}
 
 	if(UI_KeyDown(UI, SAPP_KEYCODE_BACKSPACE, 0))

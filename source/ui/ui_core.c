@@ -74,6 +74,20 @@ b32 UI_LeftMouseWentUp(ui_context *UI)
 	return Result;
 }
 
+b32 UI_EventIterate(ui_context *UI, ui_event_iterator *Iter)
+{
+	if(Iter->Current == UI->EventLast) return False;
+	if(!Iter->Current)
+	{
+		Iter->Current = UI->EventFirst;
+	}
+	else
+	{
+		Iter->Current = Iter->Current->Next;
+	}
+	return True;
+}
+
 b32 UI_KeyDown(ui_context *UI, sapp_keycode Key, u32 Modifiers)
 {
 	b32 Result = False;

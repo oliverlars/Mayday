@@ -195,6 +195,7 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 
 	}
 
+
 	if(UI_KeyDown(UI, SAPP_KEYCODE_ENTER, 0))
 	{
 		E_InsertTo(Edit, Edit->Cursors, Buffer, Str8("\n"));
@@ -247,42 +248,73 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 		E_AppendCursor(Edit, Edit->Arena, Edit->Cursors, NextCursor);
 	}
 
-	if(UI_KeyDown(UI, SAPP_KEYCODE_UP, 0))
-	{
-		E_MoveCursors(Edit, Draw, Font, Edit->Cursors, Buffer, E_MOVE_UP, E_MOVE_NOT_SELECTING);
-	}
-	else if(UI_KeyDown(UI, SAPP_KEYCODE_UP, SAPP_MODIFIER_SUPER))
-	{
-		cursor *LastCursor = E_LastCursor(Edit, Edit->Cursors);
-		cursor NextCursor = LastCursor[0];
-		E_MoveCursors(Edit, Draw, Font, &NextCursor, Buffer, E_MOVE_UP, E_MOVE_NOT_SELECTING);
-		E_AppendCursor(Edit, Edit->Arena, Edit->Cursors, NextCursor);
-	}
 
-	if(UI_KeyDown(UI, SAPP_KEYCODE_LEFT, 0))
+	for(ui_event_iterator It = {0};UI_EventIterate(UI, &It); )
 	{
-		E_MoveCursors(Edit, Draw, Font, Edit->Cursors, Buffer, E_MOVE_LEFT, E_MOVE_NOT_SELECTING);
-	}
-	else if(UI_KeyDown(UI, SAPP_KEYCODE_LEFT, SAPP_MODIFIER_SHIFT))
-	{
-		E_MoveCursors(Edit, Draw, Font, Edit->Cursors, Buffer, E_MOVE_LEFT, E_MOVE_SELECTING);
-	}
-	else if(UI_KeyDown(UI, SAPP_KEYCODE_LEFT, SAPP_MODIFIER_SUPER))
-	{
-		E_MoveCursors(Edit, Draw, Font, Edit->Cursors, Buffer, E_MOVE_LINE_START, E_MOVE_NOT_SELECTING);
-	}
+		sapp_event Event = It.Current->E;
+		if(Event.type == SAPP_EVENTTYPE_KEY_DOWN)
+		{
+			edit_move_type MoveType = E_MOVE_NOT_SELECTING;
+			if(Event.modifiers & SAPP_MODIFIER_SHIFT)
+			{
+				MoveType = E_MOVE_SELECTING;
+			}
 
-	if(UI_KeyDown(UI, SAPP_KEYCODE_RIGHT, 0))
-	{
-		E_MoveCursors(Edit, Draw, Font, Edit->Cursors, Buffer, E_MOVE_RIGHT, E_MOVE_NOT_SELECTING);
-	}
-	else if(UI_KeyDown(UI, SAPP_KEYCODE_RIGHT, SAPP_MODIFIER_SHIFT))
-	{
-		E_MoveCursors(Edit, Draw, Font, Edit->Cursors, Buffer, E_MOVE_RIGHT, E_MOVE_SELECTING);
-	}
-	else if(UI_KeyDown(UI, SAPP_KEYCODE_RIGHT, SAPP_MODIFIER_SUPER))
-	{
-		E_MoveCursors(Edit, Draw, Font, Edit->Cursors, Buffer, E_MOVE_LINE_END, E_MOVE_NOT_SELECTING);
+			edit_movement Movement = E_MOVE_NONE;
+			switch(Event.key_code)
+			{
+				case SAPP_KEYCODE_LEFT:
+				{
+					Movement = E_MOVE_LEFT;
+					if(Event.modifiers & SAPP_MODIFIER_ALT)
+					{
+						Movement = E_MOVE_WORD_LEFT;
+					}
+					else if (Event.modifiers & SAPP_MODIFIER_SUPER)
+					{
+						Movement = E_MOVE_LINE_START;
+					}
+
+					E_MoveCursors(Edit, Draw, Font, Edit->Cursors, Buffer, Movement, MoveType);
+				} break;
+				case SAPP_KEYCODE_RIGHT:
+				{
+					Movement = E_MOVE_RIGHT;
+					if(Event.modifiers & SAPP_MODIFIER_ALT)
+					{
+						Movement = E_MOVE_WORD_RIGHT;
+					}
+					else if (Event.modifiers & SAPP_MODIFIER_SUPER)
+					{
+						Movement = E_MOVE_LINE_END;
+					}
+
+					E_MoveCursors(Edit, Draw, Font, Edit->Cursors, Buffer, Movement, MoveType);
+				} break;
+				case SAPP_KEYCODE_UP:
+				{
+					if(Event.modifiers & SAPP_MODIFIER_SUPER)
+					{
+						cursor *LastCursor = E_LastCursor(Edit, Edit->Cursors);
+						cursor NextCursor = LastCursor[0];
+						E_AppendCursor(Edit, Edit->Arena, Edit->Cursors, NextCursor);
+					}
+					E_MoveCursors(Edit, Draw, Font, Edit->Cursors, Buffer, E_MOVE_UP, MoveType);
+				} break;
+				case SAPP_KEYCODE_DOWN:
+				{
+					if(Event.modifiers & SAPP_MODIFIER_SUPER)
+					{
+						cursor *LastCursor = E_LastCursor(Edit, Edit->Cursors);
+						cursor NextCursor = LastCursor[0];
+						E_AppendCursor(Edit, Edit->Arena, Edit->Cursors, NextCursor);
+					}
+					E_MoveCursors(Edit, Draw, Font, Edit->Cursors, Buffer, E_MOVE_DOWN, MoveType);
+				} break;
+				default:
+				break;
+			}
+		}
 	}
 
 	if(UI_KeyDown(UI, SAPP_KEYCODE_BACKSPACE, 0))

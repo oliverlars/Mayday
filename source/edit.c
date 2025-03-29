@@ -107,6 +107,7 @@ void E_MoveCursors(edit_context *Edit, draw_context *Draw,
 				   d_font Font, cursor *Cursor, editable_buffer *Buffer,
 				   edit_movement Movement, edit_move_type MoveType)
 {
+	if(Movement == E_MOVE_NONE) return;
 	for(;Cursor; Cursor = Cursor->Next)
 	{
 		v2i Selection = Cursor->Selection;

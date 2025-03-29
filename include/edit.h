@@ -66,6 +66,7 @@ typedef struct edit_context
 
 typedef enum edit_movement
 {
+	E_MOVE_NONE,
 	E_MOVE_LINE_START,
 	E_MOVE_LINE_END,
 	E_MOVE_LEFT,

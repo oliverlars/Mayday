@@ -74,6 +74,12 @@ typedef struct ui_event
 	struct ui_event *Previous;
 } ui_event;
 
+
+typedef struct ui_event_iterator
+{
+	ui_event *Current;
+} ui_event_iterator;
+
 typedef struct ui_context
 {
 	u64 Hot;
@@ -206,6 +212,7 @@ b32 UI_DoubleClicked(ui_context *UI);
 b32 UI_TripleClicked(ui_context *UI);
 b32 UI_QuadClicked(ui_context *UI);
 
+b32 UI_EventIterate(ui_context *UI, ui_event_iterator *Iter);
 
 str8 UI_Text(ui_context *UI, m_arena *Arena);
 v2f UI_Scroll(ui_context *UI);

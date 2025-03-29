@@ -8,7 +8,7 @@
 #include <MacTypes.h>
 #include <assert.h>
 
-void RemoveEventFromList(ui_context *UI, ui_event *Event)
+void UI_RemoveEventFromList(ui_context *UI, ui_event *Event)
 {
 	if(Event->Previous)
 	{
@@ -37,7 +37,7 @@ b32 UI_LeftMouseWentDown(ui_context *UI)
 		if(Event->E.type == SAPP_EVENTTYPE_MOUSE_DOWN)
 		{
 			Result = True;
-			RemoveEventFromList(UI, Event);
+			UI_RemoveEventFromList(UI, Event);
 			break;
 		}
 	}
@@ -52,7 +52,7 @@ b32 UI_LeftMouseWentDownWithModifiers(ui_context *UI, int Modifiers)
 		if(Event->E.type == SAPP_EVENTTYPE_MOUSE_DOWN && Event->E.modifiers & Modifiers)
 		{
 			Result = True;
-			RemoveEventFromList(UI, Event);
+			UI_RemoveEventFromList(UI, Event);
 			break;
 		}
 	}
@@ -67,7 +67,7 @@ b32 UI_LeftMouseWentUp(ui_context *UI)
 		if(Event->E.type == SAPP_EVENTTYPE_MOUSE_UP)
 		{
 			Result = True;
-			RemoveEventFromList(UI, Event);
+			UI_RemoveEventFromList(UI, Event);
 			break;
 		}
 	}
@@ -97,7 +97,7 @@ b32 UI_KeyDown(ui_context *UI, sapp_keycode Key, u32 Modifiers)
 		   Event->E.modifiers == Modifiers)
 		{
 			Result = True;
-			RemoveEventFromList(UI, Event);
+			UI_RemoveEventFromList(UI, Event);
 			break;
 		}
 	}
@@ -112,7 +112,7 @@ b32 UI_KeyUp(ui_context *UI, sapp_keycode Key, u32 Modifiers)
 		if(Event->E.type == SAPP_EVENTTYPE_KEY_DOWN && Event->E.key_code == Key)
 		{
 			Result = True;
-			RemoveEventFromList(UI, Event);
+			UI_RemoveEventFromList(UI, Event);
 			break;
 		}
 	}

@@ -248,10 +248,17 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 		E_AppendCursor(Edit, Edit->Arena, Edit->Cursors, NextCursor);
 	}
 
-
-	for(ui_event_iterator It = {0};UI_EventIterate(UI, &It); )
+	b32 ShouldRemove = False;
+	ui_event *EventToRemove = Null;
+	for(ui_event_iterator It = {0};UI_EventIterate(UI, &It);)
 	{
 		sapp_event Event = It.Current->E;
+		if(ShouldRemove)
+		{
+			assert(It.Current && It.Current->Previous);
+			UI_RemoveEventFromList(UI, It.Current->Previous);
+			ShouldRemove = False;
+		}
 		if(Event.type == SAPP_EVENTTYPE_KEY_DOWN)
 		{
 			edit_move_type MoveType = E_MOVE_NOT_SELECTING;
@@ -276,6 +283,7 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 					}
 
 					E_MoveCursors(Edit, Draw, Font, Edit->Cursors, Buffer, Movement, MoveType);
+					ShouldRemove = True;
 				} break;
 				case SAPP_KEYCODE_RIGHT:
 				{
@@ -290,6 +298,7 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 					}
 
 					E_MoveCursors(Edit, Draw, Font, Edit->Cursors, Buffer, Movement, MoveType);
+					ShouldRemove = True;
 				} break;
 				case SAPP_KEYCODE_UP:
 				{
@@ -300,6 +309,7 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 						E_AppendCursor(Edit, Edit->Arena, Edit->Cursors, NextCursor);
 					}
 					E_MoveCursors(Edit, Draw, Font, Edit->Cursors, Buffer, E_MOVE_UP, MoveType);
+					ShouldRemove = True;
 				} break;
 				case SAPP_KEYCODE_DOWN:
 				{
@@ -310,6 +320,7 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 						E_AppendCursor(Edit, Edit->Arena, Edit->Cursors, NextCursor);
 					}
 					E_MoveCursors(Edit, Draw, Font, Edit->Cursors, Buffer, E_MOVE_DOWN, MoveType);
+					ShouldRemove = True;
 				} break;
 				default:
 				break;

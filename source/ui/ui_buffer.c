@@ -2,6 +2,7 @@
 #include "edit.h"
 #include "memory.h"
 #include "os.h"
+#include "strings.h"
 #include "ui.h"
 
 #include <assert.h>
@@ -103,10 +104,6 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 			Cursor->Position = LerpV2F(Cursor->Position, Cursor->TargetPosition, 0.3);
 			D_DrawQuad(Draw, Arena, Cursor->Position, 5, LineHeight, v4f(0.3, 0.7, 0, 1));
 		}
-	}
-
-	if(UI->MouseIsDragging)
-	{
 	}
 
 	v2f ScrollOffset = UI_Scroll(UI);
@@ -220,6 +217,48 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 		}
 	}
 
+	if(UI_KeyDown(UI, SAPP_KEYCODE_D, SAPP_MODIFIER_SUPER))
+	{
+		str8 StringToFind = {};
+		cursor *Cursor = E_LastCursor(Edit, Edit->Cursors);
+		if(Cursor->Selection.X == Cursor->Selection.Y)
+		{
+			int Index = E_IndexFromPosition(Edit, Draw, Font,
+										Buffer, BufferPosition,
+										UI->MousePosition);
+			v2i InitialSelection = Cursor->Selection;
+			E_MoveCursors(Edit, Draw, Font, Cursor, Buffer, E_MOVE_WORD_RIGHT, E_MOVE_SELECTING);
+			v2i Selection = Cursor->Selection;
+			Cursor->Selection = InitialSelection;
+			E_MoveCursors(Edit, Draw, Font, Cursor, Buffer, E_MOVE_WORD_LEFT, E_MOVE_NOT_SELECTING);
+			Cursor->Selection = v2i(Cursor->Selection.X, Selection.Y);
+		}
+		else
+		{
+			StringToFind.Size = Cursor->Selection.Y - Cursor->Selection.X;
+			StringToFind.Bytes = Buffer->String.Bytes + Cursor->Selection.X;
+
+			// TODO(Oliver): Unicode
+			u8 *Start = Buffer->String.Bytes;
+			u8 *End = Buffer->String.Bytes + Buffer->String.Size;
+			for(u8 *Byte = Buffer->String.Bytes + Cursor->Selection.Y + 1; Byte < End; Byte++)
+			{
+				str8 CurrentString = {0};
+				CurrentString.Bytes = Byte;
+				CurrentString.Size = Min(StringToFind.Size, End-Byte);
+				if(Str8Equal(CurrentString, StringToFind))
+				{
+					cursor NextCursor = Cursor[0];
+					NextCursor.Selection.X = Byte-Start;
+					NextCursor.Selection.Y = NextCursor.Selection.X + StringToFind.Size;
+					E_AppendCursor(Edit, Edit->Arena, Edit->Cursors, NextCursor);
+					break;
+				}
+			}
+
+		}
+	}
+
 	if(UI_KeyDown(UI, SAPP_KEYCODE_TAB, 0))
 	{
 		E_InsertTo(Edit, Edit->Cursors, Buffer, Str8("\t"));
@@ -236,20 +275,7 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 		UI->View = UI_VIEW_TREE;
 	}
 
-	if(UI_KeyDown(UI, SAPP_KEYCODE_DOWN, 0))
-	{
-		E_MoveCursors(Edit, Draw, Font, Edit->Cursors, Buffer, E_MOVE_DOWN, E_MOVE_NOT_SELECTING);
-	}
-	else if(UI_KeyDown(UI, SAPP_KEYCODE_DOWN, SAPP_MODIFIER_SUPER))
-	{
-		cursor *LastCursor = E_LastCursor(Edit, Edit->Cursors);
-		cursor NextCursor = LastCursor[0];
-		E_MoveCursors(Edit, Draw, Font, &NextCursor, Buffer, E_MOVE_DOWN, E_MOVE_NOT_SELECTING);
-		E_AppendCursor(Edit, Edit->Arena, Edit->Cursors, NextCursor);
-	}
-
 	b32 ShouldRemove = False;
-	ui_event *EventToRemove = Null;
 	for(ui_event_iterator It = {0};UI_EventIterate(UI, &It);)
 	{
 		sapp_event Event = It.Current->E;
@@ -322,22 +348,22 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 					E_MoveCursors(Edit, Draw, Font, Edit->Cursors, Buffer, E_MOVE_DOWN, MoveType);
 					ShouldRemove = True;
 				} break;
+				case SAPP_KEYCODE_BACKSPACE:
+				{
+					E_DeleteTo(Edit, Edit->Cursors, Buffer);
+				}
+				break;
 				default:
 				break;
 			}
 		}
 	}
 
-	if(UI_KeyDown(UI, SAPP_KEYCODE_BACKSPACE, 0))
-	{
-		E_DeleteTo(Edit, Edit->Cursors, Buffer);
-	}
-
-	str8 TextToInsert = UI_Text(UI, Arena);
-	if(TextToInsert.Size > 0)
-	{
-		E_InsertTo(Edit, Edit->Cursors, Buffer, TextToInsert);
-	}
+	// str8 TextToInsert = UI_Text(UI, Arena);
+	// if(TextToInsert.Size > 0)
+	// {
+	// 	E_InsertTo(Edit, Edit->Cursors, Buffer, TextToInsert);
+	// }
 
 	// else if(UI_LeftMouseWentDownWithModifiers(UI, SAPP_MODIFIER_ALT))
 	// {

@@ -215,6 +215,10 @@ void E_MoveCursors(edit_context *Edit, draw_context *Draw,
 		else if(Movement == E_MOVE_LINE_START)
 		{
 			int LineStart = E_LineStartFromIndex(Edit, Selection.Y, Buffer);
+			for(;LineStart - 1 >= 0 && IsWhiteSpace(Buffer->String.Bytes[LineStart]);)
+			{
+				LineStart++;
+			}
 			Selection.X = LineStart;
 			Selection.Y = LineStart;
 		}

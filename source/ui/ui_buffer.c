@@ -7,6 +7,121 @@
 
 #include <assert.h>
 
+
+void UI_DrawBuffer(draw_context *D,
+				   m_arena *Arena,
+				   d_font Font,
+				   v2f Position,
+				   v4f Colour,
+				   f32 HeightInPixels,
+				   str8 String)
+{
+	render_context *R = D->Render;
+
+	f32 Scale = stbtt_ScaleForPixelHeight(&Font.Info, HeightInPixels);
+	int TotalTriangleCount = String.Size*6;
+	r_command Command = {0};
+	Command.Vertices = (r_vertex*)ArenaPushZero(Arena, TotalTriangleCount*sizeof(r_vertex));
+	Command.VerticesCount = TotalTriangleCount;
+	Command.VerticesFormat = R_VF_POSITION | R_VF_UV;
+
+	u64 Hash = M_FNVHashBytes(M_FNV_HASH_START, (u8*)&Font, sizeof(d_font));
+	Hash = M_FNVHashBytes(Hash, (u8*)&HeightInPixels, sizeof(f32));
+
+	f32 StartX = Position.X;
+	r_vertex *R_Vertices = Command.Vertices;
+
+	b32 NewLine = False;
+	v4f Colours[2] = {Colour, v4f(0, 0, 1, 1) };
+	for(int I = 0; I < String.Size; I++)
+	{
+		// TODO(Oliver): Needs to actually iterate utf-8
+		u32 CodePoint = String.Bytes[I];
+		u32 NextCodePoint = String.Bytes[Min(String.Size, I + 1)];
+
+
+
+		f32 TabMultiplier = 1.0f;
+		if(CodePoint == '\t')
+		{
+			CodePoint = ' ';
+			TabMultiplier *= 4.0;
+		}
+
+		if(CodePoint == '\n')
+		{
+			NewLine = True;
+			Position.Y -= (Font.Ascent - Font.Descent + Font.LineGap)*Scale;
+			Position.X = StartX;
+			continue;
+		}
+		else
+		{
+			NewLine = False;
+		}
+
+		//if(NewLine) CodePoint = 'N';
+
+		d_atlas_glyph *Glyph  = D_GlyphFromCodePoint2(D, Hash, Font, HeightInPixels, CodePoint);
+
+		f32 GlyphWidth = ((f32)(Glyph->Box.Z - Glyph->Box.X)*Scale);
+		f32 GlyphHeight = ((f32)(Glyph->Box.W - Glyph->Box.Y)*Scale);
+
+		f32 GlyphBitmapWidth = ((f32)(Glyph->BitmapBox.Z - Glyph->BitmapBox.X));
+		f32 GlyphBitmapHeight = ((f32)(Glyph->BitmapBox.W - Glyph->BitmapBox.Y));
+
+		v2f Vertices[6] =
+		{
+			v2f(Position.X, Position.Y),
+			v2f(Position.X + GlyphWidth, Position.Y),
+			v2f(Position.X + GlyphWidth, Position.Y + GlyphHeight),
+
+			v2f(Position.X, Position.Y),
+			v2f(Position.X, Position.Y + GlyphHeight),
+			v2f(Position.X + GlyphWidth, Position.Y + GlyphHeight),
+		};
+
+		v2f UVs[6] =
+		{
+
+			v2f(Glyph->AtlasPosition.X, Glyph->AtlasPosition.Y + GlyphBitmapHeight),
+			v2f(Glyph->AtlasPosition.X + GlyphBitmapWidth, Glyph->AtlasPosition.Y + GlyphBitmapHeight),
+			v2f(Glyph->AtlasPosition.X + GlyphBitmapWidth, Glyph->AtlasPosition.Y),
+
+			v2f(Glyph->AtlasPosition.X, Glyph->AtlasPosition.Y + GlyphBitmapHeight),
+			v2f(Glyph->AtlasPosition.X, Glyph->AtlasPosition.Y),
+			v2f(Glyph->AtlasPosition.X + GlyphBitmapWidth, Glyph->AtlasPosition.Y)
+		};
+
+		for(int V = 0; V < 6; V++)
+		{
+			r_vertex Vertex = {
+				.Position = v4f(Vertices[V].X, Vertices[V].Y, 0, 1),
+				.UV = DivV2F(UVs[V], V2FromF32((f32)D_FONT_ATLAS_SIZE)),
+				.Colour = Colours[NewLine],
+			};
+
+			Vertex.Position.Y += (Glyph->Box.Y*Scale);
+			Vertex.Position.X += (Glyph->Box.X*Scale);
+
+			if(CodePoint != ' ') *R_Vertices++ = Vertex;
+		}
+
+		if(NewLine)
+		{
+			Position.Y -= (Font.Ascent - Font.Descent + Font.LineGap)*Scale;
+			Position.X = StartX;
+			continue;
+		}
+
+		int Kern = stbtt_GetCodepointKernAdvance(&Font.Info, CodePoint, NextCodePoint);
+		Position.X += (Kern + Glyph->AdvanceX) * Scale * TabMultiplier;
+	}
+
+	Command.Type = R_COMMAND_GLYPH;
+	R_PushCommand(R, Arena, Command);
+}
+
 void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 			   m_arena *Arena, d_font Font,
 			   editable_buffer *Buffer,
@@ -58,13 +173,16 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 	for(cursor *Cursor = Edit->Cursors; Cursor; Cursor = Cursor->Next)
 	{
 		v2i Selection = E_GetSortedSelection(Cursor->Selection);
+		str8 SelectedString = Buffer->String;
+		SelectedString.Bytes += Selection.X;
+		SelectedString.Size = Selection.Y - Selection.X;
 		D_DrawSelectionRange(Draw,
 							 Arena,
 							 Font,
 							 BufferPosition,
 							 v4f(0.04, 0.01, 0, 0.1),
 							 Buffer->HeightInPixels,
-							 Buffer->String,
+							 SelectedString,
 							 Selection.X,
 							 Selection.Y);
 	}

@@ -139,7 +139,6 @@ d_atlas_glyph *D_GlyphFromCodePoint(draw_context *D, d_font Font, s32 HeightInPi
 
 	if(Glyph->Hash != 0 && Glyph->Hash != Hash)
 	{
-		LogInfo("Glyph collision occured");
 		d_atlas_glyph *NextGlyph = ArenaPushArrayZero(D->Arena, d_atlas_glyph, 1);
 		Glyph->NextInHashSlot = NextGlyph;
 
@@ -385,7 +384,7 @@ void D_DrawStr8(draw_context *D,
 
 		//if(NewLine) CodePoint = 'N';
 
-		d_atlas_glyph *Glyph  = D_GlyphFromCodePoint(D, Font, HeightInPixels, CodePoint);
+		d_atlas_glyph *Glyph  = D_GlyphFromCodePoint2(D, Hash, Font, HeightInPixels, CodePoint);
 
 		f32 GlyphWidth = ((f32)(Glyph->Box.Z - Glyph->Box.X)*Scale);
 		f32 GlyphHeight = ((f32)(Glyph->Box.W - Glyph->Box.Y)*Scale);
@@ -467,6 +466,9 @@ void D_DrawSelectionRange(draw_context *D,
 
 	b32 InRange = False;
 
+	u64 Hash = M_FNVHashBytes(M_FNV_HASH_START, (u8*)&Font, sizeof(d_font));
+	Hash = M_FNVHashBytes(Hash, (u8*)&HeightInPixels, sizeof(f32));
+
 	for(int I = 0; I < String.Size; I++)
 	{
 		// TODO(Oliver): Needs to actually iterate utf-8
@@ -487,7 +489,7 @@ void D_DrawSelectionRange(draw_context *D,
 			{
 				// NOTE(Oliver): I only do this so that you can see if you're selecting
 				// whitespace
-				d_atlas_glyph *Space  = D_GlyphFromCodePoint(D, Font, HeightInPixels, ' ');
+				d_atlas_glyph *Space  = D_GlyphFromCodePoint2(D, Hash, Font, HeightInPixels, ' ');
 				Position.X += Space->AdvanceX * Scale * TabMultiplier;
 			}
 			D_DrawQuad(D, Arena, v2f(SelectionStartX, Position.Y + Font.Descent*Scale), Position.X - SelectionStartX, (Font.Ascent - Font.Descent + Font.LineGap)*Scale, Colour);

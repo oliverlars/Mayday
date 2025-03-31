@@ -444,7 +444,7 @@ void OS_Event(const sapp_event *Event, void *Data)
 										&M->Buffer, BufferPosition,
 										M->UI->MousePosition);
 
-			cursor *LastCursor = E_LastCursor(M->Edit, &M->Cursor);
+			cursor *LastCursor = E_LastCursor(&M->Cursor);
 			cursor *Cursor = LastCursor;
 			if(Event->modifiers & SAPP_MODIFIER_ALT)
 			{
@@ -589,7 +589,7 @@ void OS_Event(const sapp_event *Event, void *Data)
 		{
 			if(Event->modifiers & SAPP_MODIFIER_ALT)
 			{
-				cursor *LastCursor = E_LastCursor(M->Edit, &M->Cursor);
+				cursor *LastCursor = E_LastCursor(&M->Cursor);
 				cursor NextCursor = LastCursor[0];
 				E_MoveCursors(M->Edit, M->Draw, M->CodeFont, &NextCursor, &M->Buffer, E_MOVE_DOWN, MoveType);
 				E_AppendCursor(M->Edit, M->PermanentArena, &M->Cursor, NextCursor);
@@ -604,7 +604,7 @@ void OS_Event(const sapp_event *Event, void *Data)
 		{
 			if(Event->modifiers & SAPP_MODIFIER_ALT)
 			{
-				cursor *LastCursor = E_LastCursor(M->Edit, &M->Cursor);
+				cursor *LastCursor = E_LastCursor(&M->Cursor);
 				cursor NextCursor = LastCursor[0];
 				E_MoveCursors(M->Edit, M->Draw, M->CodeFont, &NextCursor, &M->Buffer, E_MOVE_UP, MoveType);
 				E_AppendCursor(M->Edit, M->PermanentArena, &M->Cursor, NextCursor);

@@ -503,16 +503,26 @@ int E_VisualXFromIndex(edit_context *Edit, draw_context *Draw,
 	return E_GetMaxTextWidthFromRange(Edit, Draw, Font,  Buffer, LineStart, Index);
 }
 
-cursor *E_LastCursor(edit_context *Edit, cursor *Cursor)
+cursor *E_LastCursor(cursor *Cursor)
 {
 	for(;Cursor->Next; Cursor = Cursor->Next);
 	return Cursor;
 }
 
+int E_CursorCount(cursor *Cursor)
+{
+	int Result = 0;
+	for(;Cursor->Next; Cursor = Cursor->Next)
+	{
+		Result++;
+	}
+	return Result;
+}
+
 void E_AppendCursor(edit_context *Edit, m_arena *Arena, cursor *Cursor, cursor NextCursor)
 {
 	assert(Cursor);
-	Cursor = E_LastCursor(Edit, Cursor);
+	Cursor = E_LastCursor(Cursor);
 
 	Cursor->Next = ArenaPushArrayZero(Arena, cursor, 1);
 	NextCursor.Previous = Cursor;

@@ -135,7 +135,8 @@ int E_GetMaxTextWidthFromRange(edit_context *E, draw_context *D,
 int E_IndexFromVisualXAndLineStart(edit_context *E, draw_context *D, d_font Font,
 								   editable_buffer *Buffer, int VisualX, int LineStart);
 
-cursor *E_LastCursor(edit_context *Edit, cursor *Cursor);
+int E_CursorCount(cursor *Cursor);
+cursor *E_LastCursor(cursor *Cursor);
 void E_AppendCursor(edit_context *Edit, m_arena *Arena, cursor *Cursor, cursor NextCursor);
 
 void PushUndoAction(edit_context *E,

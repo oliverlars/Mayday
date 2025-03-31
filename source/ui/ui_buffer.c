@@ -7,119 +7,59 @@
 
 #include <assert.h>
 
+#include <arm_neon.h>
 
-void UI_DrawBuffer(draw_context *D,
-				   m_arena *Arena,
-				   d_font Font,
-				   v2f Position,
-				   v4f Colour,
-				   f32 HeightInPixels,
-				   str8 String)
+s64 CountNewLinesNEON(str8 String)
 {
-	render_context *R = D->Render;
+	u64 Count = 0;
+	s64 Index = 0;
 
-	f32 Scale = stbtt_ScaleForPixelHeight(&Font.Info, HeightInPixels);
-	int TotalTriangleCount = String.Size*6;
-	r_command Command = {0};
-	Command.Vertices = (r_vertex*)ArenaPushZero(Arena, TotalTriangleCount*sizeof(r_vertex));
-	Command.VerticesCount = TotalTriangleCount;
-	Command.VerticesFormat = R_VF_POSITION | R_VF_UV;
-
-	u64 Hash = M_FNVHashBytes(M_FNV_HASH_START, (u8*)&Font, sizeof(d_font));
-	Hash = M_FNVHashBytes(Hash, (u8*)&HeightInPixels, sizeof(f32));
-
-	f32 StartX = Position.X;
-	r_vertex *R_Vertices = Command.Vertices;
-
-	b32 NewLine = False;
-	v4f Colours[2] = {Colour, v4f(0, 0, 1, 1) };
-	for(int I = 0; I < String.Size; I++)
+	for (; Index <= String.Size - 16; Index += 16)
 	{
-		// TODO(Oliver): Needs to actually iterate utf-8
-		u32 CodePoint = String.Bytes[I];
-		u32 NextCodePoint = String.Bytes[Min(String.Size, I + 1)];
-
-
-
-		f32 TabMultiplier = 1.0f;
-		if(CodePoint == '\t')
-		{
-			CodePoint = ' ';
-			TabMultiplier *= 4.0;
-		}
-
-		if(CodePoint == '\n')
-		{
-			NewLine = True;
-			Position.Y -= (Font.Ascent - Font.Descent + Font.LineGap)*Scale;
-			Position.X = StartX;
-			continue;
-		}
-		else
-		{
-			NewLine = False;
-		}
-
-		//if(NewLine) CodePoint = 'N';
-
-		d_atlas_glyph *Glyph  = D_GlyphFromCodePoint2(D, Hash, Font, HeightInPixels, CodePoint);
-
-		f32 GlyphWidth = ((f32)(Glyph->Box.Z - Glyph->Box.X)*Scale);
-		f32 GlyphHeight = ((f32)(Glyph->Box.W - Glyph->Box.Y)*Scale);
-
-		f32 GlyphBitmapWidth = ((f32)(Glyph->BitmapBox.Z - Glyph->BitmapBox.X));
-		f32 GlyphBitmapHeight = ((f32)(Glyph->BitmapBox.W - Glyph->BitmapBox.Y));
-
-		v2f Vertices[6] =
-		{
-			v2f(Position.X, Position.Y),
-			v2f(Position.X + GlyphWidth, Position.Y),
-			v2f(Position.X + GlyphWidth, Position.Y + GlyphHeight),
-
-			v2f(Position.X, Position.Y),
-			v2f(Position.X, Position.Y + GlyphHeight),
-			v2f(Position.X + GlyphWidth, Position.Y + GlyphHeight),
-		};
-
-		v2f UVs[6] =
-		{
-
-			v2f(Glyph->AtlasPosition.X, Glyph->AtlasPosition.Y + GlyphBitmapHeight),
-			v2f(Glyph->AtlasPosition.X + GlyphBitmapWidth, Glyph->AtlasPosition.Y + GlyphBitmapHeight),
-			v2f(Glyph->AtlasPosition.X + GlyphBitmapWidth, Glyph->AtlasPosition.Y),
-
-			v2f(Glyph->AtlasPosition.X, Glyph->AtlasPosition.Y + GlyphBitmapHeight),
-			v2f(Glyph->AtlasPosition.X, Glyph->AtlasPosition.Y),
-			v2f(Glyph->AtlasPosition.X + GlyphBitmapWidth, Glyph->AtlasPosition.Y)
-		};
-
-		for(int V = 0; V < 6; V++)
-		{
-			r_vertex Vertex = {
-				.Position = v4f(Vertices[V].X, Vertices[V].Y, 0, 1),
-				.UV = DivV2F(UVs[V], V2FromF32((f32)D_FONT_ATLAS_SIZE)),
-				.Colour = Colours[NewLine],
-			};
-
-			Vertex.Position.Y += (Glyph->Box.Y*Scale);
-			Vertex.Position.X += (Glyph->Box.X*Scale);
-
-			if(CodePoint != ' ') *R_Vertices++ = Vertex;
-		}
-
-		if(NewLine)
-		{
-			Position.Y -= (Font.Ascent - Font.Descent + Font.LineGap)*Scale;
-			Position.X = StartX;
-			continue;
-		}
-
-		int Kern = stbtt_GetCodepointKernAdvance(&Font.Info, CodePoint, NextCodePoint);
-		Position.X += (Kern + Glyph->AdvanceX) * Scale * TabMultiplier;
+		uint8x16_t Lane = vld1q_u8((const uint8_t *)(String.Bytes + Index));
+		uint8x16_t Mask = vceqq_u8(Lane, vdupq_n_u8('\n'));
+		uint8x16_t NewLinesThisLane = vandq_u8(Mask, vdupq_n_u8(1));
+		Count += vaddvq_u8(NewLinesThisLane);
 	}
 
-	Command.Type = R_COMMAND_GLYPH;
-	R_PushCommand(R, Arena, Command);
+	for (; Index < String.Size; Index++)
+	{
+		if (String.Bytes[Index] == '\n')
+		{
+			Count++;
+		}
+	}
+
+	return Count;
+}
+
+s64 IndexFromLine(str8 String, int Line)
+{
+	u64 Count = 0;
+	s64 Index = 0;
+
+	for (; Index <= String.Size - 16; Index += 16)
+	{
+		uint8x16_t Lane = vld1q_u8((const uint8_t *)(String.Bytes + Index));
+		uint8x16_t Mask = vceqq_u8(Lane, vdupq_n_u8('\n'));
+		uint8x16_t NewLinesThisLane = vandq_u8(Mask, vdupq_n_u8(1));
+		if(Count + vaddvq_u8(NewLinesThisLane) > Line)
+		{
+			break;
+		}
+		Count += vaddvq_u8(NewLinesThisLane);
+	}
+
+	for (;Index < String.Size; Index++)
+	{
+		if (String.Bytes[Index] == '\n')
+		{
+			Count++;
+			if(Count > Line) break;
+		}
+	}
+
+	return Index;
 }
 
 void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
@@ -138,6 +78,14 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 
 	f32 LineHeight = D_LineHeightFromFont(Font, Buffer->HeightInPixels);
 
+	int NumberOfLines = CountNewLinesNEON(Buffer->String);
+
+	int FirstVisibleLine = Max(Buffer->Offset.Y/LineHeight - 10, 0);
+	int LastVisibleLine = FirstVisibleLine + WindowHeight/LineHeight + 10;
+
+	int StartIndex = IndexFromLine(Buffer->String, FirstVisibleLine);
+	int EndIndex = IndexFromLine(Buffer->String, LastVisibleLine);
+
 
 	f32 HeightOffset = 0;
 	for(cursor *Cursor = Edit->Cursors; Cursor; Cursor = Cursor->Next)
@@ -147,6 +95,9 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 		// 	Cursor->Selection.X, Cursor->Selection.Y, Cursor->VisualX));
 		HeightOffset -= Buffer->HeightInPixels;
 	}
+
+	D_DrawStr8(Draw, Arena, Font, v2f(800, 400),
+			   v4f(1.0, 1.0, 1, 1), LineHeight, Str8PushF(Arena, "?u32:?u32", FirstVisibleLine, LastVisibleLine));
 
 	int MainCursorLine = E_LineFromBufferIndex(Edit, Edit->Cursors[0].Selection.Y, Buffer);
 	int LineCount = 0;
@@ -187,10 +138,14 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 							 Selection.Y);
 	}
 
+	str8 SubString = Buffer->String;
+	SubString.Bytes += StartIndex;
+	SubString.Size = EndIndex - StartIndex;
+
 	D_DrawStr8(Draw,
 			   Arena, Font,
 			   BufferPosition, v4f(0.8, 0.3, 0, 1),
-			   Buffer->HeightInPixels, Buffer->String);
+			   Buffer->HeightInPixels, SubString);
 
 	//if(UI->MouseIsDragging || UI->MouseWentDown)
 	if(UI->MouseIsDragging)
@@ -234,7 +189,7 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 		int Index = E_IndexFromPosition(Edit, Draw, Font,
 									Buffer, BufferPosition,
 									UI->MousePosition);
-		cursor *LastCursor = E_LastCursor(Edit, Edit->Cursors);
+		cursor *LastCursor = E_LastCursor(Edit->Cursors);
 		cursor *Cursor = LastCursor;
 
 		v2i InitialSelection = Cursor->Selection;
@@ -256,7 +211,7 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 										Buffer, BufferPosition,
 										UI->MousePosition);
 
-		cursor *LastCursor = E_LastCursor(Edit, Edit->Cursors);
+		cursor *LastCursor = E_LastCursor(Edit->Cursors);
 		cursor *Cursor = LastCursor;
 		if(False)
 		{
@@ -288,7 +243,7 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 										Buffer, BufferPosition,
 										UI->MousePosition);
 
-		cursor *LastCursor = E_LastCursor(Edit, Edit->Cursors);
+		cursor *LastCursor = E_LastCursor(Edit->Cursors);
 		cursor *Cursor = LastCursor;
 
 		if(LastCursor != Cursor)
@@ -302,7 +257,7 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 		int Index = E_IndexFromPosition(Edit, Draw, Font,
 									Buffer, BufferPosition,
 									UI->MousePosition);
-		cursor *LastCursor = E_LastCursor(Edit, Edit->Cursors);
+		cursor *LastCursor = E_LastCursor(Edit->Cursors);
 		cursor *Cursor = LastCursor;
 		Edit->Cursors->Next = Null;
 		Cursor = Edit->Cursors;
@@ -338,7 +293,7 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 	if(UI_KeyDown(UI, SAPP_KEYCODE_D, SAPP_MODIFIER_SUPER))
 	{
 		str8 StringToFind = {};
-		cursor *Cursor = E_LastCursor(Edit, Edit->Cursors);
+		cursor *Cursor = E_LastCursor(Edit->Cursors);
 		if(Cursor->Selection.X == Cursor->Selection.Y)
 		{
 			int Index = E_IndexFromPosition(Edit, Draw, Font,
@@ -448,7 +403,7 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 				{
 					if(Event.modifiers & SAPP_MODIFIER_SUPER)
 					{
-						cursor *LastCursor = E_LastCursor(Edit, Edit->Cursors);
+						cursor *LastCursor = E_LastCursor(Edit->Cursors);
 						cursor NextCursor = LastCursor[0];
 						E_AppendCursor(Edit, Edit->Arena, Edit->Cursors, NextCursor);
 					}
@@ -459,7 +414,7 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 				{
 					if(Event.modifiers & SAPP_MODIFIER_SUPER)
 					{
-						cursor *LastCursor = E_LastCursor(Edit, Edit->Cursors);
+						cursor *LastCursor = E_LastCursor(Edit->Cursors);
 						cursor NextCursor = LastCursor[0];
 						E_AppendCursor(Edit, Edit->Arena, Edit->Cursors, NextCursor);
 					}

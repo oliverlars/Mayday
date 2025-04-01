@@ -7,6 +7,7 @@
 
 #include <assert.h>
 
+#include <math.h>
 #include <arm_neon.h>
 
 s64 CountNewLinesNEON(str8 String)
@@ -40,7 +41,7 @@ s64 IndexFromLine(str8 String, int Line)
 
 	for (; Index <= String.Size - 16; Index += 16)
 	{
-		uint8x16_t Lane = vld1q_u8((const uint8_t *)(String.Bytes + Index));
+		uint8x16_t Lane = vld1q_u8((uint8_t*)(String.Bytes + Index));
 		uint8x16_t Mask = vceqq_u8(Lane, vdupq_n_u8('\n'));
 		uint8x16_t NewLinesThisLane = vandq_u8(Mask, vdupq_n_u8(1));
 		if(Count + vaddvq_u8(NewLinesThisLane) > Line)
@@ -54,8 +55,8 @@ s64 IndexFromLine(str8 String, int Line)
 	{
 		if (String.Bytes[Index] == '\n')
 		{
+			if(Count == Line) break;
 			Count++;
-			if(Count > Line) break;
 		}
 	}
 
@@ -72,16 +73,16 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 	int WindowWidth = Size.X;
 
 	v2f BufferPosition = v2f(100, (f32)WindowHeight - 50);
-	BufferPosition.Y += Buffer->Offset.Y;
 
 	v2f NumbersPosition = v2f(10, BufferPosition.Y);
 
 	f32 LineHeight = D_LineHeightFromFont(Font, Buffer->HeightInPixels);
+	BufferPosition.Y += fmod(Buffer->Offset.Y, LineHeight);
 
 	int NumberOfLines = CountNewLinesNEON(Buffer->String);
 
-	int FirstVisibleLine = Max(Buffer->Offset.Y/LineHeight - 10, 0);
-	int LastVisibleLine = FirstVisibleLine + WindowHeight/LineHeight + 10;
+	int FirstVisibleLine = Max(Buffer->Offset.Y/LineHeight, 0);
+	int LastVisibleLine = FirstVisibleLine + WindowHeight/LineHeight;
 
 	int StartIndex = IndexFromLine(Buffer->String, FirstVisibleLine);
 	int EndIndex = IndexFromLine(Buffer->String, LastVisibleLine);
@@ -100,25 +101,19 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 			   v4f(1.0, 1.0, 1, 1), LineHeight, Str8PushF(Arena, "?u32:?u32", FirstVisibleLine, LastVisibleLine));
 
 	int MainCursorLine = E_LineFromBufferIndex(Edit, Edit->Cursors[0].Selection.Y, Buffer);
-	int LineCount = 0;
-	for(int I = 0; I < Buffer->String.Size; I++)
+	for(int I = FirstVisibleLine; I < LastVisibleLine; I++)
 	{
-		if(MainCursorLine == LineCount)
+		if(MainCursorLine == I)
 		{
 			D_DrawStr8(Draw, Arena, Font, NumbersPosition,
-				v4f(0.8, 0.3, 0, 1), LineHeight, Str8PushF(Arena, "?u32", LineCount + 1));
+				v4f(0.8, 0.3, 0, 1), LineHeight, Str8PushF(Arena, "?u32", I + 1));
 		}
-
-		if(Buffer->String.Bytes[I] == '\n')
+		else
 		{
-			if(MainCursorLine != LineCount)
-			{
-				D_DrawStr8(Draw, Arena, Font, NumbersPosition,
-						   v4f(0.1, 0.04, 0, 1), LineHeight, Str8PushF(Arena, "?u32", LineCount + 1));
-			}
-			LineCount += 1;
-			NumbersPosition.Y -= LineHeight;
+			D_DrawStr8(Draw, Arena, Font, NumbersPosition,
+					   v4f(0.1, 0.04, 0, 1), LineHeight, Str8PushF(Arena, "?u32", I + 1));
 		}
+		NumbersPosition.Y -= LineHeight;
 	}
 
 	for(cursor *Cursor = Edit->Cursors; Cursor; Cursor = Cursor->Next)
@@ -432,26 +427,26 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 		}
 	}
 
-	// str8 TextToInsert = UI_Text(UI, Arena);
-	// if(TextToInsert.Size > 0)
-	// {
-	// 	E_InsertTo(Edit, Edit->Cursors, Buffer, TextToInsert);
-	// }
+	str8 TextToInsert = UI_Text(UI, Arena);
+	if(TextToInsert.Size > 0)
+	{
+		E_InsertTo(Edit, Edit->Cursors, Buffer, TextToInsert);
+	}
 
-	// else if(UI_LeftMouseWentDownWithModifiers(UI, SAPP_MODIFIER_ALT))
-	// {
-	// 	int Index = E_IndexFromPosition(Edit, Draw, Font,
-	// 								Buffer, BufferPosition,
-	// 								UI->MousePosition);
-	// 	cursor *LastCursor = E_LastCursor(Edit, Edit->Cursors);
-	// 	cursor *Cursor = LastCursor;
-	// 	{
-	// 		cursor NextCursor = Cursor[0];
-	// 		NextCursor.Selection = v2i(Index, Index);
-	// 		E_AppendCursor(Edit, Edit->Arena, Cursor, NextCursor);
-	// 		Cursor = Cursor->Next;
-	// 	}
-	// }
+	if(UI_LeftMouseWentDownWithModifiers(UI, SAPP_MODIFIER_ALT))
+	{
+		int Index = E_IndexFromPosition(Edit, Draw, Font,
+									Buffer, BufferPosition,
+									UI->MousePosition);
+		cursor *LastCursor = E_LastCursor(Edit->Cursors);
+		cursor *Cursor = LastCursor;
+		{
+			cursor NextCursor = Cursor[0];
+			NextCursor.Selection = v2i(Index, Index);
+			E_AppendCursor(Edit, Edit->Arena, Cursor, NextCursor);
+			Cursor = Cursor->Next;
+		}
+	}
 }
 
 void UI_StatusBar(ui_context *UI, draw_context *Draw, edit_context *Edit,
@@ -468,11 +463,12 @@ void UI_StatusBar(ui_context *UI, draw_context *Draw, edit_context *Edit,
 	{
 		int Line = E_LineFromBufferIndex(Edit, Cursor->Selection.Y, Buffer);
 		int LineStart = E_LineStartFromIndex(Edit, Cursor->Selection.Y, Buffer);
+		int Index = IndexFromLine(Buffer->String, Line);
 		int Column = Cursor->Selection.Y - LineStart;
 		D_DrawStr8(Draw, Arena,
 				   Font, v2f((f32)Size.X - 1000, 10),
 				   v4f(0.009, 0.00, 0, 1.0),
-				   50, Str8PushF(Arena, "?u32:?u32", Line, Column));
+				   50, Str8PushF(Arena, "?u32:?u32 | Index: ?u32:?u32", Line, Column, Cursor->Selection.Y, Index));
 	}
 	else
 	{

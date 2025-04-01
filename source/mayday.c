@@ -179,7 +179,7 @@ void OS_Update(void *Data)
 			   v2i(WindowWidth, WindowHeight));
 
 		UI_StatusBar(M->UI, M->Draw, M->Edit, M->FrameArena, M->StatusFont,
-					 &M->Cursor, &M->Buffer,
+					 M->Edit->Cursors, &M->Buffer,
 					 v2i(WindowWidth, WindowHeight));
 
 		u64 End = OS_TimeStampNow();

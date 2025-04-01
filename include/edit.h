@@ -113,12 +113,21 @@ v2f E_GetPositionFromEditableBuffer(edit_context *E,
 									d_font Font,
 									v2f Position);
 
+v2f E_GetVisualPositionFromEditableBuffer(edit_context *E,
+									draw_context *D,
+									int Index,
+									editable_buffer Buffer,
+									d_font Font,
+									v2i Indices,
+									v2f Position);
+
 int E_DistanceFromPreviousNewLine(edit_context *E, int Index, editable_buffer *Buffer);
 int E_DistanceFromNextNewLine(edit_context *E, int Index, editable_buffer *Buffer);
 int E_LineStartFromIndex(edit_context *Edit, int Index, editable_buffer *Buffer);
 int E_LineEndFromIndex(edit_context *Edit, int Index, editable_buffer *Buffer);
 int E_IndexFromPosition(edit_context *Edit, draw_context *Draw, d_font Font,
-						editable_buffer *Buffer, v2f BufferPosition, v2i Position);
+						editable_buffer *Buffer, v2i Indices,
+						v2f BufferPosition, v2i Position);
 
 
 void E_RemoveSelectedTextAtCursors(edit_context *E_Context, cursor *Cursor, editable_buffer *Buffer);

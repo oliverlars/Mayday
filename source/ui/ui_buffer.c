@@ -137,16 +137,18 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 	SubString.Bytes += StartIndex;
 	SubString.Size = EndIndex - StartIndex;
 
+	v2i Indices = {StartIndex, EndIndex};
+
 	D_DrawStr8(Draw,
 			   Arena, Font,
 			   BufferPosition, v4f(0.8, 0.3, 0, 1),
 			   Buffer->HeightInPixels, SubString);
 
-	//if(UI->MouseIsDragging || UI->MouseWentDown)
 	if(UI->MouseIsDragging)
 	{
 		int Index = E_IndexFromPosition(Edit, Draw, Font,
-										Buffer, BufferPosition, UI->MousePosition);
+										Buffer, Indices,
+										BufferPosition, UI->MousePosition);
 		Edit->Cursors[0].Selection.Y = Index;
 
 		Edit->Cursors[0].TargetPosition = E_GetPositionFromEditableBuffer(Edit,
@@ -162,11 +164,12 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 	{
 		for(cursor *Cursor = Edit->Cursors; Cursor; Cursor = Cursor->Next)
 		{
-			Cursor->TargetPosition = E_GetPositionFromEditableBuffer(Edit,
+			Cursor->TargetPosition = E_GetVisualPositionFromEditableBuffer(Edit,
 																	 Draw,
 																	 Cursor->Selection.Y,
 																	 Buffer[0],
 																	 Font,
+																	 Indices,
 																	 BufferPosition);
 
 			Cursor->Position = LerpV2F(Cursor->Position, Cursor->TargetPosition, 0.3);
@@ -182,7 +185,7 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 	if(UI_DoubleClicked(UI))
 	{
 		int Index = E_IndexFromPosition(Edit, Draw, Font,
-									Buffer, BufferPosition,
+									Buffer, Indices, BufferPosition,
 									UI->MousePosition);
 		cursor *LastCursor = E_LastCursor(Edit->Cursors);
 		cursor *Cursor = LastCursor;
@@ -203,7 +206,7 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 	else if(UI_TripleClicked(UI))
 	{
 		int Index = E_IndexFromPosition(Edit, Draw, Font,
-										Buffer, BufferPosition,
+										Buffer, Indices, BufferPosition,
 										UI->MousePosition);
 
 		cursor *LastCursor = E_LastCursor(Edit->Cursors);
@@ -235,7 +238,7 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 		Edit->Cursors[0].Selection = v2i(0, Buffer->String.Size);
 
 		int Index = E_IndexFromPosition(Edit, Draw, Font,
-										Buffer, BufferPosition,
+										Buffer, Indices, BufferPosition,
 										UI->MousePosition);
 
 		cursor *LastCursor = E_LastCursor(Edit->Cursors);
@@ -250,7 +253,7 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 	else if(UI_LeftMouseWentDown(UI))
 	{
 		int Index = E_IndexFromPosition(Edit, Draw, Font,
-									Buffer, BufferPosition,
+									Buffer, Indices, BufferPosition,
 									UI->MousePosition);
 		cursor *LastCursor = E_LastCursor(Edit->Cursors);
 		cursor *Cursor = LastCursor;
@@ -292,7 +295,7 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 		if(Cursor->Selection.X == Cursor->Selection.Y)
 		{
 			int Index = E_IndexFromPosition(Edit, Draw, Font,
-										Buffer, BufferPosition,
+										Buffer, Indices, BufferPosition,
 										UI->MousePosition);
 			v2i InitialSelection = Cursor->Selection;
 			E_MoveCursors(Edit, Draw, Font, Cursor, Buffer, E_MOVE_WORD_RIGHT, E_MOVE_SELECTING);
@@ -436,7 +439,7 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 	if(UI_LeftMouseWentDownWithModifiers(UI, SAPP_MODIFIER_ALT))
 	{
 		int Index = E_IndexFromPosition(Edit, Draw, Font,
-									Buffer, BufferPosition,
+									Buffer, Indices, BufferPosition,
 									UI->MousePosition);
 		cursor *LastCursor = E_LastCursor(Edit->Cursors);
 		cursor *Cursor = LastCursor;
@@ -466,9 +469,9 @@ void UI_StatusBar(ui_context *UI, draw_context *Draw, edit_context *Edit,
 		int Index = IndexFromLine(Buffer->String, Line);
 		int Column = Cursor->Selection.Y - LineStart;
 		D_DrawStr8(Draw, Arena,
-				   Font, v2f((f32)Size.X - 1000, 10),
+				   Font, v2f((f32)Size.X - 1500, 10),
 				   v4f(0.009, 0.00, 0, 1.0),
-				   50, Str8PushF(Arena, "?u32:?u32 | Index: ?u32:?u32", Line, Column, Cursor->Selection.Y, Index));
+				   50, Str8PushF(Arena, "?u32:?u32 | Index: ?u32:?u32 | ?v2f", Line, Column, Cursor->Selection.Y, Index, Cursor->Position));
 	}
 	else
 	{

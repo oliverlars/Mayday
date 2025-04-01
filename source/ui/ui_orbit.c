@@ -80,9 +80,9 @@ ui_orbit UI_OrbitView(ui_context *UI, draw_context *Draw, m_arena *Arena,
 			f32 Z = 1.0 - 2.0 * (((f32)PositionIndex + 0.5) / (f32)CountParent);
 			f32 R = sqrt(1.0 - Z * Z);
 			f32 theta = (f32)PositionIndex * GoldenAngle;
-			Positions[PositionIndex].X = 15.0 * R * cos(theta);
-			Positions[PositionIndex].Y = 15.0 * R * sin(theta);
-			Positions[PositionIndex].Z = 15.0 * Z;
+			Positions[PositionIndex].X = 12.0 * R * cos(theta);
+			Positions[PositionIndex].Y = 12.0 * R * sin(theta);
+			Positions[PositionIndex].Z = 12.0 * Z;
 			if(It.Index == Active)
 			{
 				PositionOfActive = Positions[PositionIndex];
@@ -163,7 +163,7 @@ ui_orbit_signal UI_OrbitLabels(ui_context *UI, draw_context *Draw, edit_context 
 		TransformedPoint.Y *= sapp_heightf();
 
 		v4f Colour = v4f(0.8, 0.3, 0.0, 1);
-		v3f C = LerpV3F(v3f(0, 0, 0), v3f(1, 1, 1), NormalizedDistance);
+		v3f C = LerpV3F(v3f(0, 0, 0), v3f(0.5, 0.2, 0.0), NormalizedDistance);
 		Colour = v4f(C.X, C.Y, C.Z, 1.0);
 
 

@@ -523,7 +523,7 @@ ui_textbox_signal UI_TextBox(m_arena *Arena,
 		if(UI->MouseIsDragging)
 		{
 			int Index = E_IndexFromPosition(Edit, Draw, Font,
-											Buffer, Position, UI->MousePosition);
+											Buffer, v2i(0, Buffer->String.Size), Position, UI->MousePosition);
 			Buffer->Cursors[0].Selection.Y = Index;
 
 			Buffer->Cursors[0].TargetPosition = E_GetPositionFromEditableBuffer(Edit,
@@ -555,7 +555,7 @@ ui_textbox_signal UI_TextBox(m_arena *Arena,
 		if(UI_DoubleClicked(UI))
 		{
 			int Index = E_IndexFromPosition(Edit, Draw, Font,
-										Buffer, Position,
+										Buffer, v2i(0, Buffer->String.Size), Position,
 										UI->MousePosition);
 			cursor *Cursor = Buffer->Cursors;
 
@@ -569,7 +569,7 @@ ui_textbox_signal UI_TextBox(m_arena *Arena,
 		else if(UI_TripleClicked(UI))
 		{
 			int Index = E_IndexFromPosition(Edit, Draw, Font,
-											Buffer, Position,
+											Buffer, v2i(0, Buffer->String.Size), Position,
 											UI->MousePosition);
 
 			int LineStart = E_LineStartFromIndex(Edit, Buffer->Cursors[0].Selection.Y, Buffer);
@@ -581,13 +581,13 @@ ui_textbox_signal UI_TextBox(m_arena *Arena,
 			Buffer->Cursors[0].Selection = v2i(0, Buffer->String.Size);
 
 			int Index = E_IndexFromPosition(Edit, Draw, Font,
-											Buffer, Position,
+											Buffer, v2i(0, Buffer->String.Size), Position,
 											UI->MousePosition);
 		}
 		else if(UI_LeftMouseWentDown(UI))
 		{
 			int Index = E_IndexFromPosition(Edit, Draw, Font,
-										Buffer, Position,
+										Buffer, v2i(0, Buffer->String.Size), Position,
 										UI->MousePosition);
 			cursor *Cursor = Buffer->Cursors;
 			Cursor->Selection = v2i(Index, Index);

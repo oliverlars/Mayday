@@ -310,6 +310,52 @@ v2f E_GetPositionFromEditableBuffer(edit_context *E,
 	return Result;
 }
 
+v2f E_GetVisualPositionFromEditableBuffer(edit_context *E,
+									draw_context *D,
+									int Index,
+									editable_buffer Buffer,
+									d_font Font,
+									v2i Indices,
+									v2f Position)
+{
+	f32 Scale = stbtt_ScaleForPixelHeight(&Font.Info, Buffer.HeightInPixels);
+
+	f32 StartX = Position.X;
+	v2f Result = Position;
+
+	int At = Index;
+	for(int I = Indices.X; I < Indices.Y; I++)
+	{
+		if(I == At)
+		{
+			break;
+		}
+
+		// TODO(Oliver): Needs to actually iterate utf-8
+		u32 CodePoint = Buffer.String.Bytes[I];
+
+		if(CodePoint == '\n')
+		{
+			Result.Y -= (Font.Ascent - Font.Descent + Font.LineGap)*Scale;
+			Result.X = StartX;
+			continue;
+		}
+
+		f32 TabMultiplier = 1.0f;
+		if(CodePoint == '\t')
+		{
+			CodePoint = ' ';
+			TabMultiplier *= 4.0;
+		}
+
+		d_atlas_glyph *Glyph  = D_GlyphFromCodePoint(D, Font, Buffer.HeightInPixels, CodePoint);
+
+		Result.X += Glyph->AdvanceX * Scale * TabMultiplier;
+	}
+	Result.Y += Font.Descent*Scale;
+	return Result;
+}
+
 int E_DistanceFromNextNewLine(edit_context *E, int Index, editable_buffer *Buffer)
 {
 	int At = Index;
@@ -423,15 +469,16 @@ int E_GetMaxTextWidthFromRange(edit_context *E, draw_context *D,
 }
 
 int E_IndexFromPosition(edit_context *Edit, draw_context *Draw, d_font Font,
-						editable_buffer *Buffer, v2f BufferPosition, v2i Position)
+						editable_buffer *Buffer, v2i Indices,
+						v2f BufferPosition, v2i Position)
 {
 	f32 Scale = stbtt_ScaleForPixelHeight(&Font.Info, Buffer->HeightInPixels);
 	f32 LineHeight = D_LineHeightFromFont(Font, Buffer->HeightInPixels);
-	int Index = 0;
+	int Index = Indices.X;
 	f32 BufferXStart = BufferPosition.X;
 
 	int Result = Index;
-	for(;Index < Buffer->String.Size; Index++)
+	for(;Index < Indices.Y; Index++)
 	{
 		u32 CodePoint =  Buffer->String.Bytes[Index];
 

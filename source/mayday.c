@@ -253,7 +253,7 @@ void OS_Update(void *Data)
 		if(OS_ValidPath(M->Folder))
 		{
 			OrbitSignal = UI_OrbitLabels(M->UI, M->Draw, M->Edit,
-						   M->UI->Font, M->FrameArena, Orbit, M->FolderTree,
+						   M->UI->Font, M->LogoFont, M->FrameArena, Orbit, M->FolderTree,
 						   CameraPosition, CameraForward, MinDepth, MaxDepth, M->OrbitItem, M->OrbitDepth, M->ActiveEntry,
 						   Transform, ModelView, &M->TextBoxBuffer);
 		}
@@ -280,8 +280,8 @@ void OS_Update(void *Data)
 				Pos.X = CentreX;
 
 				str8 Folder = Str8PushF(M->FrameArena, "?S##f32", Node->String, Pos.Y);
-				b32 Clicked = UI_TextButton(M->UI, M->Draw, M->FrameArena, Folder, 50, Pos, v4f(0.7, 0.1, 0.0, 1));
-				if(Clicked)
+				ui_signal Button = UI_TextButton(M->UI, M->Draw, M->FrameArena, Folder, 50, Pos, v4f(0.7, 0.1, 0.0, 1));
+				if(Button.Clicked)
 				{
 					M->Folder = Str8Copy(M->PermanentArena, Node->String);
 					M->UI->Active = UI_IDFromString(Str8("TreeViewTextBox"));

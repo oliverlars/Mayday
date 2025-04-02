@@ -211,12 +211,12 @@ ui_tree_view_signal UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw, 
 			if(Filter.Size == 0 || Str8FuzzyMatch(FolderName, Filter))
 			{
 
-				b32 Clicked = UI_TextButton(UI, Draw,
+				ui_signal Button = UI_TextButton(UI, Draw,
 					Arena, Str8PushF(Arena, "?S##?u32", FolderName, It.Index),
 					FontSize,
 					v2f(TransformedPoint.X, TransformedPoint.Y), Colour);
 
-				if(Clicked || (SearchSignal.Submitted && Filter.Size > 0))
+				if(Button.Clicked || (SearchSignal.Submitted && Filter.Size > 0))
 				{
 					Result.NodeIndex = It.Index;
 					Result.NodeDepth = It.Depth;
@@ -234,11 +234,11 @@ ui_tree_view_signal UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw, 
 			{
 				if(Filter.Size == 0 || Str8FuzzyMatch(FileName, Filter))
 				{
-					b32 Clicked = UI_TextButton(UI, Draw,
+					ui_signal Button = UI_TextButton(UI, Draw,
 						Arena, Str8PushF(Arena, "?S##?u32", FileName, It.Index),
 						FontSize,
 						v2f(TransformedPoint.X, TransformedPoint.Y), Colour);
-					if(Clicked || (SearchSignal.Submitted && Filter.Size > 0))
+					if(Button.Clicked || (SearchSignal.Submitted && Filter.Size > 0))
 					{
 						Result.Clicked = True;
 						Result.FileToLoad = Str8Copy(TreeView->Arena, TreeView->Info.NodeInfos[It.Index].Name);

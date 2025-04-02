@@ -80,6 +80,13 @@ typedef struct ui_event_iterator
 	ui_event *Current;
 } ui_event_iterator;
 
+typedef struct ui_style
+{
+	// TODO(Oliver): Add more to this
+	d_font Font;
+
+} ui_style;
+
 typedef struct ui_context
 {
 	u64 Hot;
@@ -109,15 +116,24 @@ typedef struct ui_context
 	ui_event *EventLast;
 
 	ui_widget Widgets[UI_TABLE_SIZE];
+
+
+	ui_style StyleStack[4096];
+	int StyleCount;
 } ui_context;
 
+ui_style UI_GetStyle(ui_context *UI);
+void UI_PushStyle(ui_context *UI, ui_style Style);
+void UI_PopStyle(ui_context *UI);
 
 void UI_Begin(ui_context *UI);
 
 void UI_SetActive(ui_context *UI, u64 Hash);
 
+typedef struct ui_signal ui_signal;
 
-b32 UI_TextButton(ui_context *UI, draw_context *Draw,
+
+ui_signal UI_TextButton(ui_context *UI, draw_context *Draw,
 				  m_arena *Arena, str8 String,
 				  f32 HeightInPixels,
 				  v2f Position, v4f Colour);
@@ -170,8 +186,14 @@ typedef struct ui_orbit_signal
 	os_directory_entry *ActiveEntry;
 } ui_orbit_signal;
 
+typedef struct ui_signal
+{
+	b32 Clicked;
+	b32 Hover;
+} ui_signal;
+
 ui_orbit_signal UI_OrbitLabels(ui_context *UI, draw_context *Draw, edit_context *Edit,
-					d_font Font, m_arena *Arena, ui_orbit Orbit, os_directory_tree Tree,
+					d_font Font, d_font LogoFont, m_arena *Arena, ui_orbit Orbit, os_directory_tree Tree,
 					v3f CameraPosition, v3f CameraForward, f32 MinDepth, f32 MaxDepth,
 					int ActiveItem, int ActiveDepth, os_directory_entry *ActiveEntry,
 					m44f MVP, m44f ModelTransform, editable_buffer* SearchBuffer);

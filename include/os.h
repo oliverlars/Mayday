@@ -66,6 +66,8 @@ void OS_Event(const sapp_event *Event, void *Data);
 void OS_Exit(void *Data);
 
 
+str8 OS_GetLastModifiedTime(m_arena *Arena, str8 Path);
+
 
 os_handle OS_GetWindowHandle();
 int OS_WindowWidth(os_window *Window);

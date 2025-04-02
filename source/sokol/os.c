@@ -15,6 +15,7 @@
 #include <sys/types.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <time.h>
 
 
 
@@ -205,6 +206,17 @@ int OS_CountAllEntriesInDirectoryTree(os_directory_tree Tree)
 	int Result = 0;
 	OS_CountAllEntriesInDirectoryTreeHelper(Tree.Root, &Result);
 	return Result;
+}
+
+str8 OS_GetLastModifiedTime(m_arena *Arena, str8 Path)
+{
+	struct stat Stat;
+
+	if (stat(CStrFromStr8(Arena, Path), &Stat) == -1) {
+		return Str8("");
+	}
+
+	return Str8PushF(Arena, "?cstr", ctime(&Stat.st_mtime));
 }
 
 b32

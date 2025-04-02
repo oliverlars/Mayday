@@ -118,7 +118,7 @@ ui_orbit UI_OrbitView(ui_context *UI, draw_context *Draw, m_arena *Arena,
 }
 
 ui_orbit_signal UI_OrbitLabels(ui_context *UI, draw_context *Draw, edit_context *Edit,
-					d_font Font, m_arena *Arena, ui_orbit Orbit, os_directory_tree Tree,
+					d_font Font, d_font LogoFont, m_arena *Arena, ui_orbit Orbit, os_directory_tree Tree,
 					v3f CameraPosition, v3f CameraForward, f32 MinDepth, f32 MaxDepth,
 					int ActiveItem, int ActiveDepth, os_directory_entry *ActiveEntry,
 					m44f MVP, m44f ModelTransform, editable_buffer* SearchBuffer)
@@ -179,13 +179,27 @@ ui_orbit_signal UI_OrbitLabels(ui_context *UI, draw_context *Draw, edit_context 
 			str8 FolderName = Str8FromLastCharacter(Arena, It.Current->PathAndName, '/');
 			if(Filter.Size == 0 || Str8FuzzyMatch(FolderName, Filter))
 			{
-
-				b32 Clicked = UI_TextButton(UI, Draw,
+				ui_signal Button = UI_TextButton(UI, Draw,
 					Arena, Str8PushF(Arena, "?S##?u32", FolderName, It.Index),
 					FontSize,
 					v2f(TransformedPoint.X, TransformedPoint.Y), Colour);
 
-				if(Clicked || (SearchSignal.Submitted && Filter.Size > 0))
+				if(Button.Hover)
+				{
+					str8 LastModified = OS_GetLastModifiedTime(Arena, It.Current->PathAndName);
+					UI_PushStyle(UI, (ui_style){.Font = LogoFont});
+					UI_TextButton(UI, Draw,
+						Arena, Str8PushF(Arena, "?S##HoverInfo?u32", FolderName, It.Index),
+						120,
+						v2f(100, 1000), v4f(0.5, 0.1, 0.0, 1));
+					UI_TextButton(UI, Draw,
+						Arena, Str8PushF(Arena, "?S ##?u32", LastModified, It.Index),
+						80,
+						v2f(120, 900), v4f(0.5, 0.1, 0.0, 1));
+					UI_PopStyle(UI);
+				}
+
+				if(Button.Clicked || (SearchSignal.Submitted && Filter.Size > 0))
 				{
 					Result.ActiveEntry = It.Current;
 					Result.ActiveItem = It.Index;
@@ -204,11 +218,28 @@ ui_orbit_signal UI_OrbitLabels(ui_context *UI, draw_context *Draw, edit_context 
 			{
 				if(Filter.Size == 0 || Str8FuzzyMatch(FileName, Filter))
 				{
-					b32 Clicked = UI_TextButton(UI, Draw,
-						Arena, Str8PushF(Arena, "?S##?u32", FileName, It.Index),
+
+					ui_signal Button = UI_TextButton(UI, Draw,
+						Arena, Str8PushF(Arena, "?S##HoverInfo?u32", FileName, It.Index),
 						FontSize,
 						v2f(TransformedPoint.X, TransformedPoint.Y), Colour);
-					if(Clicked || (SearchSignal.Submitted && Filter.Size > 0))
+
+					if(Button.Hover)
+					{
+						str8 LastModified = OS_GetLastModifiedTime(Arena, It.Current->PathAndName);
+						UI_PushStyle(UI, (ui_style){.Font = LogoFont});
+						UI_TextButton(UI, Draw,
+							Arena, Str8PushF(Arena, "?S##?u32", FileName, It.Index),
+							200,
+							v2f(100, 1000), v4f(0.02, 0.005, 0.0, 0.1));
+						UI_TextButton(UI, Draw,
+							Arena, Str8PushF(Arena, "?S ##?u32", LastModified, It.Index),
+							80,
+							v2f(120, 900), v4f(0.5, 0.1, 0.0, 1));
+						UI_PopStyle(UI);
+					}
+
+					if(Button.Clicked || (SearchSignal.Submitted && Filter.Size > 0))
 					{
 						Result.Clicked = True;
 						Result.FileToLoad = Str8Copy(Arena, It.Current->PathAndName);

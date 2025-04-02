@@ -237,9 +237,27 @@ void UI_DrawBoxCorners(ui_context *UI, draw_context *Draw, m_arena *Arena, v2f P
 	D_DrawQuad(Draw, Arena, SubV2F(Corners[3], v2f(0, LengthOfCornersInPixels)), 2, LengthOfCornersInPixels, Colour);
 }
 
-b32 UI_TextButton(ui_context *UI, draw_context *Draw, m_arena *Arena,
+ui_style UI_GetStyle(ui_context *UI)
+{
+	assert(UI->StyleCount > 0);
+	return UI->StyleStack[UI->StyleCount - 1];
+}
+
+void UI_PushStyle(ui_context *UI, ui_style Style)
+{
+	UI->StyleStack[UI->StyleCount++] = Style;
+}
+
+void UI_PopStyle(ui_context *UI)
+{
+	assert(UI->StyleCount > 0);
+	UI->StyleCount--;
+}
+
+ui_signal UI_TextButton(ui_context *UI, draw_context *Draw, m_arena *Arena,
 				  str8 String, f32 HeightInPixels, v2f Position, v4f Colour)
 {
+	ui_signal Result = {0};
 	u64 Hash = M_FNVHashString(M_FNV_HASH_START, String);
 	f32 Scale = stbtt_ScaleForPixelHeight(&UI->Font.Info, HeightInPixels);
 	str8 DisplayString = UI_DisplayString(Arena, String);
@@ -267,24 +285,26 @@ b32 UI_TextButton(ui_context *UI, draw_context *Draw, m_arena *Arena,
 		UI->HotAnimation = LerpF32(UI->HotAnimation, 0.0, 0.1);
 	}
 
-	b32 Clicked = False;
+	ui_style Style = UI_GetStyle(UI);
+
 	if(UI->Hot == Hash)
 	{
 		if(UI_LeftMouseWentUp(UI))
 		{
-			Clicked = True;
+			Result.Clicked = True;
 		}
+		Result.Hover = True;
 
 		UI->HotAnimation = LerpF32(UI->HotAnimation, 1.0, 0.1);
-		D_DrawStr8(Draw, Arena, UI->Font, Position, v4f(1, 1, 1, 1), HeightInPixels, DisplayString);
+		D_DrawStr8(Draw, Arena, Style.Font, Position, v4f(1, 1, 1, 1), HeightInPixels, DisplayString);
 	}
 	else
 	{
 		//D_DrawQuad(Draw, Arena, BoxPosition, Width, Height, v4f(0, 0, 0, 1));
-		D_DrawStr8(Draw, Arena, UI->Font, Position, Colour, HeightInPixels, DisplayString);
+		D_DrawStr8(Draw, Arena, Style.Font, Position, Colour, HeightInPixels, DisplayString);
 	}
 
-	return Clicked;
+	return Result;
 }
 
 b32 UI_TextButtonWrapping(ui_context *UI, draw_context *Draw, m_arena *Arena,
@@ -371,6 +391,10 @@ b32 UI_TextButtonWrapping(ui_context *UI, draw_context *Draw, m_arena *Arena,
 void UI_Begin(ui_context *UI)
 {
 	UI->Hot = 0;
+	UI->StyleCount = 0;
+	ui_style Style = {0};
+	Style.Font = UI->Font;
+	UI_PushStyle(UI, Style);
 }
 
 u64 UI_IDFromString(str8 String)

@@ -189,11 +189,11 @@ ui_orbit_signal UI_OrbitLabels(ui_context *UI, draw_context *Draw, edit_context 
 					str8 LastModified = OS_GetLastModifiedTime(Arena, It.Current->PathAndName);
 					UI_PushStyle(UI, (ui_style){.Font = LogoFont});
 					UI_TextButton(UI, Draw,
-						Arena, Str8PushF(Arena, "?S##HoverInfo?u32", FolderName, It.Index),
+						Arena, Str8PushF(Arena, "?S##Hover?u32", FolderName, It.Index),
 						120,
-						v2f(100, 1000), v4f(0.5, 0.1, 0.0, 1));
+						v2f(100, 1000), v4f(0.02, 0.005, 0.0, 0.1));
 					UI_TextButton(UI, Draw,
-						Arena, Str8PushF(Arena, "?S ##?u32", LastModified, It.Index),
+						Arena, Str8PushF(Arena, "?S##?u32", LastModified, It.Index),
 						80,
 						v2f(120, 900), v4f(0.5, 0.1, 0.0, 1));
 					UI_PopStyle(UI);
@@ -220,7 +220,7 @@ ui_orbit_signal UI_OrbitLabels(ui_context *UI, draw_context *Draw, edit_context 
 				{
 
 					ui_signal Button = UI_TextButton(UI, Draw,
-						Arena, Str8PushF(Arena, "?S##HoverInfo?u32", FileName, It.Index),
+						Arena, Str8PushF(Arena, "?S##?u32", FileName, It.Index),
 						FontSize,
 						v2f(TransformedPoint.X, TransformedPoint.Y), Colour);
 
@@ -229,11 +229,11 @@ ui_orbit_signal UI_OrbitLabels(ui_context *UI, draw_context *Draw, edit_context 
 						str8 LastModified = OS_GetLastModifiedTime(Arena, It.Current->PathAndName);
 						UI_PushStyle(UI, (ui_style){.Font = LogoFont});
 						UI_TextButton(UI, Draw,
-							Arena, Str8PushF(Arena, "?S##?u32", FileName, It.Index),
+							Arena, Str8PushF(Arena, "?S##Hover ?u32", FileName, It.Index),
 							200,
 							v2f(100, 1000), v4f(0.02, 0.005, 0.0, 0.1));
 						UI_TextButton(UI, Draw,
-							Arena, Str8PushF(Arena, "?S ##?u32", LastModified, It.Index),
+							Arena, Str8PushF(Arena, "?S##?u32", LastModified, It.Index),
 							80,
 							v2f(120, 900), v4f(0.5, 0.1, 0.0, 1));
 						UI_PopStyle(UI);

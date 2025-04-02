@@ -53,8 +53,6 @@ typedef struct mayday_context
 
 	editable_buffer TextBoxBuffer;
 
-
-	v3f CameraPosition;
 	f32 ViewSize;
 	f32 ViewSizeTarget;
 
@@ -162,6 +160,7 @@ void OS_Update(void *Data)
 	m44f Model = MulM44FM44F(TranslateToOrigin, MulM44FM44F(Rotation, TranslateBack));
 
 	m44f ModelView = MulM44FM44F(Model, View);
+	ModelView = MulM44FM44F(ModelView, M44FTranslate(v3f(10, 0, 0)));
 
 	m44f Transform = MulM44FM44F(ModelView, Perspective);
 
@@ -246,7 +245,6 @@ void OS_Update(void *Data)
 					MaxDepth = Depth;
 				}
 			}
-			LogInfo("Min: ?f32", MaxDepth);
 		}
 
 		R_PushTransform(M->Render, M44FOrthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
@@ -530,10 +528,9 @@ int main()
 	M.StatusFont = D_LoadFontFromTTF(M.Draw, G_Doto);
 
 	M.UI->Font = M.CodeFont;
-
-	M.CameraPosition = v3f(0.0);
-	M.LookFrom.Z = 100;
-	M.LookFromTarget.Z = 50.0;
+	M.LookFrom.Z = 120;
+	M.LookFromTarget.Z = 70.0;
+	M.LookFromTarget.X = -20;
 
 	M.Shared.Arena = ArenaInitialise(GigaBytes(1));
 

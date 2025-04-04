@@ -137,6 +137,8 @@ void UI_SetActive(ui_context *UI, u64 Hash);
 
 typedef struct ui_signal ui_signal;
 
+void UI_Label(ui_context *UI, draw_context *Draw, m_arena *Arena,
+				  str8 String, f32 HeightInPixels, v2f Position, v4f Colour);
 
 ui_signal UI_TextButton(ui_context *UI, draw_context *Draw,
 				  m_arena *Arena, str8 String,
@@ -189,6 +191,7 @@ typedef struct ui_orbit_signal
 	b32 Clicked;
 	v3f ActiveItemPosition;
 	os_directory_entry *ActiveEntry;
+	b32 AnyHovering;
 } ui_orbit_signal;
 
 typedef struct ui_signal

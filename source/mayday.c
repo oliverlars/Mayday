@@ -138,10 +138,6 @@ void OS_Update(void *Data)
 
 	static f32 AngleTarget = 0.0;
 
-	AngleTarget -= 0.001 / (f32)(M->OrbitDepth*2 + 1) + Scroll.X*0.01;
-
-	Angle = LerpF32(Angle, AngleTarget, 0.1);
-
 
 	m44f Perspective = M44FPerspective(sapp_widthf()/sapp_heightf(), 35, 0.01, 10000.0);
 	v3f CameraPosition = M->LookFrom;
@@ -290,7 +286,16 @@ void OS_Update(void *Data)
 			}
 		}
 
+		if(OrbitSignal.AnyHovering)
+		{
+			AngleTarget -= 0.0001 / (f32)(M->OrbitDepth*2 + 1) + Scroll.X*0.01;
+		}
+		else
+		{
+			AngleTarget -= 0.001 / (f32)(M->OrbitDepth*2 + 1) + Scroll.X*0.01;
 
+		}
+		Angle = LerpF32(Angle, AngleTarget, 0.1);
 
 		if(OrbitSignal.Clicked)
 		{

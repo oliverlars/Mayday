@@ -237,6 +237,27 @@ void UI_DrawBoxCorners(ui_context *UI, draw_context *Draw, m_arena *Arena, v2f P
 	D_DrawQuad(Draw, Arena, SubV2F(Corners[3], v2f(0, LengthOfCornersInPixels)), 2, LengthOfCornersInPixels, Colour);
 }
 
+void UI_DrawBoxOutline(ui_context *UI, draw_context *Draw, m_arena *Arena, v2f Position, v2f Size, v4f Colour)
+{
+
+	f32 Width = Size.X;
+	f32 Height = Size.Y;
+	v2f Corners[4] =
+	{
+		v2f(Position.X, Position.Y ),
+		v2f(Position.X + Width, Position.Y),
+		v2f(Position.X , Position.Y + Height),
+		v2f(Position.X + Width, Position.Y + Height),
+	};
+
+
+	D_DrawQuad(Draw, Arena, Corners[0], Width, 2, Colour);
+	D_DrawQuad(Draw, Arena, Corners[0], 2, Height, Colour);
+
+	D_DrawQuad(Draw, Arena, Corners[1], 2, Height, Colour);
+	D_DrawQuad(Draw, Arena, Corners[2], Width, 2, Colour);
+}
+
 ui_style UI_GetStyle(ui_context *UI)
 {
 	assert(UI->StyleCount > 0);
@@ -287,6 +308,34 @@ ui_widget *UI_WidgetFromString(ui_context *UI, str8 String)
 	assert(Str8Equal(Widget->Name, String));
 
 	return Widget;
+}
+
+void UI_Label(ui_context *UI, draw_context *Draw, m_arena *Arena,
+				  str8 String, f32 HeightInPixels, v2f Position, v4f Colour)
+{
+	ui_signal Result = {0};
+	ui_widget *Widget = UI_WidgetFromString(UI, String);
+	u64 Hash = Widget->Hash;
+
+	f32 Scale = stbtt_ScaleForPixelHeight(&UI->Font.Info, HeightInPixels);
+	str8 DisplayString = UI_DisplayString(Arena, String);
+
+	f32 Height = D_LineHeightFromFont(UI->Font, HeightInPixels);
+	f32 Width = UI_GetTextWidth(UI->Font, Draw, DisplayString, HeightInPixels);
+
+	v2f Min = AddV2F(Position, v2f(0, UI->Font.Descent * Scale));
+	v2f Max = v2f(Min.X + Width, Min.Y + Height);
+
+	v4f MouseNDC = v4f(UI->MousePosition.X, UI->MousePosition.Y, 0, 1);
+	MouseNDC.X = (MouseNDC.X/sapp_widthf())*2.0 - 1.0;
+	MouseNDC.Y = (MouseNDC.Y/sapp_heightf())*2.0 -1.0;
+
+	v4f MouseWorld = MulM44FV4F(M44FTranspose(R_CurrentInverseTransform(Draw->Render)), MouseNDC);
+	v2f MousePosition = v2f(MouseWorld.X / MouseWorld.W, MouseWorld.Y / MouseWorld.W);
+
+	ui_style Style = UI_GetStyle(UI);
+
+	D_DrawStr8(Draw, Arena, Style.Font, Position, Colour, HeightInPixels, DisplayString);
 }
 
 ui_signal UI_TextButton(ui_context *UI, draw_context *Draw, m_arena *Arena,
@@ -554,7 +603,14 @@ ui_textbox_signal UI_TextBox(m_arena *Arena,
 	{
 		v2f LargerBoxPosition = BoxPosition;
 		v2f LargerBoxSize = v2f(Width, Height - UI->Font.Descent * Scale);
-		UI_DrawBoxCorners(UI, Draw, Arena, LargerBoxPosition, LargerBoxSize, 15, v4f(0.4, 0.01, 0.0, 1.0));
+		LargerBoxSize.X += 20;
+		LargerBoxSize.Y += 20;
+		LargerBoxPosition.X -= 10;
+		LargerBoxPosition.Y -= 10;
+		UI_DrawBoxOutline(UI, Draw, Arena, LargerBoxPosition, LargerBoxSize, v4f(0.2, 0.02, 0.0, 1.0));
+		LargerBoxPosition.X -= 10;
+		LargerBoxPosition.Y += 10;
+		UI_DrawBoxOutline(UI, Draw, Arena, LargerBoxPosition, LargerBoxSize, v4f(0.2, 0.02, 0.0, 1.0));
 	}
 
 	v2f StringPosition = Position;

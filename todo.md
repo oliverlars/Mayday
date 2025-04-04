@@ -9,6 +9,8 @@
 - Fix scaling of text inserts text as well as breaks the glyph atlas
 - Fix scrolling messing up the alignment of the text so that seleciton no longer works
 
+- Fix line numbers not using smooth scroll
+- Fix selection not using visible lines
 
 Incase i forget, try this out one day
 - Make log create user interface code that lets me search for functions and what state they are recording

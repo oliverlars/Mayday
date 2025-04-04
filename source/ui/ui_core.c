@@ -342,7 +342,6 @@ ui_signal UI_TextButton(ui_context *UI, draw_context *Draw, m_arena *Arena,
 	ui_signal Result = {0};
 	ui_widget *Widget = UI_WidgetFromString(UI, String);
 	u64 Hash = Widget->Hash;
-	LogInfo("?S: ?f32", Widget->Name, Widget->HotAnimation);
 	f32 Scale = stbtt_ScaleForPixelHeight(&UI->Font.Info, HeightInPixels);
 	str8 DisplayString = UI_DisplayString(Arena, String);
 
@@ -373,7 +372,6 @@ ui_signal UI_TextButton(ui_context *UI, draw_context *Draw, m_arena *Arena,
 		{
 			Result.Clicked = True;
 		}
-		LogError("Hm");
 		Result.Hover = True;
 
 		Widget->HotAnimation = LerpF32(Widget->HotAnimation, 1.0, 0.1);

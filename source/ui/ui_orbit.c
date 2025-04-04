@@ -147,10 +147,9 @@ ui_orbit_signal UI_OrbitLabels(ui_context *UI, draw_context *Draw, edit_context 
 		v3f P3D = v3f(P4D.X, P4D.Y, P4D.Z);
 
 		f32 Depth = DotV3F(SubV3F(P3D, CameraPosition), CameraForward);
+		f32 HalfWayDepth = (MaxDepth - MinDepth) / 2.0;
 
 		f32 NormalizedDistance = ClampF32((Depth - MinDepth) / (MaxDepth - MinDepth), 0.0, 1.0);
-
-		//LogInfo("?f32", NormalizedDistance);
 
 		v4f Position4D = v4f(P.X, P.Y, P.Z, 1.0);
 		v4f TransformedPoint = MulM44FV4F(M44FTranspose(MVP), Position4D);
@@ -163,7 +162,7 @@ ui_orbit_signal UI_OrbitLabels(ui_context *UI, draw_context *Draw, edit_context 
 		TransformedPoint.Y *= sapp_heightf();
 
 		v4f Colour = v4f(0.8, 0.3, 0.0, 1);
-		v3f C = LerpV3F(v3f(0, 0, 0), v3f(0.5, 0.2, 0.0), NormalizedDistance);
+		v3f C = LerpV3F(v3f(0, 0, 0), v3f(0.5, 0.2, 0.0), NormalizedDistance*NormalizedDistance);
 		Colour = v4f(C.X, C.Y, C.Z, 1.0);
 
 
@@ -178,14 +177,19 @@ ui_orbit_signal UI_OrbitLabels(ui_context *UI, draw_context *Draw, edit_context 
 			str8 FolderName = Str8FromLastCharacter(Arena, It.Current->PathAndName, '/');
 			if(Filter.Size == 0 || Str8FuzzyMatch(FolderName, Filter))
 			{
-				ui_signal Button = UI_TextButton(UI, Draw,
-					Arena, Str8PushF(Arena, "?S##?u32", FolderName, It.Index),
-					FontSize,
-					v2f(TransformedPoint.X, TransformedPoint.Y), Colour);
+				ui_signal Button = {0};
+				if(NormalizedDistance > 0.5)
+				{
+					Button = UI_TextButton(UI, Draw,
+						Arena, Str8PushF(Arena, "?S##?u32", FolderName, It.Index),
+						FontSize,
+						v2f(TransformedPoint.X, TransformedPoint.Y), Colour);
+				}
 
 				f32 Opacity = Button.HotAnimation;
-				if(Button.Hover || Button.HotAnimation > 0)
+				if((Button.Hover || Button.HotAnimation > 0))
 				{
+					LogError("Normalized Distance: ?f32", NormalizedDistance);
 					Result.AnyHovering |= Button.Hover;
 					str8 LastModified = OS_GetLastModifiedTime(Arena, It.Current->PathAndName);
 					UI_PushStyle(UI, (ui_style){.Font = LogoFont});
@@ -220,12 +224,21 @@ ui_orbit_signal UI_OrbitLabels(ui_context *UI, draw_context *Draw, edit_context 
 				if(Filter.Size == 0 || Str8FuzzyMatch(FileName, Filter))
 				{
 
-					ui_signal Button = UI_TextButton(UI, Draw,
-						Arena, Str8PushF(Arena, "?S##?u32", FileName, It.Index),
-						FontSize,
-						v2f(TransformedPoint.X, TransformedPoint.Y), Colour);
+					ui_signal Button = {0};
+					if(NormalizedDistance > 0.5)
+					{
+						Button = UI_TextButton(UI, Draw, Arena,
+											   Str8PushF(Arena, "?S##?u32", FileName, It.Index),
+											   FontSize, v2f(TransformedPoint.X, TransformedPoint.Y), Colour);
+					}
+					else
+					{
+						UI_Label(UI, Draw, Arena,
+								 Str8PushF(Arena, "?S##?u32", FileName, It.Index),
+								 FontSize, v2f(TransformedPoint.X, TransformedPoint.Y), Colour);
+					}
 
-					if(Button.Hover || Button.HotAnimation > 0)
+					if((Button.Hover || Button.HotAnimation > 0) && (NormalizedDistance < 0.5))
 					{
 						Result.AnyHovering |= Button.Hover;
 						str8 LastModified = OS_GetLastModifiedTime(Arena, It.Current->PathAndName);

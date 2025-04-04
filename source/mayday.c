@@ -265,7 +265,7 @@ void OS_Update(void *Data)
 			{
 				// HACK(Oliver): This is leaking memory
 				M->Folder = Str8Copy(M->PermanentArena, SearchSignal.String);
-				M->UI->Active = UI_IDFromString(Str8("TreeViewTextBox"));
+				M->UI->Active = UI_IDFromString(Str8("FolderTextBox"));
 				Str8ListAppend(M->PermanentArena, &M->RecentlyLoadedFolders, SearchSignal.String);
 			}
 

@@ -36,6 +36,6 @@ fragment float4 FragmentMain(vertex_output Input [[stage_in]],
 							 texture2d<float> FontAtlas [[texture(0)]],
 							 sampler Sampler [[sampler(0)]])
 {
-	float4 Colour = float4(Input.Colour.rgb, FontAtlas.sample(Sampler, Input.UV).r);
+	float4 Colour = float4(Input.Colour.rgb, FontAtlas.sample(Sampler, Input.UV).r*Input.Colour.a);
 	return Colour;
 }

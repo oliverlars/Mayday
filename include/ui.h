@@ -15,6 +15,9 @@
 typedef struct ui_widget
 {
 	u64 Hash;
+	str8 Name;
+	f32 HotAnimation;
+	struct ui_widget *NextInHashSlot;
 } ui_widget;
 
 typedef enum ui_view
@@ -89,6 +92,8 @@ typedef struct ui_style
 
 typedef struct ui_context
 {
+	m_arena *Arena;
+
 	u64 Hot;
 	u64 Active;
 	u64 LastActive;
@@ -115,7 +120,7 @@ typedef struct ui_context
 	ui_event *EventFirst;
 	ui_event *EventLast;
 
-	ui_widget Widgets[UI_TABLE_SIZE];
+	ui_widget WidgetTable[UI_TABLE_SIZE];
 
 
 	ui_style StyleStack[4096];
@@ -190,7 +195,9 @@ typedef struct ui_signal
 {
 	b32 Clicked;
 	b32 Hover;
+	f32 HotAnimation;
 } ui_signal;
+
 
 ui_orbit_signal UI_OrbitLabels(ui_context *UI, draw_context *Draw, edit_context *Edit,
 					d_font Font, d_font LogoFont, m_arena *Arena, ui_orbit Orbit, os_directory_tree Tree,

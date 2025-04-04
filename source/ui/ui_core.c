@@ -254,11 +254,48 @@ void UI_PopStyle(ui_context *UI)
 	UI->StyleCount--;
 }
 
+ui_widget *UI_WidgetFromString(ui_context *UI, str8 String)
+{
+	per_thread_context *ThreadContext = GetThreadContext();
+	u64 Hash = M_FNVHashString(M_FNV_HASH_START, String);
+
+	ui_widget *Widget = UI->WidgetTable + (Hash % UI_TABLE_SIZE);
+	for(;Widget->NextInHashSlot != Null && Widget->Hash != Hash; Widget = Widget->NextInHashSlot);
+
+	if(Widget->Hash != 0 && Widget->Hash != Hash)
+	{
+		ui_widget *NextWidget = ArenaPushArrayZero(UI->Arena, ui_widget, 1);
+		Widget->NextInHashSlot = NextWidget;
+		Widget = NextWidget;
+		Widget->Name = Str8Copy(UI->Arena, String);
+		Widget->Hash = Hash;
+
+		Widget = NextWidget;
+	}
+	else if(Widget->Hash == 0)
+	{
+		ui_widget Zeroed = {0};
+		Widget[0] = Zeroed;
+
+		Widget->Hash = Hash;
+		Widget->Name = Str8Copy(UI->Arena, String);
+	}
+
+	LogInfo("RUNGALO BUNGALO: ?f32", Widget->HotAnimation);
+
+	assert(Widget->Hash != 0);
+	assert(Str8Equal(Widget->Name, String));
+
+	return Widget;
+}
+
 ui_signal UI_TextButton(ui_context *UI, draw_context *Draw, m_arena *Arena,
 				  str8 String, f32 HeightInPixels, v2f Position, v4f Colour)
 {
 	ui_signal Result = {0};
-	u64 Hash = M_FNVHashString(M_FNV_HASH_START, String);
+	ui_widget *Widget = UI_WidgetFromString(UI, String);
+	u64 Hash = Widget->Hash;
+	LogInfo("?S: ?f32", Widget->Name, Widget->HotAnimation);
 	f32 Scale = stbtt_ScaleForPixelHeight(&UI->Font.Info, HeightInPixels);
 	str8 DisplayString = UI_DisplayString(Arena, String);
 
@@ -280,10 +317,6 @@ ui_signal UI_TextButton(ui_context *UI, draw_context *Draw, m_arena *Arena,
 	{
 		UI->Hot = Hash;
 	}
-	else
-	{
-		UI->HotAnimation = LerpF32(UI->HotAnimation, 0.0, 0.1);
-	}
 
 	ui_style Style = UI_GetStyle(UI);
 
@@ -293,16 +326,20 @@ ui_signal UI_TextButton(ui_context *UI, draw_context *Draw, m_arena *Arena,
 		{
 			Result.Clicked = True;
 		}
+		LogError("Hm");
 		Result.Hover = True;
 
-		UI->HotAnimation = LerpF32(UI->HotAnimation, 1.0, 0.1);
+		Widget->HotAnimation = LerpF32(Widget->HotAnimation, 1.0, 0.1);
 		D_DrawStr8(Draw, Arena, Style.Font, Position, v4f(1, 1, 1, 1), HeightInPixels, DisplayString);
 	}
 	else
 	{
 		//D_DrawQuad(Draw, Arena, BoxPosition, Width, Height, v4f(0, 0, 0, 1));
 		D_DrawStr8(Draw, Arena, Style.Font, Position, Colour, HeightInPixels, DisplayString);
+		Widget->HotAnimation = LerpF32(Widget->HotAnimation, 0.0, 0.1);
 	}
+
+	Result.HotAnimation = Widget->HotAnimation;
 
 	return Result;
 }

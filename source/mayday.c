@@ -510,6 +510,7 @@ int main()
 	M.Render = ArenaPushArrayZero(Arena, render_context, 1);
 	M.Edit = ArenaPushArrayZero(Arena, edit_context, 1);
 	M.UI = ArenaPushArrayZero(Arena, ui_context, 1);
+	M.UI->Arena = Arena;
 	M.Draw->Render = M.Render;
 	M.Draw->Arena = Arena;
 	M.Edit->Arena = Arena;

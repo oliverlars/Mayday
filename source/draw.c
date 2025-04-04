@@ -119,6 +119,7 @@ void PopGlyphOffLRU(draw_context *D_Context)
 {
 	if(D_Context->OldestGlyph)
 	{
+		D_Context->OldestGlyph[0] = (d_atlas_glyph){0};
 		D_Context->OldestGlyph = D_Context->OldestGlyph->NextInLRU;
 		D_Context->OldestGlyph->PreviousInLRU = Null;
 	}
@@ -174,6 +175,7 @@ d_atlas_glyph *D_GlyphFromCodePoint(draw_context *D, d_font Font, s32 HeightInPi
 	}
 	else if(Glyph->Hash == 0)
 	{
+		Glyph[0] = (d_atlas_glyph){0};
 		int AdvanceX;
 		int LeftSideBearing;
 		stbtt_GetCodepointHMetrics(&Font.Info, CodePoint, &AdvanceX, &LeftSideBearing);
@@ -258,6 +260,8 @@ d_atlas_glyph *D_GlyphFromCodePoint2(draw_context *D, u64 FontHash, d_font Font,
 	}
 	else if(Glyph->Hash == 0)
 	{
+		d_atlas_glyph Zeroed = {0};
+		Glyph[0] = Zeroed;
 		int AdvanceX;
 		int LeftSideBearing;
 		stbtt_GetCodepointHMetrics(&Font.Info, CodePoint, &AdvanceX, &LeftSideBearing);
@@ -286,6 +290,7 @@ d_atlas_glyph *D_GlyphFromCodePoint2(draw_context *D, u64 FontHash, d_font Font,
 								  Scale, Scale,
 								  Glyph->CodePoint);
 		Glyph->BitmapBox = BitmapBox;
+		ResultGlyph = Glyph;
 	}
 
 	assert(CodePoint == ResultGlyph->CodePoint);

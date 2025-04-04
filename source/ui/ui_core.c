@@ -302,8 +302,6 @@ ui_widget *UI_WidgetFromString(ui_context *UI, str8 String)
 		Widget->Name = Str8Copy(UI->Arena, String);
 	}
 
-	LogInfo("RUNGALO BUNGALO: ?f32", Widget->HotAnimation);
-
 	assert(Widget->Hash != 0);
 	assert(Str8Equal(Widget->Name, String));
 

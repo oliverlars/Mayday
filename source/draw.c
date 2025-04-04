@@ -79,20 +79,20 @@ void D_GlyphsToAtlas(draw_context *D)
 				D->OldestGlyph = Glyph->NextInLRU;
 				D->OldestGlyph->PreviousInLRU = Null;
 				LogInfo("Evicted Glyphs");
+				break;
 			}
-			else
+
+			Glyph->AtlasPosition = v2f(AtlasX, AtlasY);
+			u8 *Row = D->FontAtlas[D->WhichAtlas % 2] + AtlasX + AtlasY * D_FONT_ATLAS_SIZE;
+			for(int Y = 0; Y < Height; Y++)
 			{
-				Glyph->AtlasPosition = v2f(AtlasX, AtlasY);
-				u8 *Row = D->FontAtlas[D->WhichAtlas % 2] + AtlasX + AtlasY * D_FONT_ATLAS_SIZE;
-				for(int Y = 0; Y < Height; Y++)
+				for(int X = 0; X < Width; X++)
 				{
-					for(int X = 0; X < Width; X++)
-					{
-						Row[X] = Glyph->Data[X + Y*Width];
-					}
-					Row += D_FONT_ATLAS_SIZE;
+					Row[X] = Glyph->Data[X + Y*Width];
 				}
+				Row += D_FONT_ATLAS_SIZE;
 			}
+
 			AtlasX += Width + Padding;
 		}
 		R_TextureFromBytes(D->Render, D->FontAtlas[D->WhichAtlas++ % 2], D_FONT_ATLAS_SIZE, D_FONT_ATLAS_SIZE);

@@ -1,7 +1,9 @@
 #include "draw.h"
 #include "edit.h"
+#include "maths.h"
 #include "memory.h"
 #include "os.h"
+#include "render.h"
 #include "strings.h"
 #include "ui.h"
 
@@ -77,7 +79,10 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 	v2f NumbersPosition = v2f(10, BufferPosition.Y);
 
 	f32 LineHeight = D_LineHeightFromFont(Font, Buffer->HeightInPixels);
-	BufferPosition.Y += fmod(Buffer->Offset.Y, LineHeight);
+
+	m44f Transform = R_CurrentTransform(Draw->Render);
+	Transform = MulM44FM44F(M44FTranslate(v3f(Buffer->Offset.X, fmod(Buffer->Offset.Y, LineHeight), 0)), Transform);
+	R_PushTransform(Draw->Render, Transform);
 
 	int NumberOfLines = CountNewLinesNEON(Buffer->String);
 
@@ -88,13 +93,11 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 	int EndIndex = IndexFromLine(Buffer->String, LastVisibleLine);
 
 
-	f32 HeightOffset = 0;
 	for(cursor *Cursor = Edit->Cursors; Cursor; Cursor = Cursor->Next)
 	{
 		// D_DrawStr8(M->Draw, M->FrameArena, M->CodeFont, v2f(1600, WindowHeight - 500 + HeightOffset), v4f(1, 1, 1, 1),
 		// 	M->Buffer.HeightInPixels, Str8PushF(M->FrameArena, "Start: ?u32 | End: ?u32 | VisualX: ?u32",
 		// 	Cursor->Selection.X, Cursor->Selection.Y, Cursor->VisualX));
-		HeightOffset -= Buffer->HeightInPixels;
 	}
 
 	D_DrawStr8(Draw, Arena, Font, v2f(800, 400),
@@ -137,7 +140,7 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 	SubString.Bytes += StartIndex;
 	SubString.Size = EndIndex - StartIndex;
 
-	v2i Indices = {StartIndex, EndIndex};
+	v2i Range = {StartIndex, EndIndex};
 
 	D_DrawStr8(Draw,
 			   Arena, Font,
@@ -147,15 +150,16 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 	if(UI->MouseIsDragging)
 	{
 		int Index = E_IndexFromPosition(Edit, Draw, Font,
-										Buffer, Indices,
+										Buffer, Range,
 										BufferPosition, UI->MousePosition);
 		Edit->Cursors[0].Selection.Y = Index;
 
-		Edit->Cursors[0].TargetPosition = E_GetPositionFromEditableBuffer(Edit,
+		Edit->Cursors[0].TargetPosition = E_GetVisualPositionFromEditableBuffer(Edit,
 																	Draw,
 																	Edit->Cursors[0].Selection.Y,
 																	Buffer[0],
 																	Font,
+																	Range,
 																	BufferPosition);
 		Edit->Cursors[0].Position = Edit->Cursors[0].TargetPosition;
 		D_DrawQuad(Draw, Arena, Edit->Cursors[0].Position, 5, LineHeight, v4f(0.3, 0.7, 0, 1));
@@ -164,28 +168,37 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 	{
 		for(cursor *Cursor = Edit->Cursors; Cursor; Cursor = Cursor->Next)
 		{
-			Cursor->TargetPosition = E_GetVisualPositionFromEditableBuffer(Edit,
-																	 Draw,
-																	 Cursor->Selection.Y,
-																	 Buffer[0],
-																	 Font,
-																	 Indices,
-																	 BufferPosition);
-
+			if(Cursor->Selection.Y > Range.X && Cursor->Selection.Y < Range.Y)
+			{
+				Cursor->TargetPosition = E_GetVisualPositionFromEditableBuffer(Edit,
+																		 Draw,
+																		 Cursor->Selection.Y,
+																		 Buffer[0],
+																		 Font,
+																		 Range,
+																		 BufferPosition);
+			}
 			Cursor->Position = LerpV2F(Cursor->Position, Cursor->TargetPosition, 0.3);
 			D_DrawQuad(Draw, Arena, Cursor->Position, 5, LineHeight, v4f(0.3, 0.7, 0, 1));
 		}
 	}
 
 	v2f ScrollOffset = UI_Scroll(UI);
-	Buffer->Offset.X += ScrollOffset.X*15;
-	Buffer->Offset.Y = Max(Buffer->Offset.Y + ScrollOffset.Y*15, 0.0);
+	if(fabs(ScrollOffset.X) > fabs(ScrollOffset.Y))
+	{
+		Buffer->Offset.X = Min(Buffer->Offset.X + ScrollOffset.X*15, 0.0);
+	}
+	else
+	{
+		Buffer->Offset.Y = Max(Buffer->Offset.Y + ScrollOffset.Y*15, 0.0);
+	}
+
 
 
 	if(UI_DoubleClicked(UI))
 	{
 		int Index = E_IndexFromPosition(Edit, Draw, Font,
-									Buffer, Indices, BufferPosition,
+									Buffer, Range, BufferPosition,
 									UI->MousePosition);
 		cursor *LastCursor = E_LastCursor(Edit->Cursors);
 		cursor *Cursor = LastCursor;
@@ -206,7 +219,7 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 	else if(UI_TripleClicked(UI))
 	{
 		int Index = E_IndexFromPosition(Edit, Draw, Font,
-										Buffer, Indices, BufferPosition,
+										Buffer, Range, BufferPosition,
 										UI->MousePosition);
 
 		cursor *LastCursor = E_LastCursor(Edit->Cursors);
@@ -238,7 +251,7 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 		Edit->Cursors[0].Selection = v2i(0, Buffer->String.Size);
 
 		int Index = E_IndexFromPosition(Edit, Draw, Font,
-										Buffer, Indices, BufferPosition,
+										Buffer, Range, BufferPosition,
 										UI->MousePosition);
 
 		cursor *LastCursor = E_LastCursor(Edit->Cursors);
@@ -253,7 +266,7 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 	else if(UI_LeftMouseWentDown(UI))
 	{
 		int Index = E_IndexFromPosition(Edit, Draw, Font,
-									Buffer, Indices, BufferPosition,
+									Buffer, Range, BufferPosition,
 									UI->MousePosition);
 		cursor *LastCursor = E_LastCursor(Edit->Cursors);
 		cursor *Cursor = LastCursor;
@@ -295,7 +308,7 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 		if(Cursor->Selection.X == Cursor->Selection.Y)
 		{
 			int Index = E_IndexFromPosition(Edit, Draw, Font,
-										Buffer, Indices, BufferPosition,
+										Buffer, Range, BufferPosition,
 										UI->MousePosition);
 			v2i InitialSelection = Cursor->Selection;
 			E_MoveCursors(Edit, Draw, Font, Cursor, Buffer, E_MOVE_WORD_RIGHT, E_MOVE_SELECTING);
@@ -439,7 +452,7 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 	if(UI_LeftMouseWentDownWithModifiers(UI, SAPP_MODIFIER_ALT))
 	{
 		int Index = E_IndexFromPosition(Edit, Draw, Font,
-									Buffer, Indices, BufferPosition,
+									Buffer, Range, BufferPosition,
 									UI->MousePosition);
 		cursor *LastCursor = E_LastCursor(Edit->Cursors);
 		cursor *Cursor = LastCursor;
@@ -450,6 +463,8 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 			Cursor = Cursor->Next;
 		}
 	}
+
+	R_PopTransform(Draw->Render);
 }
 
 void UI_StatusBar(ui_context *UI, draw_context *Draw, edit_context *Edit,
@@ -487,4 +502,5 @@ void UI_StatusBar(ui_context *UI, draw_context *Draw, edit_context *Edit,
 
 	v3f Position = v3f(Size.X - 100, 25, 0.0);
 	D_DrawPointsArray(Draw, Arena, &Position, 1, v4f(1, 0.2, 0, 1));
+
 }

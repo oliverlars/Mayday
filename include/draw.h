@@ -80,6 +80,7 @@ void D_DrawSelectionRange(draw_context *D,
 						  v4f Colour,
 						  f32 HeightInPixels,
 						  str8 String,
+						  v2i Range,
 						  s32 Start,
 						  s32 End);
 

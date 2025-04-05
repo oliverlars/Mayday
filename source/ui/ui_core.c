@@ -631,6 +631,7 @@ ui_textbox_signal UI_TextBox(m_arena *Arena,
 							 v4f(0.04, 0.01, 0, 0.1),
 							 HeightInPixels,
 							 Buffer->String,
+							 v2i(0, Buffer->String.Size),
 							 Selection.X,
 							 Selection.Y);
 		if(UI->MouseIsDragging)

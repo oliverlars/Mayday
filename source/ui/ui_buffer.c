@@ -81,7 +81,7 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 	f32 LineHeight = D_LineHeightFromFont(Font, Buffer->HeightInPixels);
 
 	m44f Transform = R_CurrentTransform(Draw->Render);
-	Transform = MulM44FM44F(M44FTranslate(v3f(Buffer->Offset.X, fmod(Buffer->Offset.Y, LineHeight), 0)), Transform);
+	//Transform = MulM44FM44F(M44FTranslate(v3f(Buffer->Offset.X, fmod(Buffer->Offset.Y, LineHeight), 0)), Transform);
 	R_PushTransform(Draw->Render, Transform);
 
 	int NumberOfLines = CountNewLinesNEON(Buffer->String);
@@ -91,6 +91,11 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 
 	int StartIndex = IndexFromLine(Buffer->String, FirstVisibleLine);
 	int EndIndex = IndexFromLine(Buffer->String, LastVisibleLine);
+
+	str8 SubString = Buffer->String;
+	SubString.Bytes += StartIndex;
+	SubString.Size = EndIndex - StartIndex;
+	v2i Range = {StartIndex, EndIndex};
 
 
 	for(cursor *Cursor = Edit->Cursors; Cursor; Cursor = Cursor->Next)
@@ -123,24 +128,19 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 	{
 		v2i Selection = E_GetSortedSelection(Cursor->Selection);
 		str8 SelectedString = Buffer->String;
-		SelectedString.Bytes += Selection.X;
-		SelectedString.Size = Selection.Y - Selection.X;
 		D_DrawSelectionRange(Draw,
 							 Arena,
 							 Font,
 							 BufferPosition,
 							 v4f(0.04, 0.01, 0, 0.1),
 							 Buffer->HeightInPixels,
-							 SelectedString,
+							 Buffer->String,
+							 Range,
 							 Selection.X,
 							 Selection.Y);
 	}
 
-	str8 SubString = Buffer->String;
-	SubString.Bytes += StartIndex;
-	SubString.Size = EndIndex - StartIndex;
 
-	v2i Range = {StartIndex, EndIndex};
 
 	D_DrawStr8(Draw,
 			   Arena, Font,

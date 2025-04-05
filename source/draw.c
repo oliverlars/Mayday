@@ -456,6 +456,7 @@ void D_DrawSelectionRange(draw_context *D,
 						  v4f Colour,
 						  f32 HeightInPixels,
 						  str8 String,
+						  v2i Range,
 						  s32 Start,
 						  s32 End)
 {
@@ -474,7 +475,7 @@ void D_DrawSelectionRange(draw_context *D,
 	u64 Hash = M_FNVHashBytes(M_FNV_HASH_START, (u8*)&Font, sizeof(d_font));
 	Hash = M_FNVHashBytes(Hash, (u8*)&HeightInPixels, sizeof(f32));
 
-	for(int I = 0; I < String.Size; I++)
+	for(int I = Range.X; I < Range.Y; I++)
 	{
 		// TODO(Oliver): Needs to actually iterate utf-8
 		u32 CodePoint = String.Bytes[I];

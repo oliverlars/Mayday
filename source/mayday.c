@@ -257,9 +257,11 @@ void OS_Update(void *Data)
 		ui_tree_view_signal TreeSignal = {0};
 		if(!OS_ValidPath(M->Folder))
 		{
-			f32 CentreX = sapp_widthf()/2.0 - UI_GetTextWidth(M->LogoFont, M->Draw, Str8("MAYDAY!"), 200)/2.0;
-			D_DrawStr8(M->Draw, M->FrameArena, M->LogoFont, v2f(CentreX, sapp_heightf()/1.5), v4f(0.8, 0.05, 0.0, 1.0), 200, Str8("MAYDAY!"));
-			ui_textbox_signal SearchSignal = UI_TextBox(M->FrameArena, M->StatusFont, v2f(sapp_widthf()/2.0 - 500, 100), 1000,
+			f32 CentreX = sapp_widthf()/2.0 - UI_GetTextWidth(M->LogoFont, M->Draw, Str8("MAYDAY!"), 600)/2.0;
+			D_DrawStr8(M->Draw, M->FrameArena, M->LogoFont,
+					   v2f(50, 50),
+					   v4f(0.1, 0.00, 0.0, 0.1), 600, Str8("MAYDAY!"));
+			ui_textbox_signal SearchSignal = UI_TextBox(M->FrameArena, M->StatusFont, v2f(sapp_widthf()/2.0 - 500, sapp_heightf() - 300), 1000,
 														M->UI, M->Draw, M->Edit, 60, Str8("FolderTextBox"), &M->TextBoxBuffer);
 			if(SearchSignal.Submitted)
 			{
@@ -269,20 +271,25 @@ void OS_Update(void *Data)
 				Str8ListAppend(M->PermanentArena, &M->RecentlyLoadedFolders, SearchSignal.String);
 			}
 
-			v2f Pos = v2f(0, 800);
+			v2f Pos = v2f(0, sapp_heightf() - 500);
 			for(str8_list_node *Node = M->RecentlyLoadedFolders.Last; Node; Node = Node->Previous)
 			{
-				CentreX = sapp_widthf()/2.0 - UI_GetTextWidth(M->UI->Font, M->Draw, Node->String, 50)/2.0;
+				CentreX = sapp_widthf()/2.0 - UI_GetTextWidth(M->UI->Font, M->Draw, Node->String, 60)/2.0;
 				Pos.X = CentreX;
 
 				str8 Folder = Str8PushF(M->FrameArena, "?S##f32", Node->String, Pos.Y);
-				ui_signal Button = UI_TextButton(M->UI, M->Draw, M->FrameArena, Folder, 50, Pos, v4f(0.7, 0.1, 0.0, 1));
+
+				UI_PushStyle(M->UI, (ui_style){.Font = M->LogoFont});
+				str8 LastModified = OS_GetLastModifiedTime(M->FrameArena, Node->String);
+				UI_Label(M->UI, M->Draw, M->FrameArena, LastModified, 60, Pos, v4f(0.2, 0.01, 0.0, 1));
+				ui_signal Button = UI_TextButton(M->UI, M->Draw, M->FrameArena, Folder, 60, Pos, v4f(0.1, 0.01, 0.0, 1));
+				UI_PopStyle(M->UI);
 				if(Button.Clicked)
 				{
 					M->Folder = Str8Copy(M->PermanentArena, Node->String);
 					M->UI->Active = UI_IDFromString(Str8("TreeViewTextBox"));
 				}
-				Pos.Y -= 60;
+				Pos.Y -= 150;
 			}
 		}
 

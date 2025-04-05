@@ -238,7 +238,7 @@ ui_orbit_signal UI_OrbitLabels(ui_context *UI, draw_context *Draw, edit_context 
 								 FontSize, v2f(TransformedPoint.X, TransformedPoint.Y), Colour);
 					}
 
-					if((Button.Hover || Button.HotAnimation > 0) && (NormalizedDistance < 0.5))
+					if((Button.Hover || Button.HotAnimation > 0))
 					{
 						Result.AnyHovering |= Button.Hover;
 						str8 LastModified = OS_GetLastModifiedTime(Arena, It.Current->PathAndName);

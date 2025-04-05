@@ -472,9 +472,10 @@ void OS_Exit(void *Data)
 	for(str8_list_node *Node = M->RecentlyLoadedFolders.First; Node; Node = Node->Next)
 	{
 		int AlreadyExists = False;
+		u64 Hash = M_FNVHashString(M_FNV_HASH_START, Node->String);
 		for(int I = 0; I < HashesSoFar; I++)
 		{
-			if(Hashes[I] == M_FNVHashString(M_FNV_HASH_START, Node->String))
+			if(Hashes[I] == Hash)
 			{
 				AlreadyExists = True;
 			}
@@ -482,7 +483,7 @@ void OS_Exit(void *Data)
 		if(!AlreadyExists)
 		{
 			Str8ListAppend(M->PermanentArena, &FinalList, Node->String);
-			Hashes[HashesSoFar++] = M_FNVHashString(M_FNV_HASH_START, Node->String);
+			Hashes[HashesSoFar++] = Hash;
 		}
 	}
 

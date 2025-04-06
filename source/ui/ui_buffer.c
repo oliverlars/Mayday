@@ -41,7 +41,7 @@ s64 IndexFromLine(str8 String, int Line)
 	u64 Count = 0;
 	s64 Index = 0;
 
-	for (; Index <= String.Size - 16; Index += 16)
+	for (; Index <= Max(String.Size - 16, 16); Index += 16)
 	{
 		uint8x16_t Lane = vld1q_u8((uint8_t*)(String.Bytes + Index));
 		uint8x16_t Mask = vceqq_u8(Lane, vdupq_n_u8('\n'));
@@ -74,7 +74,7 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 	int WindowHeight = Size.Y;
 	int WindowWidth = Size.X;
 
-	v2f BufferPosition = v2f(100, (f32)WindowHeight - 50);
+	v2f BufferPosition = v2f(100, (f32)WindowHeight - 0);
 
 	v2f NumbersPosition = v2f(10, BufferPosition.Y);
 
@@ -86,7 +86,7 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 
 	int NumberOfLines = CountNewLinesNEON(Buffer->String);
 
-	int FirstVisibleLine = Max(Buffer->Offset.Y/LineHeight, 0);
+	int FirstVisibleLine = Max((Buffer->Offset.Y)/LineHeight, 0);
 	int LastVisibleLine = FirstVisibleLine + WindowHeight/LineHeight;
 
 	int StartIndex = IndexFromLine(Buffer->String, FirstVisibleLine);
@@ -96,14 +96,6 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 	SubString.Bytes += StartIndex;
 	SubString.Size = EndIndex - StartIndex;
 	v2i Range = {StartIndex, EndIndex};
-
-
-	for(cursor *Cursor = Edit->Cursors; Cursor; Cursor = Cursor->Next)
-	{
-		// D_DrawStr8(M->Draw, M->FrameArena, M->CodeFont, v2f(1600, WindowHeight - 500 + HeightOffset), v4f(1, 1, 1, 1),
-		// 	M->Buffer.HeightInPixels, Str8PushF(M->FrameArena, "Start: ?u32 | End: ?u32 | VisualX: ?u32",
-		// 	Cursor->Selection.X, Cursor->Selection.Y, Cursor->VisualX));
-	}
 
 	D_DrawStr8(Draw, Arena, Font, v2f(800, 400),
 			   v4f(1.0, 1.0, 1, 1), LineHeight, Str8PushF(Arena, "?u32:?u32", FirstVisibleLine, LastVisibleLine));
@@ -224,17 +216,7 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 
 		cursor *LastCursor = E_LastCursor(Edit->Cursors);
 		cursor *Cursor = LastCursor;
-		if(False)
-		{
-			cursor NextCursor = Cursor[0];
-			NextCursor.Selection = v2i(Index, Index);
-			E_AppendCursor(Edit, Edit->Arena, Edit->Cursors, NextCursor);
-			Cursor = Cursor->Next;
-		}
-		else
-		{
-			Edit->Cursors[0].Next = Null;
-		}
+		Edit->Cursors[0].Next = Null;
 
 		int LineStart = E_LineStartFromIndex(Edit, Cursor->Selection.Y, Buffer);
 		int LineEnd = E_LineEndFromIndex(Edit, Cursor->Selection.Y, Buffer);

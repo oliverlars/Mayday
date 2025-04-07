@@ -335,10 +335,10 @@ void D_DrawQuad(draw_context *D,
 	R_PushCommand(R, Arena, Command);
 }
 
-void D_DrawStr8(draw_context *D,
+void D_Draw3DStr8(draw_context *D,
 				m_arena *Arena,
 				d_font Font,
-				v2f Position,
+				v3f Position,
 				v4f Colour,
 				f32 HeightInPixels,
 				str8 String)
@@ -423,7 +423,7 @@ void D_DrawStr8(draw_context *D,
 		for(int V = 0; V < 6; V++)
 		{
 			r_vertex Vertex = {
-				.Position = v4f(Vertices[V].X, Vertices[V].Y, 0, 1),
+				.Position = v4f(Vertices[V].X, Vertices[V].Y, Position.Z, 1),
 				.UV = DivV2F(UVs[V], V2FromF32((f32)D_FONT_ATLAS_SIZE)),
 				.Colour = Colours[NewLine],
 			};
@@ -447,6 +447,17 @@ void D_DrawStr8(draw_context *D,
 
 	Command.Type = R_COMMAND_GLYPH;
 	R_PushCommand(R, Arena, Command);
+}
+
+void D_DrawStr8(draw_context *D,
+				m_arena *Arena,
+				d_font Font,
+				v2f Position,
+				v4f Colour,
+				f32 HeightInPixels,
+				str8 String)
+{
+	D_Draw3DStr8(D, Arena, Font, v3f(Position.X, Position.Y, 0.0), Colour, HeightInPixels, String);
 }
 
 void D_DrawSelectionRange(draw_context *D,

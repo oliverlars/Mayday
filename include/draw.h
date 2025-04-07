@@ -65,6 +65,13 @@ void D_GlyphsToAtlas(draw_context *D_Context);
 d_font D_LoadFontFromFile(draw_context *D_Context, str8 FileName);
 d_font D_LoadFontFromTTF(draw_context *D_Context, u8 *Data);
 void D_DrawGlyph(draw_context *D_Context, d_atlas_glyph *Glyph);
+void D_Draw3DStr8(draw_context *D_Context,
+				  m_arena *Arena,
+				  d_font Font,
+				  v3f Position,
+				  v4f Colour,
+				  f32 HeightInPixels,
+				  str8 String);
 void D_DrawStr8(draw_context *D_Context,
 				m_arena *Arena,
 				d_font Font,

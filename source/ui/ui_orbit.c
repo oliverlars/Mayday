@@ -189,7 +189,6 @@ ui_orbit_signal UI_OrbitLabels(ui_context *UI, draw_context *Draw, edit_context 
 				f32 Opacity = Button.HotAnimation;
 				if((Button.Hover || Button.HotAnimation > 0))
 				{
-					LogError("Normalized Distance: ?f32", NormalizedDistance);
 					Result.AnyHovering |= Button.Hover;
 					str8 LastModified = OS_GetLastModifiedTime(Arena, It.Current->PathAndName);
 					UI_PushStyle(UI, (ui_style){.Font = LogoFont});

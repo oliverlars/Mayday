@@ -202,6 +202,14 @@ typedef struct ui_signal
 } ui_signal;
 
 
+typedef struct ui_orbit_node
+{
+	str8 Path;
+	v3f Position;
+} ui_orbit_node;
+
+ui_orbit_node *UI_OrbitNodesFromTreeDepth(m_arena *Arena, os_directory_tree Tree, int Depth);
+
 ui_orbit_signal UI_OrbitLabels(ui_context *UI, draw_context *Draw, edit_context *Edit,
 					d_font Font, d_font LogoFont, m_arena *Arena, ui_orbit Orbit, os_directory_tree Tree,
 					v3f CameraPosition, v3f CameraForward, f32 MinDepth, f32 MaxDepth,

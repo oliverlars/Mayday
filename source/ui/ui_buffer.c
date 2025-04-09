@@ -74,11 +74,11 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 	int WindowHeight = Size.Y;
 	int WindowWidth = Size.X;
 
-	v2f BufferPosition = v2f(100, (f32)WindowHeight - 0);
+	f32 LineHeight = D_LineHeightFromFont(Font, Buffer->HeightInPixels);
+
+	v2f BufferPosition = v2f(100, (f32)WindowHeight - LineHeight);
 
 	v2f NumbersPosition = v2f(10, BufferPosition.Y);
-
-	f32 LineHeight = D_LineHeightFromFont(Font, Buffer->HeightInPixels);
 
 	m44f Transform = R_CurrentTransform(Draw->Render);
 	//Transform = MulM44FM44F(M44FTranslate(v3f(Buffer->Offset.X, fmod(Buffer->Offset.Y, LineHeight), 0)), Transform);
@@ -101,7 +101,7 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 			   v4f(1.0, 1.0, 1, 1), LineHeight, Str8PushF(Arena, "?u32:?u32", FirstVisibleLine, LastVisibleLine));
 
 	int MainCursorLine = E_LineFromBufferIndex(Edit, Edit->Cursors[0].Selection.Y, Buffer);
-	for(int I = FirstVisibleLine; I < LastVisibleLine; I++)
+	for(int I = FirstVisibleLine; I <= LastVisibleLine; I++)
 	{
 		if(MainCursorLine == I)
 		{

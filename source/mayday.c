@@ -210,7 +210,7 @@ void OS_Update(void *Data)
 
 
 
-			Orbit = UI_OrbitView(M->UI, M->Draw, M->FrameArena, M->FolderTree, M->OrbitItem, M->OrbitDepth, M->ActiveEntry);
+			Orbit = UI_OrbitView(M->UI, M->Draw, M->FrameArena, M->FolderTree, M->OrbitItem, M->OrbitDepth + 1, M->ActiveEntry);
 
 			{
 				v4f P4D = v4f(Orbit.Positions[0].X, Orbit.Positions[0].Y, Orbit.Positions[0].Z, 1.0);

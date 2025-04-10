@@ -36,12 +36,12 @@ we only need to process Depth +/- 2 levels and not need to traverse the entire t
 
 */
 
-ui_orbit_node_array UI_OrbitNodesFromTreeDepth(m_arena *Arena, os_directory_tree Tree, int Depth)
+ui_orbit_node_array UI_OrbitNodesFromTreeDepth(m_arena *Arena, os_directory_tree Tree, int Depth, f32 Scale)
 {
 	int DepthCount = 0;
 	for(os_directory_tree_iterator It = {0}; OS_DirectoryTreeIterate(Tree, &It);)
 	{
-		if(It.Depth == 1)
+		if(It.Depth == Depth)
 		{
 			DepthCount++;
 		}
@@ -63,9 +63,9 @@ ui_orbit_node_array UI_OrbitNodesFromTreeDepth(m_arena *Arena, os_directory_tree
 			f32 Z = 1.0 - 2.0 * (((f32)Index + 0.5) / (f32)DepthCount);
 			f32 R = sqrt(1.0 - Z * Z);
 			f32 theta = (f32)Index * GoldenAngle;
-			Node.Position.X = 15.0 * R * cos(theta);
-			Node.Position.Y = 15.0 * R * sin(theta);
-			Node.Position.Z = 15.0 * Z;
+			Node.Position.X = Scale * R * cos(theta);
+			Node.Position.Y = Scale * R * sin(theta);
+			Node.Position.Z = Scale * Z;
 			Node.Path = Str8Copy(Arena, It.Current->PathAndName);
 			Result.Items[Index++] = Node;
 		}
@@ -81,9 +81,17 @@ ui_orbit UI_OrbitView(ui_context *UI, draw_context *Draw, m_arena *Arena,
 	ui_orbit Result = {0};
 	if(Tree.Count == 0) return Result;
 
-	ui_orbit_node_array OrbitNodes[2];
-	OrbitNodes[0] = UI_OrbitNodesFromTreeDepth(Arena, Tree, Depth + 1);
-	OrbitNodes[1] = UI_OrbitNodesFromTreeDepth(Arena, Tree, Depth + 2);
+	ui_orbit_node_array OuterOrbitNodes = {0};
+	ui_orbit_node_array OrbitNodes = {0};
+	if(Depth > 1)
+	{
+		OuterOrbitNodes = UI_OrbitNodesFromTreeDepth(Arena, Tree, Depth , 5);
+		OrbitNodes = UI_OrbitNodesFromTreeDepth(Arena, Tree, Depth + 1, 15);
+	}
+	else
+	{
+		OrbitNodes = UI_OrbitNodesFromTreeDepth(Arena, Tree, Depth, 15);
+	}
 
 
 	int PositionIndex = 0;
@@ -94,23 +102,25 @@ ui_orbit UI_OrbitView(ui_context *UI, draw_context *Draw, m_arena *Arena,
 		{
 			if(It.Index == Active)
 			{
-				PositionOfActive = OrbitNodes[0].Items[PositionIndex].Position;
+				PositionOfActive = OrbitNodes.Items[PositionIndex].Position;
 			}
 		}
 	}
 
-	v3f *Positions[2];
-	for(int OrbitIndex = 0; OrbitIndex < 2; OrbitIndex++)
+	v3f *Positions=  ArenaPushArrayZero(Arena, v3f, OrbitNodes.Count + OuterOrbitNodes.Count);
+	for(int I = 0; I < OrbitNodes.Count; I++)
 	{
-		Positions[OrbitIndex] = ArenaPushArrayZero(Arena, v3f, Result.Count);
-		for(int I = 0; I < Result.Count; I++)
-		{
-			Positions[OrbitIndex][I] = OrbitNodes[OrbitIndex].Items[I].Position;
-		}
-		D_DrawPointsArray(Draw, Arena, Positions[OrbitIndex], Result.Count, v4f(1, 0, 0, 1));
+		Positions[I] = OrbitNodes.Items[I].Position;
 	}
-	Result.Count = OrbitNodes[0].Count;
-	Result.Positions = Positions[0];
+
+	for(int I = 0; I < OuterOrbitNodes.Count; I++)
+	{
+		Positions[OrbitNodes.Count + I] = OuterOrbitNodes.Items[I].Position;
+	}
+
+	D_DrawPointsArray(Draw, Arena, Positions, Result.Count, v4f(1, 0, 0, 1));
+	Result.Count = OrbitNodes.Count + OuterOrbitNodes.Count;
+	Result.Positions = Positions;
 
 	return Result;
 }

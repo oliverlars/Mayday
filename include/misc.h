@@ -36,3 +36,5 @@ typedef uint64_t  b64;
 #define per_thread_local __thread
 #elif(_WIN32)
 #endif
+
+#define array(T) struct { T *Items; s64 Count; }

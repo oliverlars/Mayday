@@ -36,7 +36,43 @@ we only need to process Depth +/- 2 levels and not need to traverse the entire t
 
 */
 
+ui_orbit_node_array UI_OrbitNodesFromTreeDepth(m_arena *Arena, os_directory_tree Tree, int Depth)
+{
+	int DepthCount = 0;
+	for(os_directory_tree_iterator It = {0}; OS_DirectoryTreeIterate(Tree, &It);)
+	{
+		if(It.Depth == 1)
+		{
+			DepthCount++;
+		}
+	}
 
+	ui_orbit_node_array Result = {0};
+	Result.Items = ArenaPushArrayZero(Arena, ui_orbit_node, DepthCount);
+	Result.Count = DepthCount;
+
+	int Index = 0;
+	for(os_directory_tree_iterator It = {0}; OS_DirectoryTreeIterate(Tree, &It);)
+	{
+		if(It.Depth == Depth)
+		{
+			ui_orbit_node Node = {0};
+
+			f32 Phi = (1.0 + sqrt(5.0)) / 2.0;
+			f32 GoldenAngle = 2.0 * M_PI * (1.0 - 1.0 / Phi);
+			f32 Z = 1.0 - 2.0 * (((f32)Index + 0.5) / (f32)DepthCount);
+			f32 R = sqrt(1.0 - Z * Z);
+			f32 theta = (f32)Index * GoldenAngle;
+			Node.Position.X = 15.0 * R * cos(theta);
+			Node.Position.Y = 15.0 * R * sin(theta);
+			Node.Position.Z = 15.0 * Z;
+			Node.Path = Str8Copy(Arena, It.Current->PathAndName);
+			Result.Items[Index++] = Node;
+		}
+	}
+
+	return Result;
+}
 
 ui_orbit UI_OrbitView(ui_context *UI, draw_context *Draw, m_arena *Arena,
 					  os_directory_tree Tree, int Active, int Depth,
@@ -45,74 +81,36 @@ ui_orbit UI_OrbitView(ui_context *UI, draw_context *Draw, m_arena *Arena,
 	ui_orbit Result = {0};
 	if(Tree.Count == 0) return Result;
 
-	int CountParent = 0;
-	for(os_directory_tree_iterator It = {0}; OS_DirectoryTreeIterate(Tree, &It);)
-	{
-		if(It.Depth == 1)
-		{
-			CountParent++;
-		}
-	}
+	ui_orbit_node_array OrbitNodes[2];
+	OrbitNodes[0] = UI_OrbitNodesFromTreeDepth(Arena, Tree, Depth + 1);
+	OrbitNodes[1] = UI_OrbitNodesFromTreeDepth(Arena, Tree, Depth + 2);
 
-	int CountChild = 0;
-	if(ActiveEntry)
-	{
-		for(os_directory_entry *Entry = ActiveEntry->First; Entry != Null; Entry = Entry->Next)
-		{
-			CountChild++;
-		}
-	}
-
-	int Count = CountChild + CountParent;
-
-	f32 Phi = (1.0 + sqrt(5.0)) / 2.0;
-	f32 GoldenAngle = 2.0 * M_PI * (1.0 - 1.0 / Phi);
-
-
-	v3f *Positions = ArenaPushArrayZero(Arena, v3f, Count);
 
 	int PositionIndex = 0;
 	v3f PositionOfActive = v3f(0);
 	for(os_directory_tree_iterator It = {0}; OS_DirectoryTreeIterate(Tree, &It);)
 	{
-		if(It.Depth == 1)
+		if(It.Depth == Depth)
 		{
-			f32 Z = 1.0 - 2.0 * (((f32)PositionIndex + 0.5) / (f32)CountParent);
-			f32 R = sqrt(1.0 - Z * Z);
-			f32 theta = (f32)PositionIndex * GoldenAngle;
-			Positions[PositionIndex].X = 15.0 * R * cos(theta);
-			Positions[PositionIndex].Y = 15.0 * R * sin(theta);
-			Positions[PositionIndex].Z = 15.0 * Z;
 			if(It.Index == Active)
 			{
-				PositionOfActive = Positions[PositionIndex];
+				PositionOfActive = OrbitNodes[0].Items[PositionIndex].Position;
 			}
-			PositionIndex++;
 		}
 	}
 
-	if(ActiveEntry)
+	v3f *Positions[2];
+	for(int OrbitIndex = 0; OrbitIndex < 2; OrbitIndex++)
 	{
-		int Index = 0;
-		for(os_directory_entry *Entry = ActiveEntry->First; Entry != Null; Entry = Entry->Next)
+		Positions[OrbitIndex] = ArenaPushArrayZero(Arena, v3f, Result.Count);
+		for(int I = 0; I < Result.Count; I++)
 		{
-			{
-				f32 Z = 1.0 - 2.0 * (((f32)Index + 0.5) / (f32)CountChild);
-				f32 R = sqrt(1.0 - Z * Z);
-				f32 theta = (f32)Index * GoldenAngle;
-				Positions[PositionIndex].X = 5.0 * R * cos(theta) + PositionOfActive.X;
-				Positions[PositionIndex].Y = 5.0 * R * sin(theta) + PositionOfActive.Y;
-				Positions[PositionIndex].Z = 5.0 * Z + PositionOfActive.Z;
-				PositionIndex++;
-				Index++;
-			}
+			Positions[OrbitIndex][I] = OrbitNodes[OrbitIndex].Items[I].Position;
 		}
+		D_DrawPointsArray(Draw, Arena, Positions[OrbitIndex], Result.Count, v4f(1, 0, 0, 1));
 	}
-
-	Result.Count = Count;
-	Result.Positions = Positions;
-
-	D_DrawPointsArray(Draw, Arena, Positions, Count, v4f(1, 0, 0, 1));
+	Result.Count = OrbitNodes[0].Count;
+	Result.Positions = Positions[0];
 
 	return Result;
 }

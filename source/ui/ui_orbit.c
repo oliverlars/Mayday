@@ -103,6 +103,7 @@ ui_orbit UI_OrbitView(ui_context *UI, draw_context *Draw, m_arena *Arena,
 			if(It.Index == Active)
 			{
 				PositionOfActive = OrbitNodes.Items[PositionIndex].Position;
+				PositionIndex++;
 			}
 		}
 	}

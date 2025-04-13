@@ -41,36 +41,19 @@ s64 IndexFromLine(str8 String, int Line)
 	u64 Count = 0;
 	s64 Index = 0;
 
-	for (; Index <= String.Size - 16; Index += 16)
+	for (; Index < String.Size ; Index++)
 	{
-		uint8x16_t Lane = vld1q_u8((uint8_t*)(String.Bytes + Index));
-		uint8x16_t Mask = vceqq_u8(Lane, vdupq_n_u8('\n'));
-		uint8x16_t NewLinesThisLane = vandq_u8(Mask, vdupq_n_u8(1));
-		if(Count + vaddvq_u8(NewLinesThisLane) >= Line)
+		if (String.Bytes[Index] == '\n')
 		{
-			break;
+			if(Count == Line) break;
+			Count++;
 		}
-		Count += vaddvq_u8(NewLinesThisLane);
-	}
-
-	// We break when we either match or exceed the number of new lines in a 16 byte
-	// block. In order to handle cases where the berak happens at an exact match,
-	// we only do more processing when it's not equal to the line count.
-	if(Count != Line)
-	{
-		int Offset = 0;
-		for (; Offset < 16; Offset++)
-		{
-			if (String.Bytes[Index + Offset] == '\n')
-			{
-				if(Count == Line) break;
-				Count++;
-			}
-		}
-		Index += Offset;
 	}
 
 	return Index;
+
+	// TODO(Oliver):
+	// Make this use SIMD
 }
 
 void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
@@ -84,7 +67,7 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 
 	f32 LineHeight = D_LineHeightFromFont(Font, Buffer->HeightInPixels);
 
-	v2f BufferPosition = v2f(100, (f32)WindowHeight - LineHeight);
+	v2f BufferPosition = v2f(100, (f32)WindowHeight);
 
 	v2f NumbersPosition = v2f(10, BufferPosition.Y);
 
@@ -105,11 +88,11 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 	SubString.Size = EndIndex - StartIndex;
 	v2i Range = {StartIndex, EndIndex};
 
-	// D_DrawStr8(Draw, Arena, Font, v2f(800, 400),
-	// 		   v4f(1.0, 1.0, 1, 1), LineHeight, Str8PushF(Arena, "FirstVsibleLine: ?u32 LastVisibleLine: ?u32", FirstVisibleLine, LastVisibleLine));
+	D_DrawStr8(Draw, Arena, Font, v2f(800, 400),
+			   v4f(1.0, 1.0, 1, 1), LineHeight, Str8PushF(Arena, "FirstVsibleLine: ?u32 LastVisibleLine: ?u32", FirstVisibleLine, LastVisibleLine));
 
-	// D_DrawStr8(Draw, Arena, Font, v2f(900, 300),
-	// 		   v4f(1.0, 1.0, 1, 1), LineHeight, Str8PushF(Arena, "StartIndex: ?u32 EndIndex: ?u32", StartIndex, EndIndex));
+	D_DrawStr8(Draw, Arena, Font, v2f(900, 300),
+			   v4f(1.0, 1.0, 1, 1), LineHeight, Str8PushF(Arena, "StartIndex: ?u32 EndIndex: ?u32", StartIndex, EndIndex));
 
 	int MainCursorLine = E_LineFromBufferIndex(Edit, Edit->Cursors[0].Selection.Y, Buffer);
 	for(int I = FirstVisibleLine; I <= LastVisibleLine; I++)

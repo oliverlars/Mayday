@@ -89,7 +89,7 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 	v2f NumbersPosition = v2f(10, BufferPosition.Y);
 
 	m44f Transform = R_CurrentTransform(Draw->Render);
-	//Transform = MulM44FM44F(M44FTranslate(v3f(Buffer->Offset.X, fmod(Buffer->Offset.Y, LineHeight), 0)), Transform);
+	Transform = MulM44FM44F(M44FTranslate(v3f(Buffer->Offset.X, fmod(Buffer->Offset.Y, LineHeight), 0)), Transform);
 	R_PushTransform(Draw->Render, Transform);
 
 	int NumberOfLines = CountNewLinesNEON(Buffer->String);
@@ -105,11 +105,11 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 	SubString.Size = EndIndex - StartIndex;
 	v2i Range = {StartIndex, EndIndex};
 
-	D_DrawStr8(Draw, Arena, Font, v2f(800, 400),
-			   v4f(1.0, 1.0, 1, 1), LineHeight, Str8PushF(Arena, "FirstVsibleLine: ?u32 LastVisibleLine: ?u32", FirstVisibleLine, LastVisibleLine));
+	// D_DrawStr8(Draw, Arena, Font, v2f(800, 400),
+	// 		   v4f(1.0, 1.0, 1, 1), LineHeight, Str8PushF(Arena, "FirstVsibleLine: ?u32 LastVisibleLine: ?u32", FirstVisibleLine, LastVisibleLine));
 
-	D_DrawStr8(Draw, Arena, Font, v2f(900, 300),
-			   v4f(1.0, 1.0, 1, 1), LineHeight, Str8PushF(Arena, "StartIndex: ?u32 EndIndex: ?u32", StartIndex, EndIndex));
+	// D_DrawStr8(Draw, Arena, Font, v2f(900, 300),
+	// 		   v4f(1.0, 1.0, 1, 1), LineHeight, Str8PushF(Arena, "StartIndex: ?u32 EndIndex: ?u32", StartIndex, EndIndex));
 
 	int MainCursorLine = E_LineFromBufferIndex(Edit, Edit->Cursors[0].Selection.Y, Buffer);
 	for(int I = FirstVisibleLine; I <= LastVisibleLine; I++)
@@ -150,6 +150,17 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 			   BufferPosition, v4f(0.8, 0.3, 0, 1),
 			   Buffer->HeightInPixels, SubString);
 
+	v2f ScrollOffset = UI_Scroll(UI);
+
+	if(fabs(ScrollOffset.X) > fabs(ScrollOffset.Y))
+	{
+		Buffer->Offset.X = Min(Buffer->Offset.X + ScrollOffset.X*15, 0.0);
+	}
+	else
+	{
+		Buffer->Offset.Y = Max(Buffer->Offset.Y + ScrollOffset.Y*15, 0.0);
+	}
+
 	if(UI->MouseIsDragging)
 	{
 		int Index = E_IndexFromPosition(Edit, Draw, Font,
@@ -181,22 +192,17 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 																		 Range,
 																		 BufferPosition);
 			}
-			Cursor->Position = LerpV2F(Cursor->Position, Cursor->TargetPosition, 0.3);
+			if(fabs(ScrollOffset.X) > 0.0f || fabs(ScrollOffset.Y) > 0.0f)
+			{
+				Cursor->Position = Cursor->TargetPosition;
+			}
+			else
+			{
+				Cursor->Position = LerpV2F(Cursor->Position, Cursor->TargetPosition, 0.3);
+			}
 			D_DrawQuad(Draw, Arena, Cursor->Position, 5, LineHeight, v4f(0.3, 0.7, 0, 1));
 		}
 	}
-
-	v2f ScrollOffset = UI_Scroll(UI);
-	if(fabs(ScrollOffset.X) > fabs(ScrollOffset.Y))
-	{
-		Buffer->Offset.X = Min(Buffer->Offset.X + ScrollOffset.X*15, 0.0);
-	}
-	else
-	{
-		Buffer->Offset.Y = Max(Buffer->Offset.Y + ScrollOffset.Y*15, 0.0);
-	}
-
-
 
 	if(UI_DoubleClicked(UI))
 	{

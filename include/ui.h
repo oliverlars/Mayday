@@ -94,6 +94,9 @@ typedef struct ui_context
 {
 	m_arena *Arena;
 
+	draw_context *Draw;
+
+
 	u64 Hot;
 	u64 Active;
 	u64 LastActive;
@@ -180,6 +183,7 @@ typedef struct ui_orbit
 {
 	v3f *Positions;
 	int Count;
+	v3f ActivePosition;
 } ui_orbit;
 
 typedef struct ui_orbit_signal
@@ -219,8 +223,7 @@ ui_orbit_signal UI_OrbitLabels(ui_context *UI, draw_context *Draw, edit_context 
 					m44f MVP, m44f ModelTransform, editable_buffer* SearchBuffer);
 
 ui_orbit UI_OrbitView(ui_context *UI, draw_context *Draw, m_arena *Arena,
-					  os_directory_tree Tree, int Active, int Depth,
-					  os_directory_entry *ActiveEntry);
+					  os_directory_tree Tree, int ActiveIndex, int Depth, f32 Radius);
 
 u64 UI_IDFromString(str8 String);
 

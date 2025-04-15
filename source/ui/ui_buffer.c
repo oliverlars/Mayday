@@ -88,11 +88,11 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 	SubString.Size = EndIndex - StartIndex;
 	v2i Range = {StartIndex, EndIndex};
 
-	D_DrawStr8(Draw, Arena, Font, v2f(800, 400),
-			   v4f(1.0, 1.0, 1, 1), LineHeight, Str8PushF(Arena, "FirstVsibleLine: ?u32 LastVisibleLine: ?u32", FirstVisibleLine, LastVisibleLine));
+	// D_DrawStr8(Draw, Arena, Font, v2f(800, 400),
+	// 		   v4f(1.0, 1.0, 1, 1), LineHeight, Str8PushF(Arena, "FirstVsibleLine: ?u32 LastVisibleLine: ?u32", FirstVisibleLine, LastVisibleLine));
 
-	D_DrawStr8(Draw, Arena, Font, v2f(900, 300),
-			   v4f(1.0, 1.0, 1, 1), LineHeight, Str8PushF(Arena, "StartIndex: ?u32 EndIndex: ?u32", StartIndex, EndIndex));
+	// D_DrawStr8(Draw, Arena, Font, v2f(900, 300),
+	// 		   v4f(1.0, 1.0, 1, 1), LineHeight, Str8PushF(Arena, "StartIndex: ?u32 EndIndex: ?u32", StartIndex, EndIndex));
 
 	int MainCursorLine = E_LineFromBufferIndex(Edit, Edit->Cursors[0].Selection.Y, Buffer);
 	for(int I = FirstVisibleLine; I <= LastVisibleLine; I++)

@@ -66,6 +66,7 @@ typedef struct mayday_context
 
 	int OrbitItem;
 	int OrbitDepth;
+	v3f OrbitPosition;
 	// HACK(Oliver): We probably don't want to rely
 	// on this
 	os_directory_entry *ActiveEntry;
@@ -209,8 +210,21 @@ void OS_Update(void *Data)
 			M->LookFrom = LerpV3F(M->LookFrom, M->LookFromTarget, 0.1);
 
 
+			if(M->OrbitDepth >= 1)
+			{
+				m44f CurrentTransform = R_CurrentTransform(M->Render);
+				v3f AP = M->OrbitPosition;
+				m44f Translate = M44FTranslate(v3f(AP.X, AP.Y, AP.Z));
+				R_PushTransform(M->Render, MulM44FM44F(Translate, CurrentTransform));
+				ui_orbit OuterOrbit = UI_OrbitView(M->UI, M->Draw, M->FrameArena, M->FolderTree, M->OrbitItem, M->OrbitDepth, 25);
+				R_PopTransform(M->Render);
 
-			Orbit = UI_OrbitView(M->UI, M->Draw, M->FrameArena, M->FolderTree, M->OrbitItem, M->OrbitDepth + 1, M->ActiveEntry);
+				Orbit = UI_OrbitView(M->UI, M->Draw, M->FrameArena, M->FolderTree, M->OrbitItem, M->OrbitDepth + 1, 15);
+			}
+			else
+			{
+				Orbit = UI_OrbitView(M->UI, M->Draw, M->FrameArena, M->FolderTree, M->OrbitItem, M->OrbitDepth + 1, 15);
+			}
 
 			{
 				v4f P4D = v4f(Orbit.Positions[0].X, Orbit.Positions[0].Y, Orbit.Positions[0].Z, 1.0);
@@ -250,7 +264,7 @@ void OS_Update(void *Data)
 		{
 			OrbitSignal = UI_OrbitLabels(M->UI, M->Draw, M->Edit,
 						   M->UI->Font, M->LogoFont, M->FrameArena, Orbit, M->FolderTree,
-						   CameraPosition, CameraForward, MinDepth, MaxDepth, M->OrbitItem, M->OrbitDepth, M->ActiveEntry,
+						   CameraPosition, CameraForward, MinDepth, MaxDepth, M->OrbitItem, M->OrbitDepth + 1, M->ActiveEntry,
 						   Transform, ModelView, &M->TextBoxBuffer);
 		}
 
@@ -309,16 +323,17 @@ void OS_Update(void *Data)
 			M->ActiveEntry = OrbitSignal.ActiveEntry;
 			M->OrbitItem = OrbitSignal.ActiveItem;
 			M->OrbitDepth = OrbitSignal.ActiveItemDepth;
-			M->LookAtTarget = OrbitSignal.ActiveItemPosition;
-			M->LookFromTarget = OrbitSignal.ActiveItemPosition;
-			M->LookFromTarget.Z = (f32)(1.0 + M->OrbitDepth*35.0);
+			M->OrbitPosition = OrbitSignal.ActiveItemPosition;
+			//M->LookAtTarget = OrbitSignal.ActiveItemPosition;
+			//M->LookFromTarget = OrbitSignal.ActiveItemPosition;
+			//M->LookFromTarget.Z = (f32)(1.0 + M->OrbitDepth*35.0);
 
 			if(OrbitSignal.FileToLoad.Size > 0)
 			{
 				M->Buffer.String = OS_LoadEntireFileIntoMemory(M->PermanentArena, OrbitSignal.FileToLoad);
 				M->UI->View = UI_VIEW_EDIT;
 			}
-			M->ViewSizeTarget = (f32)(1.0 + M->OrbitDepth*25.0);
+			//M->ViewSizeTarget = (f32)(1.0 + M->OrbitDepth*25.0);
 		}
 
 		//D_DrawStr8(M->Draw, M->FrameArena, M->LogoFont, v2f(50, 50), v4f(1.0, 0.05, 0.0, 1), 100, Str8("MAYDAY!"));

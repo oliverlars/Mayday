@@ -75,23 +75,12 @@ ui_orbit_node_array UI_OrbitNodesFromTreeDepth(m_arena *Arena, os_directory_tree
 }
 
 ui_orbit UI_OrbitView(ui_context *UI, draw_context *Draw, m_arena *Arena,
-					  os_directory_tree Tree, int Active, int Depth,
-					  os_directory_entry *ActiveEntry)
+					  os_directory_tree Tree, int ActiveIndex, int Depth, f32 Radius)
 {
 	ui_orbit Result = {0};
 	if(Tree.Count == 0) return Result;
 
-	ui_orbit_node_array OuterOrbitNodes = {0};
-	ui_orbit_node_array OrbitNodes = {0};
-	if(Depth > 1)
-	{
-		OuterOrbitNodes = UI_OrbitNodesFromTreeDepth(Arena, Tree, Depth , 5);
-		OrbitNodes = UI_OrbitNodesFromTreeDepth(Arena, Tree, Depth + 1, 15);
-	}
-	else
-	{
-		OrbitNodes = UI_OrbitNodesFromTreeDepth(Arena, Tree, Depth, 15);
-	}
+	ui_orbit_node_array OrbitNodes= UI_OrbitNodesFromTreeDepth(Arena, Tree, Depth, Radius);
 
 
 	int PositionIndex = 0;
@@ -100,28 +89,27 @@ ui_orbit UI_OrbitView(ui_context *UI, draw_context *Draw, m_arena *Arena,
 	{
 		if(It.Depth == Depth)
 		{
-			if(It.Index == Active)
+			if(It.Index == ActiveIndex)
 			{
 				PositionOfActive = OrbitNodes.Items[PositionIndex].Position;
-				PositionIndex++;
+				break;
 			}
+			PositionIndex++;
 		}
 	}
 
-	v3f *Positions=  ArenaPushArrayZero(Arena, v3f, OrbitNodes.Count + OuterOrbitNodes.Count);
+	Result.ActivePosition = PositionOfActive;
+
+	v3f *Positions =  ArenaPushArrayZero(Arena, v3f, OrbitNodes.Count);
 	for(int I = 0; I < OrbitNodes.Count; I++)
 	{
 		Positions[I] = OrbitNodes.Items[I].Position;
 	}
 
-	for(int I = 0; I < OuterOrbitNodes.Count; I++)
-	{
-		Positions[OrbitNodes.Count + I] = OuterOrbitNodes.Items[I].Position;
-	}
+	D_DrawPointsArray(Draw, Arena, Positions, OrbitNodes.Count, v4f(1, 0, 0, 1));
 
-	D_DrawPointsArray(Draw, Arena, Positions, Result.Count, v4f(1, 0, 0, 1));
-	Result.Count = OrbitNodes.Count + OuterOrbitNodes.Count;
 	Result.Positions = Positions;
+	Result.Count = OrbitNodes.Count;
 
 	return Result;
 }
@@ -147,7 +135,7 @@ ui_orbit_signal UI_OrbitLabels(ui_context *UI, draw_context *Draw, edit_context 
 	for(os_directory_tree_iterator It = {0};
 		OS_DirectoryTreeIterate(Tree, &It);)
 	{
-		if(!(It.Depth == Max(ActiveDepth, 1) && It.Index >= ActiveItem)) continue;
+		if(It.Depth != ActiveDepth) continue;
 		f32 FontSize = 30;
 		v3f P = Orbit.Positions[Index++];
 

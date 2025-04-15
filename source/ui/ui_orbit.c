@@ -203,7 +203,7 @@ ui_orbit_signal UI_OrbitLabels(ui_context *UI, draw_context *Draw, edit_context 
 				if(Button.Clicked || (SearchSignal.Submitted && Filter.Size > 0))
 				{
 					Result.ActiveEntry = It.Current;
-					Result.ActiveItem = It.Index;
+					Result.ActiveItem = Index;
 					Result.ActiveItemDepth = It.Depth;
 					Result.ActiveItemPosition = P;
 					Result.Clicked = True;

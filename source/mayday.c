@@ -111,13 +111,8 @@ void OS_Update(void *Data)
 	if(M->ScrollAccumulationTarget >= 5.0)
 	{
 		M->ScrollAccumulationTarget = 0;
-		M->LookFromTarget.X = 0.0f;
-		M->LookFromTarget.Y = 0.0f;
-		M->LookFromTarget.Z = 30;
 
 		M->ActiveEntry = Null;
-
-		M->LookAtTarget = v3f(0, 0, 0);
 
 		M->OrbitItem = 0;
 		M->OrbitDepth = 0;

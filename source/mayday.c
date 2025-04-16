@@ -138,23 +138,23 @@ void OS_Update(void *Data)
 	m44f Perspective = M44FPerspective(sapp_widthf()/sapp_heightf(), 35, 0.01, 10000.0);
 	v3f CameraPosition = M->LookFrom;
 	CameraPosition.Z += M->ZoomLevel;
-	v3f CameraForward = NormalizeV3F(SubV3F(M->LookAt, CameraPosition));
+	v3f CameraForward = Normalize(Sub(M->LookAt, CameraPosition));
 	m44f View = M44FLookAt(CameraPosition, M->LookAt, v3f(0, 1, 0));
 
 	//LogInfo("?v3f", CameraForward);
 
-	m44f TranslateToOrigin = M44FTranslate(v3f(-M->LookAt.X, -M->LookAt.Y, -M->LookAt.Z));
+	m44f TranslateToOrigin = Translate(v3f(-M->LookAt.X, -M->LookAt.Y, -M->LookAt.Z));
 
 	m44f Rotation = M44FromYAngle(Angle);
 
-	m44f TranslateBack = M44FTranslate(M->LookAt);
+	m44f TranslateBack = Translate(M->LookAt);
 
-	m44f Model = MulM44FM44F(TranslateToOrigin, MulM44FM44F(Rotation, TranslateBack));
+	m44f Model = Mul(TranslateToOrigin, Mul(Rotation, TranslateBack));
 
-	m44f ModelView = MulM44FM44F(Model, View);
-	ModelView = MulM44FM44F(ModelView, M44FTranslate(v3f(10, 0, 0)));
+	m44f ModelView = Mul(Model, View);
+	ModelView = Mul(ModelView, Translate(v3f(10, 0, 0)));
 
-	m44f Transform = MulM44FM44F(ModelView, Perspective);
+	m44f Transform = Mul(ModelView, Perspective);
 
 	R_PushTransform(M->Render, Transform);
 
@@ -209,8 +209,8 @@ void OS_Update(void *Data)
 			{
 				m44f CurrentTransform = R_CurrentTransform(M->Render);
 				v3f AP = M->OrbitPosition;
-				m44f Translate = M44FTranslate(v3f(AP.X, AP.Y, AP.Z));
-				R_PushTransform(M->Render, MulM44FM44F(Translate, CurrentTransform));
+				m44f T = Translate(v3f(AP.X, AP.Y, AP.Z));
+				R_PushTransform(M->Render, Mul(T, CurrentTransform));
 				ui_orbit OuterOrbit = UI_OrbitView(M->UI, M->Draw, M->FrameArena, M->FolderTree, M->OrbitItem, M->OrbitDepth, 25);
 				R_PopTransform(M->Render);
 
@@ -223,22 +223,22 @@ void OS_Update(void *Data)
 
 			{
 				v4f P4D = v4f(Orbit.Positions[0].X, Orbit.Positions[0].Y, Orbit.Positions[0].Z, 1.0);
-				P4D = MulM44FV4F(ModelView, P4D);
+				P4D = Mul(ModelView, P4D);
 
 				v3f P3D = v3f(P4D.X, P4D.Y, P4D.Z);
 
-				MinDepth = DotV3F(SubV3F(P3D, CameraPosition), CameraForward);
+				MinDepth = Dot(Sub(P3D, CameraPosition), CameraForward);
 				MaxDepth = MinDepth;
 			}
 
 			for(int I = 1; I < Orbit.Count; I++)
 			{
 				v4f P4D = v4f(Orbit.Positions[I].X, Orbit.Positions[I].Y, Orbit.Positions[I].Z, 1.0);
-				P4D = MulM44FV4F(ModelView, P4D);
+				P4D = Mul(ModelView, P4D);
 
 				v3f P3D = v3f(P4D.X, P4D.Y, P4D.Z);
 
-				f32 Depth = DotV3F(SubV3F(P3D, CameraPosition), CameraForward);
+				f32 Depth = Dot(Sub(P3D, CameraPosition), CameraForward);
 
 				if(Depth < MinDepth)
 				{

@@ -72,7 +72,7 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 	v2f NumbersPosition = v2f(10, BufferPosition.Y);
 
 	m44f Transform = R_CurrentTransform(Draw->Render);
-	Transform = MulM44FM44F(M44FTranslate(v3f(Buffer->Offset.X, fmod(Buffer->Offset.Y, LineHeight), 0)), Transform);
+	Transform = Mul(Translate(v3f(Buffer->Offset.X, fmod(Buffer->Offset.Y, LineHeight), 0)), Transform);
 	R_PushTransform(Draw->Render, Transform);
 
 	int NumberOfLines = CountNewLinesNEON(Buffer->String);

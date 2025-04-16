@@ -143,13 +143,13 @@ ui_orbit_signal UI_OrbitLabels(ui_context *UI, draw_context *Draw, edit_context 
 		P4D = Mul(ModelTransform, P4D);
 		v3f P3D = v3f(P4D.X, P4D.Y, P4D.Z);
 
-		f32 Depth = DotV3F(SubV3F(P3D, CameraPosition), CameraForward);
+		f32 Depth = Dot(Sub(P3D, CameraPosition), CameraForward);
 		f32 HalfWayDepth = (MaxDepth - MinDepth) / 2.0;
 
 		f32 NormalizedDistance = ClampF32((Depth - MinDepth) / (MaxDepth - MinDepth), 0.0, 1.0);
 
 		v4f Position4D = v4f(P.X, P.Y, P.Z, 1.0);
-		v4f TransformedPoint = MulM44FV4F(M44FTranspose(MVP), Position4D);
+		v4f TransformedPoint = Mul(M44FTranspose(MVP), Position4D);
 		TransformedPoint.X /= TransformedPoint.W;
 		TransformedPoint.Y /= TransformedPoint.W;
 		TransformedPoint.X = TransformedPoint.X*0.5 + 0.5;

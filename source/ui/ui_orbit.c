@@ -140,7 +140,7 @@ ui_orbit_signal UI_OrbitLabels(ui_context *UI, draw_context *Draw, edit_context 
 		v3f P = Orbit.Positions[Index++];
 
 		v4f P4D = v4f(P.X, P.Y, P.Z, 1.0);
-		P4D = MulM44FV4F(ModelTransform, P4D);
+		P4D = Mul(ModelTransform, P4D);
 		v3f P3D = v3f(P4D.X, P4D.Y, P4D.Z);
 
 		f32 Depth = DotV3F(SubV3F(P3D, CameraPosition), CameraForward);

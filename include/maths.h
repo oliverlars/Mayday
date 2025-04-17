@@ -169,7 +169,7 @@ v4f LerpV4F(v4f A, v4f B, f32 T);
 
 #define Cross(A,B) _Generic((A), v3f:CrossV3F)((A),(B))
 
-#define Lerp(A,B,T) _Generic((A), v2f:LerpV2F, v3f:LerpV3F, v4f:LerpV4F)((A),(B),(T))
+#define Lerp(A,B,T) _Generic((A), f32:LerpF32, v2f:LerpV2F, v3f:LerpV3F, v4f:LerpV4F)((A),(B),(T))
 
 #define Translate(A) _Generic((A), v3f:M44FTranslate)((A))
 

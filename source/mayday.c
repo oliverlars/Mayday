@@ -118,11 +118,11 @@ void OS_Update(void *Data)
 		M->OrbitDepth = 0;
 	}
 
-	M->ScrollAccumulationTarget = LerpF32(M->ScrollAccumulationTarget, 0.0, 0.3);
+	M->ScrollAccumulationTarget = Lerp(M->ScrollAccumulationTarget, 0.0, 0.3);
 
-	M->ScrollAccumulation = LerpF32(M->ScrollAccumulation, M->ScrollAccumulationTarget, 0.1);
+	M->ScrollAccumulation = Lerp(M->ScrollAccumulation, M->ScrollAccumulationTarget, 0.1);
 
-	M->ZoomLevel = LerpF32(M->ZoomLevel, M->ZoomLevelTarget, 0.1);
+	M->ZoomLevel = Lerp(M->ZoomLevel, M->ZoomLevelTarget, 0.1);
 
 	M->ZoomLevel += M->ScrollAccumulation;
 
@@ -200,7 +200,7 @@ void OS_Update(void *Data)
 		{
 			// HACK(Oliver): This is only here because i'm too lazy to make a new view
 			// for the homescreen
-			M->ViewSize = LerpF32(M->ViewSize, M->ViewSizeTarget, 0.1);
+			M->ViewSize = Lerp(M->ViewSize, M->ViewSizeTarget, 0.1);
 			M->LookAt = LerpV3F(M->LookAt, M->LookAtTarget, 0.1);
 			M->LookFrom = LerpV3F(M->LookFrom, M->LookFromTarget, 0.1);
 
@@ -311,7 +311,7 @@ void OS_Update(void *Data)
 			AngleTarget -= 0.001 / (f32)(M->OrbitDepth*2 + 1) + Scroll.X*0.01;
 
 		}
-		Angle = LerpF32(Angle, AngleTarget, 0.1);
+		Angle = Lerp(Angle, AngleTarget, 0.1);
 
 		if(OrbitSignal.Clicked)
 		{

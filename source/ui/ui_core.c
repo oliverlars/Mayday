@@ -380,14 +380,14 @@ ui_signal UI_TextButton(ui_context *UI, draw_context *Draw, m_arena *Arena,
 		}
 		Result.Hover = True;
 
-		Widget->HotAnimation = LerpF32(Widget->HotAnimation, 1.0, 0.1);
+		Widget->HotAnimation = Lerp(Widget->HotAnimation, 1.0, 0.1);
 		D_DrawStr8(Draw, Arena, Style.Font, Position, v4f(1, 1, 1, 1), HeightInPixels, DisplayString);
 	}
 	else
 	{
 		//D_DrawQuad(Draw, Arena, BoxPosition, Width, Height, v4f(0, 0, 0, 1));
 		D_DrawStr8(Draw, Arena, Style.Font, Position, Colour, HeightInPixels, DisplayString);
-		Widget->HotAnimation = LerpF32(Widget->HotAnimation, 0.0, 0.1);
+		Widget->HotAnimation = Lerp(Widget->HotAnimation, 0.0, 0.1);
 	}
 
 	Result.HotAnimation = Widget->HotAnimation;
@@ -436,7 +436,7 @@ b32 UI_TextButtonWrapping(ui_context *UI, draw_context *Draw, m_arena *Arena,
 	}
 	else
 	{
-		UI->HotAnimation = LerpF32(UI->HotAnimation, 0.0, 0.1);
+		UI->HotAnimation = Lerp(UI->HotAnimation, 0.0, 0.1);
 	}
 
 	b32 Clicked = False;
@@ -447,7 +447,7 @@ b32 UI_TextButtonWrapping(ui_context *UI, draw_context *Draw, m_arena *Arena,
 			Clicked = True;
 		}
 
-		UI->HotAnimation = LerpF32(UI->HotAnimation, 1.0, 0.1);
+		UI->HotAnimation = Lerp(UI->HotAnimation, 1.0, 0.1);
 		if(LineCount == 2)
 		{
 			D_DrawStr8(Draw, Arena, UI->Font, Position, v4f(1, 1, 1, 1), HeightInPixels, FirstLine);
@@ -534,7 +534,7 @@ ui_textbox_signal UI_TextBox(m_arena *Arena,
 	}
 	else
 	{
-		UI->HotAnimation = LerpF32(UI->HotAnimation, 0.0, 0.1);
+		UI->HotAnimation = Lerp(UI->HotAnimation, 0.0, 0.1);
 	}
 
 	b32 Clicked = False;
@@ -546,7 +546,7 @@ ui_textbox_signal UI_TextBox(m_arena *Arena,
 			UI_SetActive(UI, Hash);
 		}
 
-		UI->HotAnimation = LerpF32(UI->HotAnimation, 1.0, 0.1);
+		UI->HotAnimation = Lerp(UI->HotAnimation, 1.0, 0.1);
 		D_DrawStr8(Draw, Arena, Font, Position, v4f(1, 1, 1, 1), HeightInPixels, DisplayString);
 	}
 	else

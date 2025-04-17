@@ -161,7 +161,7 @@ void OS_Update(void *Data)
 	if(M->UI->View == UI_VIEW_EDIT)
 	{
 		u64 Start = OS_TimeStampNow();
-		R_PushTransform(M->Render, M44FOrthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
+		R_PushTransform(M->Render, Orthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
 		D_DrawQuad(M->Draw, M->FrameArena, v2f(0, 0),  WindowWidth, WindowHeight, v4f(0.008, 0.00, 0, 1.0));
 		D_DrawGrid2D(M->Draw, M->FrameArena, 50, 200);
 		UI_Buffer(M->UI, M->Draw, M->Edit,
@@ -188,7 +188,7 @@ void OS_Update(void *Data)
 		}
 
 		v2f Centre = {0};
-		R_PushTransform(M->Render, M44FOrthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
+		R_PushTransform(M->Render, Orthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
 		D_DrawQuad(M->Draw, M->FrameArena, v2f(0, 0),  WindowWidth, WindowHeight, v4f(0.008, 0.00, 0, 1.0));
 		D_DrawGrid2D(M->Draw, M->FrameArena, 50, 200);
 		R_PopTransform(M->Render);
@@ -252,7 +252,7 @@ void OS_Update(void *Data)
 			}
 		}
 
-		R_PushTransform(M->Render, M44FOrthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
+		R_PushTransform(M->Render, Orthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
 
 		ui_orbit_signal OrbitSignal = {0};
 		if(OS_ValidPath(M->Folder))

@@ -124,6 +124,11 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 							 Range,
 							 Selection.X,
 							 Selection.Y);
+
+		f32 Scale = stbtt_ScaleForPixelHeight(&Font.Info, Buffer->HeightInPixels);
+
+		D_DrawQuad(Draw, Arena, v2f(BufferPosition.X, Cursor->TargetPosition.Y),
+				   sapp_widthf(), (Font.Ascent - Font.Descent + Font.LineGap)*Scale, v4f(0.04, 0.01, 0, 0.1));
 	}
 
 
@@ -183,6 +188,7 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 			{
 				Cursor->Position = LerpV2F(Cursor->Position, Cursor->TargetPosition, 0.3);
 			}
+
 			D_DrawQuad(Draw, Arena, Cursor->Position, 5, LineHeight, v4f(0.3, 0.7, 0, 1));
 		}
 	}

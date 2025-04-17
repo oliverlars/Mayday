@@ -172,3 +172,5 @@ v4f LerpV4F(v4f A, v4f B, f32 T);
 #define Lerp(A,B,T) _Generic((A), v2f:LerpV2F, v3f:LerpV3F, v4f:LerpV4F)((A),(B),(T))
 
 #define Translate(A) _Generic((A), v3f:M44FTranslate)((A))
+
+#define Orthographic(...) M44FOrthographic(__VA_ARGS__)

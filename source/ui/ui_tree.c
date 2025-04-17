@@ -189,7 +189,7 @@ ui_tree_view_signal UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw, 
 		v4f P = TreeView->Info.NodePositions[It.Index];
 
 		v4f NodePosition4D = v4f(P.X, P.Y, P.Z, 1.0);
-		v4f TransformedPoint = MulM44FV4F(M44FTranspose(TreeTransform), NodePosition4D);
+		v4f TransformedPoint = Mul(M44FTranspose(TreeTransform), NodePosition4D);
 		TransformedPoint.X /= TransformedPoint.W;
 		TransformedPoint.Y /= TransformedPoint.W;
 		TransformedPoint.X = TransformedPoint.X*0.5 + 0.5;

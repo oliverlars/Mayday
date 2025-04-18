@@ -64,6 +64,8 @@ typedef struct mayday_context
 
 	ui_tree TreeView;
 
+	f32 OrbitAnimation;
+	f32 OrbitAnimationTarget;
 	int OrbitItem;
 	int OrbitDepth;
 	v3f OrbitPosition;
@@ -114,6 +116,7 @@ void OS_Update(void *Data)
 
 		M->ActiveEntry = Null;
 
+		M->OrbitAnimationTarget -= 10.0;
 		M->OrbitItem = 0;
 		M->OrbitDepth = 0;
 	}
@@ -135,7 +138,7 @@ void OS_Update(void *Data)
 	static f32 AngleTarget = 0.0;
 
 
-	m44f Perspective = M44FPerspective(sapp_widthf()/sapp_heightf(), 35, 0.01, 10000.0);
+	m44f P = Perspective(sapp_widthf()/sapp_heightf(), 35, 0.01, 10000.0);
 	v3f CameraPosition = M->LookFrom;
 	CameraPosition.Z += M->ZoomLevel;
 	v3f CameraForward = Normalize(Sub(M->LookAt, CameraPosition));
@@ -154,7 +157,7 @@ void OS_Update(void *Data)
 	m44f ModelView = Mul(Model, View);
 	ModelView = Mul(ModelView, Translate(v3f(10, 0, 0)));
 
-	m44f Transform = Mul(ModelView, Perspective);
+	m44f Transform = Mul(ModelView, P);
 
 	R_PushTransform(M->Render, Transform);
 
@@ -257,6 +260,7 @@ void OS_Update(void *Data)
 		ui_orbit_signal OrbitSignal = {0};
 		if(OS_ValidPath(M->Folder))
 		{
+			m44f PVM = Mul(ModelView, P);
 			OrbitSignal = UI_OrbitLabels(M->UI, M->Draw, M->Edit,
 						   M->UI->Font, M->LogoFont, M->FrameArena, Orbit, M->FolderTree,
 						   CameraPosition, CameraForward, MinDepth, MaxDepth, M->OrbitItem, M->OrbitDepth + 1, M->ActiveEntry,
@@ -312,6 +316,7 @@ void OS_Update(void *Data)
 
 		}
 		Angle = Lerp(Angle, AngleTarget, 0.1);
+		M->OrbitAnimation = Lerp(M->OrbitAnimation, M->OrbitAnimationTarget, 0.1);
 
 		if(OrbitSignal.Clicked)
 		{
@@ -319,6 +324,7 @@ void OS_Update(void *Data)
 			M->OrbitItem = OrbitSignal.ActiveItem;
 			M->OrbitDepth = OrbitSignal.ActiveItemDepth;
 			M->OrbitPosition = OrbitSignal.ActiveItemPosition;
+			M->OrbitAnimationTarget += 10.0f;
 			//M->LookAtTarget = OrbitSignal.ActiveItemPosition;
 			//M->LookFromTarget = OrbitSignal.ActiveItemPosition;
 			//M->LookFromTarget.Z = (f32)(1.0 + M->OrbitDepth*35.0);

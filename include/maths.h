@@ -174,3 +174,4 @@ v4f LerpV4F(v4f A, v4f B, f32 T);
 #define Translate(A) _Generic((A), v3f:M44FTranslate)((A))
 
 #define Orthographic(...) M44FOrthographic(__VA_ARGS__)
+#define Perspective(...)  M44FPerspective(__VA_ARGS__)

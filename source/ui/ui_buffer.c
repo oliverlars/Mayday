@@ -350,6 +350,10 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 	b32 ShouldRemove = False;
 	for(ui_event_iterator It = {0};UI_EventIterate(UI, &It);)
 	{
+		// HACK(Oliver): Why the fuck does this happen anyway????
+		// It should not be null, even if we remove. it should just handle
+		// that correctly
+		if(!It.Current) break;
 		sapp_event Event = It.Current->E;
 		if(ShouldRemove)
 		{

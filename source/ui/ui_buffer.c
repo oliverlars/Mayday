@@ -464,9 +464,25 @@ void UI_StatusBar(ui_context *UI, draw_context *Draw, edit_context *Edit,
 				  cursor *Cursors, editable_buffer *Buffer,
 				  v2i Size)
 {
-	D_DrawQuad(Draw, Arena, v2f(0, 0), (f32)Size.X, 50, v4f(0.3, 0.08, 0, 1));
 
-	D_DrawStr8(Draw, Arena, Font, v2f((f32)Size.X - 200, 10), v4f(0.009, 0.00, 0, 1.0), 50, Str8("LF"));
+	int Ascent, Descent, LineGap;
+	stbtt_GetFontVMetrics(&Font.Info, &Ascent, &Descent, &LineGap);
+
+	f32 Scale = stbtt_ScaleForPixelHeight(&Font.Info, Buffer->HeightInPixels);
+	float AscentInPixels = Ascent  * Scale;
+	float DescentInPixels = Descent * Scale;
+
+	float TextHeight = (AscentInPixels - DescentInPixels);
+
+	f32 StatusBarHeight = Buffer->HeightInPixels;
+
+	float CentreOffset = (AscentInPixels + DescentInPixels) * 0.5f;
+
+	f32 TextPosY  = (StatusBarHeight * 0.5f) - CentreOffset;
+
+	D_DrawQuad(Draw, Arena, v2f(0, 0), (f32)Size.X, StatusBarHeight, v4f(0.3, 0.08, 0, 1));
+
+	D_DrawStr8(Draw, Arena, Font, v2f((f32)Size.X - 200, TextPosY), v4f(0.009, 0.00, 0, 1.0), TextHeight, Str8("LF"));
 
 	cursor *Cursor = Cursors;
 	if(!Cursor->Next)
@@ -476,9 +492,9 @@ void UI_StatusBar(ui_context *UI, draw_context *Draw, edit_context *Edit,
 		int Index = IndexFromLine(Buffer->String, Line);
 		int Column = Cursor->Selection.Y - LineStart;
 		D_DrawStr8(Draw, Arena,
-				   Font, v2f((f32)Size.X - 1500, 10),
+				   Font, v2f((f32)Size.X - 1500, TextPosY),
 				   v4f(0.009, 0.00, 0, 1.0),
-				   50, Str8PushF(Arena, "?u32:?u32 | Index: ?u32:?u32 | ?v2f", Line, Column, Cursor->Selection.Y, Index, Cursor->Position));
+				   TextHeight, Str8PushF(Arena, "?u32:?u32 | Index: ?u32:?u32 | ?v2f", Line, Column, Cursor->Selection.Y, Index, Cursor->Position));
 	}
 	else
 	{
@@ -487,12 +503,14 @@ void UI_StatusBar(ui_context *UI, draw_context *Draw, edit_context *Edit,
 		{
 			Count += 1;
 		}
-		D_DrawStr8(Draw, Arena, Font, v2f((f32)Size.X - 1000, 10),
-				   v4f(0.009, 0.00, 0, 1.0), 35,
+		D_DrawStr8(Draw, Arena, Font, v2f((f32)Size.X - 1000, TextPosY),
+				   v4f(0.009, 0.00, 0, 1.0), TextHeight,
 				   Str8PushF(Arena, "?u32 SELECTIONS", Count));
 	}
 
-	v3f Position = v3f(Size.X - 100, 25, 0.0);
+	f32 PointSize = 20.0f;
+	f32 PointPosY = (StatusBarHeight - 0.0f) / 2.0f;
+	v3f Position = v3f(Size.X - 100, PointPosY, 0.0);
 	D_DrawPointsArray(Draw, Arena, &Position, 1, v4f(1, 0.2, 0, 1));
 
 }

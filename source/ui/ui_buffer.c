@@ -118,7 +118,7 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 							 Arena,
 							 Font,
 							 BufferPosition,
-							 v4f(0.04, 0.01, 0, 0.1),
+							 v4f(0.04, 0.01, 0, 0.8),
 							 Buffer->HeightInPixels,
 							 Buffer->String,
 							 Range,
@@ -164,7 +164,7 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 																	Range,
 																	BufferPosition);
 		Edit->Cursors[0].Position = Edit->Cursors[0].TargetPosition;
-		D_DrawQuad(Draw, Arena, Edit->Cursors[0].Position, 5, LineHeight, v4f(0.3, 0.7, 0, 1));
+		D_DrawQuad(Draw, Arena, Edit->Cursors[0].Position, Min(LineHeight/10.0, 2), LineHeight, v4f(0.3, 0.7, 0, 1));
 	}
 	else
 	{
@@ -189,7 +189,7 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 				Cursor->Position = LerpV2F(Cursor->Position, Cursor->TargetPosition, 0.3);
 			}
 
-			D_DrawQuad(Draw, Arena, Cursor->Position, 5, LineHeight, v4f(0.3, 0.7, 0, 1));
+			D_DrawQuad(Draw, Arena, Cursor->Position, Min(LineHeight/10.0, 2), LineHeight, v4f(0.3, 0.7, 0, 1));
 		}
 	}
 
@@ -475,13 +475,13 @@ void UI_StatusBar(ui_context *UI, draw_context *Draw, edit_context *Edit,
 	int Ascent, Descent, LineGap;
 	stbtt_GetFontVMetrics(&Font.Info, &Ascent, &Descent, &LineGap);
 
-	f32 Scale = stbtt_ScaleForPixelHeight(&Font.Info, Buffer->HeightInPixels);
+	f32 Scale = stbtt_ScaleForPixelHeight(&Font.Info, Buffer->HeightInPixels * 0.8);
 	float AscentInPixels = Ascent  * Scale;
 	float DescentInPixels = Descent * Scale;
 
 	float TextHeight = (AscentInPixels - DescentInPixels);
 
-	f32 StatusBarHeight = Buffer->HeightInPixels;
+	f32 StatusBarHeight = Buffer->HeightInPixels * 0.8f;
 
 	float CentreOffset = (AscentInPixels + DescentInPixels) * 0.5f;
 

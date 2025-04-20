@@ -126,7 +126,8 @@ str8 UI_Text(ui_context *UI, m_arena *Arena)
 	int Index = 0;
 	for(ui_event *Event = UI->EventFirst; Event; Event = Event->Next)
 	{
-		if(Event->E.type == SAPP_EVENTTYPE_CHAR && Event->E.char_code > 32 && Event->E.char_code <= 126 && !Event->E.modifiers)
+		b32 AnyNonShiftModifiersPressed = Event->E.modifiers & ~SAPP_MODIFIER_SHIFT;
+		if(Event->E.type == SAPP_EVENTTYPE_CHAR && Event->E.char_code > 32 && Event->E.char_code <= 126 && !AnyNonShiftModifiersPressed)
 		{
 			NoOneCanTypeThisManyCharactersInOneFrame[Index++] = Event->E.char_code;
 			Result.X +=  Event->E.scroll_x;

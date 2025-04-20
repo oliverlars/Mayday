@@ -390,7 +390,7 @@ void OS_Event(const sapp_event *Event, void *Data)
 	mayday_context *M = (mayday_context*)Data;
 
 	{
-		if(Event->type == SAPP_EVENTTYPE_CHAR)
+		if(Event->type == SAPP_EVENTTYPE_CHAR && Event->char_code >= 32)
 		{
 			LogInfo("[EVENT] CHAR: ?char | MODIFIER: ?u32", Event->char_code, Event->modifiers);
 		}

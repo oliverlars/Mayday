@@ -56,6 +56,14 @@ s64 IndexFromLine(str8 String, int Line)
 	// Make this use SIMD
 }
 
+int DigitCountFromInt(u32 Value) {
+	if (Value < 0) Value = -Value;
+	int Result = 0;
+	if (Value == 0) return 1;
+	for(;Value != 0; (Result++, Value /= 10));
+	return Result;
+}
+
 void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 			   m_arena *Arena, d_font Font,
 			   editable_buffer *Buffer,
@@ -67,15 +75,17 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 
 	f32 LineHeight = D_LineHeightFromFont(Font, Buffer->HeightInPixels);
 
-	v2f BufferPosition = v2f(100, (f32)WindowHeight);
-
-	v2f NumbersPosition = v2f(10, BufferPosition.Y);
-
 	m44f Transform = R_CurrentTransform(Draw->Render);
 	Transform = Mul(Translate(v3f(Buffer->Offset.X, fmod(Buffer->Offset.Y, LineHeight), 0)), Transform);
 	R_PushTransform(Draw->Render, Transform);
 
 	int NumberOfLines = CountNewLinesNEON(Buffer->String);
+
+	f32 NumberOffsetX = DigitCountFromInt(NumberOfLines) * UI_GetTextWidth(Font, Draw, Str8("0"), Buffer->HeightInPixels);
+
+	v2f BufferPosition = v2f(NumberOffsetX, (f32)WindowHeight);
+
+	v2f NumbersPosition = v2f(10, BufferPosition.Y);
 
 	int FirstVisibleLine = Max((Buffer->Offset.Y)/LineHeight, 0);
 	int LastVisibleLine = FirstVisibleLine + WindowHeight/LineHeight;
@@ -475,13 +485,13 @@ void UI_StatusBar(ui_context *UI, draw_context *Draw, edit_context *Edit,
 	int Ascent, Descent, LineGap;
 	stbtt_GetFontVMetrics(&Font.Info, &Ascent, &Descent, &LineGap);
 
-	f32 Scale = stbtt_ScaleForPixelHeight(&Font.Info, Buffer->HeightInPixels * 0.8);
+	f32 Scale = stbtt_ScaleForPixelHeight(&Font.Info, Buffer->HeightInPixels * 1.2);
 	float AscentInPixels = Ascent  * Scale;
 	float DescentInPixels = Descent * Scale;
 
 	float TextHeight = (AscentInPixels - DescentInPixels);
 
-	f32 StatusBarHeight = Buffer->HeightInPixels * 0.8f;
+	f32 StatusBarHeight = Buffer->HeightInPixels * 1.2f;
 
 	float CentreOffset = (AscentInPixels + DescentInPixels) * 0.5f;
 

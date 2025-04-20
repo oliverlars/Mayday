@@ -105,7 +105,7 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 		else
 		{
 			D_DrawStr8(Draw, Arena, Font, NumbersPosition,
-					   v4f(0.1, 0.04, 0, 1), LineHeight, Str8PushF(Arena, "?u32", I + 1));
+					   v4f(0.1, 0.05, 0, 1), LineHeight, Str8PushF(Arena, "?u32", I + 1));
 		}
 		NumbersPosition.Y -= LineHeight;
 	}

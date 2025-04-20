@@ -45,7 +45,6 @@ void D_GlyphsToAtlas(draw_context *D)
 	if(HashOfNewestGlyph != D->HashOfNewestGlyph)
 	{
 		MemorySet(D->FontAtlas[D->WhichAtlas % 2],  0, D_FONT_ATLAS_SIZE*D_FONT_ATLAS_SIZE);
-		LogInfo("Atlas will be updated");
 		D->HashOfNewestGlyph = HashOfNewestGlyph;
 
 		int TotalY = D_FONT_ATLAS_SIZE;
@@ -224,7 +223,6 @@ d_atlas_glyph *D_GlyphFromCodePoint2(draw_context *D, u64 FontHash, d_font Font,
 
 	if(Glyph->Hash != 0 && Glyph->Hash != Hash)
 	{
-		LogInfo("Glyph collision occured");
 		d_atlas_glyph *NextGlyph = ArenaPushArrayZero(D->Arena, d_atlas_glyph, 1);
 		Glyph->NextInHashSlot = NextGlyph;
 
@@ -686,5 +684,5 @@ void D_DrawGrid2D(draw_context *Draw, m_arena *Arena, f32 Size, s32 Count)
 		Lines[Index++] = v3f(X, HalfSize, 0);
 	}
 
-	D_DrawLinesArray(Draw, Arena, Lines, LineCount * 2, v4f(0.03, .0, 0, 1));
+	D_DrawLinesArray(Draw, Arena, Lines, LineCount * 2, v4f(0.05, .0, 0, 1));
 }

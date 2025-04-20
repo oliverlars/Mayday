@@ -176,7 +176,7 @@ void OS_Update(void *Data)
 		u64 Start = OS_TimeStampNow();
 		R_PushTransform(M->Render, Orthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
 		D_DrawQuad(M->Draw, M->FrameArena, v2f(0, 0),  WindowWidth, WindowHeight, v4f(0.008, 0.00, 0, 1.0));
-		D_DrawGrid2D(M->Draw, M->FrameArena, 50, 200);
+		D_DrawGrid2D(M->Draw, M->FrameArena, M->Buffer.HeightInPixels, 5*sapp_widthf() / M->Buffer.HeightInPixels);
 
 		UI_Buffer(M->UI, M->Draw, M->Edit,
 			   M->FrameArena, M->CodeFont,
@@ -204,7 +204,7 @@ void OS_Update(void *Data)
 		v2f Centre = {0};
 		R_PushTransform(M->Render, Orthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
 		D_DrawQuad(M->Draw, M->FrameArena, v2f(0, 0),  WindowWidth, WindowHeight, v4f(0.008, 0.00, 0, 1.0));
-		D_DrawGrid2D(M->Draw, M->FrameArena, 50, 200);
+		D_DrawGrid2D(M->Draw, M->FrameArena, M->Buffer.HeightInPixels, M->Buffer.HeightInPixels*5);
 		R_PopTransform(M->Render);
 
 		ui_orbit Orbit = {0};
@@ -390,6 +390,10 @@ void OS_Event(const sapp_event *Event, void *Data)
 	mayday_context *M = (mayday_context*)Data;
 
 	{
+		if(Event->type == SAPP_EVENTTYPE_CHAR)
+		{
+			LogInfo("[EVENT] CHAR: ?char | MODIFIER: ?u32", Event->char_code, Event->modifiers);
+		}
 		ui_event *UIEvent = ArenaPushArrayZero(M->FrameArena, ui_event, 1);
 		UIEvent->E = Event[0];
 		if(M->UI->EventLast)

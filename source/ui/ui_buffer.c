@@ -263,6 +263,13 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 		Cursor->Selection = v2i(Index, Index);
 
 	}
+	else if(UI_KeyDown(UI, SAPP_KEYCODE_ESCAPE, 0))
+	{
+		cursor *LastCursor = E_LastCursor(Edit->Cursors);
+		cursor *Cursor = LastCursor;
+		Edit->Cursors->Next = Null;
+		Cursor = Edit->Cursors;
+	}
 
 
 	if(UI_KeyDown(UI, SAPP_KEYCODE_ENTER, 0))

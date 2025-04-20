@@ -389,8 +389,6 @@ void OS_Event(const sapp_event *Event, void *Data)
 {
 	mayday_context *M = (mayday_context*)Data;
 
-
-
 	{
 		ui_event *UIEvent = ArenaPushArrayZero(M->FrameArena, ui_event, 1);
 		UIEvent->E = Event[0];

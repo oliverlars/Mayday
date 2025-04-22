@@ -75,6 +75,7 @@ typedef struct mayday_context
 
 
 	os_directory_tree FolderTree;
+	str8 ActiveFilePath;
 	str8 Folder;
 	u64 FolderHash;
 
@@ -180,7 +181,7 @@ void OS_Update(void *Data)
 
 		UI_Buffer(M->UI, M->Draw, M->Edit,
 			   M->FrameArena, M->CodeFont,
-			   &M->Buffer,
+			   M->ActiveFilePath, &M->Buffer,
 			   v2i(WindowWidth, WindowHeight));
 
 		UI_StatusBar(M->UI, M->Draw, M->Edit, M->FrameArena, M->StatusFont,
@@ -342,6 +343,7 @@ void OS_Update(void *Data)
 
 			if(OrbitSignal.FileToLoad.Size > 0)
 			{
+				M->ActiveFilePath = Str8Copy(M->PermanentArena, OrbitSignal.FileToLoad);
 				M->Buffer.String = OS_LoadEntireFileIntoMemory(M->PermanentArena, OrbitSignal.FileToLoad);
 				M->UI->View = UI_VIEW_EDIT;
 			}

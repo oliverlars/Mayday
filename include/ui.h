@@ -157,7 +157,7 @@ int UI_GetTextWidth(d_font Font, draw_context *Draw, str8 String, f32 HeightInPi
 
 void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 			   m_arena *Arena, d_font Font,
-			   editable_buffer *Buffer,
+			   str8 BufferPath, editable_buffer *Buffer,
 			   v2i Size);
 
 void UI_TreeView(ui_context *UI, draw_context *Draw, shared_wave_info *Shared,
@@ -229,8 +229,7 @@ u64 UI_IDFromString(str8 String);
 
 void UI_StatusBar(ui_context *UI, draw_context *Draw, edit_context *Edit,
 				  m_arena *Arena, d_font Font,
-				  cursor *Cursors, editable_buffer *Buffer,
-				  v2i Size);
+				  cursor *Cursors, editable_buffer *Buffer, v2i Size);
 
 typedef struct ui_textbox_signal
 {

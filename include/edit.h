@@ -44,6 +44,8 @@ typedef struct editable_buffer
 
 	v2f Offset;
 
+	b32 EditedSinceLastSave;
+
 	struct editable_buffer *NextInFreeList;
 } editable_buffer;
 

@@ -66,7 +66,7 @@ int DigitCountFromInt(u32 Value) {
 
 void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 			   m_arena *Arena, d_font Font,
-			   editable_buffer *Buffer,
+			   str8 BufferPath, editable_buffer *Buffer,
 			   v2i Size)
 {
 	//TODO(Oliver): Theres a better way to do this
@@ -364,6 +364,11 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 		UI->View = UI_VIEW_TREE;
 	}
 
+	if(UI_KeyDown(UI, SAPP_KEYCODE_S, SAPP_MODIFIER_SUPER))
+	{
+		OS_WriteStringToDisk(Arena, BufferPath, Buffer->String);
+	}
+
 	b32 ShouldRemove = False;
 	for(ui_event_iterator It = {0};UI_EventIterate(UI, &It);)
 	{
@@ -478,8 +483,7 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 
 void UI_StatusBar(ui_context *UI, draw_context *Draw, edit_context *Edit,
 				  m_arena *Arena, d_font Font,
-				  cursor *Cursors, editable_buffer *Buffer,
-				  v2i Size)
+				  cursor *Cursors, editable_buffer *Buffer, v2i Size)
 {
 
 	int Ascent, Descent, LineGap;
@@ -528,6 +532,13 @@ void UI_StatusBar(ui_context *UI, draw_context *Draw, edit_context *Edit,
 	f32 PointSize = 20.0f;
 	f32 PointPosY = (StatusBarHeight - 0.0f) / 2.0f;
 	v3f Position = v3f(Size.X - 100, PointPosY, 0.0);
-	D_DrawPointsArray(Draw, Arena, &Position, 1, v4f(1, 0.2, 0, 1));
+	if(!Buffer->EditedSinceLastSave)
+	{
+		D_DrawPointsArray(Draw, Arena, &Position, 1, v4f(0.0, 0.6, 0, 1));
+	}
+	else
+	{
+		D_DrawPointsArray(Draw, Arena, &Position, 1, v4f(1, 0.2, 0, 1));
+	}
 
 }

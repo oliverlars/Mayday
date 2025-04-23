@@ -137,8 +137,11 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 
 		f32 Scale = stbtt_ScaleForPixelHeight(&Font.Info, Buffer->HeightInPixels);
 
-		D_DrawQuad(Draw, Arena, v2f(BufferPosition.X, Cursor->TargetPosition.Y),
-				   sapp_widthf(), (Font.Ascent - Font.Descent + Font.LineGap)*Scale, v4f(0.04, 0.01, 0, 0.1));
+		if(FirstVisibleLine + 1 < Selection.Y && LastVisibleLine > Selection.Y)
+		{
+			D_DrawQuad(Draw, Arena, v2f(BufferPosition.X, Cursor->TargetPosition.Y),
+					   sapp_widthf(), (Font.Ascent - Font.Descent + Font.LineGap)*Scale, v4f(0.04, 0.01, 0, 0.1));
+		}
 	}
 
 

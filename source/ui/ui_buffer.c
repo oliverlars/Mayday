@@ -136,8 +136,9 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 							 Selection.Y);
 
 		f32 Scale = stbtt_ScaleForPixelHeight(&Font.Info, Buffer->HeightInPixels);
-
-		if(FirstVisibleLine + 1 < Selection.Y && LastVisibleLine > Selection.Y)
+		int CursorStartLine = E_LineFromBufferIndex(Edit, StartIndex, Buffer);
+		int CursorEndLine = E_LineFromBufferIndex(Edit, EndIndex, Buffer);
+		if(FirstVisibleLine - 1 < CursorStartLine && LastVisibleLine > CursorEndLine)
 		{
 			D_DrawQuad(Draw, Arena, v2f(BufferPosition.X, Cursor->TargetPosition.Y),
 					   sapp_widthf(), (Font.Ascent - Font.Descent + Font.LineGap)*Scale, v4f(0.04, 0.01, 0, 0.1));
@@ -201,8 +202,12 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 			{
 				Cursor->Position = LerpV2F(Cursor->Position, Cursor->TargetPosition, 0.3);
 			}
+			int CursorLine = E_LineFromBufferIndex(Edit, Cursor->Selection.Y, Buffer);
+			if(FirstVisibleLine < CursorLine && CursorLine > LastVisibleLine)
+			{
+				D_DrawQuad(Draw, Arena, Cursor->Position, Min(LineHeight/10.0, 2), LineHeight, v4f(0.3, 0.7, 0, 1));
+			}
 
-			D_DrawQuad(Draw, Arena, Cursor->Position, Min(LineHeight/10.0, 2), LineHeight, v4f(0.3, 0.7, 0, 1));
 		}
 	}
 

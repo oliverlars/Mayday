@@ -183,20 +183,19 @@ ui_orbit_signal UI_OrbitLabels(ui_context *UI, draw_context *Draw, edit_context 
 						v2f(TransformedPoint.X, TransformedPoint.Y), Colour);
 				}
 
-				f32 Opacity = Button.HotAnimation;
 				if((Button.Hover || Button.HotAnimation > 0))
 				{
 					Result.AnyHovering |= Button.Hover;
 					str8 LastModified = OS_GetLastModifiedTime(Arena, It.Current->PathAndName);
 					UI_PushStyle(UI, (ui_style){.Font = LogoFont});
 					UI_Label(UI, Draw,
-						Arena, Str8PushF(Arena, "?S##FolderHover?u32", FolderName, It.Index),
-						120,
-						v2f(100, 1000), v4f(0.02, 0.005, 0.0, 0.1*UI->HotAnimation));
+						Arena, Str8PushF(Arena, "?S##FolderHover ?u32", FolderName, It.Index),
+						200,
+						v2f(100, 1000), v4f(0.02, 0.005, 0.0, 1.0*Button.HotAnimation));
 					UI_Label(UI, Draw,
 						Arena, Str8PushF(Arena, "?S##?u32", LastModified, It.Index),
 						80,
-						v2f(120, 900), v4f(0.5, 0.1, 0.0, 1*UI->HotAnimation));
+						v2f(120, 900), v4f(0.5, 0.1, 0.0, 1*Button.HotAnimation));
 					UI_PopStyle(UI);
 				}
 

@@ -440,7 +440,7 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 						cursor NextCursor = LastCursor[0];
 						E_AppendCursor(Edit, Edit->Arena, Edit->Cursors, NextCursor);
 					}
-					E_MoveCursors(Edit, Draw, Font, Edit->Cursors, Buffer, E_MOVE_UP, MoveType);
+					E_MoveCursors(Edit, Draw, Font, E_LastCursor(Edit->Cursors), Buffer, E_MOVE_UP, MoveType);
 					ShouldRemove = True;
 				} break;
 				case SAPP_KEYCODE_DOWN:
@@ -450,8 +450,9 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 						cursor *LastCursor = E_LastCursor(Edit->Cursors);
 						cursor NextCursor = LastCursor[0];
 						E_AppendCursor(Edit, Edit->Arena, Edit->Cursors, NextCursor);
+
 					}
-					E_MoveCursors(Edit, Draw, Font, Edit->Cursors, Buffer, E_MOVE_DOWN, MoveType);
+					E_MoveCursors(Edit, Draw, Font, E_LastCursor(Edit->Cursors), Buffer, E_MOVE_DOWN, MoveType);
 					ShouldRemove = True;
 				} break;
 				case SAPP_KEYCODE_BACKSPACE:

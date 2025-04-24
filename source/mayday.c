@@ -392,10 +392,6 @@ void OS_Event(const sapp_event *Event, void *Data)
 	mayday_context *M = (mayday_context*)Data;
 
 	{
-		if(Event->type == SAPP_EVENTTYPE_CHAR && Event->char_code >= 32)
-		{
-			LogInfo("[EVENT] CHAR: ?char | MODIFIER: ?u32", Event->char_code, Event->modifiers);
-		}
 		ui_event *UIEvent = ArenaPushArrayZero(M->FrameArena, ui_event, 1);
 		UIEvent->E = Event[0];
 		if(M->UI->EventLast)
@@ -476,7 +472,7 @@ void OS_Event(const sapp_event *Event, void *Data)
 void OS_Initialise(void *Data)
 {
 	mayday_context *M = Data;
-	M->Buffer.HeightInPixels = 48;
+	M->Buffer.HeightInPixels = 35;
 	R_Init(M->Render, M->PermanentArena, v2i(sapp_width() , sapp_height()));
 
 	M->Buffer.String.Bytes = ArenaPushZero(M->PermanentArena, MegaBytes(1));
@@ -566,7 +562,7 @@ int main()
 	cursor Cursor2 = {0};
 	M.TextBoxBuffer.Cursors = &Cursor2;
 
-	M.Window = OS_MakeWindow(Str8("Mayday!"), 3024, 1964);
+	M.Window = OS_MakeWindow(Str8("Mayday!"), 3024/2, 1964/2);
 
 	M.CodeFont = D_LoadFontFromTTF(M.Draw, G_BerkeleyMonoRegular);
 	M.LogoFont = D_LoadFontFromTTF(M.Draw, G_BasementGrotesque);

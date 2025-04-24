@@ -203,7 +203,7 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 				Cursor->Position = LerpV2F(Cursor->Position, Cursor->TargetPosition, 0.3);
 			}
 			int CursorLine = E_LineFromBufferIndex(Edit, Cursor->Selection.Y, Buffer);
-			if(FirstVisibleLine < CursorLine && CursorLine > LastVisibleLine)
+			if(FirstVisibleLine < CursorLine && CursorLine < LastVisibleLine)
 			{
 				D_DrawQuad(Draw, Arena, Cursor->Position, Min(LineHeight/10.0, 2), LineHeight, v4f(0.3, 0.7, 0, 1));
 			}

@@ -143,6 +143,8 @@ typedef struct ui_signal ui_signal;
 void UI_Label(ui_context *UI, draw_context *Draw, m_arena *Arena,
 				  str8 String, f32 HeightInPixels, v2f Position, v4f Colour);
 
+ui_widget *UI_WidgetFromString(ui_context *UI, str8 String);
+
 ui_signal UI_TextButton(ui_context *UI, draw_context *Draw,
 				  m_arena *Arena, str8 String,
 				  f32 HeightInPixels,
@@ -154,6 +156,8 @@ b32 UI_TextButtonWrapping(ui_context *UI, draw_context *Draw, m_arena *Arena,
 
 int UI_GetTextWidth(d_font Font, draw_context *Draw, str8 String, f32 HeightInPixels);
 
+void UI_ScrollBar(ui_context *UI, draw_context *Draw, m_arena *Arena, str8 String,
+				  v2f Position, f32 Width, f32 *Value);
 
 void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 			   m_arena *Arena, d_font Font,

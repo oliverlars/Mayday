@@ -206,6 +206,10 @@ void OS_Update(void *Data)
 		R_PushTransform(M->Render, Orthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
 		D_DrawQuad(M->Draw, M->FrameArena, v2f(0, 0),  WindowWidth, WindowHeight, v4f(0.008, 0.00, 0, 1.0));
 		D_DrawGrid2D(M->Draw, M->FrameArena, M->Buffer.HeightInPixels, M->Buffer.HeightInPixels*5);
+
+		f32 Value = 0.0;
+		UI_ScrollBar(M->UI, M->Draw, M->FrameArena, Str8("OrbitScrollBar"),
+					 v2f(sapp_widthf() - 1200, sapp_heightf() - 100), 300, &Value);
 		R_PopTransform(M->Render);
 
 		ui_orbit Orbit = {0};
@@ -218,8 +222,6 @@ void OS_Update(void *Data)
 			M->ViewSize = Lerp(M->ViewSize, M->ViewSizeTarget, 0.1);
 			M->LookAt = LerpV3F(M->LookAt, M->LookAtTarget, 0.1);
 			M->LookFrom = LerpV3F(M->LookFrom, M->LookFromTarget, 0.1);
-
-
 			if(M->OrbitDepth >= 1)
 			{
 				m44f CurrentTransform = R_CurrentTransform(M->Render);

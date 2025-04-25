@@ -114,6 +114,48 @@ ui_orbit UI_OrbitView(ui_context *UI, draw_context *Draw, m_arena *Arena,
 	return Result;
 }
 
+void UI_ScrollBar(ui_context *UI, draw_context *Draw, m_arena *Arena, str8 String,
+				  v2f Position, f32 Width, f32 *Value)
+{
+	ui_widget *Widget = UI_WidgetFromString(UI, String);
+	u64 Hash = Widget->Hash;
+
+	f32 Height = Width*0.2;
+
+	v2f Min = v2f(Position.X, Position.Y - Height);
+	v2f Max = v2f(Min.X + Width, Position.Y);
+
+	v4f MouseNDC = v4f(UI->MousePosition.X, UI->MousePosition.Y, 0, 1);
+	MouseNDC.X = (MouseNDC.X/sapp_widthf())*2.0 - 1.0;
+	MouseNDC.Y = (MouseNDC.Y/sapp_heightf())*2.0 -1.0;
+
+	v4f MouseWorld = MulM44FV4F(M44FTranspose(R_CurrentInverseTransform(Draw->Render)), MouseNDC);
+	v2f MP = v2f(MouseWorld.X / MouseWorld.W, MouseWorld.Y / MouseWorld.W);
+
+	if(MP.X >= Min.X && MP.X <= (Max.X) &&
+	   MP.Y >= Min.Y && MP.Y <= (Max.Y))
+	{
+		UI->Hot = Hash;
+	}
+
+	if(UI->Hot == Hash)
+	{
+		f32 Offset = (MP.X - Min.X)/(Max.X - Min.X);
+		D_DrawQuad(Draw, Arena, v2f(Position.X + Offset*Width, Position.Y - Height*1.2), 1, Height*1.2, v4f(1, 1, 1, 1));
+	}
+
+	D_DrawQuad(Draw, Arena, Position, Width, 1, v4f(1, 1, 1, 1));
+	D_DrawQuad(Draw, Arena, v2f(Position.X, Position.Y - Height), 1, Height, v4f(1, 1, 1, 1));
+	D_DrawQuad(Draw, Arena, v2f(Position.X + Width, Position.Y - Height), 1, Height, v4f(1, 1, 1, 1));
+
+	D_DrawQuad(Draw, Arena, v2f(Position.X + Width/2.0, Position.Y - Height/2.0), 1, Height/2.0, v4f(1, 1, 1, 1));
+
+	D_DrawQuad(Draw, Arena, v2f(Position.X + 3*Width/4.0, Position.Y - Height/2.0), 1, Height/2.0, v4f(1, 1, 1, 1));
+	D_DrawQuad(Draw, Arena, v2f(Position.X + Width/4.0, Position.Y - Height/2.0), 1, Height/2.0, v4f(1, 1, 1, 1));
+
+
+}
+
 ui_orbit_signal UI_OrbitLabels(ui_context *UI, draw_context *Draw, edit_context *Edit,
 					d_font Font, d_font LogoFont, m_arena *Arena, ui_orbit Orbit, os_directory_tree Tree,
 					v3f CameraPosition, v3f CameraForward, f32 MinDepth, f32 MaxDepth,

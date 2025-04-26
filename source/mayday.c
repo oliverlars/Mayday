@@ -207,7 +207,12 @@ void OS_Update(void *Data)
 		D_DrawQuad(M->Draw, M->FrameArena, v2f(0, 0),  WindowWidth, WindowHeight, v4f(0.008, 0.00, 0, 1.0));
 		D_DrawGrid2D(M->Draw, M->FrameArena, M->Buffer.HeightInPixels, M->Buffer.HeightInPixels*5);
 
-		f32 Value = 0.0;
+		static f32 Value = 0.0;
+
+		UI_PushStyle(M->UI,(ui_style){.Font = M->LogoFont});
+		UI_Label(M->UI, M->Draw, M->FrameArena, Str8PushF(M->FrameArena, "?u32##Label", (int)(Value*100.0)), 250,
+				 v2f(sapp_widthf() - 1300, sapp_heightf() - 200), v4f(0.2, 0.05, 0.0, 0.1));
+		UI_PopStyle(M->UI);
 		UI_ScrollBar(M->UI, M->Draw, M->FrameArena, Str8("OrbitScrollBar"),
 					 v2f(sapp_widthf() - 1200, sapp_heightf() - 100), 300, &Value);
 		R_PopTransform(M->Render);

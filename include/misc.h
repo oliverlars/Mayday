@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <assert.h>
 
 typedef int8_t    s8;
 typedef int16_t   s16;
@@ -36,5 +37,8 @@ typedef uint64_t  b64;
 #define per_thread_local __thread
 #elif(_WIN32)
 #endif
+
+
+#define Assert assert
 
 #define array(T) struct { T *Items; s64 Count; }

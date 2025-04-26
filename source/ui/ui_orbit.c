@@ -118,6 +118,7 @@ void UI_ScrollBar(ui_context *UI, draw_context *Draw, m_arena *Arena, str8 Strin
 				  v2f Position, f32 Width, f32 *Value)
 {
 	ui_widget *Widget = UI_WidgetFromString(UI, String);
+	Assert(Value);
 	u64 Hash = Widget->Hash;
 
 	f32 Height = Width*0.2;
@@ -142,6 +143,11 @@ void UI_ScrollBar(ui_context *UI, draw_context *Draw, m_arena *Arena, str8 Strin
 	{
 		f32 Offset = (MP.X - Min.X)/(Max.X - Min.X);
 		D_DrawQuad(Draw, Arena, v2f(Position.X + Offset*Width, Position.Y - Height*1.2), 1, Height*1.2, v4f(1, 1, 1, 1));
+	}
+
+	if(UI->Active && UI->MouseIsDragging)
+	{
+		Value[0] = (MP.X - Min.X)/(Max.X - Min.X);
 	}
 
 	D_DrawQuad(Draw, Arena, Position, Width, 1, v4f(1, 1, 1, 1));

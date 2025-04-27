@@ -114,8 +114,8 @@ ui_orbit UI_OrbitView(ui_context *UI, draw_context *Draw, m_arena *Arena,
 	return Result;
 }
 
-void UI_ScrollBar(ui_context *UI, draw_context *Draw, m_arena *Arena, str8 String,
-				  v2f Position, f32 Width, f32 *Value)
+void UI_Slider(ui_context *UI, draw_context *Draw, m_arena *Arena, str8 String,
+				  v2f Position, f32 Width, f32 *Value, v4f Colour)
 {
 	ui_widget *Widget = UI_WidgetFromString(UI, String);
 	Assert(Value);
@@ -150,14 +150,14 @@ void UI_ScrollBar(ui_context *UI, draw_context *Draw, m_arena *Arena, str8 Strin
 		Value[0] = (MP.X - Min.X)/(Max.X - Min.X);
 	}
 
-	D_DrawQuad(Draw, Arena, Position, Width, 1, v4f(1, 1, 1, 1));
-	D_DrawQuad(Draw, Arena, v2f(Position.X, Position.Y - Height), 1, Height, v4f(1, 1, 1, 1));
-	D_DrawQuad(Draw, Arena, v2f(Position.X + Width, Position.Y - Height), 1, Height, v4f(1, 1, 1, 1));
+	D_DrawQuad(Draw, Arena, Position, Width, 1, Colour);
+	D_DrawQuad(Draw, Arena, v2f(Position.X, Position.Y - Height), 1, Height, Colour);
+	D_DrawQuad(Draw, Arena, v2f(Position.X + Width, Position.Y - Height), 1, Height, Colour);
 
-	D_DrawQuad(Draw, Arena, v2f(Position.X + Width/2.0, Position.Y - Height/2.0), 1, Height/2.0, v4f(1, 1, 1, 1));
+	D_DrawQuad(Draw, Arena, v2f(Position.X + Width/2.0, Position.Y - Height/2.0), 1, Height/2.0, Colour);
 
-	D_DrawQuad(Draw, Arena, v2f(Position.X + 3*Width/4.0, Position.Y - Height/2.0), 1, Height/2.0, v4f(1, 1, 1, 1));
-	D_DrawQuad(Draw, Arena, v2f(Position.X + Width/4.0, Position.Y - Height/2.0), 1, Height/2.0, v4f(1, 1, 1, 1));
+	D_DrawQuad(Draw, Arena, v2f(Position.X + 3*Width/4.0, Position.Y - Height/2.0), 1, Height/2.0, Colour);
+	D_DrawQuad(Draw, Arena, v2f(Position.X + Width/4.0, Position.Y - Height/2.0), 1, Height/2.0, Colour);
 
 
 }

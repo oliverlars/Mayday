@@ -213,8 +213,8 @@ void OS_Update(void *Data)
 		UI_Label(M->UI, M->Draw, M->FrameArena, Str8PushF(M->FrameArena, "?u32##Label", (int)(Value*100.0)), 250,
 				 v2f(sapp_widthf() - 1300, sapp_heightf() - 200), v4f(0.2, 0.05, 0.0, 0.1));
 		UI_PopStyle(M->UI);
-		UI_ScrollBar(M->UI, M->Draw, M->FrameArena, Str8("OrbitScrollBar"),
-					 v2f(sapp_widthf() - 1200, sapp_heightf() - 100), 300, &Value);
+		UI_Slider(M->UI, M->Draw, M->FrameArena, Str8("OrbitScrollBar"),
+					 v2f(sapp_widthf() - 1200, sapp_heightf() - 100), 300, &Value, v4f(0.3, 0.1, 0.0, 1.0));
 		R_PopTransform(M->Render);
 
 		ui_orbit Orbit = {0};

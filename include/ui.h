@@ -156,8 +156,8 @@ b32 UI_TextButtonWrapping(ui_context *UI, draw_context *Draw, m_arena *Arena,
 
 int UI_GetTextWidth(d_font Font, draw_context *Draw, str8 String, f32 HeightInPixels);
 
-void UI_ScrollBar(ui_context *UI, draw_context *Draw, m_arena *Arena, str8 String,
-				  v2f Position, f32 Width, f32 *Value);
+void UI_Slider(ui_context *UI, draw_context *Draw, m_arena *Arena, str8 String,
+				  v2f Position, f32 Width, f32 *Value, v4f Colour);
 
 void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 			   m_arena *Arena, d_font Font,

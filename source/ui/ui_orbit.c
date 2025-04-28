@@ -147,7 +147,7 @@ void UI_Slider(ui_context *UI, draw_context *Draw, m_arena *Arena, str8 String,
 
 	if(UI->Active && UI->MouseIsDragging)
 	{
-		Value[0] = (MP.X - Min.X)/(Max.X - Min.X);
+		Value[0] = Clamp((MP.X - Min.X)/(Max.X - Min.X), 0, 1);
 	}
 
 	D_DrawQuad(Draw, Arena, Position, Width, 1, Colour);

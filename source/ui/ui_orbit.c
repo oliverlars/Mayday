@@ -142,7 +142,12 @@ void UI_Slider(ui_context *UI, draw_context *Draw, m_arena *Arena, str8 String,
 	if(UI->Hot == Hash)
 	{
 		f32 Offset = (MP.X - Min.X)/(Max.X - Min.X);
-		D_DrawQuad(Draw, Arena, v2f(Position.X + Offset*Width, Position.Y - Height*1.2), 1, Height*1.2, v4f(1, 1, 1, 1));
+		D_DrawQuad(Draw, Arena, v2f(Position.X + Offset*Width, Position.Y - Height*0.8), 1, Height*0.8, v4f(1, 1, 1, 1));
+	}
+	else
+	{
+		f32 Offset = Value[0];
+		D_DrawQuad(Draw, Arena, v2f(Position.X + Offset*Width, Position.Y - Height*0.8), 1, Height*0.8, v4f(0.3, 0.3, .3, 1.0));
 	}
 
 	if(UI->Active && UI->MouseIsDragging)

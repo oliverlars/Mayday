@@ -57,10 +57,12 @@ s64 IndexFromLine(str8 String, int Line)
 }
 
 int DigitCountFromInt(u32 Value) {
-	if (Value < 0) Value = -Value;
 	int Result = 0;
 	if (Value == 0) return 1;
-	for(;Value != 0; (Result++, Value /= 10));
+	for(;Value != 0; Value /= 10)
+	{
+		Result += 1;
+	}
 	return Result;
 }
 
@@ -81,11 +83,12 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 
 	int NumberOfLines = CountNewLinesNEON(Buffer->String);
 
-	f32 NumberOffsetX = DigitCountFromInt(NumberOfLines) * UI_GetTextWidth(Font, Draw, Str8("0"), Buffer->HeightInPixels);
+	f32 Margin = 10.0f;
+	f32 NumberOffsetX = Margin*2 + DigitCountFromInt(NumberOfLines) * UI_GetTextWidth(Font, Draw, Str8("0"), Buffer->HeightInPixels);
 
 	v2f BufferPosition = v2f(NumberOffsetX, (f32)WindowHeight);
 
-	v2f NumbersPosition = v2f(10, BufferPosition.Y);
+	v2f NumbersPosition = v2f(Margin, BufferPosition.Y);
 
 	int FirstVisibleLine = Max((Buffer->Offset.Y)/LineHeight, 0);
 	int LastVisibleLine = FirstVisibleLine + WindowHeight/LineHeight;

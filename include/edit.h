@@ -40,8 +40,6 @@ typedef struct editable_buffer
 
 	f32 HeightInPixels;
 
-	cursor *Cursors;
-
 	v2f Offset;
 
 	b32 EditedSinceLastSave;

@@ -512,7 +512,7 @@ ui_textbox_signal UI_TextBox(m_arena *Arena,
 	f32 Height = D_LineHeightFromFont(Font, HeightInPixels);
 	f32 Width = UI_GetTextWidth(Font, Draw, DisplayString, HeightInPixels);
 
-	f32 CursorXOffset = Max(0, Buffer->Cursors[0].Position.X - BoxWidth*0.8 - Position.X);
+	f32 CursorXOffset = Max(0, Edit->Cursors[0].Position.X - BoxWidth*0.8 - Position.X);
 	Width = Max(Width, BoxWidth);
 
 	v2f Min = Add(Position, v2f(0, UI->Font.Descent * Scale));
@@ -555,30 +555,30 @@ ui_textbox_signal UI_TextBox(m_arena *Arena,
 
 	if(UI_KeyDown(UI, SAPP_KEYCODE_LEFT, 0))
 	{
-		E_MoveCursors(Edit, Draw, Font, Buffer->Cursors, Buffer, E_MOVE_LEFT, E_MOVE_NOT_SELECTING);
+		E_MoveCursors(Edit, Draw, Font, Edit->Cursors, Buffer, E_MOVE_LEFT, E_MOVE_NOT_SELECTING);
 	}
 	else if(UI_KeyDown(UI, SAPP_KEYCODE_LEFT, SAPP_MODIFIER_SHIFT))
 	{
-		E_MoveCursors(Edit, Draw, Font, Buffer->Cursors, Buffer, E_MOVE_LEFT, E_MOVE_SELECTING);
+		E_MoveCursors(Edit, Draw, Font, Edit->Cursors, Buffer, E_MOVE_LEFT, E_MOVE_SELECTING);
 	}
 
 	if(UI_KeyDown(UI, SAPP_KEYCODE_RIGHT, 0))
 	{
-		E_MoveCursors(Edit, Draw, Font, Buffer->Cursors, Buffer, E_MOVE_RIGHT, E_MOVE_NOT_SELECTING);
+		E_MoveCursors(Edit, Draw, Font, Edit->Cursors, Buffer, E_MOVE_RIGHT, E_MOVE_NOT_SELECTING);
 	}
 	else if(UI_KeyDown(UI, SAPP_KEYCODE_RIGHT, SAPP_MODIFIER_SHIFT))
 	{
-		E_MoveCursors(Edit, Draw, Font, Buffer->Cursors, Buffer, E_MOVE_RIGHT, E_MOVE_SELECTING);
+		E_MoveCursors(Edit, Draw, Font, Edit->Cursors, Buffer, E_MOVE_RIGHT, E_MOVE_SELECTING);
 	}
 
 	if(UI_KeyDown(UI, SAPP_KEYCODE_TAB, 0))
 	{
-		E_InsertTo(Edit, Buffer->Cursors, Buffer, Str8("\t"));
+		E_InsertTo(Edit, Edit->Cursors, Buffer, Str8("\t"));
 	}
 
 	if(UI_KeyDown(UI, SAPP_KEYCODE_SPACE, 0))
 	{
-		E_InsertTo(Edit, Buffer->Cursors, Buffer, Str8(" "));
+		E_InsertTo(Edit, Edit->Cursors, Buffer, Str8(" "));
 	}
 
 	ui_textbox_signal Result = {0};
@@ -588,13 +588,13 @@ ui_textbox_signal UI_TextBox(m_arena *Arena,
 	{
 		Result.Submitted = True;
 		Buffer->String.Size = 0;
-		Buffer->Cursors[0].Selection = v2i(0, 0);
+		Edit->Cursors[0].Selection = v2i(0, 0);
 	}
 
 
 	if(UI_KeyDown(UI, SAPP_KEYCODE_BACKSPACE, 0))
 	{
-		E_DeleteTo(Edit, Buffer->Cursors, Buffer);
+		E_DeleteTo(Edit, Edit->Cursors, Buffer);
 	}
 
 	v2f BoxPosition = Position;
@@ -623,11 +623,11 @@ ui_textbox_signal UI_TextBox(m_arena *Arena,
 			   Height, Buffer->String);
 	R_PopScissor(Draw->Render);
 
-	//LogInfo("Cursor pos: ?u32", Buffer->Cursors[0].Selection.X);
+	//LogInfo("Cursor pos: ?u32", Edit->Cursors[0].Selection.X);
 
 	if(UI->Active == Hash)
 	{
-		v2i Selection = E_GetSortedSelection(Buffer->Cursors[0].Selection);
+		v2i Selection = E_GetSortedSelection(Edit->Cursors[0].Selection);
 		D_DrawSelectionRange(Draw,
 							 Arena,
 							 Font,
@@ -642,28 +642,28 @@ ui_textbox_signal UI_TextBox(m_arena *Arena,
 		{
 			int Index = E_IndexFromPosition(Edit, Draw, Font,
 											Buffer, v2i(0, Buffer->String.Size), Position, UI->MousePosition);
-			Buffer->Cursors[0].Selection.Y = Index;
+			Edit->Cursors[0].Selection.Y = Index;
 
-			Buffer->Cursors[0].TargetPosition = E_GetPositionFromEditableBuffer(Edit,
+			Edit->Cursors[0].TargetPosition = E_GetPositionFromEditableBuffer(Edit,
 																		Draw,
-																		Buffer->Cursors[0].Selection.Y,
+																		Edit->Cursors[0].Selection.Y,
 																		Buffer[0],
 																		Font,
 																		Position);
-			Buffer->Cursors[0].Position = Buffer->Cursors[0].TargetPosition;
-			D_DrawQuad(Draw, Arena, Buffer->Cursors[0].Position, 5, Height, v4f(0.3, 0.7, 0, 1));
+			Edit->Cursors[0].Position = Edit->Cursors[0].TargetPosition;
+			D_DrawQuad(Draw, Arena, Edit->Cursors[0].Position, 5, Height, v4f(0.3, 0.7, 0, 1));
 		}
 		else
 		{
-			Buffer->Cursors[0].TargetPosition = E_GetPositionFromEditableBuffer(Edit,
+			Edit->Cursors[0].TargetPosition = E_GetPositionFromEditableBuffer(Edit,
 																	 Draw,
-																	 Buffer->Cursors[0].Selection.Y,
+																	 Edit->Cursors[0].Selection.Y,
 																	 Buffer[0],
 																	 Font,
 																	 Position);
 
-			Buffer->Cursors[0].Position = LerpV2F(Buffer->Cursors[0].Position, Buffer->Cursors[0].TargetPosition, 0.3);
-			v2f CursorPosition = Buffer->Cursors[0].Position;
+			Edit->Cursors[0].Position = LerpV2F(Edit->Cursors[0].Position, Edit->Cursors[0].TargetPosition, 0.3);
+			v2f CursorPosition = Edit->Cursors[0].Position;
 			CursorPosition.X -= CursorXOffset;
 			CursorPosition.Y -= UI->Font.Descent * Scale;
 			D_DrawQuad(Draw, Arena, CursorPosition, 2, Height, v4f(0.3, 0.7, 0, 1));
@@ -675,7 +675,7 @@ ui_textbox_signal UI_TextBox(m_arena *Arena,
 			int Index = E_IndexFromPosition(Edit, Draw, Font,
 										Buffer, v2i(0, Buffer->String.Size), Position,
 										UI->MousePosition);
-			cursor *Cursor = Buffer->Cursors;
+			cursor *Cursor = Edit->Cursors;
 
 			v2i InitialSelection = Cursor->Selection;
 			E_MoveCursors(Edit, Draw, Font, Cursor, Buffer, E_MOVE_WORD_RIGHT, E_MOVE_SELECTING);
@@ -690,13 +690,13 @@ ui_textbox_signal UI_TextBox(m_arena *Arena,
 											Buffer, v2i(0, Buffer->String.Size), Position,
 											UI->MousePosition);
 
-			int LineStart = E_LineStartFromIndex(Edit, Buffer->Cursors[0].Selection.Y, Buffer);
-			int LineEnd = E_LineEndFromIndex(Edit, Buffer->Cursors[0].Selection.Y, Buffer);
-			Buffer->Cursors[0].Selection = v2i(LineStart, LineEnd);
+			int LineStart = E_LineStartFromIndex(Edit, Edit->Cursors[0].Selection.Y, Buffer);
+			int LineEnd = E_LineEndFromIndex(Edit, Edit->Cursors[0].Selection.Y, Buffer);
+			Edit->Cursors[0].Selection = v2i(LineStart, LineEnd);
 		}
 		else if(UI_QuadClicked(UI))
 		{
-			Buffer->Cursors[0].Selection = v2i(0, Buffer->String.Size);
+			Edit->Cursors[0].Selection = v2i(0, Buffer->String.Size);
 
 			int Index = E_IndexFromPosition(Edit, Draw, Font,
 											Buffer, v2i(0, Buffer->String.Size), Position,
@@ -707,14 +707,14 @@ ui_textbox_signal UI_TextBox(m_arena *Arena,
 			int Index = E_IndexFromPosition(Edit, Draw, Font,
 										Buffer, v2i(0, Buffer->String.Size), Position,
 										UI->MousePosition);
-			cursor *Cursor = Buffer->Cursors;
+			cursor *Cursor = Edit->Cursors;
 			Cursor->Selection = v2i(Index, Index);
 		}
 
 		str8 TextToInsert = UI_Text(UI, Arena);
 		if(TextToInsert.Size > 0)
 		{
-			E_InsertTo(Edit, Buffer->Cursors, Buffer, TextToInsert);
+			E_InsertTo(Edit, Edit->Cursors, Buffer, TextToInsert);
 		}
 	}
 	else

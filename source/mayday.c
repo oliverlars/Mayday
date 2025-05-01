@@ -561,7 +561,6 @@ int main()
 	M.Edit->Cursors = &Cursor;
 
 	cursor Cursor2 = {0};
-	M.TextBoxBuffer.Cursors = &Cursor2;
 
 	M.Window = OS_MakeWindow(Str8("Mayday!"), 3024/2, 1964/2);
 

@@ -223,7 +223,7 @@ ui_orbit_node_array UI_OrbitNodesFromTreeDepth(m_arena *Arena, os_directory_tree
 ui_orbit_signal UI_OrbitLabels(ui_context *UI, draw_context *Draw, edit_context *Edit,
 					d_font Font, d_font LogoFont, m_arena *Arena, ui_orbit Orbit, os_directory_tree Tree,
 					v3f CameraPosition, v3f CameraForward, f32 MinDepth, f32 MaxDepth,
-					int ActiveItem, int ActiveDepth, os_directory_entry *ActiveEntry,
+					int ActiveItem, int ActiveDepth,
 					m44f MVP, m44f ModelTransform, editable_buffer* SearchBuffer);
 
 ui_orbit UI_OrbitView(ui_context *UI, draw_context *Draw, m_arena *Arena,

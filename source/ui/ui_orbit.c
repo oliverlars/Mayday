@@ -170,7 +170,7 @@ void UI_Slider(ui_context *UI, draw_context *Draw, m_arena *Arena, str8 String,
 ui_orbit_signal UI_OrbitLabels(ui_context *UI, draw_context *Draw, edit_context *Edit,
 					d_font Font, d_font LogoFont, m_arena *Arena, ui_orbit Orbit, os_directory_tree Tree,
 					v3f CameraPosition, v3f CameraForward, f32 MinDepth, f32 MaxDepth,
-					int ActiveItem, int ActiveDepth, os_directory_entry *ActiveEntry,
+					int ActiveItem, int ActiveDepth,
 					m44f MVP, m44f ModelTransform, editable_buffer* SearchBuffer)
 {
 	ui_textbox_signal SearchSignal = UI_TextBox(Arena, Font, v2f(sapp_widthf()/2.0 - 500, 100), 1000,

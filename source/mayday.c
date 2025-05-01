@@ -69,9 +69,6 @@ typedef struct mayday_context
 	int OrbitItem;
 	int OrbitDepth;
 	v3f OrbitPosition;
-	// HACK(Oliver): We probably don't want to rely
-	// on this
-	os_directory_entry *ActiveEntry;
 
 
 	os_directory_tree FolderTree;
@@ -114,8 +111,6 @@ void OS_Update(void *Data)
 	if(M->ScrollAccumulationTarget >= 5.0)
 	{
 		M->ScrollAccumulationTarget = 0;
-
-		M->ActiveEntry = Null;
 
 		M->OrbitAnimationTarget -= 10.0;
 		M->OrbitItem = 0;
@@ -282,7 +277,7 @@ void OS_Update(void *Data)
 			m44f PVM = Mul(ModelView, P);
 			OrbitSignal = UI_OrbitLabels(M->UI, M->Draw, M->Edit,
 						   M->UI->Font, M->LogoFont, M->FrameArena, Orbit, M->FolderTree,
-						   CameraPosition, CameraForward, MinDepth, MaxDepth, M->OrbitItem, M->OrbitDepth + 1, M->ActiveEntry,
+						   CameraPosition, CameraForward, MinDepth, MaxDepth, M->OrbitItem, M->OrbitDepth + 1,
 						   Transform, ModelView, &M->TextBoxBuffer);
 		}
 
@@ -339,7 +334,6 @@ void OS_Update(void *Data)
 
 		if(OrbitSignal.Clicked)
 		{
-			M->ActiveEntry = OrbitSignal.ActiveEntry;
 			M->OrbitItem = OrbitSignal.ActiveItem;
 			M->OrbitDepth = OrbitSignal.ActiveItemDepth;
 			M->OrbitPosition = OrbitSignal.ActiveItemPosition;

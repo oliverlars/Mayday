@@ -560,8 +560,6 @@ int main()
 	cursor Cursor = {0};
 	M.Edit->Cursors = &Cursor;
 
-	cursor Cursor2 = {0};
-
 	M.Window = OS_MakeWindow(Str8("Mayday!"), 3024/2, 1964/2);
 
 	M.CodeFont = D_LoadFontFromTTF(M.Draw, G_BerkeleyMonoRegular);

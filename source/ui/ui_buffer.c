@@ -290,6 +290,7 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 		cursor *Cursor = LastCursor;
 		Edit->Cursors->Next = Null;
 		Cursor = Edit->Cursors;
+		Cursor->Selection.X = Cursor->Selection.Y;
 	}
 
 

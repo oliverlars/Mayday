@@ -84,7 +84,9 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 	int NumberOfLines = CountNewLinesNEON(Buffer->String);
 
 	f32 Margin = 10.0f;
-	f32 NumberOffsetX = Margin*2 + DigitCountFromInt(NumberOfLines) * UI_GetTextWidth(Font, Draw, Str8("0"), Buffer->HeightInPixels);
+	f32 MinOffsetX = 4 * UI_GetTextWidth(Font, Draw, Str8("0"), Buffer->HeightInPixels);
+
+	f32 NumberOffsetX = Max(MinOffsetX, DigitCountFromInt(NumberOfLines) * UI_GetTextWidth(Font, Draw, Str8("0"), Buffer->HeightInPixels));
 
 	v2f BufferPosition = v2f(NumberOffsetX, (f32)WindowHeight);
 
@@ -461,7 +463,13 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 				} break;
 				case SAPP_KEYCODE_BACKSPACE:
 				{
+					if(Event.modifiers & SAPP_MODIFIER_SUPER)
+					{
+						cursor *Cursor = E_LastCursor(Edit->Cursors);
+						E_MoveCursors(Edit, Draw, Font, Cursor, Buffer, E_MOVE_WORD_LEFT, E_MOVE_SELECTING);
+					}
 					E_DeleteTo(Edit, Edit->Cursors, Buffer);
+					
 				}
 				break;
 				default:

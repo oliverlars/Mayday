@@ -201,22 +201,25 @@ void OS_Update(void *Data)
 		R_PushTransform(M->Render, Orthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
 		D_DrawQuad(M->Draw, M->FrameArena, v2f(0, 0),  WindowWidth, WindowHeight, v4f(0.008, 0.00, 0, 1.0));
 		D_DrawGrid2D(M->Draw, M->FrameArena, M->Buffer.HeightInPixels, M->Buffer.HeightInPixels*5);
-
-		static f32 Value = 0.0;
-
-		UI_PushStyle(M->UI,(ui_style){.Font = M->LogoFont});
-		UI_Label(M->UI, M->Draw, M->FrameArena, Str8PushF(M->FrameArena, "?u32##Label", (int)(Value*100.0)), 250,
-				 v2f(sapp_widthf() - 1300, sapp_heightf() - 200), v4f(0.2, 0.05, 0.0, 0.1));
-		UI_PopStyle(M->UI);
-		UI_Slider(M->UI, M->Draw, M->FrameArena, Str8("OrbitScrollBar"),
-					 v2f(sapp_widthf() - 1200, sapp_heightf() - 100), 300, &Value, v4f(0.3, 0.1, 0.0, 1.0));
-		R_PopTransform(M->Render);
+		
 
 		ui_orbit Orbit = {0};
 		f32 MinDepth = 0.0f;
 		f32 MaxDepth = 0.0f;
 		if(OS_ValidPath(M->Folder))
 		{
+			static f32 Value = 0.0;
+
+			UI_PushStyle(M->UI,(ui_style){.Font = M->LogoFont});
+			UI_Label(M->UI, M->Draw, M->FrameArena, Str8PushF(M->FrameArena, "?u32##Label", (int)(Value*100.0)), 250,
+					v2f(sapp_widthf() - 1300, sapp_heightf() - 200), v4f(0.2, 0.05, 0.0, 0.1));
+			UI_PopStyle(M->UI);
+			UI_Slider(M->UI, M->Draw, M->FrameArena, Str8("OrbitScrollBar"),
+					 v2f(sapp_widthf() - 1200, sapp_heightf() - 100), 300, &Value, v4f(0.3, 0.1, 0.0, 1.0));
+
+			// HACK(Oliver): This is annoying i have to do this twice
+			R_PopTransform(M->Render);
+			
 			// HACK(Oliver): This is only here because i'm too lazy to make a new view
 			// for the homescreen
 			M->ViewSize = Lerp(M->ViewSize, M->ViewSizeTarget, 0.1);
@@ -267,6 +270,10 @@ void OS_Update(void *Data)
 					MaxDepth = Depth;
 				}
 			}
+		}
+		else
+		{
+			R_PopTransform(M->Render);
 		}
 
 		R_PushTransform(M->Render, Orthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));

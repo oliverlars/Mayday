@@ -367,11 +367,6 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 		E_InsertTo(Edit, Edit->Cursors, Buffer, Str8("\t"));
 	}
 
-	if(UI_KeyDown(UI, SAPP_KEYCODE_SPACE, 0))
-	{
-		E_InsertTo(Edit, Edit->Cursors, Buffer, Str8(" "));
-	}
-
 	if(UI_KeyDown(UI, SAPP_KEYCODE_P, SAPP_MODIFIER_SUPER))
 	{
 		UI->Active = UI_IDFromString(Str8("TreeViewTextBox"));

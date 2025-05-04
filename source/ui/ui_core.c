@@ -88,6 +88,21 @@ b32 UI_EventIterate(ui_context *UI, ui_event_iterator *Iter)
 	return True;
 }
 
+b32 UI_KeyDownAnyModifiers(ui_context *UI, sapp_keycode Key)
+{
+		b32 Result = False;
+	for(ui_event *Event = UI->EventFirst; Event; Event = Event->Next)
+	{
+		if(Event->E.type == SAPP_EVENTTYPE_KEY_DOWN && Event->E.key_code == Key)
+		{
+			Result = True;
+			UI_RemoveEventFromList(UI, Event);
+			break;
+		}
+	}
+	return Result;
+}
+
 b32 UI_KeyDown(ui_context *UI, sapp_keycode Key, u32 Modifiers)
 {
 	b32 Result = False;
@@ -126,7 +141,7 @@ str8 UI_Text(ui_context *UI, m_arena *Arena)
 	for(ui_event *Event = UI->EventFirst; Event; Event = Event->Next)
 	{
 		b32 AnyNonShiftModifiersPressed = Event->E.modifiers & ~SAPP_MODIFIER_SHIFT;
-		if(Event->E.type == SAPP_EVENTTYPE_CHAR && Event->E.char_code > 32 && Event->E.char_code <= 126 && !AnyNonShiftModifiersPressed)
+		if(Event->E.type == SAPP_EVENTTYPE_CHAR && Event->E.char_code >= 32 && Event->E.char_code <= 126 && !AnyNonShiftModifiersPressed)
 		{
 			NoOneCanTypeThisManyCharactersInOneFrame[Index++] = Event->E.char_code;
 		}

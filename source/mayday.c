@@ -219,7 +219,7 @@ void OS_Update(void *Data)
 
 			// HACK(Oliver): This is annoying i have to do this twice
 			R_PopTransform(M->Render);
-			
+
 			// HACK(Oliver): This is only here because i'm too lazy to make a new view
 			// for the homescreen
 			M->ViewSize = Lerp(M->ViewSize, M->ViewSizeTarget, 0.1);
@@ -353,6 +353,7 @@ void OS_Update(void *Data)
 			{
 				M->ActiveFilePath = Str8Copy(M->PermanentArena, OrbitSignal.FileToLoad);
 				M->Buffer.String = OS_LoadEntireFileIntoMemory(M->PermanentArena, OrbitSignal.FileToLoad);
+				M->Buffer.LastModifiedTime = OS_GetFileLastWriteTimestamp(M->ActiveFilePath);
 				M->UI->View = UI_VIEW_EDIT;
 			}
 			//M->ViewSizeTarget = (f32)(1.0 + M->OrbitDepth*25.0);

@@ -44,6 +44,8 @@ typedef struct editable_buffer
 
 	b32 EditedSinceLastSave;
 
+	u64 LastModifiedTime;
+
 	struct editable_buffer *NextInFreeList;
 } editable_buffer;
 

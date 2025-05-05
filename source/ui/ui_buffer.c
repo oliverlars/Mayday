@@ -375,7 +375,16 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 
 	if(UI_KeyDown(UI, SAPP_KEYCODE_S, SAPP_MODIFIER_SUPER))
 	{
-		OS_WriteStringToDisk(Arena, BufferPath, Buffer->String);
+		if(OS_GetFileLastWriteTimestamp(BufferPath) != Buffer->LastModifiedTime)
+		{
+			LogError("NO ALLOWED");
+		}
+		else
+		{
+			LogInfo("THIS IS FINE");
+			OS_WriteStringToDisk(Arena, BufferPath, Buffer->String);
+			Buffer->LastModifiedTime = OS_GetFileLastWriteTimestamp(BufferPath);
+		}
 	}
 
 	b32 ShouldRemove = False;

@@ -67,7 +67,7 @@ void OS_Exit(void *Data);
 
 
 str8 OS_GetLastModifiedTime(m_arena *Arena, str8 Path);
-
+u64 OS_GetFileLastWriteTimestamp(str8 Path);
 
 os_handle OS_GetWindowHandle();
 int OS_WindowWidth(os_window *Window);

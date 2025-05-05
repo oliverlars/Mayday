@@ -219,6 +219,23 @@ str8 OS_GetLastModifiedTime(m_arena *Arena, str8 Path)
 	return Str8PushF(Arena, "?cstr", ctime(&Stat.st_mtime));
 }
 
+u64 OS_GetFileLastWriteTimestamp(str8 Path)
+{
+	m_scratch_arena Scratch = ScratchBegin(0, 0);
+
+	struct stat Stat = {0};
+	u64 TimeStamp = 0;
+
+	if (stat(CStrFromStr8(Scratch.Arena, Path), &Stat) == 0)
+	{
+		TimeStamp =  (u64)Stat.st_mtimespec.tv_sec  * 1000000000ULL +
+					 (u64)Stat.st_mtimespec.tv_nsec;
+	}
+
+	ScratchEnd(Scratch);
+	return TimeStamp;
+}
+
 b32
 OS_DirectoryTreeIterateWithStack(m_arena *Arena, os_directory_tree Tree, os_directory_tree_iterator *It)
 {

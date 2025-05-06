@@ -338,13 +338,14 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 		}
 		else
 		{
-			StringToFind.Size = Cursor->Selection.Y - Cursor->Selection.X;
-			StringToFind.Bytes = Buffer->String.Bytes + Cursor->Selection.X;
+			v2i Sorted = E_GetSortedSelection(Cursor->Selection);
+			StringToFind.Size = Sorted.Y - Sorted.X;
+			StringToFind.Bytes = Buffer->String.Bytes + Sorted.X;
 
 			// TODO(Oliver): Unicode
 			u8 *Start = Buffer->String.Bytes;
 			u8 *End = Buffer->String.Bytes + Buffer->String.Size;
-			for(u8 *Byte = Buffer->String.Bytes + Cursor->Selection.Y + 1; Byte < End; Byte++)
+			for(u8 *Byte = Buffer->String.Bytes + Sorted.Y + 1; Byte < End; Byte++)
 			{
 				str8 CurrentString = {0};
 				CurrentString.Bytes = Byte;

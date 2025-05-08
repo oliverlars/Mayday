@@ -366,7 +366,7 @@ void OS_Update(void *Data)
 	R_PopTransform(M->Render);
 
 	if(OS_MilliSecondsFromTimeStamp(OS_TimeStampNow() - M->UI->TimeStampWhenLeftMousePressed) > 150.0 &&
-	   M->UI->LeftMouseIsDown)
+	   M->UI->LeftMouseIsDown && M->UI->MultiLeftClickCount == 0)
 	{
 		M->UI->MouseIsDragging = True;
 	}

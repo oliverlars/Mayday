@@ -129,6 +129,7 @@ void OS_Update(void *Data)
 	int WindowWidth = OS_WindowWidth(&M->Window);
 
 	f32 Size = M->ViewSize;
+	static f32 AngleOffset = 0.0;
 	static f32 Angle = 0.0;
 
 	static f32 AngleTarget = 0.0;
@@ -144,7 +145,7 @@ void OS_Update(void *Data)
 
 	m44f TranslateToOrigin = Translate(v3f(-M->LookAt.X, -M->LookAt.Y, -M->LookAt.Z));
 
-	m44f Rotation = M44FromYAngle(Angle);
+	m44f Rotation = M44FromYAngle(Angle + 2.0f*M_PI*AngleOffset);
 
 	m44f TranslateBack = Translate(M->LookAt);
 
@@ -208,14 +209,13 @@ void OS_Update(void *Data)
 		f32 MaxDepth = 0.0f;
 		if(OS_ValidPath(M->Folder))
 		{
-			static f32 Value = 0.0;
 
 			UI_PushStyle(M->UI,(ui_style){.Font = M->LogoFont});
-			UI_Label(M->UI, M->Draw, M->FrameArena, Str8PushF(M->FrameArena, "?u32##Label", (int)(Value*100.0)), 250,
+			UI_Label(M->UI, M->Draw, M->FrameArena, Str8PushF(M->FrameArena, "?u32##Label", (int)(AngleOffset*100.0)), 250,
 					v2f(sapp_widthf() - 1300, sapp_heightf() - 200), v4f(0.2, 0.05, 0.0, 0.1));
 			UI_PopStyle(M->UI);
 			UI_Slider(M->UI, M->Draw, M->FrameArena, Str8("OrbitScrollBar"),
-					 v2f(sapp_widthf() - 1200, sapp_heightf() - 100), 300, &Value, v4f(0.3, 0.1, 0.0, 1.0));
+					 v2f(sapp_widthf() - 1200, sapp_heightf() - 100), 300, &AngleOffset, v4f(0.3, 0.1, 0.0, 1.0));
 
 			// HACK(Oliver): This is annoying i have to do this twice
 			R_PopTransform(M->Render);

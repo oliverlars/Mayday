@@ -143,11 +143,10 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 		f32 Scale = stbtt_ScaleForPixelHeight(&Font.Info, Buffer->HeightInPixels);
 		int CursorStartLine = E_LineFromBufferIndex(Edit, StartIndex, Buffer);
 		int CursorEndLine = E_LineFromBufferIndex(Edit, EndIndex, Buffer);
-		if(FirstVisibleLine - 1 < CursorStartLine && LastVisibleLine > CursorEndLine)
-		{
-			D_DrawQuad(Draw, Arena, v2f(BufferPosition.X, Cursor->TargetPosition.Y),
-					   sapp_widthf(), (Font.Ascent - Font.Descent + Font.LineGap)*Scale, v4f(0.04, 0.01, 0, 0.1));
-		}
+		// HACK(Oliver): The start position should be for the buffer, 0 isn't necessarily always the start...
+		// Also the colours are just random guesses, need a better way of formalising these.
+		D_DrawQuad(Draw, Arena, v2f(0, Cursor->TargetPosition.Y),
+					sapp_widthf(), (Font.Ascent - Font.Descent + Font.LineGap)*Scale, v4f(0.04, 0.01, 0, 0.25));
 	}
 
 
@@ -286,7 +285,8 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 		Cursor->Selection = v2i(Index, Index);
 
 	}
-	else if(UI_KeyDown(UI, SAPP_KEYCODE_ESCAPE, 0))
+	
+	if(UI_KeyDown(UI, SAPP_KEYCODE_ESCAPE, 0))
 	{
 		cursor *LastCursor = E_LastCursor(Edit->Cursors);
 		cursor *Cursor = LastCursor;

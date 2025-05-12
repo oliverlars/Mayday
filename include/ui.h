@@ -109,6 +109,7 @@ typedef struct ui_context
 
 	b32 MouseClicked;
 
+	v2i MouseDragStart;
 	b32 MouseIsDragging;
 	v2i MousePosition;
 

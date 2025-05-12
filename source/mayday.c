@@ -366,7 +366,8 @@ void OS_Update(void *Data)
 	R_PopTransform(M->Render);
 
 	if(OS_MilliSecondsFromTimeStamp(OS_TimeStampNow() - M->UI->TimeStampWhenLeftMousePressed) > 150.0 &&
-	   M->UI->LeftMouseIsDown && fabs(M->UI->MouseDelta.X) > 2 && fabs(M->UI->MouseDelta.Y) > 2)
+	   M->UI->LeftMouseIsDown && abs(M->UI->MousePosition.X - M->UI->MouseDragStart.X) > 2
+	   && abs(M->UI->MousePosition.Y - M->UI->MouseDragStart.Y) > 2)
 	{
 		M->UI->MouseIsDragging = True;
 	}
@@ -445,6 +446,7 @@ void OS_Event(const sapp_event *Event, void *Data)
 	{
 		if(Event->mouse_button == SAPP_MOUSEBUTTON_LEFT)
 		{
+			M->UI->MouseDragStart = v2i(Event->mouse_x, Event->mouse_y);
 			M->UI->LeftMouseIsDown = True;
 
 			f32 MillisecondsSinceLastClick = OS_MilliSecondsFromTimeStamp(OS_TimeStampNow() - M->UI->TimeStampWhenLeftMousePressed);

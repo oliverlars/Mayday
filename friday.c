@@ -1,6 +1,5 @@
 #include "friday.h"
 #include "memory.h"
-#include "strings.h"
 
 Entry(InputWaveInfo)
 {
@@ -93,6 +92,8 @@ Entry(InputWaveInfo)
 		if(OS == OS_WINDOWS)
 		{
 			AppendSourceFilesInFolder(&Shared->Arena, &SourceFiles, Str8("source/win32"));
+			AppendSourceFilesInFolder(&Shared->Arena, &SourceFiles, Str8("source/sokol"));
+			AppendSourceFilesInFolder(&Shared->Arena, &SourceFiles, Str8("external"));
 		}
 		else if(OS == OS_DARWIN)
 		{

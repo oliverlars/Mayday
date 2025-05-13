@@ -112,6 +112,8 @@ typedef enum compiler
 	COMPILER_COUNT,
 } compiler;
 #elif defined(_WIN32)
+#include <stdatomic.h>
+
 typedef enum compiler
 {
 	COMPILER_PLATFORM_DEFAULT = 0,
@@ -881,6 +883,31 @@ b32 ExecuteCommand(memory_arena *Arena, str8 EntireCommandAndArguments, b32 *Fai
 	return ProcessStatus;
 }
 
+b32 StartApplication(memory_arena *Arena, str8 PathToApplication)
+{
+	STARTUPINFOA StartupInfo = {0};
+	PROCESS_INFORMATION ProcessInfo = {0};
+
+	SECURITY_ATTRIBUTES SecurityAttributes = {0};
+	SecurityAttributes.nLength = sizeof(SECURITY_ATTRIBUTES);
+	SecurityAttributes.bInheritHandle = True;
+
+	HANDLE StdOutHandleRead = 0;
+	HANDLE StdOutHandleWrite = 0;
+
+	CreatePipe(&StdOutHandleRead, &StdOutHandleWrite, &SecurityAttributes, 0);
+
+	b32 ProcessStatus = CreateProcessA(0, CStrFromStr8(Arena, PathToApplication),
+									   0, 0, 1, 0, 0, 0, &StartupInfo, &ProcessInfo);
+	if (ProcessStatus == 0)
+	{
+		s32 ExitCode;
+		WaitForSingleObject(ProcessInfo.hProcess, INFINITE);
+	}
+
+	return ProcessStatus;
+}
+
 str8 CompileCommandFromBuildOptions(memory_arena *Arena, build_options *BuildOptions, str8 HashedFilename, str8 SourceFilename)
 {
 	str8 DebugOrRelease[2] =
@@ -943,7 +970,7 @@ typedef struct shared_wave_info
 	build_options BuildOptions;
 
 
-	volatile u64 Data[4096];
+	atomic_llong Data[4096];
 }
 shared_wave_info;
 
@@ -1041,66 +1068,67 @@ u64 NearestPowerOfTwo(u64 Value)
 GPU Gems 3
 https://www.youtube.com/watch?v=1G8CZioSjnM
 */
-u64 WavePrefixSum(wave_info *WaveInfo, u64 Value)
+u64 InclusiveWavePrefixSum(wave_info *WaveInfo, u64 Value)
 {
+	WaveBarrier(WaveInfo->Shared->Barrier);
 	WaveInfo->Shared->Data[WaveInfo->Lane] = Value;
-	WaveInfo->Shared->Data[0] = 0;
 	WaveBarrier(WaveInfo->Shared->Barrier);
-	int Offset = 1;
 
-	for(int D = NearestPowerOfTwo(WaveInfo->Shared->LaneCount)/2; D > 0; D >>= 1)
+	int PerLaneSum = 0;
+	for(int I = 0; I <= WaveInfo->Lane; I++)
 	{
-		WaveBarrier(WaveInfo->Shared->Barrier);
-		if(WaveInfo->Lane < D)
-		{
-			int AI = Offset * (2 * WaveInfo->Lane + 1)-1;
-			int BI = Offset * (2 * WaveInfo->Lane + 2)-1;
-			WaveInfo->Shared->Data[BI] += WaveInfo->Shared->Data[AI];
-		}
-		Offset *= 2;
+		PerLaneSum += WaveInfo->Shared->Data[I];
 	}
 
-	for(int D = 2; D < NearestPowerOfTwo(WaveInfo->Shared->LaneCount); D *= 2)
+	WaveBarrier(WaveInfo->Shared->Barrier);
+	return PerLaneSum;
+}
+
+u64 ExclusiveWavePrefixSum(wave_info *WaveInfo, u64 Value)
+{
+	WaveBarrier(WaveInfo->Shared->Barrier);
+	WaveInfo->Shared->Data[WaveInfo->Lane] = Value;
+	WaveBarrier(WaveInfo->Shared->Barrier);
+
+	u64 PerLaneSum = 0;
+	for(int I = 0; I < WaveInfo->Lane; I++)
 	{
-		Offset >>= 1;
-		WaveBarrier(WaveInfo->Shared->Barrier);
-		if(WaveInfo->Lane < D-1)
-		{
-			int AI = Offset*(WaveInfo->Lane + 1) - 1;
-			int BI = Offset*(WaveInfo->Lane + 1) + (Offset/2) - 1;
-			WaveInfo->Shared->Data[BI] += WaveInfo->Shared->Data[AI];
-		}
+		PerLaneSum += WaveInfo->Shared->Data[I];
 	}
 	WaveBarrier(WaveInfo->Shared->Barrier);
-	return WaveInfo->Shared->Data[WaveInfo->Lane];
+	return PerLaneSum;
 }
 
 u64 WaveSum(wave_info *WaveInfo, u64 Value)
 {
-	WaveInfo->Shared->Data[0] = 0;
 	WaveBarrier(WaveInfo->Shared->Barrier);
-	AtomicIncrement(WaveInfo->Shared->Data + 0, Value);
+	atomic_store_explicit(WaveInfo->Shared->Data + 0, 0, memory_order_release);
 	WaveBarrier(WaveInfo->Shared->Barrier);
-	return WaveInfo->Shared->Data[0];
+	atomic_fetch_add_explicit(WaveInfo->Shared->Data + 0, Value, memory_order_consume);
+	WaveBarrier(WaveInfo->Shared->Barrier);
+	return atomic_load_explicit(WaveInfo->Shared->Data + 0, memory_order_acquire);
 }
 
 b32 WaveAnyTrue(wave_info *WaveInfo, b32 Expression)
 {
-	WaveInfo->Shared->Data[0] = 0;
 	WaveBarrier(WaveInfo->Shared->Barrier);
-	AtomicIncrement((volatile s64*)WaveInfo->Shared->Data + 0, Expression);
+	atomic_store_explicit(WaveInfo->Shared->Data + 0, 0, memory_order_release);
 	WaveBarrier(WaveInfo->Shared->Barrier);
-	return WaveInfo->Shared->Data[0];
+	atomic_fetch_add_explicit(WaveInfo->Shared->Data + 0, Expression, memory_order_consume);
+	WaveBarrier(WaveInfo->Shared->Barrier);
+	return atomic_load_explicit(WaveInfo->Shared->Data + 0, memory_order_acquire) > 0;
 }
 
 b32 WaveAllTrue(wave_info *WaveInfo, b32 Expression)
 {
-	WaveInfo->Shared->Data[0] = 0;
 	WaveBarrier(WaveInfo->Shared->Barrier);
-	AtomicIncrement((volatile s64*)WaveInfo->Shared->Data + 0, Expression);
+	atomic_store_explicit(WaveInfo->Shared->Data + 0, 0, memory_order_release);
 	WaveBarrier(WaveInfo->Shared->Barrier);
-	return WaveInfo->Shared->Data[0];
+	atomic_fetch_add_explicit(WaveInfo->Shared->Data + 0, Expression, memory_order_acq_rel);
+	WaveBarrier(WaveInfo->Shared->Barrier);
+	return atomic_load_explicit(WaveInfo->Shared->Data + 0, memory_order_acquire) == WaveInfo->Shared->LaneCount;
 }
+
 
 
 str8_list ListOfDirectoryEntriesFromPath(memory_arena *Arena, str8 Path)
@@ -1120,6 +1148,13 @@ str8_list ListOfDirectoryEntriesFromPath(memory_arena *Arena, str8 Path)
 		}
 	}
 	return Entries;
+}
+
+int MoveFileOnDisk(memory_arena *Arena, str8 Source, str8 Destination)
+{
+	return MoveFileExA(CStrFromStr8(Arena, Source),
+					   CStrFromStr8(Arena, Destination),
+					   MOVEFILE_COPY_ALLOWED | MOVEFILE_REPLACE_EXISTING);
 }
 
 str8_array ArrayOfDirectoryEntriesFromPath(memory_arena *Arena, str8 Path)

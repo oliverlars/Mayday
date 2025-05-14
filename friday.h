@@ -929,7 +929,7 @@ str8 CompileCommandFromBuildOptions(memory_arena *Arena, build_options *BuildOpt
 
 	str8 CompileCommand = Str8PushF(
 		Arena,
-		"%.*s /c /TC /nologo /FS /EHsc %.*s %.*s /Fo%.*s%.*s %.*s ",
+		"%.*s /c /TC /experimental:c11atomics /std:c17 /nologo /FS /EHsc %.*s %.*s /Fo%.*s%.*s %.*s ",
 		Str8ToPrintfArgs(Compilers[BuildOptions->Compiler]),
 		Str8ToPrintfArgs(SourceFilename),
 		Str8ToPrintfArgs(DebugOrRelease[BuildOptions->Optimise]),

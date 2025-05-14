@@ -36,6 +36,7 @@ typedef uint64_t  b64;
 #if defined(__APPLE__)
 #define per_thread_local __thread
 #elif(_WIN32)
+#define per_thread_local __declspec(thread)
 #endif
 
 

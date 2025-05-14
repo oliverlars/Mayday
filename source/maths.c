@@ -1,6 +1,7 @@
 #include "maths.h"
 #include "strings.h"
 
+#define _USE_MATH_DEFINES
 #include <math.h>
 
 random32_state XorShiftInit()
@@ -379,10 +380,13 @@ M44
 
 */
 
-m44f M44F_IDENTITY = (m44f){1, 0, 0, 0,
-					   0, 1, 0, 0,
-					   0, 0, 1, 0,
-					   0, 0, 0, 1};
+m44f M44F_IDENTITY = 
+{
+	1, 0, 0, 0,
+	0, 1, 0, 0,
+	0, 0, 1, 0,
+	0, 0, 0, 1
+};
 
 v4f MulM44FV4F(m44f A, v4f B)
 {

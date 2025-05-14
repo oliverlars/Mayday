@@ -55,7 +55,7 @@ void ScratchEnd(m_scratch_arena Scratch)
 	Scratch.Arena->At = Scratch.At;
 }
 
-per_thread_context *GetThreadContext()
+per_thread_context *GetThreadLocalContext()
 {
 	return &__ThreadLocalContext;
 }

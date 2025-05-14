@@ -3,8 +3,6 @@
 
 #include "sokol_app.h"
 
- #include <dirent.h>
-
 typedef void* os_handle;
 
 typedef struct os_window

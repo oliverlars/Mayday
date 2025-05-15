@@ -83,6 +83,7 @@ Entry(InputWaveInfo)
 		str8_list IncludePaths = {0};
 		str8_list SourceFiles = {0};
 		str8_list ExtraLinkFlags = {0};
+		str8_list ExtraCompileFlags = {0};
 		Str8ListAppend(&Arena, &IncludePaths, Str8("include/"));
 		Str8ListAppend(&Arena, &IncludePaths, Str8("external/"));
 		Str8ListAppend(&Arena, &IncludePaths, Str8("embed/"));
@@ -94,6 +95,7 @@ Entry(InputWaveInfo)
 			AppendSourceFilesInFolder(&Shared->Arena, &SourceFiles, Str8("source/win32"));
 			AppendSourceFilesInFolder(&Shared->Arena, &SourceFiles, Str8("source/sokol"));
 			AppendSourceFilesInFolder(&Shared->Arena, &SourceFiles, Str8("external"));
+			Str8ListAppend(&Shared->Arena, &ExtraCompileFlags, Str8(" /experimental:c11atomics /std:c17 "));
 		}
 		else if(OS == OS_DARWIN)
 		{

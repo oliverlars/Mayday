@@ -446,8 +446,9 @@ str8 CompileCommandFromBuildOptions(memory_arena *Arena, build_options *BuildOpt
 
 	str8 CompileCommand = Str8PushF(
 		Arena,
-		"%.*s %.*s -c %.*s %.*s -o%.*s%.*s %.*s ",
+		"%.*s %.*s %.*s -c %.*s %.*s -o%.*s%.*s %.*s ",
 		Str8ToPrintfArgs(Compilers[BuildOptions->Compiler]),
+		Str8ToPrintfArgs(Str8ListJoin(Arena, BuildOptions->ExtraCompileFlags)),
 		Str8ToPrintfArgs(ObjectiveC[IsObjectiveCFile]),
 		Str8ToPrintfArgs(SourceFilename),
 		Str8ToPrintfArgs(DebugOrRelease[BuildOptions->Optimise]),
@@ -929,8 +930,9 @@ str8 CompileCommandFromBuildOptions(memory_arena *Arena, build_options *BuildOpt
 
 	str8 CompileCommand = Str8PushF(
 		Arena,
-		"%.*s /c /TC /experimental:c11atomics /std:c17 /nologo /FS /EHsc %.*s %.*s /Fo%.*s%.*s %.*s ",
+		"%.*s /c /TC %.*s /nologo /FS /EHsc %.*s %.*s /Fo%.*s%.*s %.*s ",
 		Str8ToPrintfArgs(Compilers[BuildOptions->Compiler]),
+		Str8ToPrintfArgs(Str8ListJoin(Arena, BuildOptions->ExtraCompileFlags)),
 		Str8ToPrintfArgs(SourceFilename),
 		Str8ToPrintfArgs(DebugOrRelease[BuildOptions->Optimise]),
 		Str8ToPrintfArgs(BuildOptions->OutputPath),
@@ -944,7 +946,8 @@ str8 LinkCommandFromBuildOptions(memory_arena *Arena, build_options *BuildOption
 {
 	str8 LinkCommand = Str8PushF(
 		Arena,
-		"link /nologo /INCREMENTAL:NO /DEBUG /PDB:build/%.*s.pdb /OUT:%.*s%.*s.exe %.*s",
+		"link /nologo /INCREMENTAL:NO /DEBUG %.*s/PDB:build/%.*s.pdb /OUT:%.*s%.*s.exe %.*s",
+		Str8ToPrintfArgs(Str8ListJoin(Arena, BuildOptions->ExtraLinkFlags)),
 		Str8ToPrintfArgs(BuildOptions->OutputName),
 		Str8ToPrintfArgs(BuildOptions->OutputPath),
 		Str8ToPrintfArgs(BuildOptions->OutputName),

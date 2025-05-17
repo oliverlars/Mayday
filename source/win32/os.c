@@ -10,6 +10,9 @@
 #include "os.h"
 #include <windows.h>
 
+#include <string.h>
+#include <stdio.h>
+
 #include <time.h>
 
 
@@ -58,15 +61,17 @@ int OS_WindowHeight(os_window *Window)
 
 u64 OS_TimeStampNow()
 {
-	return mach_absolute_time();
+    LARGE_INTEGER Counter;
+    QueryPerformanceCounter(&Counter);
+    return (u64)Counter.QuadPart;
 }
 
 f32 OS_MilliSecondsFromTimeStamp(u64 TimeStamp)
 {
-	mach_timebase_info_data_t Info;
-	mach_timebase_info(&Info);
+    LARGE_INTEGER Freq = {0};
+    QueryPerformanceFrequency(&Freq);
 
-	return (f32)((TimeStamp) * Info.numer / Info.denom) / 1000000.0;
+    return (f32)(TimeStamp * 1000.0 / (f64)Freq.QuadPart);
 }
 
 void AppendDirectoryEntry(m_arena *Arena, os_directory_entry *Entries, os_directory_entry Entry)
@@ -104,69 +109,81 @@ void InsertDirectoryEntryAsChild(m_arena *Arena, os_directory_entry *At, os_dire
 b32 OS_IsPathDirectory(str8 Path)
 {
 	m_scratch_arena Scratch = ScratchBegin(0, 0);
-	struct stat StatBuf;
+	char *PathCstr = CStrFromStr8(Scratch.Arena, Path);
+
+	DWORD Attributes = GetFileAttributesA(PathCstr);
 	b32 Result = False;
-	if (stat(CStrFromStr8(Scratch.Arena, Path), &StatBuf) == 0) {
-		Result = S_ISDIR(StatBuf.st_mode);
+	if (Attributes != INVALID_FILE_ATTRIBUTES) {
+		Result = ((Attributes & FILE_ATTRIBUTE_DIRECTORY) != 0) ? True : False;
 	}
+
 	ScratchEnd(Scratch);
 	return Result;
 }
 
-s64 OS_DirectoryTreeFromPathHelper(m_arena *Arena, str8 Path, DIR *Directory, os_directory_entry *Entries)
+s64
+OS_DirectoryTreeFromPathHelper(m_arena *Arena,
+							   str8         Path,
+							   os_directory_entry *Entries)
 {
 	m_scratch_arena Scratch = ScratchBegin(&Arena, 1);
-	struct dirent *Entry;
-	s64 Count = 0;
-	while((Entry = readdir(Directory)))
-	{
-		if(Entry->d_name[0] != '.')
-		{
-			os_directory_entry DirectoryEntry = {0};
-			str8 FullPath = Str8PushF(Arena, "?S/?cstr", Path, Entry->d_name);
-			if(OS_IsPathDirectory(FullPath))
+	str8 Pattern = Str8PushF(Arena, "%S\\*", Path);
+
+	char *PatternCStr = CStrFromStr8(Scratch.Arena, Pattern);
+	WIN32_FIND_DATAA FindData;
+	HANDLE FindHandle = FindFirstFileA(PatternCStr, &FindData);
+	s64    Count = 0;
+
+	if(FindHandle != INVALID_HANDLE_VALUE) {
+		do {
+			char *Name = FindData.cFileName;
+			if(Name[0] != '.' ||
+				(Name[1] != '\0' && !(Name[1]=='.' && Name[2]=='\0')))
 			{
-				DirectoryEntry.PathAndName = FullPath;
-				DirectoryEntry.Type = OS_DIR_ENTRY_FOLDER;
-				InsertDirectoryEntryAsChild(Arena, Entries, DirectoryEntry);
-				DIR *NextDirectory = opendir(CStrFromStr8(Scratch.Arena, FullPath));
-				Count += OS_DirectoryTreeFromPathHelper(Arena, FullPath, NextDirectory, Entries->Last);
-				closedir(NextDirectory);
+				os_directory_entry Entry = {0};
+				str8 FullPath = Str8PushF(Arena, "%S\\%s", Path, Name);
+
+				if(FindData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+					Entry.Type        = OS_DIR_ENTRY_FOLDER;
+					Entry.PathAndName = FullPath;
+					InsertDirectoryEntryAsChild(Arena, Entries, Entry);
+					Count += OS_DirectoryTreeFromPathHelper(Arena,
+															FullPath,
+															Entries->Last);
+				}
+				else {
+					Entry.Type        = OS_DIR_ENTRY_FILE;
+					Entry.PathAndName = FullPath;
+					InsertDirectoryEntryAsChild(Arena, Entries, Entry);
+				}
+				Count += 1;
 			}
-			else
-			{
-				DirectoryEntry.Type = OS_DIR_ENTRY_FILE;
-				DirectoryEntry.PathAndName = FullPath;
-				InsertDirectoryEntryAsChild(Arena, Entries, DirectoryEntry);
-			}
-			Count += 1;
 		}
+		while(FindNextFileA(FindHandle, &FindData));
+
+		FindClose(FindHandle);
 	}
 	ScratchEnd(Scratch);
 	return Count;
 }
 
-os_directory_tree OS_DirectoryTreeFromPath(m_arena *Arena, str8 Path)
+os_directory_tree
+OS_DirectoryTreeFromPath(m_arena *Arena, str8 Path)
 {
 	m_scratch_arena Scratch = ScratchBegin(&Arena, 1);
 
-
-	os_directory_entry *EntryRoot = ArenaPushArrayZero(Arena, os_directory_entry, 1);
+	os_directory_entry *EntryRoot = ArenaPushArrayZero(Arena,
+														os_directory_entry, 1);
 	EntryRoot->PathAndName = Str8Copy(Arena, Path);
-	EntryRoot->Type = OS_DIR_ENTRY_FOLDER;
-	DIR *Directory = opendir(CStrFromStr8(Scratch.Arena, Path));
+	EntryRoot->Type        = OS_DIR_ENTRY_FOLDER;
+
 	os_directory_tree Result = {0};
-	if(!Directory)
-	{
-		LogError("?s32", errno);
-	}
-	else
-	{
-		s64 Count = OS_DirectoryTreeFromPathHelper(Arena, Path, Directory, EntryRoot);
-		closedir(Directory);
-		Result.Count = Count + 1;
-		Result.Root = EntryRoot;
-	}
+
+	s64 Count = OS_DirectoryTreeFromPathHelper(Arena,
+												Path,
+												EntryRoot);
+	Result.Count = Count + 1;
+	Result.Root  = EntryRoot;
 
 	ScratchEnd(Scratch);
 	return Result;
@@ -175,7 +192,11 @@ os_directory_tree OS_DirectoryTreeFromPath(m_arena *Arena, str8 Path)
 b32 OS_ValidPath(str8 Path)
 {
 	m_scratch_arena Scratch = ScratchBegin(0, 0);
-	b32 Result = access(CStrFromStr8(Scratch.Arena, Path), F_OK) == 0;
+	char *PathCStr = CStrFromStr8(Scratch.Arena, Path);
+
+	DWORD Attributes = GetFileAttributesA(PathCStr);
+	b32   Result = (Attributes != INVALID_FILE_ATTRIBUTES) ? True : False;
+
 	ScratchEnd(Scratch);
 	return Result;
 }
@@ -206,7 +227,7 @@ int OS_CountAllEntriesInDirectoryTree(os_directory_tree Tree)
 str8 OS_GetLastModifiedTime(m_arena *Arena, str8 Path)
 {
 	WIN32_FILE_ATTRIBUTE_DATA Attributes;
-	if (!GetFileAttributesExA((char *)Path.str,
+	if (!GetFileAttributesExA((char*)Path.Bytes,
 							  GetFileExInfoStandard,
 							  &Attributes))
 	{
@@ -214,7 +235,7 @@ str8 OS_GetLastModifiedTime(m_arena *Arena, str8 Path)
 	}
 	
 	FILETIME LocalFileTime;
-	FileTimeToLocalFileTime(&attr.ftLastWriteTime, &LocalFileTime);
+	FileTimeToLocalFileTime(&Attributes.ftLastWriteTime, &LocalFileTime);
 
 	SYSTEMTIME SystemTime;
 	FileTimeToSystemTime(&LocalFileTime, &SystemTime);
@@ -230,28 +251,37 @@ str8 OS_GetLastModifiedTime(m_arena *Arena, str8 Path)
 		"Jul","Aug","Sep","Oct","Nov","Dec"
 	};
 
-	char *StringBuffer = ArenaPushArrayZero(Arena, u8, 26);
-	_snprintf(buf, sizeof(StringBuffer), "%s %s %2u %02u:%02u:%02u %u",
-			  WeekDay[SystemTime.wDayOfWeek],
-			  Month[SystemTime.wMonth-1],
-			  SystemTime.wDay,
-			  SystemTime.wHour, SystemTime.wMinute, SystemTime.wSecond,
-			  SystemTime.wYear);
+	char *StringBuffer = ArenaPushArrayZero(Arena, char, 26);
+	int Size = _snprintf(StringBuffer, sizeof(StringBuffer), "%s %s %2u %02u:%02u:%02u %u",
+						 WeekDay[SystemTime.wDayOfWeek],
+						 Month[SystemTime.wMonth-1],
+						 SystemTime.wDay,
+						 SystemTime.wHour, SystemTime.wMinute, SystemTime.wSecond,
+						 SystemTime.wYear);
 
-	return Str8PushF(Arena, "?cstr", buf);
+	str8 Result = {.Bytes = (u8*)StringBuffer, .Size = Size };
+	return Result;
 }
+
+#define EPOCH_DIFF_100NS 116444736000000000ULL
 
 u64 OS_GetFileLastWriteTimestamp(str8 Path)
 {
 	m_scratch_arena Scratch = ScratchBegin(0, 0);
+	char *PathCStr = CStrFromStr8(Scratch.Arena, Path);
 
-	struct stat Stat = {0};
+	WIN32_FILE_ATTRIBUTE_DATA Info = {0};
 	u64 TimeStamp = 0;
-
-	if (stat(CStrFromStr8(Scratch.Arena, Path), &Stat) == 0)
+	if (GetFileAttributesExA(PathCStr,
+								GetFileExInfoStandard,
+								&Info))
 	{
-		TimeStamp =  (u64)Stat.st_mtimespec.tv_sec  * 1000000000ULL +
-					 (u64)Stat.st_mtimespec.tv_nsec;
+		ULARGE_INTEGER FileTime;
+		FileTime.HighPart = Info.ftLastWriteTime.dwHighDateTime;
+		FileTime.LowPart  = Info.ftLastWriteTime.dwLowDateTime;
+
+		u64 NanoSecondsSince1601 = FileTime.QuadPart * 100ULL;
+		TimeStamp = NanoSecondsSince1601 - (EPOCH_DIFF_100NS * 100ULL);
 	}
 
 	ScratchEnd(Scratch);
@@ -371,32 +401,75 @@ b32 OS_DirectoryTreeIterate(os_directory_tree Tree, os_directory_tree_iterator *
 	return Result;
 }
 
-void OS_WriteStringToDisk(m_arena *Arena, str8 DestinationPath, str8 StringToWrite)
+void
+OS_WriteStringToDisk(m_arena *Arena, str8 DestinationPath, str8 StringToWrite)
 {
-	s32 FileDescriptor = creat(CStrFromStr8(Arena, DestinationPath), S_IRUSR | S_IWUSR );
-	s64 BytesWritten = write(FileDescriptor, StringToWrite.Bytes, StringToWrite.Size);
+	m_scratch_arena Scratch = ScratchBegin(0, 0);
+	char *PathCStr = CStrFromStr8(Scratch.Arena, DestinationPath);
+
+	HANDLE FileHandle = CreateFileA(PathCStr,
+									GENERIC_WRITE,
+									0,
+									NULL,
+									CREATE_ALWAYS,
+									FILE_ATTRIBUTE_NORMAL,
+									NULL);
+
+	if(FileHandle == INVALID_HANDLE_VALUE)
+	{
+		LogError("Failed to create file");
+	}
+	else
+	{
+		DWORD bytesWritten;
+		WriteFile(FileHandle,
+				  StringToWrite.Bytes,
+				  (DWORD)StringToWrite.Size,
+				  &bytesWritten,
+				  NULL);
+		CloseHandle(FileHandle);
+	}
+
+	ScratchEnd(Scratch);
 }
 
-str8 OS_LoadEntireFileIntoMemory(m_arena *Arena, str8 Filename)
+str8
+OS_LoadEntireFileIntoMemory(m_arena *Arena, str8 Filename)
 {
-	s32 FileHandle = open(CStrFromStr8(Arena, Filename), O_RDONLY);
-	if (FileHandle == -1)
+	m_scratch_arena Scratch = ScratchBegin(0, 0);
+	char *PathCStr = CStrFromStr8(Scratch.Arena, Filename);
+
+	HANDLE FileHandle = CreateFileA(PathCStr,
+							   GENERIC_READ,
+							   FILE_SHARE_READ,
+							   NULL,
+							   OPEN_EXISTING,
+							   FILE_ATTRIBUTE_NORMAL,
+							   NULL);
+
+	if(FileHandle == INVALID_HANDLE_VALUE)
 	{
 		LogError("File not found");
+		ScratchEnd(Scratch);
 		return (str8){0};
 	}
 
-	struct stat FileStat;
-	fstat(FileHandle, &FileStat);
+	LARGE_INTEGER Size;
+	GetFileSizeEx(FileHandle, &Size);
 
-	u8 *BackingMemory = ArenaPush(Arena, (u64)FileStat.st_size + 1);
-	BackingMemory[FileStat.st_size] = 0;
+	u8 *Buffer = ArenaPush(Arena, (u64)Size.QuadPart + 1);
+	Buffer[Size.QuadPart] = 0;
 
-	str8 Result = {0};
-	Result.Bytes = BackingMemory;
-	Result.Size = FileStat.st_size;
+	DWORD bytesRead;
+	ReadFile(FileHandle, Buffer, (DWORD)Size.QuadPart, &bytesRead, NULL);
+	CloseHandle(FileHandle);
 
-	ssize_t BytesRead = read(FileHandle, BackingMemory, FileStat.st_size);
+	str8 result =
+	{
+		.Bytes = Buffer,
+		.Size  = bytesRead
+	};
 
-	return Result;
+	ScratchEnd(Scratch);
+	return result;
 }

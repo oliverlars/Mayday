@@ -1,72 +1,72 @@
 [
     {
-        "directory": "c:/Mayday",
-        "command": "cl.exe /c /TC  /nologo /FS /EHsc source/draw.c /Zi /Od /Fobuild/source/draw.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "directory": "C:/Mayday",
+        "command": "clang-cl /c /TC  /nologo /FS /EHsc source/draw.c /Zi /Od /Fobuild/source/draw.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/draw.c"
     },
     {
-        "directory": "c:/Mayday",
-        "command": "cl.exe /c /TC  /nologo /FS /EHsc source/edit.c /Zi /Od /Fobuild/source/edit.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "directory": "C:/Mayday",
+        "command": "clang-cl /c /TC  /nologo /FS /EHsc source/edit.c /Zi /Od /Fobuild/source/edit.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/edit.c"
     },
     {
-        "directory": "c:/Mayday",
-        "command": "cl.exe /c /TC  /nologo /FS /EHsc source/fdg.c /Zi /Od /Fobuild/source/fdg.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "directory": "C:/Mayday",
+        "command": "clang-cl /c /TC  /nologo /FS /EHsc source/fdg.c /Zi /Od /Fobuild/source/fdg.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/fdg.c"
     },
     {
-        "directory": "c:/Mayday",
-        "command": "cl.exe /c /TC  /nologo /FS /EHsc source/log.c /Zi /Od /Fobuild/source/log.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "directory": "C:/Mayday",
+        "command": "clang-cl /c /TC  /nologo /FS /EHsc source/log.c /Zi /Od /Fobuild/source/log.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/log.c"
     },
     {
-        "directory": "c:/Mayday",
-        "command": "cl.exe /c /TC  /nologo /FS /EHsc source/maths.c /Zi /Od /Fobuild/source/maths.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "directory": "C:/Mayday",
+        "command": "clang-cl /c /TC  /nologo /FS /EHsc source/maths.c /Zi /Od /Fobuild/source/maths.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/maths.c"
     },
     {
-        "directory": "c:/Mayday",
-        "command": "cl.exe /c /TC  /nologo /FS /EHsc source/mayday.c /Zi /Od /Fobuild/source/mayday.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "directory": "C:/Mayday",
+        "command": "clang-cl /c /TC  /nologo /FS /EHsc source/mayday.c /Zi /Od /Fobuild/source/mayday.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/mayday.c"
     },
     {
-        "directory": "c:/Mayday",
-        "command": "cl.exe /c /TC  /nologo /FS /EHsc source/strings.c /Zi /Od /Fobuild/source/strings.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "directory": "C:/Mayday",
+        "command": "clang-cl /c /TC  /nologo /FS /EHsc source/strings.c /Zi /Od /Fobuild/source/strings.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/strings.c"
     },
     {
-        "directory": "c:/Mayday",
-        "command": "cl.exe /c /TC  /nologo /FS /EHsc source/ui/ui_buffer.c /Zi /Od /Fobuild/source/ui/ui_buffer.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "directory": "C:/Mayday",
+        "command": "clang-cl /c /TC  /nologo /FS /EHsc source/ui/ui_buffer.c /Zi /Od /Fobuild/source/ui/ui_buffer.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/ui/ui_buffer.c"
     },
     {
-        "directory": "c:/Mayday",
-        "command": "cl.exe /c /TC  /nologo /FS /EHsc source/ui/ui_core.c /Zi /Od /Fobuild/source/ui/ui_core.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "directory": "C:/Mayday",
+        "command": "clang-cl /c /TC  /nologo /FS /EHsc source/ui/ui_core.c /Zi /Od /Fobuild/source/ui/ui_core.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/ui/ui_core.c"
     },
     {
-        "directory": "c:/Mayday",
-        "command": "cl.exe /c /TC  /nologo /FS /EHsc source/ui/ui_orbit.c /Zi /Od /Fobuild/source/ui/ui_orbit.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "directory": "C:/Mayday",
+        "command": "clang-cl /c /TC  /nologo /FS /EHsc source/ui/ui_orbit.c /Zi /Od /Fobuild/source/ui/ui_orbit.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/ui/ui_orbit.c"
     },
     {
-        "directory": "c:/Mayday",
-        "command": "cl.exe /c /TC  /nologo /FS /EHsc source/ui/ui_tree.c /Zi /Od /Fobuild/source/ui/ui_tree.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "directory": "C:/Mayday",
+        "command": "clang-cl /c /TC  /nologo /FS /EHsc source/ui/ui_tree.c /Zi /Od /Fobuild/source/ui/ui_tree.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/ui/ui_tree.c"
     },
     {
-        "directory": "c:/Mayday",
-        "command": "cl.exe /c /TC  /nologo /FS /EHsc source/win32/memory.c /Zi /Od /Fobuild/source/win32/memory.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "directory": "C:/Mayday",
+        "command": "clang-cl /c /TC  /nologo /FS /EHsc source/win32/memory.c /Zi /Od /Fobuild/source/win32/memory.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/win32/memory.c"
     },
     {
-        "directory": "c:/Mayday",
-        "command": "cl.exe /c /TC  /nologo /FS /EHsc source/win32/os.c /Zi /Od /Fobuild/source/win32/os.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "directory": "C:/Mayday",
+        "command": "clang-cl /c /TC  /nologo /FS /EHsc source/win32/os.c /Zi /Od /Fobuild/source/win32/os.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/win32/os.c"
     },
     {
-        "directory": "c:/Mayday",
-        "command": "cl.exe /c /TC  /nologo /FS /EHsc external/stb_truetype.c /Zi /Od /Fobuild/external/stb_truetype.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "directory": "C:/Mayday",
+        "command": "clang-cl /c /TC  /nologo /FS /EHsc external/stb_truetype.c /Zi /Od /Fobuild/external/stb_truetype.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "external/stb_truetype.c"
     }
 ]

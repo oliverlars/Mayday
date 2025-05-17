@@ -1,5 +1,4 @@
 #include "fdg.h"
-#include <MacTypes.h>
 #include <assert.h>
 #include <float.h>
 #include <math.h>
@@ -11,8 +10,6 @@
 
 #include "draw.h"
 #include "wave.h"
-
-#include <arm_neon.h>
 #include <stdio.h>
 
 void DrawBounds(draw_context *Draw, m_arena *Arena, bounds Bounds)

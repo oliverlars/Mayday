@@ -60,7 +60,7 @@ void *DispatchWorker(void *Data)
 
 	logger Logger = {0};
 	Logger.Arena = ArenaInitialise(GigaBytes(1));
-	per_thread_context *ThreadContext = GetThreadContext();
+	per_thread_context *ThreadContext = GetThreadLocalContext();
 	ThreadContext->Logger = &Logger;
 	ThreadContext->ScratchArenas[0] = ArenaInitialise(GigaBytes(1));
 	ThreadContext->ScratchArenas[1] = ArenaInitialise(GigaBytes(1));

@@ -10,8 +10,11 @@
 #include <assert.h>
 
 #include <math.h>
-#include <arm_neon.h>
 
+
+// HACK(Oliver): Remove the ifdef...
+#ifdef __APPLE
+#include <arm_neon.h>
 s64 CountNewLinesNEON(str8 String)
 {
 	u64 Count = 0;
@@ -35,6 +38,20 @@ s64 CountNewLinesNEON(str8 String)
 
 	return Count;
 }
+#else
+s64 CountNewLinesNEON(str8 String)
+{
+	u64 Count = 0;
+	s64 Index = 0;
+
+	for (; Index <= String.Size; Index += 1)
+	{
+		if(String.Bytes[Index] == '\n') Count++;
+	}
+
+	return Count;
+}
+#endif
 
 s64 IndexFromLine(str8 String, int Line)
 {

@@ -9,7 +9,7 @@ logger *LoggerInitialise(m_arena *Arena)
 
 void LogInfoF(char *FileName, char *FunctionName, u64 LineNumber, char *Format, ...)
 {
-	per_thread_context *ThreadContext = GetThreadContext();
+	per_thread_context *ThreadContext = GetThreadLocalContext();
 	logger *Logger = ThreadContext->Logger;
 
 	if(Logger->Silent) return;
@@ -36,7 +36,7 @@ void LogInfoF(char *FileName, char *FunctionName, u64 LineNumber, char *Format, 
 
 void LogWarnF(char *FileName, char *FunctionName, u64 LineNumber, char *Format, ...)
 {
-	per_thread_context *ThreadContext = GetThreadContext();
+	per_thread_context *ThreadContext = GetThreadLocalContext();
 	logger *Logger = ThreadContext->Logger;
 
 	if(Logger->Silent) return;
@@ -62,7 +62,7 @@ void LogWarnF(char *FileName, char *FunctionName, u64 LineNumber, char *Format, 
 
 void LogErrorF(char *FileName, char *FunctionName, u64 LineNumber, char *Format, ...)
 {
-	per_thread_context *ThreadContext = GetThreadContext();
+	per_thread_context *ThreadContext = GetThreadLocalContext();
 	logger *Logger = ThreadContext->Logger;
 
 	if(Logger->Silent) return;

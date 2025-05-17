@@ -23,7 +23,7 @@ m_arena *ArenaInitialise(s64 NumberOfBytes)
 
 m_scratch_arena ScratchBegin(m_arena **Conflicts, int ConflictCount)
 {
-	per_thread_context *ThreadContext = GetThreadContext();
+	per_thread_context *ThreadContext = GetThreadLocalContext();
 	m_scratch_arena Scratch = {0};
 	for(int ScratchIndex = 0;
 		ScratchIndex < ArrayCount(ThreadContext->ScratchArenas);

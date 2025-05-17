@@ -1,6 +1,5 @@
 #pragma once
 #include <stdatomic.h>
-#include <pthread.h>
 
 #include "memory.h"
 #include "misc.h"

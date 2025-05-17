@@ -126,7 +126,7 @@ void PopGlyphOffLRU(draw_context *D_Context)
 
 d_atlas_glyph *D_GlyphFromCodePoint(draw_context *D, d_font Font, s32 HeightInPixels, u32 CodePoint)
 {
-	per_thread_context *ThreadContext = GetThreadContext();
+	per_thread_context *ThreadContext = GetThreadLocalContext();
 	u64 Hash = M_FNVHashBytes(M_FNV_HASH_START, (u8*)&Font, sizeof(d_font));
 	Hash = M_FNVHashBytes(Hash, (u8*)&HeightInPixels, sizeof(s32));
 	Hash = M_FNVHashBytes(Hash, (u8*)&CodePoint, sizeof(u32));
@@ -212,7 +212,7 @@ d_atlas_glyph *D_GlyphFromCodePoint(draw_context *D, d_font Font, s32 HeightInPi
 
 d_atlas_glyph *D_GlyphFromCodePoint2(draw_context *D, u64 FontHash, d_font Font, s32 HeightInPixels, u32 CodePoint)
 {
-	per_thread_context *ThreadContext = GetThreadContext();
+	per_thread_context *ThreadContext = GetThreadLocalContext();
 	u64 Hash = M_FNVHashBytes(FontHash, (u8*)&CodePoint, sizeof(u32));
 
 	d_atlas_glyph *Glyph = D->GlyphTable + (Hash % D_GLYPH_TABLE_SIZE);

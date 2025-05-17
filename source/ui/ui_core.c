@@ -5,7 +5,6 @@
 
 #include "draw.h"
 #include "strings.h"
-#include <MacTypes.h>
 #include <assert.h>
 
 void UI_RemoveEventFromList(ui_context *UI, ui_event *Event)
@@ -296,7 +295,7 @@ void UI_PopStyle(ui_context *UI)
 
 ui_widget *UI_WidgetFromString(ui_context *UI, str8 String)
 {
-	per_thread_context *ThreadContext = GetThreadContext();
+	per_thread_context *ThreadContext = GetThreadLocalContext();
 	u64 Hash = M_FNVHashString(M_FNV_HASH_START, String);
 
 	ui_widget *Widget = UI->WidgetTable + (Hash % UI_TABLE_SIZE);

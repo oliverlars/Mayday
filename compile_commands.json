@@ -66,6 +66,11 @@
     },
     {
         "directory": "c:/Mayday",
+        "command": "clang-cl /c /TC  /nologo /FS /EHsc source/win32/render.c /Zi /Od /Fobuild/source/win32/render.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "file": "source/win32/render.c"
+    },
+    {
+        "directory": "c:/Mayday",
         "command": "clang-cl /c /TC  /nologo /FS /EHsc external/stb_truetype.c /Zi /Od /Fobuild/external/stb_truetype.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "external/stb_truetype.c"
     }

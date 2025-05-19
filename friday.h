@@ -125,6 +125,29 @@ typedef enum compiler
 } compiler;
 #endif
 
+typedef enum diagnostic_type
+{
+	D_WARNING,
+	D_ERROR,
+	D_INFO,
+}
+diagnostic_type;
+
+typedef struct diagnostic
+{
+	diagnostic_type Type;
+	str8 Message;
+	struct diagnostic *Next;
+}
+diagnostic;
+
+
+typedef struct diagnostic_info
+{
+	diagnostic *Diagnostics;
+}
+diagnostic_info;
+
 typedef enum output_type
 {
 	OUTPUT_EXECUTABLE,
@@ -260,6 +283,12 @@ void AppendSourceFilesInFolder(memory_arena *Arena, str8_list *SourceFilesFromFo
 
 	DIR *Directory = opendir((char*)SourceFilesInDirectory.Bytes);
 	struct dirent *Entry;
+	if(Directory == Null)
+	{
+		printf("Unknown directory %.*s", Str8ToPrintfArgs(Path));
+		return;
+	}
+
 	while((Entry = readdir(Directory)))
 	{
 		if (Entry->d_name[0] != '.' && (Str8EndsWith(Str8(Entry->d_name), Str8(".c")) ||

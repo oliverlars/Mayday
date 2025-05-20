@@ -34,8 +34,7 @@ Entry(InputWaveInfo)
 				}
 				else
 				{
-					printf(STR_COLOUR_YELLOW "WARNING " STR_COLOUR_RESET);
-					printf("This compiler choice is only supported on Windows...\n");
+					printf(WARN "This compiler choice is only supported on Windows...\n");
 					printf("Using platform default\n\n");
 				}
 			}

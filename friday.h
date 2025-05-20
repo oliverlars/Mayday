@@ -188,6 +188,11 @@ b32  Str8EndsWith(str8 String, str8 EndsWith);
 char *CStrFromStr8(memory_arena *Arena, str8 String);
 str8_list ListOfDirectoryEntriesFromPath(memory_arena *Arena, str8 Path);
 
+
+#define ERROR STR_COLOUR_WHITE "[" STR_COLOUR_RED "ERROR" STR_COLOUR_WHITE "]" STR_COLOUR_RESET
+#define WARN STR_COLOUR_WHITE "[" STR_COLOUR_YELLOW "SUCCESS" STR_COLOUR_YELLOW "]" STR_COLOUR_RESET
+#define SUCCESS STR_COLOUR_WHITE "[" STR_COLOUR_GREEN "SUCCESS" STR_COLOUR_WHITE "]" STR_COLOUR_RESET
+
 void GobbleWhitespace(str8 File, u64 *At);
 void GobbleUpToWhitespace(str8 File, u64 *At);
 
@@ -284,7 +289,7 @@ void AppendSourceFilesInFolder(memory_arena *Arena, str8_list *SourceFilesFromFo
 	DIR *Directory = opendir((char*)SourceFilesInDirectory.Bytes);
 	struct dirent *Entry;
 	if(Directory == Null)
-	{
+	{ 
 		printf("Unknown directory %.*s", Str8ToPrintfArgs(Path));
 		return;
 	}
@@ -1596,7 +1601,7 @@ void EmbedFiles(memory_arena *Arena, str8_list SourcePaths, str8 DestinationPath
 	{
 		if(!Name)
 		{
-			printf("ERROR: Number of names do not match number files.\n\n");
+			printf(ERROR "Number of names do not match number files.\n\n");
 			return;
 		}
 		str8 File = LoadEntireFileIntoMemory(Arena, SourcePath->String);
@@ -1612,9 +1617,9 @@ void EmbedFiles(memory_arena *Arena, str8_list SourcePaths, str8 DestinationPath
 					"    0x%02x, 0x%02x, 0x%02x, 0x%02x,\n"
 					"    0x%02x, 0x%02x, 0x%02x, 0x%02x,\n"
 					"    0x%02x, 0x%02x, 0x%02x, 0x%02x,\n",
-					Byte[0], Byte[1], Byte[2], Byte[3],
-					Byte[4], Byte[5], Byte[6], Byte[7],
-					Byte[8], Byte[9], Byte[10], Byte[11],
+					Byte[0],  Byte[1],  Byte[2],  Byte[3],
+					Byte[4],  Byte[5],  Byte[6],  Byte[7],
+					Byte[8],  Byte[9],  Byte[10], Byte[11],
 					Byte[12], Byte[13], Byte[14], Byte[15]
 				);
 				Str8ListAppend(Arena, &Embed, Elements);
@@ -1693,8 +1698,7 @@ b32 CompileTranslationUnit(memory_arena *Arena, build_options *BuildOptions, str
 	str8 CompileCommand = CompileCommandFromBuildOptions(Arena, BuildOptions, HashedFilename, SourceFilename);
 	if(ExecuteCommand(Arena, CompileCommand, &FailedToExecute) == False)
 	{
-		printf(STR_COLOUR_RED "ERROR: " STR_COLOUR_RESET);
-		printf("Failed to launch compiler\n");
+		printf(ERROR "Failed to launch compiler\n");
 		FailedToBuild = True;
 	}
 
@@ -1746,8 +1750,7 @@ b32 LinkObjectFiles(memory_arena *Arena, build_options *BuildOptions, str8_array
 	b32 FailedToLink = False;
 	if(ExecuteCommand(Arena, LinkCommand, &FailedToExecute) == False)
 	{
-		printf(STR_COLOUR_RED "ERROR: " STR_COLOUR_RESET);
-		printf("Failed to launch linker\n");
+		printf(ERROR "Failed to launch linker\n");
 		FailedToLink = True;
 	}
 	return FailedToLink || FailedToExecute;
@@ -1823,12 +1826,12 @@ b32 Build(wave_info *WaveInfo, memory_arena *Arena, build_options BuildOptions)
 								   Str8ToPrintfArgs(BuildOptions.OutputName));
 		DeleteFileFromDisk(Arena, OutputPathAndName);
 
-		printf(STR_COLOUR_RED "\nERROR\n" STR_COLOUR_RESET);
+		printf(ERROR);
 	}
 	else if(WaveIsFirstLane(WaveInfo))
 	{
 
-		printf(STR_COLOUR_GREEN "\nSUCCESS\n" STR_COLOUR_RESET);
+		printf(SUCCESS);
 	}
 
 	return (AnyFailedToBuild || AnyFailedToLink);

@@ -132,6 +132,7 @@ id<MTLTexture> ResizeTexture(render_context *R, id<MTLTexture> Texture, CGSize S
 {
 	metal_context *Metal = R->Backend;
 	id<MTLTexture> Result = Texture;
+	// TODO(Oliver): Delete the texture?? Memory leak
 	if(Size.width != [Texture width] || Size.height != [Texture height] || Texture == nil)
 	{
 		MTLTextureDescriptor *Desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:Texture.pixelFormat

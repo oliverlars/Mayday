@@ -21,6 +21,7 @@ typedef struct d3d11_context
 	d3d11_shader  TriangleShader;
 
 	ID3D11Texture2D     *FontAtlasTexture;
+	ID3D11Texture2D     *DepthTexture;
 
 	ID3D11Buffer *TriangleVertexBuffers[FRAMES_IN_FLIGHT];
 	ID3D11Buffer *GlyphVertexBuffers[FRAMES_IN_FLIGHT];

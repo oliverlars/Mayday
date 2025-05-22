@@ -128,7 +128,7 @@ typedef enum compiler
 typedef enum diagnostic_type
 {
 	D_WARNING,
-	D_ERROR,
+	D_F_ERROR,
 	D_INFO,
 }
 diagnostic_type;
@@ -189,9 +189,9 @@ char *CStrFromStr8(memory_arena *Arena, str8 String);
 str8_list ListOfDirectoryEntriesFromPath(memory_arena *Arena, str8 Path);
 
 
-#define ERROR STR_COLOUR_WHITE "[" STR_COLOUR_RED "ERROR" STR_COLOUR_WHITE "]" STR_COLOUR_RESET
-#define WARN STR_COLOUR_WHITE "[" STR_COLOUR_YELLOW "SUCCESS" STR_COLOUR_YELLOW "]" STR_COLOUR_RESET
-#define SUCCESS STR_COLOUR_WHITE "[" STR_COLOUR_GREEN "SUCCESS" STR_COLOUR_WHITE "]" STR_COLOUR_RESET
+#define F_ERROR STR_COLOUR_WHITE "[" STR_COLOUR_RED "F_ERROR" STR_COLOUR_WHITE "]" STR_COLOUR_RESET
+#define F_WARN STR_COLOUR_WHITE "[" STR_COLOUR_YELLOW "SUCCESS" STR_COLOUR_YELLOW "]" STR_COLOUR_RESET
+#define F_SUCCESS STR_COLOUR_WHITE "[" STR_COLOUR_GREEN "SUCCESS" STR_COLOUR_WHITE "]" STR_COLOUR_RESET
 
 void GobbleWhitespace(str8 File, u64 *At);
 void GobbleUpToWhitespace(str8 File, u64 *At);
@@ -1601,7 +1601,7 @@ void EmbedFiles(memory_arena *Arena, str8_list SourcePaths, str8 DestinationPath
 	{
 		if(!Name)
 		{
-			printf(ERROR "Number of names do not match number files.\n\n");
+			printf(F_ERROR "Number of names do not match number files.\n\n");
 			return;
 		}
 		str8 File = LoadEntireFileIntoMemory(Arena, SourcePath->String);
@@ -1698,7 +1698,7 @@ b32 CompileTranslationUnit(memory_arena *Arena, build_options *BuildOptions, str
 	str8 CompileCommand = CompileCommandFromBuildOptions(Arena, BuildOptions, HashedFilename, SourceFilename);
 	if(ExecuteCommand(Arena, CompileCommand, &FailedToExecute) == False)
 	{
-		printf(ERROR "Failed to launch compiler\n");
+		printf(F_ERROR "Failed to launch compiler\n");
 		FailedToBuild = True;
 	}
 
@@ -1750,7 +1750,7 @@ b32 LinkObjectFiles(memory_arena *Arena, build_options *BuildOptions, str8_array
 	b32 FailedToLink = False;
 	if(ExecuteCommand(Arena, LinkCommand, &FailedToExecute) == False)
 	{
-		printf(ERROR "Failed to launch linker\n");
+		printf(F_ERROR "Failed to launch linker\n");
 		FailedToLink = True;
 	}
 	return FailedToLink || FailedToExecute;
@@ -1826,12 +1826,12 @@ b32 Build(wave_info *WaveInfo, memory_arena *Arena, build_options BuildOptions)
 								   Str8ToPrintfArgs(BuildOptions.OutputName));
 		DeleteFileFromDisk(Arena, OutputPathAndName);
 
-		printf(ERROR);
+		printf(F_ERROR);
 	}
 	else if(WaveIsFirstLane(WaveInfo))
 	{
 
-		printf(SUCCESS);
+		printf(F_SUCCESS);
 	}
 
 	return (AnyFailedToBuild || AnyFailedToLink);

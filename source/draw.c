@@ -385,7 +385,17 @@ void D_Draw3DStr8(draw_context *D,
 			NewLine = False;
 		}
 
+		f32 LineHeight = (Font.Ascent - Font.Descent + Font.LineGap)*Scale;
+
+		if(CodePoint == ' ')
+		{
+			v3f P = v3f(Position.X + 10.0, Position.Y + LineHeight/2.0 - 10.0, 0.0);
+			D_DrawPointsArray(D, Arena, &P, 1, v4f(0.1, 0.02, 0.0, 0.1));
+		}
+
 		//if(NewLine) CodePoint = 'N';
+
+		
 
 		d_atlas_glyph *Glyph  = D_GlyphFromCodePoint2(D, Hash, Font, HeightInPixels, CodePoint);
 

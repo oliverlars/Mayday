@@ -34,7 +34,7 @@ Entry(InputWaveInfo)
 				}
 				else
 				{
-					printf(WARN "This compiler choice is only supported on Windows...\n");
+					printf(F_WARN "This compiler choice is only supported on Windows...\n");
 					printf("Using platform default\n\n");
 				}
 			}
@@ -190,8 +190,7 @@ Entry(InputWaveInfo)
 			}
 			else
 			{
-				printf(STR_COLOUR_RED "ERROR: " STR_COLOUR_RESET);
-				printf("build/Icon.iconset folder not found. Put \n");
+				printf(F_ERROR "build/Icon.iconset folder not found. Put \n");
 			}
 		}
 	}

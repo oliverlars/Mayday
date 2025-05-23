@@ -584,11 +584,11 @@ void UI_StatusBar(ui_context *UI, draw_context *Draw, edit_context *Edit,
 	v3f Position = v3f(Size.X - 100, PointPosY, 0.0);
 	if(!Buffer->EditedSinceLastSave)
 	{
-		D_DrawPointsArray(Draw, Arena, &Position, 1, v4f(0.0, 0.6, 0, 1));
+		D_DrawPointsArray(Draw, Arena, &Position, 1, 20, v4f(0.0, 0.6, 0, 1));
 	}
 	else
 	{
-		D_DrawPointsArray(Draw, Arena, &Position, 1, v4f(1, 0.2, 0, 1));
+		D_DrawPointsArray(Draw, Arena, &Position, 1, 20, v4f(1, 0.2, 0, 1));
 	}
 
 }

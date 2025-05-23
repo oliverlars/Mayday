@@ -28,6 +28,8 @@ typedef struct gpu_vertex
 	v4f Position;
 	v4f Colour;
 	v4f UV;
+	f32 PointSize;
+	v3f Padding;
 }
 gpu_vertex;
 
@@ -765,8 +767,10 @@ void R_Update(render_context *R, m_arena *FrameArena)
 				v4f P = Command->Vertices[V].Position;
 				v2f UV = Command->Vertices[V].UV;
 				v4f Colour = Command->Vertices[V].Colour;
+				f32 PointSize = Command->Vertices[V].PointSize;
 				GPUVertices[V].Position = P;
 				GPUVertices[V].Colour = Colour;
+				GPUVertices[V].PointSize = PointSize;
 			}
 			MemoryCopy(Metal->TriangleVertexBuffers[ResourceIndex].contents + TriangleVertexOffset*sizeof(gpu_vertex) + TotalTriangleVertices*sizeof(gpu_vertex),
 					GPUVertices, sizeof(gpu_vertex)*Command->VerticesCount);

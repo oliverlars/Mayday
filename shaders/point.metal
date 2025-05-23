@@ -14,6 +14,7 @@ struct vertex_input
 	float4 Position [[attribute(0)]];
 	float4 Colour   [[attribute(1)]];
 	float4 UV;
+	float  PointSize;
 };
 
 struct uniforms
@@ -28,7 +29,7 @@ vertex vertex_output VertexMain(constant vertex_input *Vertices [[buffer(0)]],
 	vertex_output Output;
 	Output.Position = Uniforms.PVMMatrix * Vertices[VertexID].Position;
 	Output.Colour = Vertices[VertexID].Colour;
-	Output.PointSize = 10.0;
+	Output.PointSize = Vertices[VertexID].PointSize;
 	return Output;
 }
 

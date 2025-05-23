@@ -105,6 +105,7 @@ void D_DrawPointsArray(draw_context *D,
 					  m_arena *Arena,
 					  v3f *Positions,
 					  int PositionsCount,
+					  f32 PointSize,
 					  v4f Colour);
 
 void D_DrawLinesArray(draw_context *D,

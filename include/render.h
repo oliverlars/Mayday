@@ -5,10 +5,11 @@
 
 typedef enum r_vertex_format
 {
-	R_VF_POSITION = 1 << 0,
-	R_VF_COLOUR   = 1 << 1,
-	R_VF_NORMAL   = 1 << 2,
-	R_VF_UV       = 1 << 3,
+	R_VF_POSITION   = 1 << 0,
+	R_VF_COLOUR     = 1 << 1,
+	R_VF_NORMAL     = 1 << 2,
+	R_VF_UV         = 1 << 3,
+	R_VF_POINT_SIZE = 1 << 4, 
 }
 r_vertex_format;
 
@@ -18,6 +19,7 @@ typedef struct r_vertex
 	v4f Colour;
 	v4f Normal;
 	v2f UV;
+	f32 PointSize;
 } r_vertex;
 
 typedef enum r_texture_format

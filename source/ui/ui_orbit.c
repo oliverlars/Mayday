@@ -107,7 +107,7 @@ ui_orbit UI_OrbitView(ui_context *UI, draw_context *Draw, m_arena *Arena,
 		Positions[I] = OrbitNodes.Items[I].Position;
 	}
 
-	D_DrawPointsArray(Draw, Arena, Positions, OrbitNodes.Count, v4f(1, 0, 0, 1));
+	D_DrawPointsArray(Draw, Arena, Positions, OrbitNodes.Count, 20, v4f(1, 0, 0, 1));
 
 	Result.Positions = Positions;
 	Result.Count = OrbitNodes.Count;

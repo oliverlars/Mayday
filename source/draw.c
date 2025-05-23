@@ -390,7 +390,7 @@ void D_Draw3DStr8(draw_context *D,
 		if(CodePoint == ' ')
 		{
 			v3f P = v3f(Position.X + 10.0, Position.Y + LineHeight/2.0 - 10.0, 0.0);
-			D_DrawPointsArray(D, Arena, &P, 1, v4f(0.1, 0.02, 0.0, 0.1));
+			D_DrawPointsArray(D, Arena, &P, 1, 20, v4f(0.1, 0.02, 0.0, 0.1));
 		}
 
 		//if(NewLine) CodePoint = 'N';
@@ -593,6 +593,7 @@ void D_DrawPointsArray(draw_context *D,
 					  m_arena *Arena,
 					  v3f *Positions,
 					  int PositionsCount,
+					  f32 PointSize,
 					  v4f Colour)
 {
 	render_context *R = D->Render;
@@ -608,6 +609,7 @@ void D_DrawPointsArray(draw_context *D,
 		r_vertex Vertex = {
 			.Position = v4f(Positions[V].X, Positions[V].Y, Positions[V].Z, 1),
 			.Colour = Colour,
+			.PointSize = PointSize,
 		};
 
 		*R_Vertices++ = Vertex;

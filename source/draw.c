@@ -387,13 +387,24 @@ void D_Draw3DStr8(draw_context *D,
 
 		f32 LineHeight = (Font.Ascent - Font.Descent + Font.LineGap)*Scale;
 
+		d_atlas_glyph *Glyph  = D_GlyphFromCodePoint2(D, Hash, Font, HeightInPixels, CodePoint);
+		int Kern = stbtt_GetCodepointKernAdvance(&Font.Info, CodePoint, NextCodePoint);
+		f32 AdvanceX = (Kern + Glyph->AdvanceX) * Scale * TabMultiplier;
+
 		if(CodePoint == ' ')
 		{
 			v3f P = v3f(Position.X + 5.0, Position.Y + LineHeight/2.0 - 10.0, 0.0);
-			D_DrawPointsArray(D, Arena, &P, 1, 10, v4f(0.1, 0.02, 0.0, 0.1));
+			D_DrawPointsArray(D, Arena, &P, 1, 10, v4f(0.1, 0.02, 0.0, 0.25));
 		}
 
-		d_atlas_glyph *Glyph  = D_GlyphFromCodePoint2(D, Hash, Font, HeightInPixels, CodePoint);
+		if(String.Bytes[I] == '\t')
+		{
+			v3f P[2];
+			P[0] = v3f(Position.X, Position.Y + LineHeight/2.0 - 10.0, 0.0);
+			P[1] = P[0];
+			P[1].X += (Kern + Glyph->AdvanceX) * Scale * TabMultiplier;
+			D_DrawLinesArray(D, Arena, P, 2, v4f(0.1, 0.02, 0.0, 0.25));
+		}
 
 		f32 GlyphWidth = ((f32)(Glyph->Box.Z - Glyph->Box.X)*Scale);
 		f32 GlyphHeight = ((f32)(Glyph->Box.W - Glyph->Box.Y)*Scale);
@@ -445,8 +456,7 @@ void D_Draw3DStr8(draw_context *D,
 			continue;
 		}
 
-		int Kern = stbtt_GetCodepointKernAdvance(&Font.Info, CodePoint, NextCodePoint);
-		Position.X += (Kern + Glyph->AdvanceX) * Scale * TabMultiplier;
+		Position.X += AdvanceX;
 	}
 
 	Command.Type = R_COMMAND_GLYPH;

@@ -35,7 +35,7 @@ vertex vertex_output VertexMain(constant vertex_input *Vertices [[buffer(0)]],
 
 fragment float4 FragmentMain(vertex_output Input [[stage_in]], float2 PointCoordinate [[point_coord]])
 {
-	float4 Colour = float4(Input.Colour.rgb, 1.0);
+	float4 Colour = Input.Colour;
 	if(length(PointCoordinate - float2(0.5)) > 0.5)
 	{
 		discard_fragment();

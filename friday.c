@@ -94,7 +94,7 @@ Entry(InputWaveInfo)
 			AppendSourceFilesInFolder(&Shared->Arena, &SourceFiles, Str8("source/win32"));
 			AppendSourceFilesInFolder(&Shared->Arena, &SourceFiles, Str8("source/sokol"));
 			AppendSourceFilesInFolder(&Shared->Arena, &SourceFiles, Str8("external"));
-			Str8ListAppend(&Shared->Arena, &ExtraCompileFlags, Str8(" /experimental:c11atomics /std:c17 "));
+			Str8ListAppend(&Shared->Arena, &ExtraCompileFlags, Str8(" /D_WIN64 /experimental:c11atomics /std:c17 "));
 		}
 		else if(OS == OS_DARWIN)
 		{
@@ -142,6 +142,7 @@ Entry(InputWaveInfo)
 			.SourceFiles = SourceFiles,
 			.IncludePaths = IncludePaths,
 			.ExtraLinkFlags = ExtraLinkFlags,
+			.ExtraCompileFlags = ExtraCompileFlags,
 			.WorkingDirectory = GetExecutableDirectory(&Arena),
 			.OutputPath = Str8PushF(&Arena, "build/"),
 			.Optimise = OptimisedBuild,

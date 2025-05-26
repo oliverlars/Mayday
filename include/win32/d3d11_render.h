@@ -7,7 +7,7 @@
 
 typedef struct d3d11_shader
 {
-
+	int TODO;
 } d3d11_shader;
 
 #define FRAMES_IN_FLIGHT (3)

@@ -6,6 +6,10 @@
 
 #define DispatchFunction(Name, Data) void *DispatchFunction(void *Data)
 
+#if defined(_WIN32)
+#include <windows.h>
+typedef RTL_BARRIER barrier;
+#else
 typedef struct barrier
 {
 	atomic_ullong Generation;
@@ -13,6 +17,7 @@ typedef struct barrier
 	s64 LaneCount;
 }
 barrier;
+#endif
 
 typedef struct wave_info wave_info;
 

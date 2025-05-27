@@ -132,6 +132,11 @@ u8* ArenaPushAlign(m_arena *Arena, s64 Bytes, u64 Alignment)
 	return Memory;
 }
 
+void MemoryZero(void *Destination, s64 NumberOfBytes)
+{
+	MemorySet(Destination, 0, NumberOfBytes);
+}
+
 u8 *ArenaPushAlignZero(m_arena *Arena, s64 Bytes, u64 Alignment)
 {
 	u8 *Memory = ArenaPushAlign(Arena, Bytes, Alignment);

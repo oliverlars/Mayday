@@ -76,6 +76,11 @@
     },
     {
         "directory": "c:/Mayday",
+        "command": "cl.exe /c /TC  /D_WIN64 /experimental:c11atomics /std:c17  /nologo /FS /EHsc external/sokol_app.c /Zi /Od /Fobuild/external/sokol_app.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "file": "external/sokol_app.c"
+    },
+    {
+        "directory": "c:/Mayday",
         "command": "cl.exe /c /TC  /D_WIN64 /experimental:c11atomics /std:c17  /nologo /FS /EHsc external/stb_truetype.c /Zi /Od /Fobuild/external/stb_truetype.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "external/stb_truetype.c"
     }

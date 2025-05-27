@@ -92,14 +92,13 @@ Entry(InputWaveInfo)
 		if(OS == OS_WINDOWS)
 		{
 			AppendSourceFilesInFolder(&Shared->Arena, &SourceFiles, Str8("source/win32"));
-			AppendSourceFilesInFolder(&Shared->Arena, &SourceFiles, Str8("source/sokol"));
 			AppendSourceFilesInFolder(&Shared->Arena, &SourceFiles, Str8("external"));
 			Str8ListAppend(&Shared->Arena, &ExtraCompileFlags, Str8(" /D_WIN64 /experimental:c11atomics /std:c17 "));
+			Str8ListAppend(&Shared->Arena, &ExtraLinkFlags, Str8(" 	Synchronization.lib "));
 		}
 		else if(OS == OS_DARWIN)
 		{
 			AppendSourceFilesInFolder(&Shared->Arena, &SourceFiles, Str8("source/darwin"));
-			AppendSourceFilesInFolder(&Shared->Arena, &SourceFiles, Str8("source/sokol"));
 			AppendSourceFilesInFolder(&Shared->Arena, &SourceFiles, Str8("external"));
 			Str8ListAppend(&Shared->Arena, &ExtraLinkFlags, Str8("-framework Cocoa -framework MetalKit -framework QuartzCore -framework Metal -framework MetalPerformanceShaders"));
 		}

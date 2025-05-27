@@ -1,6 +1,7 @@
 #include <windows.h>
 #include <assert.h>
 #include <stdatomic.h>
+#include <winnt.h>
 
 #include "wave.h"
 #include "memory.h"
@@ -8,7 +9,7 @@
 
 s64 AtomicAdd(s64 *Value, s64 Addend)
 {
-	return __sync_fetch_and_add(Value, Addend);
+	return InterlockedAdd64(Value, Addend);
 }
 
 void WaveBarrier(RTL_BARRIER *Barrier)

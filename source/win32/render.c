@@ -18,6 +18,16 @@ typedef struct uniforms
 	m44f PVMMatrix;
 } uniforms;
 
+typedef struct gpu_vertex
+{
+	v4f Position;
+	v4f Colour;
+	v4f UV;
+	f32 PointSize;
+	v3f Padding;
+}
+gpu_vertex;
+
 
 void R_Init(render_context *R, m_arena *Arena, v2i Size)
 {
@@ -40,7 +50,7 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 											&D3D11->UniformBuffers[ResourceIndex]);
 
 		D3D11_BUFFER_DESC TriangleVertexBufferDescription = {0};
-		TriangleVertexBufferDescription.ByteWidth = MegaBytes(128);
+		TriangleVertexBufferDescription.ByteWidth = MegaBytes(16);
 		TriangleVertexBufferDescription.Usage     = D3D11_USAGE_DYNAMIC;
 		TriangleVertexBufferDescription.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 		D3D11->Device->lpVtbl->CreateBuffer(D3D11->Device,
@@ -49,7 +59,7 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 											NULL);
 
 		D3D11_BUFFER_DESC GlyphVertexBufferDescription = {0};
-		GlyphVertexBufferDescription.ByteWidth = MegaBytes(128);
+		GlyphVertexBufferDescription.ByteWidth = MegaBytes(16);
 		GlyphVertexBufferDescription.Usage     = D3D11_USAGE_DYNAMIC;
 		GlyphVertexBufferDescription.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 		D3D11->Device->lpVtbl->CreateBuffer(D3D11->Device,
@@ -57,6 +67,73 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 											NULL,
 											NULL);
 	}
+
+	ID3DBlob *TriangleVertexShaderObject;
+	D3DCompile(G_TriangleShader, sizeof(G_TriangleShader),
+			   Null, Null, Null,
+			   "VertexMain",
+			   "vs_5_0",
+			   0, 0,
+			   &TriangleVertexShaderObject, Null);
+	
+	D3D11->Device->lpVtbl->CreateVertexShader(
+		D3D11->Device,
+		TriangleVertexShaderObject->lpVtbl->GetBufferPointer(TriangleVertexShaderObject),
+		TriangleVertexShaderObject->lpVtbl->GetBufferSize(TriangleVertexShaderObject),
+		Null, &D3D11->TriangleVertexShader
+	);
+
+	D3D11_INPUT_ELEMENT_DESC VertexAttributes[] =
+    {
+        { "POS", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0,                            0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "COL", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "TEX", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "",    0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+    };
+
+	D3D11->Device->lpVtbl->CreateInputLayout(
+		D3D11->Device,
+		VertexAttributes,
+		ARRAYSIZE(VertexAttributes),
+		TriangleVertexShaderObject->lpVtbl->GetBufferPointer(TriangleVertexShaderObject),
+		TriangleVertexShaderObject->lpVtbl->GetBufferSize(TriangleVertexShaderObject),
+		&D3D11->InputLayout);
+
+	ID3DBlob *TrianglePixelShaderObject;
+	D3DCompile(G_TriangleShader, sizeof(G_TriangleShader),
+			Null, Null, Null,
+			"PixelMain",
+			"ps_5_0",
+			0, 0,
+			&TriangleVertexShaderObject, Null);
+
+	D3D11->Device->lpVtbl->CreatePixelShader(
+		D3D11->Device,
+		TrianglePixelShaderObject->lpVtbl->GetBufferPointer(TrianglePixelShaderObject),
+		TrianglePixelShaderObject->lpVtbl->GetBufferSize(TrianglePixelShaderObject),
+		Null, &D3D11->TrianglePixelShader
+	);
+
+	D3D11_RASTERIZER_DESC RasterizerStateDescription = {};
+    RasterizerStateDescription.FillMode = D3D11_FILL_SOLID;
+    RasterizerStateDescription.CullMode = D3D11_CULL_BACK;
+
+    D3D11->Device->lpVtbl->CreateRasterizerState(
+		D3D11->Device,
+		&RasterizerStateDescription,
+		&D3D11->RasterizerState
+	);
+
+	D3D11_DEPTH_STENCIL_DESC DepthStencilDescription = {};
+    DepthStencilDescription.DepthEnable    = True;
+    DepthStencilDescription.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+    DepthStencilDescription.DepthFunc      = D3D11_COMPARISON_LESS;
+
+    D3D11->Device->lpVtbl->CreateDepthStencilState(
+		D3D11->Device,
+		&DepthStencilDescription,
+		&D3D11->DepthStencilState
+	);
 }
 
 ID3D11Texture2D *ResizeTexture(render_context *R, ID3D11Texture2D *Texture, v2i Size)
@@ -84,6 +161,13 @@ ID3D11Texture2D *ResizeTexture(render_context *R, ID3D11Texture2D *Texture, v2i 
 	return Result;
 }
 
+void R_RenderTriangles(render_context *R, v4i Scissor, int VertexCount, int VertexOffset, int UniformOffset)
+{
+	d3d11_context *D3D11 = R->Backend;
+
+	D3D11->DeviceContext->lpVtbl->Draw(D3D11->DeviceContext, VertexCount, 0);
+}
+
 void R_Update(render_context *R, m_arena *FrameArena)
 {
 	d3d11_context *D3D11 = R->Backend;
@@ -105,14 +189,41 @@ void R_Update(render_context *R, m_arena *FrameArena)
 											   &DepthTextureDescription,
 											   Null,
 											   &D3D11->DepthTexture);
+
+		D3D11->Device->lpVtbl->CreateDepthStencilView(
+			D3D11->Device,
+			(ID3D11Resource*)D3D11->DepthTexture,
+			Null, &D3D11->DepthStencilView);
 	}
 	else
 	{
 		ResizeTexture(R, D3D11->DepthTexture, Dimensions);
 	}
 
+	f32 ClearColour[4] = {1.0, 0.0, 0.0, 1.0};
+	ID3D11RenderTargetView *RenderTargetView = (ID3D11RenderTargetView*)sapp_d3d11_get_render_view();
+	D3D11->DeviceContext->lpVtbl->ClearRenderTargetView(
+		D3D11->DeviceContext,
+		RenderTargetView,
+		ClearColour
+	);
+
+	ID3D11DepthStencilView *DepthStencilView;
+	D3D11->DeviceContext->lpVtbl->ClearDepthStencilView(
+		D3D11->DeviceContext,
+		D3D11->DepthStencilView,
+		D3D11_CLEAR_DEPTH,
+		1.0f, 0
+	);
+
 
 	m_scratch_arena Scratch = ScratchBegin(0, 0);
+
+	
+	int TotalTriangleVertices = 0;
+	int TriangleVertexOffset = 0;
+
+	int ResourceIndex = R->Frame % FRAMES_IN_FLIGHT;
 
 	int UniformCount = 0;
 	for(r_command *Command = R->CommandsFirst; Command != Null; Command = Command->Next)
@@ -124,7 +235,58 @@ void R_Update(render_context *R, m_arena *FrameArena)
 		}
 		else if(Command->Type == R_COMMAND_TRIANGLE)
 		{
+			gpu_vertex *GPUVertices = (gpu_vertex*)ArenaPushArrayZero(Scratch.Arena,
+															 	 	  gpu_vertex, Command->VerticesCount);
+			for(int V = 0; V < Command->VerticesCount; V++)
+			{
+				v4f P = Command->Vertices[V].Position;
+				v2f UV = Command->Vertices[V].UV;
+				v4f Colour = Command->Vertices[V].Colour;
+				GPUVertices[V].Position = P;
+				GPUVertices[V].Colour = Colour;
+			}
+			D3D11->DeviceContext->lpVtbl->IASetPrimitiveTopology(D3D11->DeviceContext, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+			D3D11->DeviceContext->lpVtbl->IASetInputLayout(D3D11->DeviceContext, D3D11->InputLayout);
+			u32 Stride = 16 * sizeof(f32);
+			u32 Offset = 0;
+			D3D11->DeviceContext->lpVtbl->IASetVertexBuffers(D3D11->DeviceContext, 0, 1, &D3D11->TriangleVertexBuffers[ResourceIndex], &Stride, &Offset);
+			D3D11->DeviceContext->lpVtbl->VSSetShader(
+				D3D11->DeviceContext,
+				D3D11->TriangleVertexShader,
+				Null, 
+				0
+			);
+			D3D11->DeviceContext->lpVtbl->VSSetConstantBuffers(
+				D3D11->DeviceContext,
+				0, 1,
+				&D3D11->UniformBuffers[ResourceIndex]
+			);
 
+			D3D11_MAPPED_SUBRESOURCE TriangleVertexBufferResource;
+
+			D3D11->DeviceContext->lpVtbl->Map(
+				D3D11->DeviceContext,
+				(ID3D11Resource*)D3D11->TriangleVertexBuffers[ResourceIndex],
+				0,
+				D3D11_MAP_WRITE_DISCARD, 0, &TriangleVertexBufferResource
+			);
+
+			{
+				gpu_vertex* Vertices = (gpu_vertex*)TriangleVertexBufferResource.pData;
+
+				MemoryCopy(
+					Vertices + TriangleVertexOffset*sizeof(gpu_vertex) + TotalTriangleVertices*sizeof(gpu_vertex),
+					GPUVertices,
+					sizeof(gpu_vertex)*Command->VerticesCount
+				);
+			}
+			D3D11->DeviceContext->lpVtbl->Unmap(
+				D3D11->DeviceContext,
+				(ID3D11Resource*)D3D11->TriangleVertexBuffers[ResourceIndex],
+				0
+			);
+
+			TotalTriangleVertices += Command->VerticesCount;
 		}
 		else if(Command->Type == R_COMMAND_LINES)
 		{
@@ -135,9 +297,37 @@ void R_Update(render_context *R, m_arena *FrameArena)
 		   (Command->Next && !MemoryEqual(&Command->Transform, &Command->Next->Transform, sizeof(m44f))) ||
 		   (!Command->Next))
 		{
+			D3D11_MAPPED_SUBRESOURCE UniformBufferResourse;
+			D3D11->DeviceContext->lpVtbl->Map(
+				D3D11->DeviceContext,
+				(ID3D11Resource*)D3D11->UniformBuffers[ResourceIndex],
+				0,
+				D3D11_MAP_WRITE_DISCARD,
+				0,
+				&UniformBufferResourse); // update constant buffer every frame
+			{
+				uniforms* Uniforms = (uniforms*)UniformBufferResourse.pData;
+
+				Uniforms->PVMMatrix = Command->Transform;
+			}
+			D3D11->DeviceContext->lpVtbl->Unmap(
+				D3D11->DeviceContext,
+				(ID3D11Resource*)D3D11->UniformBuffers[ResourceIndex],
+				0
+			);
+
+			if(Command->Type == R_COMMAND_TRIANGLE)
+			{
+				R_RenderTriangles(R, Command->Scissor, TotalTriangleVertices, TriangleVertexOffset*sizeof(gpu_vertex), UniformCount*sizeof(m44f));
+				TriangleVertexOffset += TotalTriangleVertices;
+				TotalTriangleVertices = 0;
+			}
+
 			UniformCount += 1;
 		}
 	}
+
+	SwapChain->lpVtbl->Present(SwapChain, 1, 0);
 
 	R->CommandsFirst = Null;
 	R->CommandsLast = Null;

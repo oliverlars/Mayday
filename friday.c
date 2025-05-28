@@ -119,11 +119,19 @@ Entry(InputWaveInfo)
 		EmbedFiles(&Arena, Fonts, Str8("embed/berkeley_mono_font.h"), FontVariableNames);
 
 		str8_list Shaders = {0};
-		Str8ListAppend(&Arena, &Shaders, Str8("shaders/triangle.metal"));
-		Str8ListAppend(&Arena, &Shaders, Str8("shaders/glyph.metal"));
-		Str8ListAppend(&Arena, &Shaders, Str8("shaders/bloom.metal"));
-		Str8ListAppend(&Arena, &Shaders, Str8("shaders/point.metal"));
-		Str8ListAppend(&Arena, &Shaders, Str8("shaders/line.metal"));
+
+		if(OS == OS_WINDOWS)
+		{
+			Str8ListAppend(&Arena, &Shaders, Str8("shaders/hlsl/triangle.hlsl"));
+		}
+		else
+		{
+			Str8ListAppend(&Arena, &Shaders, Str8("shaders/msl/triangle.metal"));
+			Str8ListAppend(&Arena, &Shaders, Str8("shaders/msl/glyph.metal"));
+			Str8ListAppend(&Arena, &Shaders, Str8("shaders/msl/bloom.metal"));
+			Str8ListAppend(&Arena, &Shaders, Str8("shaders/msl/point.metal"));
+			Str8ListAppend(&Arena, &Shaders, Str8("shaders/msl/line.metal"));
+		}
 
 		str8_list ShaderVariableNames = {0};
 		Str8ListAppend(&Arena, &ShaderVariableNames, Str8("G_TriangleShader"));

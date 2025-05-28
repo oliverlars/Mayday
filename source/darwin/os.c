@@ -18,7 +18,10 @@
 #include <time.h>
 #include <dirent.h>
 
-
+operating_system OS_GetOperatingSystem()
+{
+	return OS_DARWIN;
+}
 
 os_window OS_MakeWindow(str8 Name, int Width, int Height)
 {

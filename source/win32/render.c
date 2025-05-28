@@ -28,6 +28,41 @@ typedef struct gpu_vertex
 }
 gpu_vertex;
 
+void R_TextureFromBytes(render_context *R, u8 *Bytes, s32 Width, s32 Height)
+{
+	d3d11_context *D3D11 = R->Backend;
+	if(!D3D11->FontAtlasTexture)
+	{
+		D3D11_TEXTURE2D_DESC TextureDescription = {0};
+		TextureDescription.Width              = (UINT)Width;
+		TextureDescription.Height             = (UINT)Height;
+		TextureDescription.MipLevels          = 1;
+		TextureDescription.ArraySize          = 1;
+		TextureDescription.Format             = DXGI_FORMAT_R8_UNORM;
+		TextureDescription.SampleDesc.Count   = 1;
+		TextureDescription.SampleDesc.Quality = 0;
+		TextureDescription.Usage              = D3D11_USAGE_DEFAULT;
+		TextureDescription.BindFlags          = D3D11_BIND_SHADER_RESOURCE;
+		TextureDescription.CPUAccessFlags     = 0;
+		TextureDescription.MiscFlags          = 0;
+
+		D3D11->Device->lpVtbl->CreateTexture2D(
+			D3D11->Device,
+			&TextureDescription, NULL,
+			&D3D11->FontAtlasTexture);
+	}
+
+	D3D11->DeviceContext->lpVtbl->UpdateSubresource(
+		D3D11->DeviceContext,
+		(ID3D11Resource*)D3D11->FontAtlasTexture,
+		0,
+		NULL,
+		Bytes,
+		Width * sizeof(u8),
+		0
+    );
+}
+
 
 void R_Init(render_context *R, m_arena *Arena, v2i Size)
 {
@@ -105,7 +140,7 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 			"PixelMain",
 			"ps_5_0",
 			0, 0,
-			&TriangleVertexShaderObject, Null);
+			&TrianglePixelShaderObject, Null);
 
 	D3D11->Device->lpVtbl->CreatePixelShader(
 		D3D11->Device,

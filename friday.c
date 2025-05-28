@@ -94,7 +94,7 @@ Entry(InputWaveInfo)
 			AppendSourceFilesInFolder(&Shared->Arena, &SourceFiles, Str8("source/win32"));
 			AppendSourceFilesInFolder(&Shared->Arena, &SourceFiles, Str8("external"));
 			Str8ListAppend(&Shared->Arena, &ExtraCompileFlags, Str8(" /D_WIN64 /experimental:c11atomics /std:c17 "));
-			Str8ListAppend(&Shared->Arena, &ExtraLinkFlags, Str8(" 	Synchronization.lib "));
+			Str8ListAppend(&Shared->Arena, &ExtraLinkFlags, Str8(" 	Synchronization.lib dxguid.lib d3dcompiler.lib "));
 		}
 		else if(OS == OS_DARWIN)
 		{

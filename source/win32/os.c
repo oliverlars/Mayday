@@ -15,7 +15,10 @@
 
 #include <time.h>
 
-
+operating_system OS_GetOperatingSystem()
+{
+	return OS_WINDOWS;
+}
 
 os_window OS_MakeWindow(str8 Name, int Width, int Height)
 {

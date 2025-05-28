@@ -31,6 +31,11 @@
     },
     {
         "directory": "c:/Mayday",
+        "command": "cl.exe /c /TC  /D_WIN64 /experimental:c11atomics /std:c17  /nologo /FS /EHsc source/render_common.c /Zi /Od /Fobuild/source/render_common.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "file": "source/render_common.c"
+    },
+    {
+        "directory": "c:/Mayday",
         "command": "cl.exe /c /TC  /D_WIN64 /experimental:c11atomics /std:c17  /nologo /FS /EHsc source/strings.c /Zi /Od /Fobuild/source/strings.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/strings.c"
     },

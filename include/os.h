@@ -72,6 +72,17 @@ int OS_WindowWidth(os_window *Window);
 int OS_WindowHeight(os_window *Window);
 
 
+typedef enum operating_system
+{
+	OS_WINDOWS,
+	OS_DARWIN,
+	OS_LINUX,
+}
+operating_system;
+
+operating_system OS_GetOperatingSystem();
+
+
 str8 OS_LoadEntireFileIntoMemory(m_arena *Arena, str8 Filename);
 void OS_WriteStringToDisk(m_arena *Arena, str8 DestinationPath, str8 StringToWrite);
 

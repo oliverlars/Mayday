@@ -15,6 +15,13 @@ typedef struct os_window
 }
 os_window;
 
+
+#if defined(__APPLE__)
+#define OS_DARWIN OS_DARWIN
+#elif defined(_WIN32)
+#define OS_WINDOWS OS_WINDOWS
+#endif 
+
 typedef enum os_directory_entry_type
 {
 	OS_DIR_ENTRY_UNKNOWN,

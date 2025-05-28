@@ -500,10 +500,9 @@ void OS_Initialise(void *Data)
 
 	M->RecentlyLoadedFolders = Str8Split(M->PermanentArena, File, '\n');
 
-	if(OS_GetOperatingSystem() == OS_DARWIN)
-	{
+#if defined(OS_DARWIN)
 		DarwinMenuBar();
-	}
+#endif
 }
 
 void OS_Exit(void *Data)

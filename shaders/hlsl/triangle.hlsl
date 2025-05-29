@@ -3,7 +3,7 @@ struct vertex_input
     float4 Position: POS;
     float4 Colour:   COL;
 	float4 UV:       TEX;
-	float  PointSize;
+	float  PointSize: PSIZE;
 };
 
 struct vertex_output
@@ -27,8 +27,7 @@ vertex_output VertexMain(vertex_input Vertex)
 	return Output;
 }
 
-float4 PixelMain(vertex_output Input)
+float4 PixelMain(vertex_output Input) : SV_TARGET
 {
-	float4 Colour = Input.Colour;
-	return Colour;
+	return Input.Colour;
 }

@@ -4,6 +4,7 @@
 #include <errno.h>
 #define SOKOL_NO_ENTRY
 #define SOKOL_D3D11
+#define SOKOL_DEBUG
 #include "sokol_app.h"
 
 #include "strings.h"
@@ -34,14 +35,14 @@ void OS_Run(os_window Window, void *Data)
 {
 	sapp_desc SAPPDesc = (sapp_desc)
 	{
-		.window_title = (char*)Window.Title.Bytes,
+		.window_title = "assdfasdfsd",
 		.init_userdata_cb = OS_Initialise,
 		.frame_userdata_cb = OS_Update,
 		.event_userdata_cb = OS_Event,
 		.width = Window.Width,
 		.height = Window.Height,
 		.user_data = Data,
-		.high_dpi = true,
+		.high_dpi = false,
 		.cleanup_userdata_cb = OS_Exit,
 	};
 	sapp_run(&SAPPDesc);
@@ -49,7 +50,7 @@ void OS_Run(os_window Window, void *Data)
 
 os_handle OS_GetWindowHandle()
 {
-	return (os_handle)sapp_macos_get_window();
+	return (os_handle)sapp_win32_get_hwnd();
 }
 
 int OS_WindowWidth(os_window *Window)

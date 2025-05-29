@@ -88,19 +88,21 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 		TriangleVertexBufferDescription.ByteWidth = MegaBytes(16);
 		TriangleVertexBufferDescription.Usage     = D3D11_USAGE_DYNAMIC;
 		TriangleVertexBufferDescription.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+		TriangleVertexBufferDescription.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 		D3D11->Device->lpVtbl->CreateBuffer(D3D11->Device,
 											&TriangleVertexBufferDescription,
 											NULL,
-											NULL);
+											&D3D11->TriangleVertexBuffers[ResourceIndex]);
 
 		D3D11_BUFFER_DESC GlyphVertexBufferDescription = {0};
 		GlyphVertexBufferDescription.ByteWidth = MegaBytes(16);
 		GlyphVertexBufferDescription.Usage     = D3D11_USAGE_DYNAMIC;
 		GlyphVertexBufferDescription.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+		GlyphVertexBufferDescription.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 		D3D11->Device->lpVtbl->CreateBuffer(D3D11->Device,
 											&GlyphVertexBufferDescription,
 											NULL,
-											NULL);
+											&D3D11->GlyphVertexBuffers[ResourceIndex]);
 	}
 
 	ID3DBlob *TriangleVertexShaderObject;
@@ -123,7 +125,7 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
         { "POS", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0,                            0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
         { "COL", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
         { "TEX", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-        { "",    0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "PSIZE",    0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
     };
 
 	D3D11->Device->lpVtbl->CreateInputLayout(
@@ -320,6 +322,8 @@ void R_Update(render_context *R, m_arena *FrameArena)
 				(ID3D11Resource*)D3D11->TriangleVertexBuffers[ResourceIndex],
 				0
 			);
+
+			D3D11->DeviceContext->lpVtbl->Draw(D3D11->DeviceContext, Command->VerticesCount, 0);
 
 			TotalTriangleVertices += Command->VerticesCount;
 		}

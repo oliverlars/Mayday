@@ -96,7 +96,20 @@ mayday_context;
 
 #include "shaders.h"
 
+#define SOKOL_LOG_IMPL
+#include "sokol_log.h"
+
 void OS_Update(void *Data)
+{
+	mayday_context *M = Data;
+	R_PushScissor(M->Render, v4i(0, 0, sapp_width(), sapp_height()));
+	R_PushTransform(M->Render, Orthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
+	D_DrawQuad(M->Draw, M->FrameArena, v2f(0, 0), 100, 200, v4f(0, 1, 0, 1));
+	R_PopTransform(M->Render);
+	R_PopScissor(M->Render);
+}
+
+void OS_Update_Old(void *Data)
 {
 	mayday_context *M = Data;
 
@@ -158,6 +171,8 @@ void OS_Update(void *Data)
 	m44f Transform = Mul(ModelView, P);
 
 	R_PushTransform(M->Render, Transform);
+
+	D_DrawQuad(M->Draw, M->FrameArena, v2f(0, 0), 100, 200, v4f(0, 1, 0, 1));
 
 
 	if(UI_KeyDown(M->UI, SAPP_KEYCODE_EQUAL, SAPP_MODIFIER_SUPER))
@@ -587,9 +602,20 @@ int main()
 
 	u64 Start = OS_TimeStampNow();
 
-	DispatchInitialise(&M.Shared, 15);
+	// DispatchInitialise(&M.Shared, 15);
 
 	M.Folder = Str8("");
 
-	OS_Run(M.Window, &M);
+	sapp_desc *SAPPDesc = ArenaPushArrayZero(Arena, sapp_desc, 1);
+	SAPPDesc->window_title = "assdfasdfsd";
+	SAPPDesc->init_userdata_cb = OS_Initialise;
+	SAPPDesc->frame_userdata_cb = OS_Update;
+	SAPPDesc->event_userdata_cb = OS_Event;
+	SAPPDesc->width = M.Window.Width;
+	SAPPDesc->height = M.Window.Height;
+	SAPPDesc->user_data = &M;
+	SAPPDesc->high_dpi = false;
+	SAPPDesc->logger.func = slog_func;
+	SAPPDesc->cleanup_userdata_cb = OS_Exit;
+	sapp_run(SAPPDesc);
 }

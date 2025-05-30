@@ -107,6 +107,8 @@ void OS_Update(void *Data)
 	D_DrawQuad(M->Draw, M->FrameArena, v2f(0, 0), 100, 200, v4f(0, 1, 0, 1));
 	R_PopTransform(M->Render);
 	R_PopScissor(M->Render);
+
+	R_Update(M->Render, M->FrameArena);
 }
 
 void OS_Update_Old(void *Data)

@@ -152,8 +152,11 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 	);
 
 	D3D11_RASTERIZER_DESC RasterizerStateDescription = {};
-    RasterizerStateDescription.FillMode = D3D11_FILL_SOLID;
-    RasterizerStateDescription.CullMode = D3D11_CULL_BACK;
+	RasterizerStateDescription.FillMode = D3D11_FILL_SOLID;
+	// HACK(Oliver): Disabling culling is only because I
+	// fucked up the winding order...
+	RasterizerStateDescription.CullMode = D3D11_CULL_NONE;
+	RasterizerStateDescription.FrontCounterClockwise = True;
 
     D3D11->Device->lpVtbl->CreateRasterizerState(
 		D3D11->Device,
@@ -196,13 +199,6 @@ ID3D11Texture2D *ResizeTexture(render_context *R, ID3D11Texture2D *Texture, v2i 
 	}
 
 	return Result;
-}
-
-void R_RenderTriangles(render_context *R, v4i Scissor, int VertexCount, int VertexOffset, int UniformOffset)
-{
-	d3d11_context *D3D11 = R->Backend;
-
-	D3D11->DeviceContext->lpVtbl->Draw(D3D11->DeviceContext, VertexCount, 0);
 }
 
 void R_Update(render_context *R, m_arena *FrameArena)
@@ -347,7 +343,7 @@ void R_Update(render_context *R, m_arena *FrameArena)
 			{
 				D3D11->DeviceContext->lpVtbl->IASetPrimitiveTopology(D3D11->DeviceContext, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 				D3D11->DeviceContext->lpVtbl->IASetInputLayout(D3D11->DeviceContext, D3D11->InputLayout);
-				u32 Stride = 16 * sizeof(f32);
+				u32 Stride = sizeof(gpu_vertex);
 				u32 Offset = 0;
 				D3D11->DeviceContext->lpVtbl->IASetVertexBuffers(D3D11->DeviceContext, 0, 1, &D3D11->TriangleVertexBuffers[ResourceIndex], &Stride, &Offset);
 				D3D11->DeviceContext->lpVtbl->VSSetShader(

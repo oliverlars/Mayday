@@ -99,19 +99,20 @@ mayday_context;
 #define SOKOL_LOG_IMPL
 #include "sokol_log.h"
 
-void OS_Update(void *Data)
+void OS_Update_New(void *Data)
 {
 	mayday_context *M = Data;
 	R_PushScissor(M->Render, v4i(0, 0, sapp_width(), sapp_height()));
 	R_PushTransform(M->Render, Orthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
-	D_DrawQuad(M->Draw, M->FrameArena, v2f(0, 0), 100, 200, v4f(0, 1, 0, 1));
+	D_DrawQuad(M->Draw, M->FrameArena, v2f(100, 100), 100, 200, v4f(0, 1, 0, 1));
+	D_DrawQuad(M->Draw, M->FrameArena, v2f(200, 200), 100, 200, v4f(0, 1, 0, 1));
 	R_PopTransform(M->Render);
 	R_PopScissor(M->Render);
 
 	R_Update(M->Render, M->FrameArena);
 }
 
-void OS_Update_Old(void *Data)
+void OS_Update(void *Data)
 {
 	mayday_context *M = Data;
 

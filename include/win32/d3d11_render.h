@@ -19,13 +19,15 @@ typedef struct d3d11_context
 
 	ID3D11VertexShader    *TriangleVertexShader;
 	ID3D11PixelShader     *TrianglePixelShader;
+	ID3D11InputLayout     *TriangleInputLayout;
 
-	ID3D11InputLayout     *InputLayout;
+	ID3D11VertexShader    *GlyphVertexShader;
+	ID3D11PixelShader     *GlyphPixelShader;
+	ID3D11InputLayout     *GlyphInputLayout;
 
 	ID3D11Texture2D       *FontAtlasTexture;
 	ID3D11Texture2D       *DepthTexture;
 
-	ID3D11Buffer          *TriangleVertexBuffers[FRAMES_IN_FLIGHT];
-	ID3D11Buffer          *GlyphVertexBuffers[FRAMES_IN_FLIGHT];
+	ID3D11Buffer          *VertexBuffers[FRAMES_IN_FLIGHT];
 	ID3D11Buffer          *UniformBuffers[FRAMES_IN_FLIGHT];
 } d3d11_context;

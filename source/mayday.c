@@ -99,7 +99,7 @@ mayday_context;
 #define SOKOL_LOG_IMPL
 #include "sokol_log.h"
 
-void OS_Update_New(void *Data)
+void OS_Update(void *Data)
 {
 	mayday_context *M = Data;
 	R_PushScissor(M->Render, v4i(0, 0, sapp_width(), sapp_height()));
@@ -112,7 +112,7 @@ void OS_Update_New(void *Data)
 	R_Update(M->Render, M->FrameArena);
 }
 
-void OS_Update(void *Data)
+void OS_Update_Old(void *Data)
 {
 	mayday_context *M = Data;
 
@@ -554,8 +554,12 @@ void OS_Exit(void *Data)
 
 	str8 RecentlyOpened = Str8ListJoinBy(M->PermanentArena, &FinalList, '\n');
 
-
+#if defined(OS_DARWIN)
 	OS_WriteStringToDisk(M->PermanentArena, Str8("/users/olivercruickshank/nomoretext/recent.txt"), RecentlyOpened);
+#elif defined(OS_WINDOWS)
+	// TODO(Oliver): Put this in Local folder
+	OS_WriteStringToDisk(M->PermanentArena, Str8("recent.txt"), RecentlyOpened);
+#endif
 }
 
 int main()

@@ -60,7 +60,7 @@ void R_TextureFromBytes(render_context *R, u8 *Bytes, s32 Width, s32 Height)
 		Bytes,
 		Width * sizeof(u8),
 		0
-    );
+	);
 }
 
 
@@ -92,7 +92,7 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 		D3D11->Device->lpVtbl->CreateBuffer(D3D11->Device,
 											&TriangleVertexBufferDescription,
 											NULL,
-											&D3D11->TriangleVertexBuffers[ResourceIndex]);
+											&D3D11->VertexBuffers[ResourceIndex]);
 
 		D3D11_BUFFER_DESC GlyphVertexBufferDescription = {0};
 		GlyphVertexBufferDescription.ByteWidth = MegaBytes(16);
@@ -102,54 +102,109 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 		D3D11->Device->lpVtbl->CreateBuffer(D3D11->Device,
 											&GlyphVertexBufferDescription,
 											NULL,
-											&D3D11->GlyphVertexBuffers[ResourceIndex]);
+											&D3D11->VertexBuffers[ResourceIndex]);
 	}
 
-	ID3DBlob *TriangleVertexShaderObject;
-	D3DCompile(G_TriangleShader, sizeof(G_TriangleShader),
-			   Null, Null, Null,
-			   "VertexMain",
-			   "vs_5_0",
-			   0, 0,
-			   &TriangleVertexShaderObject, Null);
-	
-	D3D11->Device->lpVtbl->CreateVertexShader(
-		D3D11->Device,
-		TriangleVertexShaderObject->lpVtbl->GetBufferPointer(TriangleVertexShaderObject),
-		TriangleVertexShaderObject->lpVtbl->GetBufferSize(TriangleVertexShaderObject),
-		Null, &D3D11->TriangleVertexShader
-	);
 
-	D3D11_INPUT_ELEMENT_DESC VertexAttributes[] =
-    {
-        { "POS", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0,                            0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-        { "COL", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-        { "TEX", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-        { "PSIZE", 0, DXGI_FORMAT_R32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-    };
+	// TRIANGLE SHADER
+	{
+		ID3DBlob *TriangleVertexShaderObject;
+		D3DCompile(G_TriangleShader, sizeof(G_TriangleShader),
+				Null, Null, Null,
+				"VertexMain",
+				"vs_5_0",
+				0, 0,
+				&TriangleVertexShaderObject, Null);
+		
+		D3D11->Device->lpVtbl->CreateVertexShader(
+			D3D11->Device,
+			TriangleVertexShaderObject->lpVtbl->GetBufferPointer(TriangleVertexShaderObject),
+			TriangleVertexShaderObject->lpVtbl->GetBufferSize(TriangleVertexShaderObject),
+			Null, &D3D11->TriangleVertexShader
+		);
 
-	D3D11->Device->lpVtbl->CreateInputLayout(
-		D3D11->Device,
-		VertexAttributes,
-		ARRAYSIZE(VertexAttributes),
-		TriangleVertexShaderObject->lpVtbl->GetBufferPointer(TriangleVertexShaderObject),
-		TriangleVertexShaderObject->lpVtbl->GetBufferSize(TriangleVertexShaderObject),
-		&D3D11->InputLayout);
+		D3D11_INPUT_ELEMENT_DESC VertexAttributes[] =
+		{
+			{ "POS", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0,                            0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+			{ "COL", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+			{ "TEX", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+			{ "PSIZE", 0, DXGI_FORMAT_R32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		};
 
-	ID3DBlob *TrianglePixelShaderObject;
-	D3DCompile(G_TriangleShader, sizeof(G_TriangleShader),
-			Null, Null, Null,
-			"PixelMain",
-			"ps_5_0",
-			0, 0,
-			&TrianglePixelShaderObject, Null);
+		D3D11->Device->lpVtbl->CreateInputLayout(
+			D3D11->Device,
+			VertexAttributes,
+			ARRAYSIZE(VertexAttributes),
+			TriangleVertexShaderObject->lpVtbl->GetBufferPointer(TriangleVertexShaderObject),
+			TriangleVertexShaderObject->lpVtbl->GetBufferSize(TriangleVertexShaderObject),
+			&D3D11->TriangleInputLayout);
 
-	D3D11->Device->lpVtbl->CreatePixelShader(
-		D3D11->Device,
-		TrianglePixelShaderObject->lpVtbl->GetBufferPointer(TrianglePixelShaderObject),
-		TrianglePixelShaderObject->lpVtbl->GetBufferSize(TrianglePixelShaderObject),
-		Null, &D3D11->TrianglePixelShader
-	);
+		ID3DBlob *TrianglePixelShaderObject;
+		D3DCompile(G_TriangleShader, sizeof(G_TriangleShader),
+				Null, Null, Null,
+				"PixelMain",
+				"ps_5_0",
+				0, 0,
+				&TrianglePixelShaderObject, Null);
+
+		D3D11->Device->lpVtbl->CreatePixelShader(
+			D3D11->Device,
+			TrianglePixelShaderObject->lpVtbl->GetBufferPointer(TrianglePixelShaderObject),
+			TrianglePixelShaderObject->lpVtbl->GetBufferSize(TrianglePixelShaderObject),
+			Null, &D3D11->TrianglePixelShader
+		);
+	}
+
+	// GLYPH SHADER
+	{
+		ID3DBlob *GlyphVertexShaderObject;
+		D3DCompile(G_GlyphShader, sizeof(G_GlyphShader),
+				Null, Null, Null,
+				"VertexMain",
+				"vs_5_0",
+				0, 0,
+				&GlyphVertexShaderObject, Null);
+		
+		D3D11->Device->lpVtbl->CreateVertexShader(
+			D3D11->Device,
+			GlyphVertexShaderObject->lpVtbl->GetBufferPointer(GlyphVertexShaderObject),
+			GlyphVertexShaderObject->lpVtbl->GetBufferSize(GlyphVertexShaderObject),
+			Null, &D3D11->GlyphVertexShader
+		);
+
+
+		// TODO(Oliver): Why does this even have the point size on here
+		D3D11_INPUT_ELEMENT_DESC VertexAttributes[] =
+		{
+			{ "POS", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0,                            0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+			{ "COL", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+			{ "TEX", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+			{ "PSIZE", 0, DXGI_FORMAT_R32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		};
+
+		D3D11->Device->lpVtbl->CreateInputLayout(
+			D3D11->Device,
+			VertexAttributes,
+			ARRAYSIZE(VertexAttributes),
+			GlyphVertexShaderObject->lpVtbl->GetBufferPointer(GlyphVertexShaderObject),
+			GlyphVertexShaderObject->lpVtbl->GetBufferSize(GlyphVertexShaderObject),
+			&D3D11->GlyphInputLayout);
+
+		ID3DBlob *GlyphPixelShaderObject;
+		D3DCompile(G_GlyphShader, sizeof(G_GlyphShader),
+				Null, Null, Null,
+				"PixelMain",
+				"ps_5_0",
+				0, 0,
+				&GlyphPixelShaderObject, Null);
+
+		D3D11->Device->lpVtbl->CreatePixelShader(
+			D3D11->Device,
+			GlyphPixelShaderObject->lpVtbl->GetBufferPointer(GlyphPixelShaderObject),
+			GlyphPixelShaderObject->lpVtbl->GetBufferSize(GlyphPixelShaderObject),
+			Null, &D3D11->GlyphPixelShader
+		);
+	}
 
 	D3D11_RASTERIZER_DESC RasterizerStateDescription = {};
 	RasterizerStateDescription.FillMode = D3D11_FILL_SOLID;
@@ -262,8 +317,8 @@ void R_Update(render_context *R, m_arena *FrameArena)
 	m_scratch_arena Scratch = ScratchBegin(0, 0);
 
 	
-	int TotalTriangleVertices = 0;
-	int TriangleVertexOffset = 0;
+	int TotalVertices = 0;
+	int VertexOffset = 0;
 
 	int ResourceIndex = R->Frame % FRAMES_IN_FLIGHT;
 
@@ -292,24 +347,24 @@ void R_Update(render_context *R, m_arena *FrameArena)
 
 			D3D11->DeviceContext->lpVtbl->Map(
 				D3D11->DeviceContext,
-				(ID3D11Resource*)D3D11->TriangleVertexBuffers[ResourceIndex],
+				(ID3D11Resource*)D3D11->VertexBuffers[ResourceIndex],
 				0,
 				D3D11_MAP_WRITE_DISCARD, 0, &TriangleVertexBufferResource
 			);
 			gpu_vertex* Vertices = (gpu_vertex*)TriangleVertexBufferResource.pData;
 
 			MemoryCopy(
-				Vertices + TriangleVertexOffset + TotalTriangleVertices,
+				Vertices + VertexOffset + TotalVertices,
 				GPUVertices,
 				sizeof(gpu_vertex)*Command->VerticesCount
 			);
 			D3D11->DeviceContext->lpVtbl->Unmap(
 				D3D11->DeviceContext,
-				(ID3D11Resource*)D3D11->TriangleVertexBuffers[ResourceIndex],
+				(ID3D11Resource*)D3D11->VertexBuffers[ResourceIndex],
 				0
 			);
 
-			TotalTriangleVertices += Command->VerticesCount;
+			TotalVertices += Command->VerticesCount;
 		}
 		else if(Command->Type == R_COMMAND_LINES)
 		{
@@ -342,10 +397,10 @@ void R_Update(render_context *R, m_arena *FrameArena)
 			if(Command->Type == R_COMMAND_TRIANGLE)
 			{
 				D3D11->DeviceContext->lpVtbl->IASetPrimitiveTopology(D3D11->DeviceContext, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-				D3D11->DeviceContext->lpVtbl->IASetInputLayout(D3D11->DeviceContext, D3D11->InputLayout);
+				D3D11->DeviceContext->lpVtbl->IASetInputLayout(D3D11->DeviceContext, D3D11->TriangleInputLayout);
 				u32 Stride = sizeof(gpu_vertex);
 				u32 Offset = 0;
-				D3D11->DeviceContext->lpVtbl->IASetVertexBuffers(D3D11->DeviceContext, 0, 1, &D3D11->TriangleVertexBuffers[ResourceIndex], &Stride, &Offset);
+				D3D11->DeviceContext->lpVtbl->IASetVertexBuffers(D3D11->DeviceContext, 0, 1, &D3D11->VertexBuffers[ResourceIndex], &Stride, &Offset);
 				D3D11->DeviceContext->lpVtbl->VSSetShader(
 					D3D11->DeviceContext,
 					D3D11->TriangleVertexShader,
@@ -360,6 +415,19 @@ void R_Update(render_context *R, m_arena *FrameArena)
 				D3D11->DeviceContext->lpVtbl->RSSetViewports(
 					D3D11->DeviceContext,
 					1, &viewport
+				);
+
+				D3D11_RECT ScissorRect =
+				{
+					Command->Scissor.X,
+					Command->Scissor.Y,
+					Command->Scissor.X + Command->Scissor.Z,
+					Command->Scissor.Y + Command->Scissor.W,
+				};
+				D3D11->DeviceContext->lpVtbl->RSSetScissorRects(
+					D3D11->DeviceContext,
+					1,
+					&ScissorRect
 				);
 				D3D11->DeviceContext->lpVtbl->RSSetState(
 					D3D11->DeviceContext,
@@ -384,9 +452,9 @@ void R_Update(render_context *R, m_arena *FrameArena)
 					Null, Null,
 					0xFFFFFFFF
 				);
-				D3D11->DeviceContext->lpVtbl->Draw(D3D11->DeviceContext, TotalTriangleVertices, TriangleVertexOffset);
-				TriangleVertexOffset += TotalTriangleVertices;
-				TotalTriangleVertices = 0;
+				D3D11->DeviceContext->lpVtbl->Draw(D3D11->DeviceContext, TotalVertices, VertexOffset);
+				VertexOffset += TotalVertices;
+				TotalVertices = 0;
 			}
 
 			UniformCount += 1;

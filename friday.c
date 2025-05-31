@@ -123,6 +123,7 @@ Entry(InputWaveInfo)
 		if(OS == OS_WINDOWS)
 		{
 			Str8ListAppend(&Arena, &Shaders, Str8("shaders/hlsl/triangle.hlsl"));
+			Str8ListAppend(&Arena, &Shaders, Str8("shaders/hlsl/glyph.hlsl"));
 		}
 		else
 		{

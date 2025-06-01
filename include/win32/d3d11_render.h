@@ -25,8 +25,12 @@ typedef struct d3d11_context
 	ID3D11PixelShader     *GlyphPixelShader;
 	ID3D11InputLayout     *GlyphInputLayout;
 
-	ID3D11Texture2D       *FontAtlasTexture;
+	ID3D11Texture2D          *FontAtlasTexture;
+	ID3D11ShaderResourceView *FontAtlasTextureView;
+
 	ID3D11Texture2D       *DepthTexture;
+
+	ID3D11SamplerState    *SamplerState;
 
 	ID3D11Buffer          *VertexBuffers[FRAMES_IN_FLIGHT];
 	ID3D11Buffer          *UniformBuffers[FRAMES_IN_FLIGHT];

@@ -106,10 +106,12 @@ void OS_Update(void *Data)
 	R_PushTransform(M->Render, Orthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
 	D_DrawQuad(M->Draw, M->FrameArena, v2f(100, 100), 100, 200, v4f(0, 1, 0, 1));
 	D_DrawQuad(M->Draw, M->FrameArena, v2f(200, 200), 100, 200, v4f(0, 1, 0, 1));
+	D_DrawStr8(M->Draw, M->FrameArena, M->CodeFont, v2f(300, 300), v4f(1, 1, 1, 1), 64, Str8("Rungalo Bungalo"));
 	R_PopTransform(M->Render);
 	R_PopScissor(M->Render);
 
 	R_Update(M->Render, M->FrameArena);
+	D_GlyphsToAtlas(M->Draw);
 }
 
 void OS_Update_Old(void *Data)

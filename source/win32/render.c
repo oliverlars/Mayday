@@ -50,6 +50,12 @@ void R_TextureFromBytes(render_context *R, u8 *Bytes, s32 Width, s32 Height)
 			D3D11->Device,
 			&TextureDescription, NULL,
 			&D3D11->FontAtlasTexture);
+		D3D11->Device->lpVtbl->CreateShaderResourceView(
+			D3D11->Device,
+			(ID3D11Resource*)D3D11->FontAtlasTexture,
+			Null,
+			&D3D11->FontAtlasTextureView
+		);
 	}
 
 	D3D11->DeviceContext->lpVtbl->UpdateSubresource(
@@ -61,6 +67,7 @@ void R_TextureFromBytes(render_context *R, u8 *Bytes, s32 Width, s32 Height)
 		Width * sizeof(u8),
 		0
 	);
+
 }
 
 
@@ -229,6 +236,42 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 		&DepthStencilDescription,
 		&D3D11->DepthStencilState
 	);
+
+	D3D11_SAMPLER_DESC SamplerDescription = {};
+	SamplerDescription.Filter         = D3D11_FILTER_MIN_MAG_MIP_POINT;
+	SamplerDescription.AddressU       = D3D11_TEXTURE_ADDRESS_WRAP;
+	SamplerDescription.AddressV       = D3D11_TEXTURE_ADDRESS_WRAP;
+	SamplerDescription.AddressW       = D3D11_TEXTURE_ADDRESS_WRAP;
+	SamplerDescription.ComparisonFunc = D3D11_COMPARISON_NEVER;
+
+
+	D3D11->Device->lpVtbl->CreateSamplerState(
+		D3D11->Device,
+		&SamplerDescription,
+		&D3D11->SamplerState
+	);
+
+	// D3D11_TEXTURE2D_DESC texturedesc = {};
+	// texturedesc.Width              = 4096;
+	// texturedesc.Height             = 4096;
+	// texturedesc.MipLevels          = 1;
+	// texturedesc.ArraySize          = 1;
+	// texturedesc.Format             = DXGI_FORMAT_B8G8R8A8_UNORM_SRGB; // same as framebuffer(view)
+	// texturedesc.SampleDesc.Count   = 1;
+	// texturedesc.Usage              = D3D11_USAGE_IMMUTABLE; // because will never be updated
+	// texturedesc.BindFlags          = D3D11_BIND_SHADER_RESOURCE;
+
+	// D3D11_SUBRESOURCE_DATA textureSRD = {};
+	// textureSRD.pSysMem     = texturedata;
+	// textureSRD.SysMemPitch = TEXTURE_WIDTH * sizeof(UINT);
+
+	// ID3D11Texture2D* texture;
+
+	// device->CreateTexture2D(&texturedesc, &textureSRD, &texture);
+
+	// ID3D11ShaderResourceView* textureSRV;
+
+	// device->CreateShaderResourceView(texture, nullptr, &textureSRV);
 }
 
 ID3D11Texture2D *ResizeTexture(render_context *R, ID3D11Texture2D *Texture, v2i Size)
@@ -326,11 +369,7 @@ void R_Update(render_context *R, m_arena *FrameArena)
 	for(r_command *Command = R->CommandsFirst; Command != Null; Command = Command->Next)
 	{
 		if(0){}
-		else if(Command->Type == R_COMMAND_GLYPH)
-		{
-
-		}
-		else if(Command->Type == R_COMMAND_TRIANGLE)
+		else if(Command->Type == R_COMMAND_TRIANGLE || Command->Type == R_COMMAND_GLYPH)
 		{
 			gpu_vertex *GPUVertices = (gpu_vertex*)ArenaPushArrayZero(Scratch.Arena,
 															 	 	  gpu_vertex, Command->VerticesCount);
@@ -437,6 +476,76 @@ void R_Update(render_context *R, m_arena *FrameArena)
 					D3D11->DeviceContext,
 					D3D11->TrianglePixelShader,
 					Null, 0
+				);
+				D3D11->DeviceContext->lpVtbl->OMSetRenderTargets(
+					D3D11->DeviceContext, 
+					1, &RenderTargetView, D3D11->DepthStencilView
+				);
+				D3D11->DeviceContext->lpVtbl->OMSetDepthStencilState(
+					D3D11->DeviceContext,
+					D3D11->DepthStencilState, 
+					0
+				);
+				D3D11->DeviceContext->lpVtbl->OMSetBlendState(
+					D3D11->DeviceContext,
+					Null, Null,
+					0xFFFFFFFF
+				);
+				D3D11->DeviceContext->lpVtbl->Draw(D3D11->DeviceContext, TotalVertices, VertexOffset);
+				VertexOffset += TotalVertices;
+				TotalVertices = 0;
+			}
+			else if(Command->Type == R_COMMAND_GLYPH)
+			{
+				D3D11->DeviceContext->lpVtbl->IASetPrimitiveTopology(D3D11->DeviceContext, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+				D3D11->DeviceContext->lpVtbl->IASetInputLayout(D3D11->DeviceContext, D3D11->TriangleInputLayout);
+				u32 Stride = sizeof(gpu_vertex);
+				u32 Offset = 0;
+				D3D11->DeviceContext->lpVtbl->IASetVertexBuffers(D3D11->DeviceContext, 0, 1, &D3D11->VertexBuffers[ResourceIndex], &Stride, &Offset);
+				D3D11->DeviceContext->lpVtbl->VSSetShader(
+					D3D11->DeviceContext,
+					D3D11->GlyphVertexShader,
+					Null, 
+					0
+				);
+				D3D11->DeviceContext->lpVtbl->VSSetConstantBuffers(
+					D3D11->DeviceContext,
+					0, 1,
+					&D3D11->UniformBuffers[ResourceIndex]
+				);
+				D3D11->DeviceContext->lpVtbl->RSSetViewports(
+					D3D11->DeviceContext,
+					1, &viewport
+				);
+
+				D3D11_RECT ScissorRect =
+				{
+					Command->Scissor.X,
+					Command->Scissor.Y,
+					Command->Scissor.X + Command->Scissor.Z,
+					Command->Scissor.Y + Command->Scissor.W,
+				};
+				D3D11->DeviceContext->lpVtbl->RSSetScissorRects(
+					D3D11->DeviceContext,
+					1,
+					&ScissorRect
+				);
+				D3D11->DeviceContext->lpVtbl->RSSetState(
+					D3D11->DeviceContext,
+					D3D11->RasterizerState
+				);
+				D3D11->DeviceContext->lpVtbl->PSSetShader(
+					D3D11->DeviceContext,
+					D3D11->GlyphPixelShader,
+					Null, 0
+				);
+				D3D11->DeviceContext->lpVtbl->PSSetShaderResources(
+					D3D11->DeviceContext,
+					0, 1, &D3D11->FontAtlasTextureView
+				);
+				D3D11->DeviceContext->lpVtbl->PSSetSamplers(
+					D3D11->DeviceContext,
+					0, 1, &D3D11->SamplerState
 				);
 				D3D11->DeviceContext->lpVtbl->OMSetRenderTargets(
 					D3D11->DeviceContext, 

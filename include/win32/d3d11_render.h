@@ -28,6 +28,8 @@ typedef struct d3d11_context
 	ID3D11Texture2D          *FontAtlasTexture;
 	ID3D11ShaderResourceView *FontAtlasTextureView;
 
+	ID3D11BlendState      *BlendState;
+
 	ID3D11Texture2D       *DepthTexture;
 
 	ID3D11SamplerState    *SamplerState;

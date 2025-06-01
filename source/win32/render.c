@@ -251,27 +251,22 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 		&D3D11->SamplerState
 	);
 
-	// D3D11_TEXTURE2D_DESC texturedesc = {};
-	// texturedesc.Width              = 4096;
-	// texturedesc.Height             = 4096;
-	// texturedesc.MipLevels          = 1;
-	// texturedesc.ArraySize          = 1;
-	// texturedesc.Format             = DXGI_FORMAT_B8G8R8A8_UNORM_SRGB; // same as framebuffer(view)
-	// texturedesc.SampleDesc.Count   = 1;
-	// texturedesc.Usage              = D3D11_USAGE_IMMUTABLE; // because will never be updated
-	// texturedesc.BindFlags          = D3D11_BIND_SHADER_RESOURCE;
+	D3D11_BLEND_DESC BlendDescription = {0};
+	BlendDescription.RenderTarget[0].BlendEnable = TRUE;
+	BlendDescription.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
+	BlendDescription.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+	BlendDescription.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+	BlendDescription.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+	BlendDescription.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
+	BlendDescription.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+	BlendDescription.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
 
-	// D3D11_SUBRESOURCE_DATA textureSRD = {};
-	// textureSRD.pSysMem     = texturedata;
-	// textureSRD.SysMemPitch = TEXTURE_WIDTH * sizeof(UINT);
+	D3D11->Device->lpVtbl->CreateBlendState(
+		D3D11->Device,
+		&BlendDescription,
+		&D3D11->BlendState
+	);
 
-	// ID3D11Texture2D* texture;
-
-	// device->CreateTexture2D(&texturedesc, &textureSRD, &texture);
-
-	// ID3D11ShaderResourceView* textureSRV;
-
-	// device->CreateShaderResourceView(texture, nullptr, &textureSRV);
 }
 
 ID3D11Texture2D *ResizeTexture(render_context *R, ID3D11Texture2D *Texture, v2i Size)
@@ -559,7 +554,7 @@ void R_Update(render_context *R, m_arena *FrameArena)
 				);
 				D3D11->DeviceContext->lpVtbl->OMSetBlendState(
 					D3D11->DeviceContext,
-					Null, Null,
+					D3D11->BlendState, Null,
 					0xFFFFFFFF
 				);
 				D3D11->DeviceContext->lpVtbl->Draw(D3D11->DeviceContext, TotalVertices, VertexOffset);

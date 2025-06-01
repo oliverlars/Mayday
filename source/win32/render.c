@@ -380,6 +380,7 @@ void R_Update(render_context *R, m_arena *FrameArena)
 				v4f Colour = Command->Vertices[V].Colour;
 				GPUVertices[V].Position = P;
 				GPUVertices[V].Colour = Colour;
+				GPUVertices[V].UV = v4f(UV.X, UV.Y, 0, 1);
 			}
 
 			D3D11_MAPPED_SUBRESOURCE TriangleVertexBufferResource;

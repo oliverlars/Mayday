@@ -93,6 +93,7 @@ Entry(InputWaveInfo)
 		{
 			AppendSourceFilesInFolder(&Shared->Arena, &SourceFiles, Str8("source/win32"));
 			AppendSourceFilesInFolder(&Shared->Arena, &SourceFiles, Str8("external"));
+			AppendSourceFilesInFolder(&Shared->Arena, &SourceFiles, Str8("external/win32"));
 			Str8ListAppend(&Shared->Arena, &ExtraCompileFlags, Str8(" /D_WIN64 /experimental:c11atomics /std:c17 "));
 			Str8ListAppend(&Shared->Arena, &ExtraLinkFlags, Str8(" user32.lib gdi32.lib kernel32.lib opengl32.lib Shell32.lib Synchronization.lib dxguid.lib d3dcompiler.lib "));
 		}
@@ -100,6 +101,7 @@ Entry(InputWaveInfo)
 		{
 			AppendSourceFilesInFolder(&Shared->Arena, &SourceFiles, Str8("source/darwin"));
 			AppendSourceFilesInFolder(&Shared->Arena, &SourceFiles, Str8("external"));
+			AppendSourceFilesInFolder(&Shared->Arena, &SourceFiles, Str8("external/darwin"));
 			Str8ListAppend(&Shared->Arena, &ExtraLinkFlags, Str8("-framework Cocoa -framework MetalKit -framework QuartzCore -framework Metal -framework MetalPerformanceShaders"));
 		}
 

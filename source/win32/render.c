@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <d3d11.h>
+#include <dxgiformat.h>
 
 #include "memory.h"
 #include "misc.h"
@@ -82,7 +83,7 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 	for(int ResourceIndex = 0; ResourceIndex < FRAMES_IN_FLIGHT; ResourceIndex++)
 	{
 		D3D11_BUFFER_DESC UniformBufferDescription = {0};
-		UniformBufferDescription.ByteWidth         = MegaBytes(16);
+		UniformBufferDescription.ByteWidth         = sizeof(uniforms) + 15 & 0xfffffff0;
 		UniformBufferDescription.Usage             = D3D11_USAGE_DYNAMIC;
 		UniformBufferDescription.BindFlags         = D3D11_BIND_CONSTANT_BUFFER;
 		UniformBufferDescription.CPUAccessFlags    = D3D11_CPU_ACCESS_WRITE;
@@ -92,22 +93,12 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 											&D3D11->UniformBuffers[ResourceIndex]);
 
 		D3D11_BUFFER_DESC TriangleVertexBufferDescription = {0};
-		TriangleVertexBufferDescription.ByteWidth = MegaBytes(16);
+		TriangleVertexBufferDescription.ByteWidth = MegaBytes(64);
 		TriangleVertexBufferDescription.Usage     = D3D11_USAGE_DYNAMIC;
 		TriangleVertexBufferDescription.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 		TriangleVertexBufferDescription.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 		D3D11->Device->lpVtbl->CreateBuffer(D3D11->Device,
 											&TriangleVertexBufferDescription,
-											NULL,
-											&D3D11->VertexBuffers[ResourceIndex]);
-
-		D3D11_BUFFER_DESC GlyphVertexBufferDescription = {0};
-		GlyphVertexBufferDescription.ByteWidth = MegaBytes(16);
-		GlyphVertexBufferDescription.Usage     = D3D11_USAGE_DYNAMIC;
-		GlyphVertexBufferDescription.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-		GlyphVertexBufferDescription.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-		D3D11->Device->lpVtbl->CreateBuffer(D3D11->Device,
-											&GlyphVertexBufferDescription,
 											NULL,
 											&D3D11->VertexBuffers[ResourceIndex]);
 	}
@@ -269,31 +260,6 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 
 }
 
-ID3D11Texture2D *ResizeTexture(render_context *R, ID3D11Texture2D *Texture, v2i Size)
-{
-	d3d11_context *D3D11 = R->Backend;
-	ID3D11Texture2D *Result = Texture;
-	D3D11_TEXTURE2D_DESC TextureDescription;
-	Texture->lpVtbl->GetDesc(Texture, &TextureDescription);
-	if(Size.X != TextureDescription.Width || Size.Y != TextureDescription.Height || Texture == Null)
-	{
-		Texture->lpVtbl->Release(Texture);
-
-		TextureDescription.Width = Size.X;
-		TextureDescription.Height = Size.Y;
-
-
-		D3D11->Device->lpVtbl->CreateTexture2D(D3D11->Device,
-										&TextureDescription,
-										Null,
-										&Result);
-
-		LogInfo("Texture resized");
-	}
-
-	return Result;
-}
-
 void R_Update(render_context *R, m_arena *FrameArena)
 {
 	d3d11_context *D3D11 = R->Backend;
@@ -325,15 +291,42 @@ void R_Update(render_context *R, m_arena *FrameArena)
 											   &DepthTextureDescription,
 											   Null,
 											   &D3D11->DepthTexture);
-
 		D3D11->Device->lpVtbl->CreateDepthStencilView(
-			D3D11->Device,
-			(ID3D11Resource*)D3D11->DepthTexture,
-			Null, &D3D11->DepthStencilView);
+				D3D11->Device,
+				(ID3D11Resource*)D3D11->DepthTexture,
+				Null, &D3D11->DepthStencilView
+			);
 	}
 	else
 	{
-		ResizeTexture(R, D3D11->DepthTexture, Dimensions);
+		d3d11_context *D3D11 = R->Backend;
+		D3D11_TEXTURE2D_DESC TextureDescription = {0};
+
+		D3D11->DepthTexture->lpVtbl->GetDesc(D3D11->DepthTexture, &TextureDescription);
+
+		if(FrameBufferDescription.Width != TextureDescription.Width  ||
+		   FrameBufferDescription.Height != TextureDescription.Height)
+		{
+
+			D3D11->DepthTexture->lpVtbl->Release(D3D11->DepthTexture);
+			D3D11->DepthStencilView->lpVtbl->Release(D3D11->DepthStencilView);
+
+			TextureDescription.Width = FrameBufferDescription.Width;
+			TextureDescription.Height = FrameBufferDescription.Height;
+			
+			D3D11->Device->lpVtbl->CreateTexture2D(
+				D3D11->Device,
+				&TextureDescription,
+				Null,
+				&D3D11->DepthTexture
+			);
+
+			D3D11->Device->lpVtbl->CreateDepthStencilView(
+				D3D11->Device,
+				(ID3D11Resource*)D3D11->DepthTexture,
+				Null, &D3D11->DepthStencilView
+			);
+		}
 	}
 
 	f32 ClearColour[4] = {1.0, 0.0, 0.0, 1.0};
@@ -360,7 +353,7 @@ void R_Update(render_context *R, m_arena *FrameArena)
 
 	int ResourceIndex = R->Frame % FRAMES_IN_FLIGHT;
 
-	int UniformCount = 0;
+	D3D11_MAP VertexWriteMode = D3D11_MAP_WRITE_DISCARD;
 	for(r_command *Command = R->CommandsFirst; Command != Null; Command = Command->Next)
 	{
 		if(0){}
@@ -384,7 +377,7 @@ void R_Update(render_context *R, m_arena *FrameArena)
 				D3D11->DeviceContext,
 				(ID3D11Resource*)D3D11->VertexBuffers[ResourceIndex],
 				0,
-				D3D11_MAP_WRITE_DISCARD, 0, &TriangleVertexBufferResource
+				VertexWriteMode, 0, &TriangleVertexBufferResource
 			);
 			gpu_vertex* Vertices = (gpu_vertex*)TriangleVertexBufferResource.pData;
 
@@ -398,12 +391,13 @@ void R_Update(render_context *R, m_arena *FrameArena)
 				(ID3D11Resource*)D3D11->VertexBuffers[ResourceIndex],
 				0
 			);
+			VertexWriteMode = D3D11_MAP_WRITE_NO_OVERWRITE;
 
 			TotalVertices += Command->VerticesCount;
 		}
-		else if(Command->Type == R_COMMAND_LINES)
+		else
 		{
-
+			continue;
 		}
 
 		if((Command->Next && Command->Next->Type != Command->Type) ||
@@ -417,7 +411,7 @@ void R_Update(render_context *R, m_arena *FrameArena)
 				0,
 				D3D11_MAP_WRITE_DISCARD,
 				0,
-				&UniformBufferResourse); // update constant buffer every frame
+				&UniformBufferResourse);
 			{
 				uniforms* Uniforms = (uniforms*)UniformBufferResourse.pData;
 
@@ -434,7 +428,7 @@ void R_Update(render_context *R, m_arena *FrameArena)
 				D3D11->DeviceContext->lpVtbl->IASetPrimitiveTopology(D3D11->DeviceContext, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 				D3D11->DeviceContext->lpVtbl->IASetInputLayout(D3D11->DeviceContext, D3D11->TriangleInputLayout);
 				u32 Stride = sizeof(gpu_vertex);
-				u32 Offset = 0;
+				u32 Offset = VertexOffset*sizeof(gpu_vertex);
 				D3D11->DeviceContext->lpVtbl->IASetVertexBuffers(D3D11->DeviceContext, 0, 1, &D3D11->VertexBuffers[ResourceIndex], &Stride, &Offset);
 				D3D11->DeviceContext->lpVtbl->VSSetShader(
 					D3D11->DeviceContext,
@@ -484,19 +478,19 @@ void R_Update(render_context *R, m_arena *FrameArena)
 				);
 				D3D11->DeviceContext->lpVtbl->OMSetBlendState(
 					D3D11->DeviceContext,
-					Null, Null,
+					D3D11->BlendState, Null,
 					0xFFFFFFFF
 				);
-				D3D11->DeviceContext->lpVtbl->Draw(D3D11->DeviceContext, TotalVertices, VertexOffset);
+				D3D11->DeviceContext->lpVtbl->Draw(D3D11->DeviceContext, TotalVertices, 0);
 				VertexOffset += TotalVertices;
 				TotalVertices = 0;
 			}
 			else if(Command->Type == R_COMMAND_GLYPH)
 			{
 				D3D11->DeviceContext->lpVtbl->IASetPrimitiveTopology(D3D11->DeviceContext, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-				D3D11->DeviceContext->lpVtbl->IASetInputLayout(D3D11->DeviceContext, D3D11->TriangleInputLayout);
+				D3D11->DeviceContext->lpVtbl->IASetInputLayout(D3D11->DeviceContext, D3D11->GlyphInputLayout);
 				u32 Stride = sizeof(gpu_vertex);
-				u32 Offset = 0;
+				u32 Offset = VertexOffset*sizeof(gpu_vertex);
 				D3D11->DeviceContext->lpVtbl->IASetVertexBuffers(D3D11->DeviceContext, 0, 1, &D3D11->VertexBuffers[ResourceIndex], &Stride, &Offset);
 				D3D11->DeviceContext->lpVtbl->VSSetShader(
 					D3D11->DeviceContext,
@@ -557,16 +551,15 @@ void R_Update(render_context *R, m_arena *FrameArena)
 					D3D11->BlendState, Null,
 					0xFFFFFFFF
 				);
-				D3D11->DeviceContext->lpVtbl->Draw(D3D11->DeviceContext, TotalVertices, VertexOffset);
+				D3D11->DeviceContext->lpVtbl->Draw(D3D11->DeviceContext, TotalVertices, 0);
 				VertexOffset += TotalVertices;
 				TotalVertices = 0;
 			}
-
-			UniformCount += 1;
 		}
 	}
 
-	SwapChain->lpVtbl->Present(SwapChain, 1, 0);
+	// I don't need to call this lol
+	//SwapChain->lpVtbl->Present(SwapChain, 1, 0);
 
 	R->CommandsFirst = Null;
 	R->CommandsLast = Null;

@@ -180,7 +180,7 @@ b32 UI_QuadClicked(ui_context *UI)
 
 str8 UI_DisplayString(m_arena *Arena, str8 String)
 {
-	str8 Result = {0};
+	str8 Result = String;
 	for(int I = 1; I < String.Size; I++)
 	{
 		if(String.Bytes[I] == '#' &&

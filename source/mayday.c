@@ -99,14 +99,30 @@ mayday_context;
 #define SOKOL_LOG_IMPL
 #include "sokol_log.h"
 
-void OS_Update(void *Data)
+void OS_Update_(void *Data)
 {
 	mayday_context *M = Data;
+	UI_Begin(M->UI);
 	R_PushScissor(M->Render, v4i(0, 0, sapp_width(), sapp_height()));
 	R_PushTransform(M->Render, Orthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
-	D_DrawQuad(M->Draw, M->FrameArena, v2f(100, 100), 100, 200, v4f(0, 1, 0, 1));
-	D_DrawQuad(M->Draw, M->FrameArena, v2f(200, 200), 100, 200, v4f(0, 1, 0, 1));
-	D_DrawStr8(M->Draw, M->FrameArena, M->CodeFont, v2f(300, 300), v4f(1, 1, 1, 1), 64, Str8("Rungalo Bungalo"));
+	//D_DrawQuad(M->Draw, M->FrameArena, v2f(100, 100), 100, 200, v4f(0, 1, 0, 1));
+	ui_signal Button = UI_TextButton(
+		M->UI, M->Draw, M->FrameArena,
+		Str8("asdfasdfasdf"), 60, 
+		v2f(800, 200), v4f(1, 1, 1.0, 1)
+	);
+	// D_DrawQuad(M->Draw, M->FrameArena, v2f(200, 200), 100, 200, v4f(0, 1, 0, 1));
+	// D_DrawStr8(M->Draw, M->FrameArena, M->CodeFont, v2f(300, 300), v4f(1, 1, 1, 1), 64, Str8("Rungalo Bungalo"));
+	
+	m44f Persp = Perspective(sapp_widthf()/sapp_heightf(), 35, 0.01, 10000.0);
+	m44f View = M44FLookAt(v3f(0, 0, 5), v3f(0, 0, 0), v3f(0, 1, 0));
+	R_PushTransform(M->Render, Mul(Persp, View));
+	D_DrawCubePoints(
+		M->Draw, M->FrameArena, v3f(0, 0, -10),
+		v3f(1, 1, 1), v4f(1, 1, 1, 1)
+	);
+
+	R_PopTransform(M->Render);
 	R_PopTransform(M->Render);
 	R_PopScissor(M->Render);
 
@@ -121,7 +137,7 @@ void OS_Update(void *Data)
 	M->UI->EventFirst = Null;
 }
 
-void OS_Update_Old(void *Data)
+void OS_Update(void *Data)
 {
 	mayday_context *M = Data;
 

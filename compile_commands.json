@@ -1,97 +1,92 @@
 [
     {
-        "directory": "/Users/olivercruickshank/Mayday",
-        "command": "clang   -c source/log.c -g -O0 -obuild/source/log.o -Iinclude/ -Iexternal/ -Iembed/  ",
-        "file": "source/log.c"
-    },
-    {
-        "directory": "/Users/olivercruickshank/Mayday",
-        "command": "clang   -c source/maths.c -g -O0 -obuild/source/maths.o -Iinclude/ -Iexternal/ -Iembed/  ",
-        "file": "source/maths.c"
-    },
-    {
-        "directory": "/Users/olivercruickshank/Mayday",
-        "command": "clang   -c source/strings.c -g -O0 -obuild/source/strings.o -Iinclude/ -Iexternal/ -Iembed/  ",
-        "file": "source/strings.c"
-    },
-    {
-        "directory": "/Users/olivercruickshank/Mayday",
-        "command": "clang   -c source/render_common.c -g -O0 -obuild/source/render_common.o -Iinclude/ -Iexternal/ -Iembed/  ",
-        "file": "source/render_common.c"
-    },
-    {
-        "directory": "/Users/olivercruickshank/Mayday",
-        "command": "clang   -c source/draw.c -g -O0 -obuild/source/draw.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "directory": "C:/Mayday",
+        "command": "cl.exe /c /TC  /D_WIN64 /experimental:c11atomics /std:c17  /nologo /FS /EHsc source/draw.c /Zi /Od /Fobuild/source/draw.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/draw.c"
     },
     {
-        "directory": "/Users/olivercruickshank/Mayday",
-        "command": "clang   -c source/edit.c -g -O0 -obuild/source/edit.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "directory": "C:/Mayday",
+        "command": "cl.exe /c /TC  /D_WIN64 /experimental:c11atomics /std:c17  /nologo /FS /EHsc source/edit.c /Zi /Od /Fobuild/source/edit.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/edit.c"
     },
     {
-        "directory": "/Users/olivercruickshank/Mayday",
-        "command": "clang   -c source/mayday.c -g -O0 -obuild/source/mayday.o -Iinclude/ -Iexternal/ -Iembed/  ",
-        "file": "source/mayday.c"
-    },
-    {
-        "directory": "/Users/olivercruickshank/Mayday",
-        "command": "clang   -c source/fdg.c -g -O0 -obuild/source/fdg.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "directory": "C:/Mayday",
+        "command": "cl.exe /c /TC  /D_WIN64 /experimental:c11atomics /std:c17  /nologo /FS /EHsc source/fdg.c /Zi /Od /Fobuild/source/fdg.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/fdg.c"
     },
     {
-        "directory": "/Users/olivercruickshank/Mayday",
-        "command": "clang   -c source/ui/ui_core.c -g -O0 -obuild/source/ui/ui_core.o -Iinclude/ -Iexternal/ -Iembed/  ",
-        "file": "source/ui/ui_core.c"
+        "directory": "C:/Mayday",
+        "command": "cl.exe /c /TC  /D_WIN64 /experimental:c11atomics /std:c17  /nologo /FS /EHsc source/log.c /Zi /Od /Fobuild/source/log.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "file": "source/log.c"
     },
     {
-        "directory": "/Users/olivercruickshank/Mayday",
-        "command": "clang   -c source/ui/ui_tree.c -g -O0 -obuild/source/ui/ui_tree.o -Iinclude/ -Iexternal/ -Iembed/  ",
-        "file": "source/ui/ui_tree.c"
+        "directory": "C:/Mayday",
+        "command": "cl.exe /c /TC  /D_WIN64 /experimental:c11atomics /std:c17  /nologo /FS /EHsc source/maths.c /Zi /Od /Fobuild/source/maths.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "file": "source/maths.c"
     },
     {
-        "directory": "/Users/olivercruickshank/Mayday",
-        "command": "clang   -c source/ui/ui_orbit.c -g -O0 -obuild/source/ui/ui_orbit.o -Iinclude/ -Iexternal/ -Iembed/  ",
-        "file": "source/ui/ui_orbit.c"
+        "directory": "C:/Mayday",
+        "command": "cl.exe /c /TC  /D_WIN64 /experimental:c11atomics /std:c17  /nologo /FS /EHsc source/mayday.c /Zi /Od /Fobuild/source/mayday.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "file": "source/mayday.c"
     },
     {
-        "directory": "/Users/olivercruickshank/Mayday",
-        "command": "clang   -c source/ui/ui_buffer.c -g -O0 -obuild/source/ui/ui_buffer.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "directory": "C:/Mayday",
+        "command": "cl.exe /c /TC  /D_WIN64 /experimental:c11atomics /std:c17  /nologo /FS /EHsc source/render_common.c /Zi /Od /Fobuild/source/render_common.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "file": "source/render_common.c"
+    },
+    {
+        "directory": "C:/Mayday",
+        "command": "cl.exe /c /TC  /D_WIN64 /experimental:c11atomics /std:c17  /nologo /FS /EHsc source/strings.c /Zi /Od /Fobuild/source/strings.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "file": "source/strings.c"
+    },
+    {
+        "directory": "C:/Mayday",
+        "command": "cl.exe /c /TC  /D_WIN64 /experimental:c11atomics /std:c17  /nologo /FS /EHsc source/ui/ui_buffer.c /Zi /Od /Fobuild/source/ui/ui_buffer.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/ui/ui_buffer.c"
     },
     {
-        "directory": "/Users/olivercruickshank/Mayday",
-        "command": "clang  -ObjC -fobjc-arc -c source/darwin/menu_bar.m -g -O0 -obuild/source/darwin/menu_bar.o -Iinclude/ -Iexternal/ -Iembed/  ",
-        "file": "source/darwin/menu_bar.m"
+        "directory": "C:/Mayday",
+        "command": "cl.exe /c /TC  /D_WIN64 /experimental:c11atomics /std:c17  /nologo /FS /EHsc source/ui/ui_core.c /Zi /Od /Fobuild/source/ui/ui_core.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "file": "source/ui/ui_core.c"
     },
     {
-        "directory": "/Users/olivercruickshank/Mayday",
-        "command": "clang   -c source/darwin/memory.c -g -O0 -obuild/source/darwin/memory.o -Iinclude/ -Iexternal/ -Iembed/  ",
-        "file": "source/darwin/memory.c"
+        "directory": "C:/Mayday",
+        "command": "cl.exe /c /TC  /D_WIN64 /experimental:c11atomics /std:c17  /nologo /FS /EHsc source/ui/ui_orbit.c /Zi /Od /Fobuild/source/ui/ui_orbit.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "file": "source/ui/ui_orbit.c"
     },
     {
-        "directory": "/Users/olivercruickshank/Mayday",
-        "command": "clang   -c source/darwin/wave.c -g -O0 -obuild/source/darwin/wave.o -Iinclude/ -Iexternal/ -Iembed/  ",
-        "file": "source/darwin/wave.c"
+        "directory": "C:/Mayday",
+        "command": "cl.exe /c /TC  /D_WIN64 /experimental:c11atomics /std:c17  /nologo /FS /EHsc source/ui/ui_tree.c /Zi /Od /Fobuild/source/ui/ui_tree.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "file": "source/ui/ui_tree.c"
     },
     {
-        "directory": "/Users/olivercruickshank/Mayday",
-        "command": "clang  -ObjC -fobjc-arc -c source/darwin/render.m -g -O0 -obuild/source/darwin/render.o -Iinclude/ -Iexternal/ -Iembed/  ",
-        "file": "source/darwin/render.m"
+        "directory": "C:/Mayday",
+        "command": "cl.exe /c /TC  /D_WIN64 /experimental:c11atomics /std:c17  /nologo /FS /EHsc source/win32/memory.c /Zi /Od /Fobuild/source/win32/memory.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "file": "source/win32/memory.c"
     },
     {
-        "directory": "/Users/olivercruickshank/Mayday",
-        "command": "clang   -c source/darwin/os.c -g -O0 -obuild/source/darwin/os.o -Iinclude/ -Iexternal/ -Iembed/  ",
-        "file": "source/darwin/os.c"
+        "directory": "C:/Mayday",
+        "command": "cl.exe /c /TC  /D_WIN64 /experimental:c11atomics /std:c17  /nologo /FS /EHsc source/win32/os.c /Zi /Od /Fobuild/source/win32/os.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "file": "source/win32/os.c"
     },
     {
-        "directory": "/Users/olivercruickshank/Mayday",
-        "command": "clang   -c external/stb_truetype.c -g -O0 -obuild/external/stb_truetype.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "directory": "C:/Mayday",
+        "command": "cl.exe /c /TC  /D_WIN64 /experimental:c11atomics /std:c17  /nologo /FS /EHsc source/win32/render.c /Zi /Od /Fobuild/source/win32/render.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "file": "source/win32/render.c"
+    },
+    {
+        "directory": "C:/Mayday",
+        "command": "cl.exe /c /TC  /D_WIN64 /experimental:c11atomics /std:c17  /nologo /FS /EHsc source/win32/wave.c /Zi /Od /Fobuild/source/win32/wave.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "file": "source/win32/wave.c"
+    },
+    {
+        "directory": "C:/Mayday",
+        "command": "cl.exe /c /TC  /D_WIN64 /experimental:c11atomics /std:c17  /nologo /FS /EHsc external/stb_truetype.c /Zi /Od /Fobuild/external/stb_truetype.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "external/stb_truetype.c"
     },
     {
-        "directory": "/Users/olivercruickshank/Mayday",
-        "command": "clang  -ObjC -fobjc-arc -c external/darwin/sokol_app.m -g -O0 -obuild/external/darwin/sokol_app.o -Iinclude/ -Iexternal/ -Iembed/  ",
-        "file": "external/darwin/sokol_app.m"
+        "directory": "C:/Mayday",
+        "command": "cl.exe /c /TC  /D_WIN64 /experimental:c11atomics /std:c17  /nologo /FS /EHsc external/win32/sokol_app.c /Zi /Od /Fobuild/external/win32/sokol_app.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "file": "external/win32/sokol_app.c"
     }
 ]

@@ -107,12 +107,20 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 	// TRIANGLE SHADER
 	{
 		ID3DBlob *TriangleVertexShaderObject;
-		D3DCompile(G_TriangleShader, sizeof(G_TriangleShader),
+		ID3DBlob *Error;
+		HRESULT Compiled;
+		Compiled = D3DCompile(G_TriangleShader, sizeof(G_TriangleShader),
 				Null, Null, Null,
 				"VertexMain",
 				"vs_5_0",
 				0, 0,
-				&TriangleVertexShaderObject, Null);
+				&TriangleVertexShaderObject, &Error);
+		if(FAILED(Compiled))
+		{
+			char *ErrorMessage = (char*)(Error->lpVtbl->GetBufferPointer(Error));
+			LogError("[VERTEX] ?cstr", ErrorMessage);
+			Error->lpVtbl->Release(Error);
+		}
 		
 		D3D11->Device->lpVtbl->CreateVertexShader(
 			D3D11->Device,
@@ -138,12 +146,18 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 			&D3D11->TriangleInputLayout);
 
 		ID3DBlob *TrianglePixelShaderObject;
-		D3DCompile(G_TriangleShader, sizeof(G_TriangleShader),
+		Compiled = D3DCompile(G_TriangleShader, sizeof(G_TriangleShader),
 				Null, Null, Null,
 				"PixelMain",
 				"ps_5_0",
 				0, 0,
-				&TrianglePixelShaderObject, Null);
+				&TrianglePixelShaderObject, &Error);
+		if(FAILED(Compiled))
+		{
+			char *ErrorMessage = (char*)(Error->lpVtbl->GetBufferPointer(Error));
+			LogError("[PIXEL] ?cstr", ErrorMessage);
+			Error->lpVtbl->Release(Error);
+		}
 
 		D3D11->Device->lpVtbl->CreatePixelShader(
 			D3D11->Device,
@@ -204,7 +218,7 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 		);
 	}
 
-	D3D11_RASTERIZER_DESC RasterizerStateDescription = {};
+	D3D11_RASTERIZER_DESC RasterizerStateDescription = {0};
 	RasterizerStateDescription.FillMode = D3D11_FILL_SOLID;
 	// HACK(Oliver): Disabling culling is only because I
 	// fucked up the winding order...
@@ -217,7 +231,7 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 		&D3D11->RasterizerState
 	);
 
-	D3D11_DEPTH_STENCIL_DESC DepthStencilDescription = {};
+	D3D11_DEPTH_STENCIL_DESC DepthStencilDescription = {0};
     DepthStencilDescription.DepthEnable    = True;
     DepthStencilDescription.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
     DepthStencilDescription.DepthFunc      = D3D11_COMPARISON_LESS;
@@ -228,7 +242,7 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 		&D3D11->DepthStencilState
 	);
 
-	D3D11_SAMPLER_DESC SamplerDescription = {};
+	D3D11_SAMPLER_DESC SamplerDescription = {0};
 	SamplerDescription.Filter         = D3D11_FILTER_MIN_MAG_MIP_POINT;
 	SamplerDescription.AddressU       = D3D11_TEXTURE_ADDRESS_WRAP;
 	SamplerDescription.AddressV       = D3D11_TEXTURE_ADDRESS_WRAP;
@@ -247,8 +261,8 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 	BlendDescription.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
 	BlendDescription.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
 	BlendDescription.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
-	BlendDescription.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
-	BlendDescription.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
+	BlendDescription.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_SRC_ALPHA;
+	BlendDescription.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_INV_SRC_ALPHA;
 	BlendDescription.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
 	BlendDescription.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
 
@@ -268,7 +282,7 @@ void R_Update(render_context *R, m_arena *FrameArena)
 
 	ID3D11Texture2D *FrameBuffer;
 	SwapChain->lpVtbl->GetBuffer(SwapChain, 0, &IID_ID3D11Texture2D, (void**)&FrameBuffer);
-	D3D11_TEXTURE2D_DESC FrameBufferDescription;	
+	D3D11_TEXTURE2D_DESC FrameBufferDescription = {0};	
 	FrameBuffer->lpVtbl->GetDesc(FrameBuffer, &FrameBufferDescription);
 	v2i Dimensions = v2i(FrameBufferDescription.Width, FrameBufferDescription.Height);
 
@@ -329,7 +343,7 @@ void R_Update(render_context *R, m_arena *FrameArena)
 		}
 	}
 
-	f32 ClearColour[4] = {1.0, 0.0, 0.0, 1.0};
+	f32 ClearColour[4] = {0.0, 0.0, 0.0, 1.0};
 	ID3D11RenderTargetView *RenderTargetView = (ID3D11RenderTargetView*)sapp_d3d11_get_render_view();
 	D3D11->DeviceContext->lpVtbl->ClearRenderTargetView(
 		D3D11->DeviceContext,

@@ -131,7 +131,7 @@ OS_DirectoryTreeFromPathHelper(m_arena *Arena,
 							   os_directory_entry *Entries)
 {
 	m_scratch_arena Scratch = ScratchBegin(&Arena, 1);
-	str8 Pattern = Str8PushF(Arena, "%S\\*", Path);
+	str8 Pattern = Str8PushF(Arena, "?S\\*", Path);
 
 	char *PatternCStr = CStrFromStr8(Scratch.Arena, Pattern);
 	WIN32_FIND_DATAA FindData;
@@ -145,7 +145,7 @@ OS_DirectoryTreeFromPathHelper(m_arena *Arena,
 				(Name[1] != '\0' && !(Name[1]=='.' && Name[2]=='\0')))
 			{
 				os_directory_entry Entry = {0};
-				str8 FullPath = Str8PushF(Arena, "%S\\%s", Path, Name);
+				str8 FullPath = Str8PushF(Arena, "?S\\%s", Path, Name);
 
 				if(FindData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
 					Entry.Type        = OS_DIR_ENTRY_FOLDER;

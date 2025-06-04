@@ -200,8 +200,6 @@ void OS_Update(void *Data)
 
 	R_PushTransform(M->Render, Transform);
 
-	D_DrawQuad(M->Draw, M->FrameArena, v2f(0, 0), 100, 200, v4f(0, 1, 0, 1));
-
 
 	if(UI_KeyDown(M->UI, SAPP_KEYCODE_EQUAL, SAPP_MODIFIER_SUPER))
 	{
@@ -212,13 +210,14 @@ void OS_Update(void *Data)
 		M->Buffer.HeightInPixels -= 5;
 	}
 
-	if(M->UI->View == UI_VIEW_EDIT)
+	if(M->UI->View == UI_VIEW_EDIT || true)
 	{
 		u64 Start = OS_TimeStampNow();
 		R_PushTransform(M->Render, Orthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
-		D_DrawQuad(M->Draw, M->FrameArena, v2f(0, 0),  WindowWidth, WindowHeight, v4f(0.008, 0.00, 0, 1.0));
-		D_DrawGrid2D(M->Draw, M->FrameArena, M->Buffer.HeightInPixels, 5*sapp_widthf() / M->Buffer.HeightInPixels);
-
+		//D_DrawQuad(M->Draw, M->FrameArena, v2f(0, 0),  WindowWidth, WindowHeight, v4f(0.008, 0.00, 0, 1.0));
+		//D_DrawGrid2D(M->Draw, M->FrameArena, M->Buffer.HeightInPixels, 5*sapp_widthf() / M->Buffer.HeightInPixels);
+		D_DrawStr8(M->Draw, M->FrameArena, M->CodeFont, v2f(300, 300), v4f(1, 1, 1, 1), 64, Str8("Rungalo Bungalo"));
+	
 		UI_Buffer(M->UI, M->Draw, M->Edit,
 			   M->FrameArena, M->CodeFont,
 			   M->ActiveFilePath, &M->Buffer,
@@ -338,7 +337,7 @@ void OS_Update(void *Data)
 			f32 CentreX = sapp_widthf()/2.0 - UI_GetTextWidth(M->CodeFont, M->Draw, Str8("MAYDAY!"), 600)/2.0;
 			D_DrawStr8(M->Draw, M->FrameArena, M->LogoFont,
 					   v2f(50, 50),
-					   v4f(0.1, 0.00, 0.0, 0.1), 600, Str8("MAYDAY!"));
+					   v4f(1.0, 0.00, 0.0, 0.1), 600, Str8("MAYDAY!"));
 			ui_textbox_signal SearchSignal = UI_TextBox(M->FrameArena, M->LogoFont, v2f(sapp_widthf()/2.0 - 500, sapp_heightf() - 300), 1000,
 														M->UI, M->Draw, M->Edit, 60, Str8("FolderTextBox"), &M->TextBoxBuffer);
 			if(SearchSignal.Submitted)
@@ -539,12 +538,17 @@ void OS_Initialise(void *Data)
 
 	UI_SetActive(M->UI, UI_IDFromString(Str8("FolderTextBox")));
 
+#if defined(OS_DARWIN)
 	str8 File = OS_LoadEntireFileIntoMemory(M->PermanentArena, Str8("/users/olivercruickshank/nomoretext/recent.txt"));
 
 	M->RecentlyLoadedFolders = Str8Split(M->PermanentArena, File, '\n');
 
-#if defined(OS_DARWIN)
-		DarwinMenuBar();
+
+	DarwinMenuBar();
+#elif defined(OS_WINDOWS)
+	str8 File = OS_LoadEntireFileIntoMemory(M->PermanentArena, Str8("/users/olivercruickshank/nomoretext/recent.txt"));
+
+	M->RecentlyLoadedFolders = Str8Split(M->PermanentArena, File, '\n');
 #endif
 }
 
@@ -636,7 +640,7 @@ int main()
 
 	// DispatchInitialise(&M.Shared, 15);
 
-	M.Folder = Str8("");
+	//M.Folder = Str8("C:\\mayday\\");
 
 	sapp_desc *SAPPDesc = ArenaPushArrayZero(Arena, sapp_desc, 1);
 	SAPPDesc->window_title = "assdfasdfsd";

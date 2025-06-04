@@ -232,7 +232,7 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 	);
 
 	D3D11_DEPTH_STENCIL_DESC DepthStencilDescription = {0};
-    DepthStencilDescription.DepthEnable    = True;
+    DepthStencilDescription.DepthEnable    = False;
     DepthStencilDescription.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
     DepthStencilDescription.DepthFunc      = D3D11_COMPARISON_LESS;
 

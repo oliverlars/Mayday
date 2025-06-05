@@ -231,17 +231,6 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 		&D3D11->RasterizerState
 	);
 
-	D3D11_DEPTH_STENCIL_DESC DepthStencilDescription = {0};
-    DepthStencilDescription.DepthEnable    = False;
-    DepthStencilDescription.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
-    DepthStencilDescription.DepthFunc      = D3D11_COMPARISON_LESS;
-
-    D3D11->Device->lpVtbl->CreateDepthStencilState(
-		D3D11->Device,
-		&DepthStencilDescription,
-		&D3D11->DepthStencilState
-	);
-
 	D3D11_SAMPLER_DESC SamplerDescription = {0};
 	SamplerDescription.Filter         = D3D11_FILTER_MIN_MAG_MIP_POINT;
 	SamplerDescription.AddressU       = D3D11_TEXTURE_ADDRESS_WRAP;
@@ -278,14 +267,17 @@ void R_Update(render_context *R, m_arena *FrameArena)
 {
 	d3d11_context *D3D11 = R->Backend;
 	IDXGISwapChain *SwapChain = (IDXGISwapChain*)sapp_d3d11_get_swap_chain();
+	ID3D11RenderTargetView *RTV = (ID3D11RenderTargetView*)sapp_d3d11_get_render_view();
+	ID3D11DepthStencilView *DSV = (ID3D11DepthStencilView*)sapp_d3d11_get_depth_stencil_view();
+
 
 
 	ID3D11Texture2D *FrameBuffer;
+
 	SwapChain->lpVtbl->GetBuffer(SwapChain, 0, &IID_ID3D11Texture2D, (void**)&FrameBuffer);
 	D3D11_TEXTURE2D_DESC FrameBufferDescription = {0};	
 	FrameBuffer->lpVtbl->GetDesc(FrameBuffer, &FrameBufferDescription);
 	v2i Dimensions = v2i(FrameBufferDescription.Width, FrameBufferDescription.Height);
-	LogInfo("DIM: ?u32 ?u32", Dimensions.X, Dimensions.Y);
 	D3D11_VIEWPORT viewport =
 	{
 		0.0f, 0.0f, 
@@ -293,70 +285,23 @@ void R_Update(render_context *R, m_arena *FrameArena)
 		(f32)FrameBufferDescription.Height,
 		0.0f, 1.0f
 	};
-	
-
-	if(D3D11->DepthTexture == Null)
-	{
-		D3D11_TEXTURE2D_DESC DepthTextureDescription = FrameBufferDescription;
-		DepthTextureDescription.Format    = DXGI_FORMAT_D24_UNORM_S8_UINT;
-		DepthTextureDescription.BindFlags = D3D11_BIND_DEPTH_STENCIL;
-
-		D3D11->Device->lpVtbl->CreateTexture2D(D3D11->Device,
-											   &DepthTextureDescription,
-											   Null,
-											   &D3D11->DepthTexture);
-		D3D11->Device->lpVtbl->CreateDepthStencilView(
-				D3D11->Device,
-				(ID3D11Resource*)D3D11->DepthTexture,
-				Null, &D3D11->DepthStencilView
-			);
-	}
-	else
-	{
-		d3d11_context *D3D11 = R->Backend;
-		D3D11_TEXTURE2D_DESC TextureDescription = {0};
-
-		D3D11->DepthTexture->lpVtbl->GetDesc(D3D11->DepthTexture, &TextureDescription);
-
-		if(FrameBufferDescription.Width != TextureDescription.Width  ||
-		   FrameBufferDescription.Height != TextureDescription.Height)
-		{
-
-			D3D11->DepthTexture->lpVtbl->Release(D3D11->DepthTexture);
-			D3D11->DepthStencilView->lpVtbl->Release(D3D11->DepthStencilView);
-
-			TextureDescription.Width = FrameBufferDescription.Width;
-			TextureDescription.Height = FrameBufferDescription.Height;
-			
-			D3D11->Device->lpVtbl->CreateTexture2D(
-				D3D11->Device,
-				&TextureDescription,
-				Null,
-				&D3D11->DepthTexture
-			);
-
-			D3D11->Device->lpVtbl->CreateDepthStencilView(
-				D3D11->Device,
-				(ID3D11Resource*)D3D11->DepthTexture,
-				Null, &D3D11->DepthStencilView
-			);
-		}
-	}
 
 	f32 ClearColour[4] = {0.0, 0.0, 0.0, 1.0};
-	ID3D11RenderTargetView *RenderTargetView = (ID3D11RenderTargetView*)sapp_d3d11_get_render_view();
 	D3D11->DeviceContext->lpVtbl->ClearRenderTargetView(
 		D3D11->DeviceContext,
-		RenderTargetView,
+		RTV,
 		ClearColour
 	);
 
 	D3D11->DeviceContext->lpVtbl->ClearDepthStencilView(
 		D3D11->DeviceContext,
-		D3D11->DepthStencilView,
+		DSV,
 		D3D11_CLEAR_DEPTH,
 		1.0f, 0
 	);
+
+	// NOTE(Olive): If we don't do this we can't resize 
+	FrameBuffer->lpVtbl->Release(FrameBuffer);  
 
 
 	m_scratch_arena Scratch = ScratchBegin(0, 0);
@@ -483,7 +428,7 @@ void R_Update(render_context *R, m_arena *FrameArena)
 				);
 				D3D11->DeviceContext->lpVtbl->OMSetRenderTargets(
 					D3D11->DeviceContext, 
-					1, &RenderTargetView, D3D11->DepthStencilView
+					1, &RTV, Null
 				);
 				D3D11->DeviceContext->lpVtbl->OMSetDepthStencilState(
 					D3D11->DeviceContext,
@@ -553,7 +498,7 @@ void R_Update(render_context *R, m_arena *FrameArena)
 				);
 				D3D11->DeviceContext->lpVtbl->OMSetRenderTargets(
 					D3D11->DeviceContext, 
-					1, &RenderTargetView, D3D11->DepthStencilView
+					1, &RTV, Null
 				);
 				D3D11->DeviceContext->lpVtbl->OMSetDepthStencilState(
 					D3D11->DeviceContext,

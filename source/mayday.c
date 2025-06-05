@@ -623,7 +623,7 @@ int main()
 	cursor Cursor = {0};
 	M.Edit->Cursors = &Cursor;
 
-	M.Window = OS_MakeWindow(Str8("Mayday!"), 3024/2, 1964/2);
+	M.Window = OS_MakeWindow(Str8("Mayday!"), 1280, 720);
 
 	M.CodeFont = D_LoadFontFromTTF(M.Draw, G_BerkeleyMonoRegular);
 	M.LogoFont = D_LoadFontFromTTF(M.Draw, G_BasementGrotesque);
@@ -650,7 +650,11 @@ int main()
 	SAPPDesc->width = M.Window.Width;
 	SAPPDesc->height = M.Window.Height;
 	SAPPDesc->user_data = &M;
+#if defined(OS_WINDOWS)
+	SAPPDesc->high_dpi = true;
+#elif defined(OS_MACOS)
 	SAPPDesc->high_dpi = false;
+#endif
 	SAPPDesc->logger.func = slog_func;
 	SAPPDesc->cleanup_userdata_cb = OS_Exit;
 	sapp_run(SAPPDesc);

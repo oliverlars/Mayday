@@ -285,7 +285,7 @@ void R_Update(render_context *R, m_arena *FrameArena)
 	D3D11_TEXTURE2D_DESC FrameBufferDescription = {0};	
 	FrameBuffer->lpVtbl->GetDesc(FrameBuffer, &FrameBufferDescription);
 	v2i Dimensions = v2i(FrameBufferDescription.Width, FrameBufferDescription.Height);
-
+	LogInfo("DIM: ?u32 ?u32", Dimensions.X, Dimensions.Y);
 	D3D11_VIEWPORT viewport =
 	{
 		0.0f, 0.0f, 

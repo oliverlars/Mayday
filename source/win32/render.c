@@ -261,8 +261,8 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 	BlendDescription.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
 	BlendDescription.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
 	BlendDescription.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
-	BlendDescription.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_SRC_ALPHA;
-	BlendDescription.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_INV_SRC_ALPHA;
+	BlendDescription.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+	BlendDescription.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
 	BlendDescription.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
 	BlendDescription.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
 

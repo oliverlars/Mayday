@@ -942,10 +942,11 @@ b32 StartApplication(memory_arena *Arena, str8 PathToApplication)
 
 	b32 ProcessStatus = CreateProcessA(0, CStrFromStr8(Arena, PathToApplication),
 									   0, 0, 1, 0, 0, 0, &StartupInfo, &ProcessInfo);
-	if (ProcessStatus == 0)
+	if (ProcessStatus)
 	{
-		s32 ExitCode;
 		WaitForSingleObject(ProcessInfo.hProcess, INFINITE);
+		DWORD ExitCode;
+		GetExitCodeProcess(ProcessInfo.hProcess, &ExitCode);
 		CloseHandle(ProcessInfo.hProcess);
 		CloseHandle(ProcessInfo.hThread);
 		CloseHandle(StdOutHandleWrite);

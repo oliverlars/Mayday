@@ -174,21 +174,25 @@ Entry(InputWaveInfo)
 
 	if(WaveIsFirstLane(WaveInfo))
 	{
-		str8 OldPathToExecutable = Str8PushF(&Arena, "%.*s/%.*s",
-							   Str8ToPrintfArgs(BuildOptions.OutputPath),
-							   Str8ToPrintfArgs(BuildOptions.OutputName));
-
-		str8 PathToExecutable = Str8("build/Mayday.app/Contents/MacOS/Mayday");
+		str8 PathToExecutable = Str8PushF(&Arena, "%.*s/%.*s",
+			Str8ToPrintfArgs(BuildOptions.OutputPath),
+			Str8ToPrintfArgs(BuildOptions.OutputName));
+		
+		if(OS == OS_DARWIN)
+		{
+			str8 NewPathToExecutable = Str8("build/Mayday.app/Contents/MacOS/Mayday");
+			MoveFileOnDisk(&Arena, PathToExecutable, NewPathToExecutable);
+			PathToExecutable = NewPathToExecutable;
+		}
+		
 		str8 PathToBundle = Str8("build/Mayday");
-
-		MoveFileOnDisk(&Arena, OldPathToExecutable, PathToExecutable);
 
 		if(ShouldRun && !FailedToBuild)
 		{
 			StartApplication(&Arena, PathToExecutable);
 		}
 
-		if(!FailedToBuild)
+		if(!FailedToBuild && OS == OS_DARWIN)
 		{
 			if(PathExists(&Arena, Str8("build/Icon.iconset")))
 			{
@@ -221,4 +225,5 @@ int main(s32 ArgCount, char **Args)
 	Shared->Args = Args;
 	Shared->Arena = SharedArena;
 	Dispatch(Shared, GetNumberOfCPUs());
+	WaveBarrier(Shared->Barrier);
 }

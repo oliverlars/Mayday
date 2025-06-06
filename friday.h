@@ -923,12 +923,20 @@ b32 StartApplication(memory_arena *Arena, str8 PathToApplication)
 	STARTUPINFOA StartupInfo = {0};
 	PROCESS_INFORMATION ProcessInfo = {0};
 
+	StartupInfo.cb = sizeof(StartupInfo);
+
 	SECURITY_ATTRIBUTES SecurityAttributes = {0};
 	SecurityAttributes.nLength = sizeof(SECURITY_ATTRIBUTES);
 	SecurityAttributes.bInheritHandle = True;
 
 	HANDLE StdOutHandleRead = 0;
 	HANDLE StdOutHandleWrite = 0;
+
+	SetHandleInformation(StdOutHandleRead, HANDLE_FLAG_INHERIT, 0);
+
+	StartupInfo.dwFlags    = STARTF_USESTDHANDLES;
+	StartupInfo.hStdOutput = StdOutHandleWrite;
+	StartupInfo.hStdError  = StdOutHandleWrite;
 
 	CreatePipe(&StdOutHandleRead, &StdOutHandleWrite, &SecurityAttributes, 0);
 
@@ -938,6 +946,9 @@ b32 StartApplication(memory_arena *Arena, str8 PathToApplication)
 	{
 		s32 ExitCode;
 		WaitForSingleObject(ProcessInfo.hProcess, INFINITE);
+		CloseHandle(ProcessInfo.hProcess);
+		CloseHandle(ProcessInfo.hThread);
+		CloseHandle(StdOutHandleWrite);
 	}
 
 	return ProcessStatus;

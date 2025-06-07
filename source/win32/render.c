@@ -218,6 +218,54 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 		);
 	}
 
+	// Gaussian Shader
+	{
+		ID3DBlob *GaussianVertexShaderObject;
+		ID3DBlob *Error;
+		HRESULT Compiled;
+
+		Compiled = D3DCompile(G_GaussianShader, sizeof(G_GaussianShader),
+				Null, Null, Null,
+				"VertexMain",
+				"vs_5_0",
+				0, 0,
+				&GaussianVertexShaderObject, &Error);
+		if(FAILED(Compiled))
+		{
+			char *ErrorMessage = (char*)(Error->lpVtbl->GetBufferPointer(Error));
+			LogError("[VERTEX] ?cstr", ErrorMessage);
+			Error->lpVtbl->Release(Error);
+		}
+		
+		D3D11->Device->lpVtbl->CreateVertexShader(
+			D3D11->Device,
+			GaussianVertexShaderObject->lpVtbl->GetBufferPointer(GaussianVertexShaderObject),
+			GaussianVertexShaderObject->lpVtbl->GetBufferSize(GaussianVertexShaderObject),
+			Null, &D3D11->GaussianVertexShader
+		);
+
+		ID3DBlob *GaussianPixelShaderObject;
+		Compiled = D3DCompile(G_GaussianShader, sizeof(G_GaussianShader),
+				Null, Null, Null,
+				"PixelMain",
+				"ps_5_0",
+				0, 0,
+				&GaussianPixelShaderObject, &Error);
+		if(FAILED(Compiled))
+		{
+			char *ErrorMessage = (char*)(Error->lpVtbl->GetBufferPointer(Error));
+			LogError("[PIXEL] ?cstr", ErrorMessage);
+			Error->lpVtbl->Release(Error);
+		}
+
+		D3D11->Device->lpVtbl->CreatePixelShader(
+			D3D11->Device,
+			GaussianPixelShaderObject->lpVtbl->GetBufferPointer(GaussianPixelShaderObject),
+			GaussianPixelShaderObject->lpVtbl->GetBufferSize(GaussianPixelShaderObject),
+			Null, &D3D11->GaussianPixelShader
+		);
+	}
+
 	D3D11_RASTERIZER_DESC RasterizerStateDescription = {0};
 	RasterizerStateDescription.FillMode = D3D11_FILL_SOLID;
 	// HACK(Oliver): Disabling culling is only because I

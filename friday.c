@@ -121,11 +121,17 @@ Entry(InputWaveInfo)
 		EmbedFiles(&Arena, Fonts, Str8("embed/berkeley_mono_font.h"), FontVariableNames);
 
 		str8_list Shaders = {0};
+		str8_list ShaderVariableNames = {0};
 
 		if(OS == OS_WINDOWS)
 		{
 			Str8ListAppend(&Arena, &Shaders, Str8("shaders/hlsl/triangle.hlsl"));
 			Str8ListAppend(&Arena, &Shaders, Str8("shaders/hlsl/glyph.hlsl"));
+			Str8ListAppend(&Arena, &Shaders, Str8("shaders/hlsl/gaussian.hlsl"));
+
+			Str8ListAppend(&Arena, &ShaderVariableNames, Str8("G_TriangleShader"));
+			Str8ListAppend(&Arena, &ShaderVariableNames, Str8("G_GlyphShader"));
+			Str8ListAppend(&Arena, &ShaderVariableNames, Str8("G_GaussianShader"));
 		}
 		else
 		{
@@ -134,14 +140,13 @@ Entry(InputWaveInfo)
 			Str8ListAppend(&Arena, &Shaders, Str8("shaders/msl/bloom.metal"));
 			Str8ListAppend(&Arena, &Shaders, Str8("shaders/msl/point.metal"));
 			Str8ListAppend(&Arena, &Shaders, Str8("shaders/msl/line.metal"));
-		}
 
-		str8_list ShaderVariableNames = {0};
-		Str8ListAppend(&Arena, &ShaderVariableNames, Str8("G_TriangleShader"));
-		Str8ListAppend(&Arena, &ShaderVariableNames, Str8("G_GlyphShader"));
-		Str8ListAppend(&Arena, &ShaderVariableNames, Str8("G_BloomShader"));
-		Str8ListAppend(&Arena, &ShaderVariableNames, Str8("G_PointShader"));
-		Str8ListAppend(&Arena, &ShaderVariableNames, Str8("G_LineShader"));
+			Str8ListAppend(&Arena, &ShaderVariableNames, Str8("G_TriangleShader"));
+			Str8ListAppend(&Arena, &ShaderVariableNames, Str8("G_GlyphShader"));
+			Str8ListAppend(&Arena, &ShaderVariableNames, Str8("G_BloomShader"));
+			Str8ListAppend(&Arena, &ShaderVariableNames, Str8("G_PointShader"));
+			Str8ListAppend(&Arena, &ShaderVariableNames, Str8("G_LineShader"));
+		}
 
 		EmbedFiles(&Arena, Shaders, Str8("embed/shaders.h"), ShaderVariableNames);
 

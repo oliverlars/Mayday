@@ -343,7 +343,7 @@ void R_Update(render_context *R, m_arena *FrameArena)
 			&BaseFrameBufferDescription, NULL,
 			&D3D11->BaseFrameBuffer);
 		D3D11_RENDER_TARGET_VIEW_DESC BaseFrameBufferRTVDesc = {};
-		BaseFrameBufferRTVDesc.Format        = DXGI_FORMAT_B8G8R8A8_UNORM;
+		BaseFrameBufferRTVDesc.Format        = FrameBufferDescription.Format;
 		BaseFrameBufferRTVDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
 		D3D11->Device->lpVtbl->CreateRenderTargetView(
 			D3D11->Device,
@@ -373,9 +373,12 @@ void R_Update(render_context *R, m_arena *FrameArena)
 				D3D11->BaseFrameBuffer
 			);
 
+			BaseFrameBufferDescription.Width = FrameBufferDescription.Width;
+			BaseFrameBufferDescription.Height = FrameBufferDescription.Height;
+
 			D3D11->Device->lpVtbl->CreateTexture2D(
 			D3D11->Device,
-			&FrameBufferDescription, NULL,
+			&BaseFrameBufferDescription, NULL,
 			&D3D11->BaseFrameBuffer);
 		}
 	}
@@ -390,7 +393,7 @@ void R_Update(render_context *R, m_arena *FrameArena)
 			&D3D11->BlurredFrameBuffer);
 
 		D3D11_RENDER_TARGET_VIEW_DESC BlurredFrameBufferRTVDesc = {};
-		BlurredFrameBufferRTVDesc.Format        = DXGI_FORMAT_B8G8R8A8_UNORM;
+		BlurredFrameBufferRTVDesc.Format        = FrameBufferDescription.Format;
 		BlurredFrameBufferRTVDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
 		D3D11->Device->lpVtbl->CreateRenderTargetView(
 			D3D11->Device,
@@ -419,10 +422,12 @@ void R_Update(render_context *R, m_arena *FrameArena)
 			D3D11->BlurredFrameBuffer->lpVtbl->Release(
 				D3D11->BlurredFrameBuffer
 			);
+			BlurredFrameBufferDescription.Width = FrameBufferDescription.Width;
+			BlurredFrameBufferDescription.Height = FrameBufferDescription.Height;
 
 			D3D11->Device->lpVtbl->CreateTexture2D(
 			D3D11->Device,
-			&FrameBufferDescription, NULL,
+			&BlurredFrameBufferDescription, NULL,
 			&D3D11->BlurredFrameBuffer);
 		}
 	}
@@ -678,19 +683,6 @@ void R_Update(render_context *R, m_arena *FrameArena)
 			1, &Viewport
 		);
 
-		D3D11->DeviceContext->lpVtbl->VSSetShader(
-			D3D11->DeviceContext,
-			D3D11->GaussianVertexShader,
-			Null, 
-			0
-		);
-
-		D3D11->DeviceContext->lpVtbl->PSSetShader(
-			D3D11->DeviceContext,
-			D3D11->GaussianPixelShader,
-			Null, 0
-		);
-
 		D3D11->DeviceContext->lpVtbl->PSSetSamplers(
 			D3D11->DeviceContext,
 			0, 1, &D3D11->SamplerState
@@ -711,6 +703,19 @@ void R_Update(render_context *R, m_arena *FrameArena)
 			D3D11->RasterizerState
 		);
 
+				D3D11->DeviceContext->lpVtbl->VSSetShader(
+			D3D11->DeviceContext,
+			D3D11->GaussianVertexShader,
+			Null, 
+			0
+		);
+
+		D3D11->DeviceContext->lpVtbl->PSSetShader(
+			D3D11->DeviceContext,
+			D3D11->GaussianPixelShader,
+			Null, 0
+		);
+
 		D3D11->DeviceContext->lpVtbl->OMSetDepthStencilState(
 			D3D11->DeviceContext,
 			D3D11->DepthStencilState, 
@@ -718,7 +723,7 @@ void R_Update(render_context *R, m_arena *FrameArena)
 		);
 		D3D11->DeviceContext->lpVtbl->OMSetBlendState(
 			D3D11->DeviceContext,
-			D3D11->BlendState, Null,
+			Null, Null,
 			0xFFFFFFFF
 		);
 		D3D11->DeviceContext->lpVtbl->Draw(D3D11->DeviceContext, 3, 0);

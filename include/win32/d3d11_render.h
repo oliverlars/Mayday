@@ -37,6 +37,15 @@ typedef struct d3d11_context
 
 	ID3D11SamplerState    *SamplerState;
 
+	ID3D11Texture2D       *BaseFrameBuffer;
+	ID3D11Texture2D       *BlurredFrameBuffer;
+
+	ID3D11ShaderResourceView *BaseFrameBufferResourceView;
+	ID3D11ShaderResourceView *BlurredFrameBufferResourceView;
+
+	ID3D11RenderTargetView *BaseFrameBufferRTV;
+	ID3D11RenderTargetView *BlurredFrameBufferRTV;
+
 	ID3D11Buffer          *VertexBuffers[FRAMES_IN_FLIGHT];
 	ID3D11Buffer          *UniformBuffers[FRAMES_IN_FLIGHT];
 } d3d11_context;

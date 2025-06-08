@@ -31,5 +31,5 @@ vertex_output VertexMain(uint VertexID: SV_VertexID)
 
 float4 PixelMain(vertex_output Input) : SV_TARGET
 {
-	return float4(0, 1, 0, 1);//Texture.Sample(Sampler, Input.UV);
+	return Texture.Sample(Sampler, Input.UV);
 }

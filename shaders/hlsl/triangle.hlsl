@@ -58,6 +58,5 @@ vertex_output VertexMain(vertex_input Vertex)
 
 float4 PixelMain(vertex_output Input) : SV_TARGET
 {
-	float3 ACES = TonemapToACESFilm(Input.Colour.rgb);
-	return ToSRGB(float4(ACES.rgb, Input.Colour.a));
+	return Input.Colour;
 }

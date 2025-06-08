@@ -128,10 +128,12 @@ Entry(InputWaveInfo)
 			Str8ListAppend(&Arena, &Shaders, Str8("shaders/hlsl/triangle.hlsl"));
 			Str8ListAppend(&Arena, &Shaders, Str8("shaders/hlsl/glyph.hlsl"));
 			Str8ListAppend(&Arena, &Shaders, Str8("shaders/hlsl/gaussian.hlsl"));
+			Str8ListAppend(&Arena, &Shaders, Str8("shaders/hlsl/bloom.hlsl"));
 
 			Str8ListAppend(&Arena, &ShaderVariableNames, Str8("G_TriangleShader"));
 			Str8ListAppend(&Arena, &ShaderVariableNames, Str8("G_GlyphShader"));
 			Str8ListAppend(&Arena, &ShaderVariableNames, Str8("G_GaussianShader"));
+			Str8ListAppend(&Arena, &ShaderVariableNames, Str8("G_BloomShader"));
 		}
 		else
 		{

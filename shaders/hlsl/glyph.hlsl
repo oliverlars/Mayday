@@ -64,6 +64,5 @@ vertex_output VertexMain(vertex_input Vertex)
 float4 PixelMain(vertex_output Input) : SV_TARGET
 {
 	float4 Colour = float4(Input.Colour.rgb, FontAtlas.Sample(Sampler, Input.UV).r*Input.Colour.a);
-	float3 ACES = TonemapToACESFilm(Colour.rgb);
-	return ToSRGB(float4(ACES.rgb, Colour.a));
+	return Colour;
 }

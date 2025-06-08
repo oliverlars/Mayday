@@ -30,6 +30,10 @@ typedef struct d3d11_context
 	ID3D11PixelShader     *HorizontalGaussianPixelShader;
 	ID3D11PixelShader     *VerticalGaussianPixelShader;
 
+	
+	ID3D11VertexShader    *BloomVertexShader;
+	ID3D11PixelShader     *BloomPixelShader;
+
 	ID3D11Texture2D          *FontAtlasTexture;
 	ID3D11ShaderResourceView *FontAtlasTextureView;
 
@@ -40,13 +44,13 @@ typedef struct d3d11_context
 	ID3D11SamplerState    *SamplerState;
 
 	ID3D11Texture2D       *BaseFrameBuffer;
-	ID3D11Texture2D       *BlurredFrameBuffer;
+	ID3D11Texture2D       *GaussianBlurFrameBuffers[2];
 
 	ID3D11ShaderResourceView *BaseFrameBufferResourceView;
-	ID3D11ShaderResourceView *BlurredFrameBufferResourceView;
+	ID3D11ShaderResourceView *GaussianBlurFrameBufferResourceViews[2];
 
 	ID3D11RenderTargetView *BaseFrameBufferRTV;
-	ID3D11RenderTargetView *BlurredFrameBufferRTV;
+	ID3D11RenderTargetView *GaussianBlurFrameBufferRTVs[2];
 
 	ID3D11Buffer          *VertexBuffers[FRAMES_IN_FLIGHT];
 	ID3D11Buffer          *UniformBuffers[FRAMES_IN_FLIGHT];

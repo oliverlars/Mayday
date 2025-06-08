@@ -26,7 +26,9 @@ typedef struct d3d11_context
 	ID3D11InputLayout     *GlyphInputLayout;
 
 	ID3D11VertexShader    *GaussianVertexShader;
-	ID3D11PixelShader     *GaussianPixelShader;
+
+	ID3D11PixelShader     *HorizontalGaussianPixelShader;
+	ID3D11PixelShader     *VerticalGaussianPixelShader;
 
 	ID3D11Texture2D          *FontAtlasTexture;
 	ID3D11ShaderResourceView *FontAtlasTextureView;

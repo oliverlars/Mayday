@@ -5,9 +5,9 @@ SamplerState Sampler:   register(s0);
 
 cbuffer uniforms : register(b0)
 {
-	bool Horizontal;
 	float Sigma;
-}
+	int   Radius;
+};
 
 struct vertex_output
 {
@@ -35,7 +35,45 @@ vertex_output VertexMain(uint VertexID: SV_VertexID)
 	return Output;
 }
 
-float4 PixelMain(vertex_output Input) : SV_TARGET
+float Gaussian(float X, float Sigma)
 {
-	return Texture.Sample(Sampler, Input.UV);
+    return exp(-(X * X) / (2.0 * Sigma * Sigma));
+}
+
+float4 BlurHorizontal(vertex_output Input) : SV_TARGET
+{
+	float4 Colour = float4(0, 0, 0, 0);
+	float TotalWeight = 0.0f;
+	float2 TexelSize;
+	Texture.GetDimensions(TexelSize.x, TexelSize.y);
+	for(int Index = -50; Index <  50; Index++)
+	{
+		float Offset = float(Index);
+		float2 SampleUV = Input.UV + float2(1, 0) * Offset * TexelSize;
+		float Weight = Gaussian(Offset, 10.0);
+
+		Colour += Texture.Sample(Sampler, SampleUV) * Weight;
+		TotalWeight += Weight;
+	}
+
+	return Colour / TotalWeight;
+}
+
+float4 BlurVertical(vertex_output Input) : SV_TARGET
+{
+	float4 Colour = float4(0, 0, 0, 0);
+	float TotalWeight = 0.0f;
+	float2 TexelSize;
+	Texture.GetDimensions(TexelSize.x, TexelSize.y);
+	for(int Index = -30; Index <  30; Index++)
+	{
+		float Offset = float(Index);
+		float2 SampleUV = Input.UV + float2(0, 1) * Offset * TexelSize;
+		float Weight = Gaussian(Offset, 10.0);
+
+		Colour += Texture.Sample(Sampler, SampleUV) * Weight;
+		TotalWeight += Weight;
+	}
+
+	return Colour / TotalWeight;
 }

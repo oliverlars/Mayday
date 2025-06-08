@@ -244,13 +244,13 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 			Null, &D3D11->GaussianVertexShader
 		);
 
-		ID3DBlob *GaussianPixelShaderObject;
+		ID3DBlob *HorizontalGaussianPixelShaderObject;
 		Compiled = D3DCompile(G_GaussianShader, sizeof(G_GaussianShader),
 				Null, Null, Null,
-				"PixelMain",
+				"BlurHorizontal",
 				"ps_5_0",
 				0, 0,
-				&GaussianPixelShaderObject, &Error);
+				&HorizontalGaussianPixelShaderObject, &Error);
 		if(FAILED(Compiled))
 		{
 			char *ErrorMessage = (char*)(Error->lpVtbl->GetBufferPointer(Error));
@@ -260,9 +260,30 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 
 		D3D11->Device->lpVtbl->CreatePixelShader(
 			D3D11->Device,
-			GaussianPixelShaderObject->lpVtbl->GetBufferPointer(GaussianPixelShaderObject),
-			GaussianPixelShaderObject->lpVtbl->GetBufferSize(GaussianPixelShaderObject),
-			Null, &D3D11->GaussianPixelShader
+			HorizontalGaussianPixelShaderObject->lpVtbl->GetBufferPointer(HorizontalGaussianPixelShaderObject),
+			HorizontalGaussianPixelShaderObject->lpVtbl->GetBufferSize(HorizontalGaussianPixelShaderObject),
+			Null, &D3D11->HorizontalGaussianPixelShader
+		);
+
+		ID3DBlob *VerticalGaussianPixelShaderObject;
+		Compiled = D3DCompile(G_GaussianShader, sizeof(G_GaussianShader),
+				Null, Null, Null,
+				"BlurVertical",
+				"ps_5_0",
+				0, 0,
+				&VerticalGaussianPixelShaderObject, &Error);
+		if(FAILED(Compiled))
+		{
+			char *ErrorMessage = (char*)(Error->lpVtbl->GetBufferPointer(Error));
+			LogError("[PIXEL] ?cstr", ErrorMessage);
+			Error->lpVtbl->Release(Error);
+		}
+
+		D3D11->Device->lpVtbl->CreatePixelShader(
+			D3D11->Device,
+			VerticalGaussianPixelShaderObject->lpVtbl->GetBufferPointer(VerticalGaussianPixelShaderObject),
+			VerticalGaussianPixelShaderObject->lpVtbl->GetBufferSize(VerticalGaussianPixelShaderObject),
+			Null, &D3D11->VerticalGaussianPixelShader
 		);
 	}
 
@@ -280,7 +301,7 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 	);
 
 	D3D11_SAMPLER_DESC SamplerDescription = {0};
-	SamplerDescription.Filter         = D3D11_FILTER_MIN_MAG_MIP_POINT;
+	SamplerDescription.Filter         = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
 	SamplerDescription.AddressU       = D3D11_TEXTURE_ADDRESS_WRAP;
 	SamplerDescription.AddressV       = D3D11_TEXTURE_ADDRESS_WRAP;
 	SamplerDescription.AddressW       = D3D11_TEXTURE_ADDRESS_WRAP;
@@ -722,7 +743,7 @@ void R_Update(render_context *R, m_arena *FrameArena)
 	}
 
 
-	// Do bloom
+	// Do horizontal blur
 	{
 		D3D11->DeviceContext->lpVtbl->RSSetViewports(
 			D3D11->DeviceContext,
@@ -770,12 +791,6 @@ void R_Update(render_context *R, m_arena *FrameArena)
 			0
 		);
 
-		D3D11->DeviceContext->lpVtbl->PSSetShader(
-			D3D11->DeviceContext,
-			D3D11->GaussianPixelShader,
-			Null, 0
-		);
-
 		D3D11->DeviceContext->lpVtbl->OMSetDepthStencilState(
 			D3D11->DeviceContext,
 			D3D11->DepthStencilState, 
@@ -786,8 +801,22 @@ void R_Update(render_context *R, m_arena *FrameArena)
 			Null, Null,
 			0xFFFFFFFF
 		);
+
+		D3D11->DeviceContext->lpVtbl->PSSetShader(
+			D3D11->DeviceContext,
+			D3D11->HorizontalGaussianPixelShader,
+			Null, 0
+		);
 		D3D11->DeviceContext->lpVtbl->Draw(D3D11->DeviceContext, 3, 0);
 
+		D3D11->DeviceContext->lpVtbl->PSSetShader(
+			D3D11->DeviceContext,
+			D3D11->VerticalGaussianPixelShader,
+			Null, 0
+		);
+		D3D11->DeviceContext->lpVtbl->Draw(D3D11->DeviceContext, 3, 0);
+		
+		
 		ID3D11ShaderResourceView* SRV[1] = { Null };
 		D3D11->DeviceContext->lpVtbl->PSSetShaderResources(D3D11->DeviceContext, 0, 1, SRV);
 	}

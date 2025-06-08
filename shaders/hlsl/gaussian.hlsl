@@ -11,8 +11,8 @@ cbuffer uniforms : register(b0)
 
 struct vertex_output
 {
-	float4 Position: SV_Position;
-	float2 UV: TexCoord;
+	float4 Position: SV_POSITION;
+	float2 UV: TEXCOORD0;
 };
 
 static float2 ClipXY[3] = {

@@ -381,6 +381,29 @@ void R_Update(render_context *R, m_arena *FrameArena)
 			&BaseFrameBufferDescription, NULL,
 			&D3D11->BaseFrameBuffer);
 		}
+
+		D3D11_RENDER_TARGET_VIEW_DESC BaseFrameBufferRTVDesc = {};
+		BaseFrameBufferRTVDesc.Format        = FrameBufferDescription.Format;
+		BaseFrameBufferRTVDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+		D3D11->BaseFrameBufferRTV->lpVtbl->Release(
+			D3D11->BaseFrameBufferRTV
+		);
+		D3D11->Device->lpVtbl->CreateRenderTargetView(
+			D3D11->Device,
+			(ID3D11Resource*)D3D11->BaseFrameBuffer,
+			&BaseFrameBufferRTVDesc,
+			&D3D11->BaseFrameBufferRTV
+		); 
+
+		D3D11->BaseFrameBufferResourceView->lpVtbl->Release(
+			D3D11->BaseFrameBufferResourceView
+		);
+		D3D11->Device->lpVtbl->CreateShaderResourceView(
+			D3D11->Device,
+			(ID3D11Resource*)D3D11->BaseFrameBuffer,
+			Null,
+			&D3D11->BaseFrameBufferResourceView
+		);
 	}
 
 	if(!D3D11->BlurredFrameBuffer)
@@ -404,7 +427,7 @@ void R_Update(render_context *R, m_arena *FrameArena)
 
 		D3D11->Device->lpVtbl->CreateShaderResourceView(
 			D3D11->Device,
-			(ID3D11Resource*)D3D11->BaseFrameBuffer,
+			(ID3D11Resource*)D3D11->BlurredFrameBuffer,
 			Null,
 			&D3D11->BlurredFrameBufferResourceView
 		);
@@ -430,6 +453,29 @@ void R_Update(render_context *R, m_arena *FrameArena)
 			&BlurredFrameBufferDescription, NULL,
 			&D3D11->BlurredFrameBuffer);
 		}
+
+		D3D11_RENDER_TARGET_VIEW_DESC BlurredFrameBufferRTVDesc = {};
+		BlurredFrameBufferRTVDesc.Format        = FrameBufferDescription.Format;
+		BlurredFrameBufferRTVDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+		D3D11->BlurredFrameBufferRTV->lpVtbl->Release(
+			D3D11->BlurredFrameBufferRTV
+		);
+		D3D11->Device->lpVtbl->CreateRenderTargetView(
+			D3D11->Device,
+			(ID3D11Resource*)D3D11->BlurredFrameBuffer,
+			&BlurredFrameBufferRTVDesc,
+			&D3D11->BlurredFrameBufferRTV
+		); 
+
+		D3D11->BlurredFrameBufferResourceView->lpVtbl->Release(
+			D3D11->BlurredFrameBufferResourceView
+		);
+		D3D11->Device->lpVtbl->CreateShaderResourceView(
+			D3D11->Device,
+			(ID3D11Resource*)D3D11->BlurredFrameBuffer,
+			Null,
+			&D3D11->BlurredFrameBufferResourceView
+		);
 	}
 
 	f32 ClearColour[4] = {0.0, 0.0, 0.0, 1.0};
@@ -683,6 +729,20 @@ void R_Update(render_context *R, m_arena *FrameArena)
 			1, &Viewport
 		);
 
+		D3D11_RECT ScissorRect =
+		{
+			0,
+			0,
+			Dimensions.X,
+			Dimensions.Y,
+		};
+
+		D3D11->DeviceContext->lpVtbl->RSSetScissorRects(
+			D3D11->DeviceContext,
+			1,
+			&ScissorRect
+		);
+
 		D3D11->DeviceContext->lpVtbl->PSSetSamplers(
 			D3D11->DeviceContext,
 			0, 1, &D3D11->SamplerState
@@ -703,7 +763,7 @@ void R_Update(render_context *R, m_arena *FrameArena)
 			D3D11->RasterizerState
 		);
 
-				D3D11->DeviceContext->lpVtbl->VSSetShader(
+		D3D11->DeviceContext->lpVtbl->VSSetShader(
 			D3D11->DeviceContext,
 			D3D11->GaussianVertexShader,
 			Null, 
@@ -727,6 +787,9 @@ void R_Update(render_context *R, m_arena *FrameArena)
 			0xFFFFFFFF
 		);
 		D3D11->DeviceContext->lpVtbl->Draw(D3D11->DeviceContext, 3, 0);
+
+		ID3D11ShaderResourceView* SRV[1] = { Null };
+		D3D11->DeviceContext->lpVtbl->PSSetShaderResources(D3D11->DeviceContext, 0, 1, SRV);
 	}
 
 	// I don't need to call this lol

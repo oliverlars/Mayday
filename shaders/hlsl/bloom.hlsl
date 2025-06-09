@@ -62,7 +62,7 @@ vertex_output VertexMain(uint VertexID: SV_VertexID)
 float4 PixelMain(vertex_output Input) : SV_TARGET
 {
 	float4 Colour = float4(Base.Sample(Sampler, Input.UV).rgb + Bloom.Sample(Sampler, Input.UV).rgb*0.7, 1.0);
-	Colour.rgb = TonemapToACESFilm(Colour.rgb);
-	Colour = ToSRGB(Colour);
+	// Colour.rgb = TonemapToACESFilm(Colour.rgb);
+	// Colour = ToSRGB(Colour);
 	return Colour;
 }

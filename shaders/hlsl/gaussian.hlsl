@@ -46,7 +46,8 @@ float4 BlurHorizontal(vertex_output Input) : SV_TARGET
 	float TotalWeight = 0.0f;
 	float2 TexelSize;
 	Texture.GetDimensions(TexelSize.x, TexelSize.y);
-	for(int Index = -50; Index <  50; Index++)
+	TexelSize = 1.0 / TexelSize;
+	for(int Index = -30; Index <  30; Index++)
 	{
 		float Offset = float(Index);
 		float2 SampleUV = Input.UV + float2(1, 0) * Offset * TexelSize;
@@ -65,6 +66,7 @@ float4 BlurVertical(vertex_output Input) : SV_TARGET
 	float TotalWeight = 0.0f;
 	float2 TexelSize;
 	Texture.GetDimensions(TexelSize.x, TexelSize.y);
+	TexelSize = 1.0 / TexelSize;
 	for(int Index = -30; Index <  30; Index++)
 	{
 		float Offset = float(Index);

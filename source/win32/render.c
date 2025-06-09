@@ -342,7 +342,7 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 	RasterizerStateDescription.CullMode = D3D11_CULL_NONE;
 	RasterizerStateDescription.FrontCounterClockwise = True;
 
-    D3D11->Device->lpVtbl->CreateRasterizerState(
+	D3D11->Device->lpVtbl->CreateRasterizerState(
 		D3D11->Device,
 		&RasterizerStateDescription,
 		&D3D11->RasterizerState
@@ -350,9 +350,9 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 
 	D3D11_SAMPLER_DESC SamplerDescription = {0};
 	SamplerDescription.Filter         = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
-	SamplerDescription.AddressU       = D3D11_TEXTURE_ADDRESS_WRAP;
-	SamplerDescription.AddressV       = D3D11_TEXTURE_ADDRESS_WRAP;
-	SamplerDescription.AddressW       = D3D11_TEXTURE_ADDRESS_WRAP;
+	SamplerDescription.AddressU       = D3D11_TEXTURE_ADDRESS_CLAMP;
+	SamplerDescription.AddressV       = D3D11_TEXTURE_ADDRESS_CLAMP;
+	SamplerDescription.AddressW       = D3D11_TEXTURE_ADDRESS_CLAMP;
 	SamplerDescription.ComparisonFunc = D3D11_COMPARISON_NEVER;
 
 
@@ -1021,7 +1021,7 @@ void R_Update(render_context *R, m_arena *FrameArena)
 			D3D11->DeviceContext,
 			0, 1, &D3D11->BaseFrameBufferResourceView
 		);
-		
+
 		D3D11->DeviceContext->lpVtbl->PSSetShaderResources(
 			D3D11->DeviceContext,
 			1, 1, &D3D11->GaussianBlurFrameBufferResourceViews[1]

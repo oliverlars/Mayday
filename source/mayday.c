@@ -216,7 +216,6 @@ void OS_Update(void *Data)
 		R_PushTransform(M->Render, Orthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
 		D_DrawQuad(M->Draw, M->FrameArena, v2f(0, 0),  WindowWidth, WindowHeight, v4f(0.08, 0.00, 0, 1.0));
 		D_DrawGrid2D(M->Draw, M->FrameArena, M->Buffer.HeightInPixels, 5*sapp_widthf() / M->Buffer.HeightInPixels);
-		D_DrawStr8(M->Draw, M->FrameArena, M->CodeFont, v2f(300, 300), v4f(1, 1, 1, 1), 64, Str8("Rungalo Bungalo"));
 	
 		UI_Buffer(M->UI, M->Draw, M->Edit,
 			   M->FrameArena, M->CodeFont,

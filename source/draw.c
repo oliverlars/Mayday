@@ -365,7 +365,8 @@ void D_Draw3DStr8(draw_context *D,
 		u32 NextCodePoint = String.Bytes[Min(String.Size, I + 1)];
 
 
-
+		if(CodePoint == '\r') continue;
+		
 		f32 TabMultiplier = 1.0f;
 		if(CodePoint == '\t')
 		{
@@ -378,6 +379,10 @@ void D_Draw3DStr8(draw_context *D,
 			NewLine = True;
 			Position.Y -= (Font.Ascent - Font.Descent + Font.LineGap)*Scale;
 			Position.X = StartX;
+			if(NextCodePoint == '\r')
+			{
+				I += 1;
+			}
 			continue;
 		}
 		else
@@ -448,6 +453,8 @@ void D_Draw3DStr8(draw_context *D,
 
 			if(CodePoint != ' ') *R_Vertices++ = Vertex;
 		}
+
+		if(CodePoint == '\r' || CodePoint == '\n') continue;
 
 		if(NewLine)
 		{

@@ -33,8 +33,7 @@ typedef struct metal_context
 
 	id<MTLTexture>             FontAtlasTexture;
 
-	id<MTLBuffer>              TriangleVertexBuffers[FRAMES_IN_FLIGHT];
-	id<MTLBuffer>              GlyphVertexBuffers[FRAMES_IN_FLIGHT];
+	id<MTLBuffer>              VertexBuffers[FRAMES_IN_FLIGHT];
 	id<MTLBuffer>              UniformBuffers[FRAMES_IN_FLIGHT];
 	id<MTLSamplerState>        SamplerState;
 	id<MTLSamplerState>        BloomSamplerState;

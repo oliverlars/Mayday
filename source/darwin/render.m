@@ -361,10 +361,7 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 
 	for(int ResourceIndex = 0; ResourceIndex < FRAMES_IN_FLIGHT; ResourceIndex++)
 	{
-		Metal->GlyphVertexBuffers[ResourceIndex] = [Metal->Device newBufferWithLength:MegaBytes(128)
-						options:MTLResourceStorageModeShared];
-
-		Metal->TriangleVertexBuffers[ResourceIndex] = [Metal->Device newBufferWithLength:MegaBytes(128)
+		Metal->VertexBuffers[ResourceIndex] = [Metal->Device newBufferWithLength:MegaBytes(128)
 						options:MTLResourceStorageModeShared];
 
 		Metal->UniformBuffers[ResourceIndex] = [Metal->Device newBufferWithLength:MegaBytes(128)
@@ -432,7 +429,7 @@ void R_RenderPoints(render_context *R, id<MTLCommandBuffer> CommandBuffer, v4i S
 
 	id<MTLRenderCommandEncoder> Encoder = [CommandBuffer renderCommandEncoderWithDescriptor:PassDesc];
 	[Encoder setRenderPipelineState:Metal->PointShader.PipelineState];
-	[Encoder setVertexBuffer:Metal->TriangleVertexBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:VertexOffset atIndex:0];
+	[Encoder setVertexBuffer:Metal->VertexBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:VertexOffset atIndex:0];
 	[Encoder setVertexBuffer:Metal->UniformBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:UniformOffset atIndex:1];
 
 	MTLScissorRect ScissorRect = {
@@ -471,7 +468,7 @@ void R_RenderLines(render_context *R, id<MTLCommandBuffer> CommandBuffer, v4i Sc
 
 	id<MTLRenderCommandEncoder> Encoder = [CommandBuffer renderCommandEncoderWithDescriptor:PassDesc];
 	[Encoder setRenderPipelineState:Metal->LineShader.PipelineState];
-	[Encoder setVertexBuffer:Metal->TriangleVertexBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:VertexOffset atIndex:0];
+	[Encoder setVertexBuffer:Metal->VertexBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:VertexOffset atIndex:0];
 	[Encoder setVertexBuffer:Metal->UniformBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:UniformOffset atIndex:1];
 
 	MTLScissorRect ScissorRect = {
@@ -511,7 +508,7 @@ void R_RenderTriangles(render_context *R, id<MTLCommandBuffer> CommandBuffer, v4
 	[Encoder setRenderPipelineState:Metal->TriangleShader.PipelineState];
 	[Encoder setFrontFacingWinding:MTLWindingClockwise];
 	[Encoder setCullMode:(MTLCullModeNone)];
-	[Encoder setVertexBuffer:Metal->TriangleVertexBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:VertexOffset atIndex:0];
+	[Encoder setVertexBuffer:Metal->VertexBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:VertexOffset atIndex:0];
 	[Encoder setVertexBuffer:Metal->UniformBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:UniformOffset atIndex:1];
 	[Encoder setDepthStencilState:DepthStencilState];
 
@@ -554,7 +551,7 @@ void R_RenderGlyphs(render_context *R, id<MTLCommandBuffer> CommandBuffer, v4i S
 
 	[Encoder setScissorRect:ScissorRect];
 
-	[Encoder setVertexBuffer:Metal->GlyphVertexBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:VertexOffset atIndex:0];
+	[Encoder setVertexBuffer:Metal->VertexBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:VertexOffset atIndex:0];
 	[Encoder setVertexBuffer:Metal->UniformBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:UniformOffset atIndex:1];
 	[Encoder setFragmentTexture:Metal->FontAtlasTexture atIndex:0];
 	[Encoder setFragmentSamplerState:Metal->SamplerState atIndex:0];
@@ -644,11 +641,9 @@ void R_Update(render_context *R, m_arena *FrameArena)
 
 	R_ClearAllTextures(R, CommandBuffer);
 
-	int TotalGlyphVertices = 0;
-	int GlyphVertexOffset = 0;
 
-	int TotalTriangleVertices = 0;
-	int TriangleVertexOffset = 0;
+	int TotalVertices = 0;
+	int VertexOffset = 0;
 
 	int ResourceIndex = R->Frame % FRAMES_IN_FLIGHT;
 
@@ -673,9 +668,9 @@ void R_Update(render_context *R, m_arena *FrameArena)
 				GPUVertices[V].Colour = Colour;
 				GPUVertices[V].UV = v4f(UV.X, UV.Y, 0, 0);
 			}
-			MemoryCopy(Metal->GlyphVertexBuffers[ResourceIndex].contents + GlyphVertexOffset*sizeof(gpu_vertex) + TotalGlyphVertices*sizeof(gpu_vertex),
+			MemoryCopy(Metal->VertexBuffers[ResourceIndex].contents + VertexOffset*sizeof(gpu_vertex) + TotalVertices*sizeof(gpu_vertex),
 					GPUVertices, sizeof(gpu_vertex)*Command->VerticesCount);
-			TotalGlyphVertices += Command->VerticesCount;
+			TotalVertices += Command->VerticesCount;
 		}
 		else if(Command->Type == R_COMMAND_TRIANGLE)
 		{
@@ -689,9 +684,9 @@ void R_Update(render_context *R, m_arena *FrameArena)
 				GPUVertices[V].Position = P;
 				GPUVertices[V].Colour = Colour;
 			}
-			MemoryCopy(Metal->TriangleVertexBuffers[ResourceIndex].contents + TriangleVertexOffset*sizeof(gpu_vertex) + TotalTriangleVertices*sizeof(gpu_vertex),
+			MemoryCopy(Metal->VertexBuffers[ResourceIndex].contents + VertexOffset*sizeof(gpu_vertex) + TotalVertices*sizeof(gpu_vertex),
 					GPUVertices, sizeof(gpu_vertex)*Command->VerticesCount);
-			TotalTriangleVertices += Command->VerticesCount;
+			TotalVertices += Command->VerticesCount;
 		}
 		else if(Command->Type == R_COMMAND_POINTS)
 		{
@@ -707,9 +702,9 @@ void R_Update(render_context *R, m_arena *FrameArena)
 				GPUVertices[V].Colour = Colour;
 				GPUVertices[V].PointSize = PointSize;
 			}
-			MemoryCopy(Metal->TriangleVertexBuffers[ResourceIndex].contents + TriangleVertexOffset*sizeof(gpu_vertex) + TotalTriangleVertices*sizeof(gpu_vertex),
+			MemoryCopy(Metal->VertexBuffers[ResourceIndex].contents + VertexOffset*sizeof(gpu_vertex) + TotalVertices*sizeof(gpu_vertex),
 					GPUVertices, sizeof(gpu_vertex)*Command->VerticesCount);
-			TotalTriangleVertices += Command->VerticesCount;
+			TotalVertices += Command->VerticesCount;
 		}
 		else if(Command->Type == R_COMMAND_LINES)
 		{
@@ -723,9 +718,9 @@ void R_Update(render_context *R, m_arena *FrameArena)
 				GPUVertices[V].Position = P;
 				GPUVertices[V].Colour = Colour;
 			}
-			MemoryCopy(Metal->TriangleVertexBuffers[ResourceIndex].contents + TriangleVertexOffset*sizeof(gpu_vertex) + TotalTriangleVertices*sizeof(gpu_vertex),
+			MemoryCopy(Metal->VertexBuffers[ResourceIndex].contents + VertexOffset*sizeof(gpu_vertex) + TotalVertices*sizeof(gpu_vertex),
 					GPUVertices, sizeof(gpu_vertex)*Command->VerticesCount);
-			TotalTriangleVertices += Command->VerticesCount;
+			TotalVertices += Command->VerticesCount;
 		}
 
 		if((Command->Next && Command->Next->Type != Command->Type) ||
@@ -738,27 +733,27 @@ void R_Update(render_context *R, m_arena *FrameArena)
 
 			if(Command->Type == R_COMMAND_GLYPH)
 			{
-				R_RenderGlyphs(R, CommandBuffer, Command->Scissor, TotalGlyphVertices, GlyphVertexOffset*sizeof(gpu_vertex), UniformCount*sizeof(m44f));
-				GlyphVertexOffset += TotalGlyphVertices;
-				TotalGlyphVertices = 0;
+				R_RenderGlyphs(R, CommandBuffer, Command->Scissor, TotalVertices, VertexOffset*sizeof(gpu_vertex), UniformCount*sizeof(m44f));
+				VertexOffset += TotalVertices;
+				TotalVertices = 0;
 			}
 			else if(Command->Type == R_COMMAND_TRIANGLE)
 			{
-				R_RenderTriangles(R, CommandBuffer, Command->Scissor, TotalTriangleVertices, TriangleVertexOffset*sizeof(gpu_vertex), UniformCount*sizeof(m44f));
-				TriangleVertexOffset += TotalTriangleVertices;
-				TotalTriangleVertices = 0;
+				R_RenderTriangles(R, CommandBuffer, Command->Scissor, TotalVertices, VertexOffset*sizeof(gpu_vertex), UniformCount*sizeof(m44f));
+				VertexOffset += TotalVertices;
+				TotalVertices = 0;
 			}
 			else if(Command->Type == R_COMMAND_POINTS)
 			{
-				R_RenderPoints(R, CommandBuffer, Command->Scissor, TotalTriangleVertices, TriangleVertexOffset*sizeof(gpu_vertex), UniformCount*sizeof(m44f));
-				TriangleVertexOffset += TotalTriangleVertices;
-				TotalTriangleVertices = 0;
+				R_RenderPoints(R, CommandBuffer, Command->Scissor, TotalVertices, VertexOffset*sizeof(gpu_vertex), UniformCount*sizeof(m44f));
+				VertexOffset += TotalVertices;
+				TotalVertices = 0;
 			}
 			else if(Command->Type == R_COMMAND_LINES)
 			{
-				R_RenderLines(R, CommandBuffer, Command->Scissor, TotalTriangleVertices, TriangleVertexOffset*sizeof(gpu_vertex), UniformCount*sizeof(m44f));
-				TriangleVertexOffset += TotalTriangleVertices;
-				TotalTriangleVertices = 0;
+				R_RenderLines(R, CommandBuffer, Command->Scissor, TotalVertices, VertexOffset*sizeof(gpu_vertex), UniformCount*sizeof(m44f));
+				VertexOffset += TotalVertices;
+				TotalVertices = 0;
 			}
 			UniformCount += 1;
 		}

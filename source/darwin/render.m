@@ -408,7 +408,7 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 	Metal->InFlightSemaphore = dispatch_semaphore_create(FRAMES_IN_FLIGHT);
 }
 
-void R_RenderPoints(render_context *R, id<MTLCommandBuffer> CommandBuffer, v4i Scissor, int VertexCount, int VertexOffset, int UniformOffset)
+void R_RenderPoints(render_context *R, id<MTLCommandBuffer> CommandBuffer, v4i Scissor, int VertexCount, int VertexOffset)
 {
 	metal_context *Metal = R->Backend;
 
@@ -430,7 +430,7 @@ void R_RenderPoints(render_context *R, id<MTLCommandBuffer> CommandBuffer, v4i S
 	id<MTLRenderCommandEncoder> Encoder = [CommandBuffer renderCommandEncoderWithDescriptor:PassDesc];
 	[Encoder setRenderPipelineState:Metal->PointShader.PipelineState];
 	[Encoder setVertexBuffer:Metal->VertexBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:VertexOffset atIndex:0];
-	[Encoder setVertexBuffer:Metal->UniformBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:UniformOffset atIndex:1];
+	[Encoder setVertexBuffer:Metal->UniformBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:0 atIndex:1];
 
 	MTLScissorRect ScissorRect = {
 		.x = Scissor.X,
@@ -447,7 +447,7 @@ void R_RenderPoints(render_context *R, id<MTLCommandBuffer> CommandBuffer, v4i S
 	[Encoder endEncoding];
 }
 
-void R_RenderLines(render_context *R, id<MTLCommandBuffer> CommandBuffer, v4i Scissor, int VertexCount, int VertexOffset, int UniformOffset)
+void R_RenderLines(render_context *R, id<MTLCommandBuffer> CommandBuffer, v4i Scissor, int VertexCount, int VertexOffset)
 {
 	metal_context *Metal = R->Backend;
 
@@ -469,7 +469,7 @@ void R_RenderLines(render_context *R, id<MTLCommandBuffer> CommandBuffer, v4i Sc
 	id<MTLRenderCommandEncoder> Encoder = [CommandBuffer renderCommandEncoderWithDescriptor:PassDesc];
 	[Encoder setRenderPipelineState:Metal->LineShader.PipelineState];
 	[Encoder setVertexBuffer:Metal->VertexBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:VertexOffset atIndex:0];
-	[Encoder setVertexBuffer:Metal->UniformBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:UniformOffset atIndex:1];
+	[Encoder setVertexBuffer:Metal->UniformBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:0 atIndex:1];
 
 	MTLScissorRect ScissorRect = {
 		.x = Scissor.X,
@@ -487,7 +487,7 @@ void R_RenderLines(render_context *R, id<MTLCommandBuffer> CommandBuffer, v4i Sc
 	[Encoder endEncoding];
 }
 
-void R_RenderTriangles(render_context *R, id<MTLCommandBuffer> CommandBuffer, v4i Scissor, int VertexCount, int VertexOffset, int UniformOffset)
+void R_RenderTriangles(render_context *R, id<MTLCommandBuffer> CommandBuffer, v4i Scissor, int VertexCount, int VertexOffset)
 {
 	metal_context *Metal = R->Backend;
 
@@ -509,7 +509,7 @@ void R_RenderTriangles(render_context *R, id<MTLCommandBuffer> CommandBuffer, v4
 	[Encoder setFrontFacingWinding:MTLWindingClockwise];
 	[Encoder setCullMode:(MTLCullModeNone)];
 	[Encoder setVertexBuffer:Metal->VertexBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:VertexOffset atIndex:0];
-	[Encoder setVertexBuffer:Metal->UniformBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:UniformOffset atIndex:1];
+	[Encoder setVertexBuffer:Metal->UniformBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:0 atIndex:1];
 	[Encoder setDepthStencilState:DepthStencilState];
 
 	MTLScissorRect ScissorRect = {
@@ -527,7 +527,7 @@ void R_RenderTriangles(render_context *R, id<MTLCommandBuffer> CommandBuffer, v4
 	[Encoder endEncoding];
 }
 
-void R_RenderGlyphs(render_context *R, id<MTLCommandBuffer> CommandBuffer, v4i Scissor, int VertexCount, int VertexOffset, int UniformOffset)
+void R_RenderGlyphs(render_context *R, id<MTLCommandBuffer> CommandBuffer, v4i Scissor, int VertexCount, int VertexOffset)
 {
 	metal_context *Metal = R->Backend;
 
@@ -552,7 +552,7 @@ void R_RenderGlyphs(render_context *R, id<MTLCommandBuffer> CommandBuffer, v4i S
 	[Encoder setScissorRect:ScissorRect];
 
 	[Encoder setVertexBuffer:Metal->VertexBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:VertexOffset atIndex:0];
-	[Encoder setVertexBuffer:Metal->UniformBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:UniformOffset atIndex:1];
+	[Encoder setVertexBuffer:Metal->UniformBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:0 atIndex:1];
 	[Encoder setFragmentTexture:Metal->FontAtlasTexture atIndex:0];
 	[Encoder setFragmentSamplerState:Metal->SamplerState atIndex:0];
 
@@ -647,8 +647,6 @@ void R_Update(render_context *R, m_arena *FrameArena)
 
 	int ResourceIndex = R->Frame % FRAMES_IN_FLIGHT;
 
-	int UniformCount = 0;
-
 	m_scratch_arena Scratch = ScratchBegin(0, 0);
 
 	for(r_command *Command = R->CommandsFirst; Command != Null; Command = Command->Next)
@@ -728,34 +726,32 @@ void R_Update(render_context *R, m_arena *FrameArena)
 		   (!Command->Next))
 		{
 			uniforms Uniforms = { Command->Transform };
-			MemoryCopy(Metal->UniformBuffers[R->Frame % FRAMES_IN_FLIGHT].contents + sizeof(Uniforms)*UniformCount,
-					   &Uniforms, sizeof(Uniforms));
+			MemoryCopy(Metal->UniformBuffers[R->Frame % FRAMES_IN_FLIGHT].contents, &Uniforms, sizeof(Uniforms));
 
 			if(Command->Type == R_COMMAND_GLYPH)
 			{
-				R_RenderGlyphs(R, CommandBuffer, Command->Scissor, TotalVertices, VertexOffset*sizeof(gpu_vertex), UniformCount*sizeof(m44f));
+				R_RenderGlyphs(R, CommandBuffer, Command->Scissor, TotalVertices, VertexOffset*sizeof(gpu_vertex));
 				VertexOffset += TotalVertices;
 				TotalVertices = 0;
 			}
 			else if(Command->Type == R_COMMAND_TRIANGLE)
 			{
-				R_RenderTriangles(R, CommandBuffer, Command->Scissor, TotalVertices, VertexOffset*sizeof(gpu_vertex), UniformCount*sizeof(m44f));
+				R_RenderTriangles(R, CommandBuffer, Command->Scissor, TotalVertices, VertexOffset*sizeof(gpu_vertex));
 				VertexOffset += TotalVertices;
 				TotalVertices = 0;
 			}
 			else if(Command->Type == R_COMMAND_POINTS)
 			{
-				R_RenderPoints(R, CommandBuffer, Command->Scissor, TotalVertices, VertexOffset*sizeof(gpu_vertex), UniformCount*sizeof(m44f));
+				R_RenderPoints(R, CommandBuffer, Command->Scissor, TotalVertices, VertexOffset*sizeof(gpu_vertex));
 				VertexOffset += TotalVertices;
 				TotalVertices = 0;
 			}
 			else if(Command->Type == R_COMMAND_LINES)
 			{
-				R_RenderLines(R, CommandBuffer, Command->Scissor, TotalVertices, VertexOffset*sizeof(gpu_vertex), UniformCount*sizeof(m44f));
+				R_RenderLines(R, CommandBuffer, Command->Scissor, TotalVertices, VertexOffset*sizeof(gpu_vertex));
 				VertexOffset += TotalVertices;
 				TotalVertices = 0;
 			}
-			UniformCount += 1;
 		}
 	}
 

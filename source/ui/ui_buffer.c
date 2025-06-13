@@ -337,6 +337,17 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 		}
 	}
 
+	if(UI_KeyDown(UI, SAPP_KEYCODE_A, SAPP_MODIFIER_SUPER))
+	{
+		cursor *LastCursor = E_LastCursor(Edit->Cursors);
+		cursor *Cursor = LastCursor;
+		Edit->Cursors->Next = Null;
+		Edit->Cursors = Cursor;
+		Cursor->Selection.X = 0;
+		Cursor->Selection.Y =Buffer->String.Size;
+
+	}
+
 	if(UI_KeyDown(UI, SAPP_KEYCODE_D, SAPP_MODIFIER_SUPER))
 	{
 		str8 StringToFind = {};

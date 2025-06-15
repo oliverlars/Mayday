@@ -559,12 +559,10 @@ ui_textbox_signal UI_TextBox(m_arena *Arena,
 		}
 
 		UI->HotAnimation = Lerp(UI->HotAnimation, 1.0, 0.1);
-		D_DrawStr8(Draw, Arena, Font, Position, v4f(1, 1, 1, 1), HeightInPixels, DisplayString);
 	}
 	else
 	{
-		//D_DrawQuad(Draw, Arena, BoxPosition, Width, Height, v4f(0, 0, 0, 1));
-		D_DrawStr8(Draw, Arena, Font, Position, v4f(1, 0, 0, 1), HeightInPixels, DisplayString);
+		UI->HotAnimation = Lerp(UI->HotAnimation, 0.0, 0.1);
 	}
 
 	if(UI_KeyDown(UI, SAPP_KEYCODE_LEFT, 0))

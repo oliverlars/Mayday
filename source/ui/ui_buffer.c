@@ -473,7 +473,7 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 				} break;
 				case SAPP_KEYCODE_UP:
 				{
-					if(Event.modifiers & SAPP_MODIFIER_SUPER)
+					if(Event.modifiers & SAPP_MODIFIER_SUPER && Event.modifiers & SAPP_MODIFIER_ALT)
 					{
 						cursor *LastCursor = E_LastCursor(Edit->Cursors);
 						cursor NextCursor = LastCursor[0];
@@ -488,7 +488,7 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 				} break;
 				case SAPP_KEYCODE_DOWN:
 				{
-					if(Event.modifiers & SAPP_MODIFIER_SUPER)
+					if(Event.modifiers & SAPP_MODIFIER_SUPER && Event.modifiers & SAPP_MODIFIER_ALT)
 					{
 						cursor *LastCursor = E_LastCursor(Edit->Cursors);
 						cursor NextCursor = LastCursor[0];

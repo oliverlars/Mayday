@@ -199,6 +199,8 @@ void OS_Update(void *Data)
 	m44f Transform = Mul(ModelView, P);
 
 	R_PushTransform(M->Render, Transform);
+	
+	D_DrawQuad(M->Draw, M->FrameArena, v2f(0, 0), 100, 200, v4f(0, 1, 0, 1));
 
 
 	if(UI_KeyDown(M->UI, SAPP_KEYCODE_EQUAL, SAPP_MODIFIER_SUPER))
@@ -210,11 +212,11 @@ void OS_Update(void *Data)
 		M->Buffer.HeightInPixels -= 5;
 	}
 
-	if(M->UI->View == UI_VIEW_EDIT || true)
+	if(M->UI->View == UI_VIEW_EDIT)
 	{
 		u64 Start = OS_TimeStampNow();
 		R_PushTransform(M->Render, Orthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
-		D_DrawQuad(M->Draw, M->FrameArena, v2f(0, 0),  WindowWidth, WindowHeight, v4f(0.08, 0.00, 0, 1.0));
+		D_DrawQuad(M->Draw, M->FrameArena, v2f(0, 0),  WindowWidth, WindowHeight, v4f(0.008, 0.00, 0, 1.0));
 		D_DrawGrid2D(M->Draw, M->FrameArena, M->Buffer.HeightInPixels, 5*sapp_widthf() / M->Buffer.HeightInPixels);
 	
 		UI_Buffer(M->UI, M->Draw, M->Edit,
@@ -622,7 +624,7 @@ int main()
 	cursor Cursor = {0};
 	M.Edit->Cursors = &Cursor;
 
-	M.Window = OS_MakeWindow(Str8("Mayday!"), 1280, 720);
+	M.Window = OS_MakeWindow(Str8("Mayday!"), 3024/2, 1964/2);
 
 	M.CodeFont = D_LoadFontFromTTF(M.Draw, G_BerkeleyMonoRegular);
 	M.LogoFont = D_LoadFontFromTTF(M.Draw, G_BasementGrotesque);
@@ -651,7 +653,7 @@ int main()
 	SAPPDesc->user_data = &M;
 #if defined(OS_WINDOWS)
 	SAPPDesc->high_dpi = true;
-#elif defined(OS_MACOS)
+#elif defined(OS_DARWIN)
 	SAPPDesc->high_dpi = false;
 #endif
 	SAPPDesc->logger.func = slog_func;

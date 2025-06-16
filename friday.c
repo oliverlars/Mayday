@@ -110,12 +110,18 @@ Entry(InputWaveInfo)
 		Str8ListAppend(&Arena, &Fonts, Str8("fonts/BebasNeue-Regular.ttf"));
 		Str8ListAppend(&Arena, &Fonts, Str8("fonts/BasementGrotesque.otf"));
 		Str8ListAppend(&Arena, &Fonts, Str8("fonts/Doto.ttf"));
+		Str8ListAppend(&Arena, &Fonts, Str8("fonts/cocogoose-pro.block-border.ttf"));
+		Str8ListAppend(&Arena, &Fonts, Str8("fonts/cocogoose-pro.block-gradient.ttf"));
+		Str8ListAppend(&Arena, &Fonts, Str8("fonts/cocogoose-pro.regular.ttf"));
 
 		str8_list FontVariableNames = {0};
 		Str8ListAppend(&Arena, &FontVariableNames, Str8("G_BerkeleyMonoRegular"));
 		Str8ListAppend(&Arena, &FontVariableNames, Str8("G_BebasNeueRegular"));
 		Str8ListAppend(&Arena, &FontVariableNames, Str8("G_BasementGrotesque"));
 		Str8ListAppend(&Arena, &FontVariableNames, Str8("G_Doto"));
+		Str8ListAppend(&Arena, &FontVariableNames, Str8("G_CocogooseBorder"));
+		Str8ListAppend(&Arena, &FontVariableNames, Str8("G_CocogooseGradient"));
+		Str8ListAppend(&Arena, &FontVariableNames, Str8("G_CocogooseRegular"));
 
 
 		EmbedFiles(&Arena, Fonts, Str8("embed/berkeley_mono_font.h"), FontVariableNames);

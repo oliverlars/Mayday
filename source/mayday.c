@@ -48,6 +48,10 @@ typedef struct mayday_context
 	d_font LogoFont;
 	d_font StatusFont;
 
+	d_font RegularFont;
+	d_font OutlineFont;
+	d_font GradientFont;
+
 	editable_buffer Buffer;
 	cursor Cursor;
 
@@ -245,7 +249,7 @@ void OS_Update(void *Data)
 		v2f Centre = {0};
 		R_PushTransform(M->Render, Orthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
 		D_DrawQuad(M->Draw, M->FrameArena, v2f(0, 0),  WindowWidth, WindowHeight, v4f(0.008, 0.00, 0, 1.0));
-		D_DrawGrid2D(M->Draw, M->FrameArena, M->Buffer.HeightInPixels, M->Buffer.HeightInPixels*5);
+		//D_DrawGrid2D(M->Draw, M->FrameArena, M->Buffer.HeightInPixels, M->Buffer.HeightInPixels*5);
 		
 
 		ui_orbit Orbit = {0};
@@ -336,11 +340,31 @@ void OS_Update(void *Data)
 		if(!OS_ValidPath(M->Folder))
 		{
 			f32 CentreX = sapp_widthf()/2.0 - UI_GetTextWidth(M->CodeFont, M->Draw, Str8("MAYDAY!"), 600)/2.0;
-			D_DrawStr8(M->Draw, M->FrameArena, M->LogoFont,
-					   v2f(50, 50),
-					   v4f(1.0, 0.00, 0.0, 0.1), 600, Str8("MAYDAY!"));
-			ui_textbox_signal SearchSignal = UI_TextBox(M->FrameArena, M->LogoFont, v2f(sapp_widthf()/2.0 - 500, sapp_heightf() - 300), 1000,
-														M->UI, M->Draw, M->Edit, 60, Str8("FolderTextBox"), &M->TextBoxBuffer);
+			f32 LogoHeight = 100.0;
+			int Count = 0;
+			int Middle = sapp_heightf()/(LogoHeight*0.8)/2;
+			for(f32 Y = sapp_heightf(); Y >= 0; Y -= LogoHeight*0.8)
+			{
+				if(Count == Middle)
+				{
+					D_DrawStr8(M->Draw, M->FrameArena, M->GradientFont,
+					   v2f(sapp_widthf()/2.0 + 200.0, Y),
+					   v4f(1.0, 0.0, 0.0, 0.1), LogoHeight, Str8("MAYDAY!"));
+				}
+				else
+				{
+					D_DrawStr8(M->Draw, M->FrameArena, M->OutlineFont,
+					   v2f(sapp_widthf()/2.0 + 200.0, Y),
+					   v4f(1.0, 0.0, 0.0, 0.1), LogoHeight, Str8("MAYDAY!"));
+				}
+				Count += 1;
+			}
+
+			D_DrawQuad(M->Draw, M->FrameArena, v2f(100.0, sapp_heightf()-300), 500, 200, v4f(0.2, 0.0, 0.0, 1.0));
+			D_DrawStr8(M->Draw, M->FrameArena, M->OutlineFont, v2f(100.0, sapp_heightf()-300), v4f(0.3, 0.3, 0.3, 1.0), 150, Str8("RECENT"));
+
+			ui_textbox_signal SearchSignal = UI_TextBox(M->FrameArena, M->LogoFont, v2f(100.0, sapp_heightf() - 400), 500,
+														M->UI, M->Draw, M->Edit, 30, Str8("FolderTextBox"), &M->TextBoxBuffer);
 			if(SearchSignal.Submitted)
 			{
 				// HACK(Oliver): This is leaking memory
@@ -353,21 +377,21 @@ void OS_Update(void *Data)
 			for(str8_list_node *Node = M->RecentlyLoadedFolders.Last; Node; Node = Node->Previous)
 			{
 				CentreX = sapp_widthf()/2.0 - UI_GetTextWidth(M->UI->Font, M->Draw, Node->String, 60)/2.0;
-				Pos.X = CentreX;
+				Pos.X = 100.0;
 
 				str8 Folder = Str8PushF(M->FrameArena, "?S##f32", Node->String, Pos.Y);
 
-				UI_PushStyle(M->UI, (ui_style){.Font = M->LogoFont});
+				UI_PushStyle(M->UI, (ui_style){.Font = M->RegularFont });
 				str8 LastModified = OS_GetLastModifiedTime(M->FrameArena, Node->String);
-				UI_Label(M->UI, M->Draw, M->FrameArena, LastModified, 60, Pos, v4f(0.2, 0.01, 0.0, 1));
-				ui_signal Button = UI_TextButton(M->UI, M->Draw, M->FrameArena, Folder, 60, Pos, v4f(0.1, 0.01, 0.0, 1));
+				UI_Label(M->UI, M->Draw, M->FrameArena, LastModified, 60, Add(Pos, v2f(0, 20)), v4f(0.2, 0.01, 0.0, 0.1));
+				ui_signal Button = UI_TextButton(M->UI, M->Draw, M->FrameArena, Folder, 30, Pos, v4f(0.3, 0.3, 0.3, 1));
 				UI_PopStyle(M->UI);
 				if(Button.Clicked)
 				{
 					M->Folder = Str8Copy(M->PermanentArena, Node->String);
 					M->UI->Active = UI_IDFromString(Str8("TreeViewTextBox"));
 				}
-				Pos.Y -= 150;
+				Pos.Y -= 100;
 			}
 		}
 
@@ -627,7 +651,10 @@ int main()
 	M.Window = OS_MakeWindow(Str8("Mayday!"), 3024/2, 1964/2);
 
 	M.CodeFont = D_LoadFontFromTTF(M.Draw, G_BerkeleyMonoRegular);
-	M.LogoFont = D_LoadFontFromTTF(M.Draw, G_BasementGrotesque);
+	M.RegularFont = D_LoadFontFromTTF(M.Draw, G_BasementGrotesque);
+	M.OutlineFont = D_LoadFontFromTTF(M.Draw, G_CocogooseBorder);
+	M.LogoFont = D_LoadFontFromTTF(M.Draw, G_CocogooseRegular);
+	M.GradientFont = D_LoadFontFromTTF(M.Draw,G_CocogooseGradient);
 	M.StatusFont = D_LoadFontFromTTF(M.Draw, G_Doto);
 
 	M.UI->Font = M.CodeFont;

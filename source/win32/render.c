@@ -341,6 +341,7 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 	// fucked up the winding order...
 	RasterizerStateDescription.CullMode = D3D11_CULL_NONE;
 	RasterizerStateDescription.FrontCounterClockwise = True;
+	RasterizerStateDescription.ScissorEnable = True;
 
 	D3D11->Device->lpVtbl->CreateRasterizerState(
 		D3D11->Device,

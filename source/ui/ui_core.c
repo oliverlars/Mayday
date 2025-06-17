@@ -521,10 +521,9 @@ ui_textbox_signal UI_TextBox(m_arena *Arena,
 {
 	u64 Hash = M_FNVHashString(M_FNV_HASH_START, String);
 	f32 Scale = stbtt_ScaleForPixelHeight(&UI->Font.Info, HeightInPixels);
-	str8 DisplayString = UI_DisplayString(Arena, String);
 
 	f32 Height = D_LineHeightFromFont(Font, HeightInPixels);
-	f32 Width = UI_GetTextWidth(Font, Draw, DisplayString, HeightInPixels);
+	f32 Width = UI_GetTextWidth(Font, Draw, Buffer->String, HeightInPixels);
 
 	f32 CursorXOffset = Max(0, Edit->Cursors[0].Position.X - BoxWidth*0.8 - Position.X);
 	Width = Max(Width, BoxWidth);

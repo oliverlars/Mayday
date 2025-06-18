@@ -522,8 +522,15 @@ ui_textbox_signal UI_TextBox(m_arena *Arena,
 	u64 Hash = M_FNVHashString(M_FNV_HASH_START, String);
 	f32 Scale = stbtt_ScaleForPixelHeight(&UI->Font.Info, HeightInPixels);
 
+	// HACK(Oliver): This shouldn't be needed
+	// We should just always pass in the height and not even store this.
+	// Or we always store it and this is how we specify the height. But does a buffer need
+	// to know about how its rendered?
+	Buffer->HeightInPixels = HeightInPixels;
+
 	f32 Height = D_LineHeightFromFont(Font, HeightInPixels);
 	f32 Width = UI_GetTextWidth(Font, Draw, Buffer->String, HeightInPixels);
+	f32 TextWidth = Width;
 
 	f32 CursorXOffset = Max(0, Edit->Cursors[0].Position.X - BoxWidth*0.8 - Position.X);
 	Width = Max(Width, BoxWidth);
@@ -757,23 +764,27 @@ ui_textbox_signal UI_TextBox(m_arena *Arena,
 											Buffer, v2i(0, Buffer->String.Size), Position, UI->MousePosition);
 			Edit->Cursors[0].Selection.Y = Index;
 
-			Edit->Cursors[0].TargetPosition = E_GetPositionFromEditableBuffer(Edit,
-																		Draw,
-																		Edit->Cursors[0].Selection.Y,
-																		Buffer[0],
-																		Font,
-																		Position);
+			Edit->Cursors[0].TargetPosition = E_GetPositionFromEditableBuffer(
+				Edit,
+				Draw,
+				Edit->Cursors[0].Selection.Y,
+				Buffer[0],
+				Font,
+				Position
+			);
 			Edit->Cursors[0].Position = Edit->Cursors[0].TargetPosition;
 			D_DrawQuad(Draw, Arena, Edit->Cursors[0].Position, 5, Height, v4f(0.3, 0.7, 0, 1));
 		}
 		else
 		{
-			Edit->Cursors[0].TargetPosition = E_GetPositionFromEditableBuffer(Edit,
-																	 Draw,
-																	 Edit->Cursors[0].Selection.Y,
-																	 Buffer[0],
-																	 Font,
-																	 Position);
+			Edit->Cursors[0].TargetPosition = E_GetPositionFromEditableBuffer(
+				Edit,
+				Draw,
+				Edit->Cursors[0].Selection.Y,
+				Buffer[0],
+				Font,
+				Position
+			);
 
 			Edit->Cursors[0].Position = LerpV2F(Edit->Cursors[0].Position, Edit->Cursors[0].TargetPosition, 0.3);
 			v2f CursorPosition = Edit->Cursors[0].Position;

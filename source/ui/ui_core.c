@@ -608,6 +608,108 @@ ui_textbox_signal UI_TextBox(m_arena *Arena,
 		E_DeleteTo(Edit, Edit->Cursors, Buffer);
 	}
 
+	b32 ShouldRemove = False;
+	for(ui_event_iterator It = {0};UI_EventIterate(UI, &It);)
+	{
+		// HACK(Oliver): Why the fuck does this happen anyway????
+		// It should not be null, even if we remove. it should just handle
+		// that correctly
+		if(!It.Current) break;
+		sapp_event Event = It.Current->E;
+		if(ShouldRemove)
+		{
+			assert(It.Current && It.Current->Previous);
+			UI_RemoveEventFromList(UI, It.Current->Previous);
+			ShouldRemove = False;
+		}
+		if(Event.type == SAPP_EVENTTYPE_KEY_DOWN)
+		{
+			edit_move_type MoveType = E_MOVE_NOT_SELECTING;
+			if(Event.modifiers & SAPP_MODIFIER_SHIFT)
+			{
+				MoveType = E_MOVE_SELECTING;
+			}
+
+			edit_movement Movement = E_MOVE_NONE;
+			switch(Event.key_code)
+			{
+				case SAPP_KEYCODE_LEFT:
+				{
+					Movement = E_MOVE_LEFT;
+					if(Event.modifiers & SAPP_MODIFIER_ALT)
+					{
+						Movement = E_MOVE_WORD_LEFT;
+					}
+					else if (Event.modifiers & SAPP_MODIFIER_SUPER)
+					{
+						Movement = E_MOVE_LINE_START;
+					}
+
+					E_MoveCursors(Edit, Draw, Font, Edit->Cursors, Buffer, Movement, MoveType);
+					ShouldRemove = True;
+				} break;
+				case SAPP_KEYCODE_RIGHT:
+				{
+					Movement = E_MOVE_RIGHT;
+					if(Event.modifiers & SAPP_MODIFIER_ALT)
+					{
+						Movement = E_MOVE_WORD_RIGHT;
+					}
+					else if (Event.modifiers & SAPP_MODIFIER_SUPER)
+					{
+						Movement = E_MOVE_LINE_END;
+					}
+
+					E_MoveCursors(Edit, Draw, Font, Edit->Cursors, Buffer, Movement, MoveType);
+					ShouldRemove = True;
+				} break;
+				case SAPP_KEYCODE_UP:
+				{
+					if(Event.modifiers & SAPP_MODIFIER_SUPER && Event.modifiers & SAPP_MODIFIER_ALT)
+					{
+						cursor *LastCursor = E_LastCursor(Edit->Cursors);
+						cursor NextCursor = LastCursor[0];
+						E_AppendCursor(Edit, Edit->Arena, Edit->Cursors, NextCursor);
+						E_MoveCursors(Edit, Draw, Font, E_LastCursor(Edit->Cursors), Buffer, E_MOVE_UP, MoveType);
+					}
+					else
+					{
+						E_MoveCursors(Edit, Draw, Font, Edit->Cursors, Buffer, E_MOVE_UP, MoveType);
+					}
+					ShouldRemove = True;
+				} break;
+				case SAPP_KEYCODE_DOWN:
+				{
+					if(Event.modifiers & SAPP_MODIFIER_SUPER && Event.modifiers & SAPP_MODIFIER_ALT)
+					{
+						cursor *LastCursor = E_LastCursor(Edit->Cursors);
+						cursor NextCursor = LastCursor[0];
+						E_AppendCursor(Edit, Edit->Arena, Edit->Cursors, NextCursor);
+						E_MoveCursors(Edit, Draw, Font, E_LastCursor(Edit->Cursors), Buffer, E_MOVE_DOWN, MoveType);
+					}
+					else
+					{
+						E_MoveCursors(Edit, Draw, Font, Edit->Cursors, Buffer, E_MOVE_DOWN, MoveType);
+					}
+					ShouldRemove = True;
+				} break;
+				case SAPP_KEYCODE_BACKSPACE:
+				{
+					if(Event.modifiers & SAPP_MODIFIER_SUPER)
+					{
+						cursor *Cursor = E_LastCursor(Edit->Cursors);
+						E_MoveCursors(Edit, Draw, Font, Cursor, Buffer, E_MOVE_WORD_LEFT, E_MOVE_SELECTING);
+					}
+					E_DeleteTo(Edit, Edit->Cursors, Buffer);
+					
+				}
+				break;
+				default:
+				break;
+			}
+		}
+	}
+
 	v2f BoxPosition = Position;
 	BoxPosition.Y += UI->Font.Descent * Scale;
 

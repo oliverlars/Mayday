@@ -571,34 +571,6 @@ ui_textbox_signal UI_TextBox(m_arena *Arena,
 		UI->HotAnimation = Lerp(UI->HotAnimation, 0.0, 0.1);
 	}
 
-	if(UI_KeyDown(UI, SAPP_KEYCODE_LEFT, 0))
-	{
-		E_MoveCursors(Edit, Draw, Font, Edit->Cursors, Buffer, E_MOVE_LEFT, E_MOVE_NOT_SELECTING);
-	}
-	else if(UI_KeyDown(UI, SAPP_KEYCODE_LEFT, SAPP_MODIFIER_SHIFT))
-	{
-		E_MoveCursors(Edit, Draw, Font, Edit->Cursors, Buffer, E_MOVE_LEFT, E_MOVE_SELECTING);
-	}
-
-	if(UI_KeyDown(UI, SAPP_KEYCODE_RIGHT, 0))
-	{
-		E_MoveCursors(Edit, Draw, Font, Edit->Cursors, Buffer, E_MOVE_RIGHT, E_MOVE_NOT_SELECTING);
-	}
-	else if(UI_KeyDown(UI, SAPP_KEYCODE_RIGHT, SAPP_MODIFIER_SHIFT))
-	{
-		E_MoveCursors(Edit, Draw, Font, Edit->Cursors, Buffer, E_MOVE_RIGHT, E_MOVE_SELECTING);
-	}
-
-	if(UI_KeyDown(UI, SAPP_KEYCODE_TAB, 0))
-	{
-		E_InsertTo(Edit, Edit->Cursors, Buffer, Str8("\t"));
-	}
-
-	if(UI_KeyDown(UI, SAPP_KEYCODE_SPACE, 0))
-	{
-		E_InsertTo(Edit, Edit->Cursors, Buffer, Str8(" "));
-	}
-
 	ui_textbox_signal Result = {0};
 	Result.String = Str8Copy(Arena, Buffer->String);
 
@@ -607,12 +579,6 @@ ui_textbox_signal UI_TextBox(m_arena *Arena,
 		Result.Submitted = True;
 		Buffer->String.Size = 0;
 		Edit->Cursors[0].Selection = v2i(0, 0);
-	}
-
-
-	if(UI_KeyDown(UI, SAPP_KEYCODE_BACKSPACE, 0))
-	{
-		E_DeleteTo(Edit, Edit->Cursors, Buffer);
 	}
 
 	b32 ShouldRemove = False;
@@ -751,8 +717,8 @@ ui_textbox_signal UI_TextBox(m_arena *Arena,
 		D_DrawSelectionRange(Draw,
 							 Arena,
 							 Font,
-							 Position,
-							 v4f(0.04, 0.01, 0, 0.1),
+							 StringPosition,
+							 v4f(0.04, 0.01, 0, 0.8),
 							 HeightInPixels,
 							 Buffer->String,
 							 v2i(0, Buffer->String.Size),
@@ -772,8 +738,11 @@ ui_textbox_signal UI_TextBox(m_arena *Arena,
 				Font,
 				Position
 			);
-			Edit->Cursors[0].Position = Edit->Cursors[0].TargetPosition;
-			D_DrawQuad(Draw, Arena, Edit->Cursors[0].Position, 5, Height, v4f(0.3, 0.7, 0, 1));
+			Edit->Cursors[0].Position = LerpV2F(Edit->Cursors[0].Position, Edit->Cursors[0].TargetPosition, 0.3);
+			v2f CursorPosition = Edit->Cursors[0].Position;
+			CursorPosition.X -= CursorXOffset;
+			CursorPosition.Y -= UI->Font.Descent * Scale;
+			D_DrawQuad(Draw, Arena, CursorPosition, 2, Height, v4f(0.3, 0.7, 0, 1));
 		}
 		else
 		{

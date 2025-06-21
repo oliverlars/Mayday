@@ -42,7 +42,6 @@ size_t strlen(const char *str);
 #define Str8(String) (str8) { strlen(String), (s8*)String }
 
 #define ArenaPushType(Arena, Type) (Type *)ArenaPush(Arena, sizeof(Type))
-#define ArenaPushTypeZero(Arena, Type) (Type *)ArenaPushZero(Arena, sizeof(Type))
 
 struct shared_wave_info;
 struct wave_info;
@@ -179,7 +178,7 @@ typedef struct build_options
 
 
 u8* ArenaPush(memory_arena *Arena, s64 Bytes);
-u8 *ArenaPushZero(memory_arena *Arena, s64 Bytes);
+u8 *ArenaPush(memory_arena *Arena, s64 Bytes);
 str8 Str8PushF(memory_arena *Arena, char *Format, ...);
 str8 Str8ListJoin(memory_arena *Arena, str8_list List);
 str8 Str8ArrayJoin(memory_arena *Arena, str8_array Array);
@@ -271,7 +270,7 @@ void WriteStringToDisk(memory_arena *Arena, str8 DestinationPath, str8 StringToW
 str8 GetExecutableDirectory(memory_arena *Arena)
 {
 	s32 NumberOfBytes = PATH_MAX;
-	u8 *BackingMemory = ArenaPushZero(Arena, NumberOfBytes);
+	u8 *BackingMemory = ArenaPush(Arena, NumberOfBytes);
 
 	getcwd((char*)BackingMemory, PATH_MAX);
 
@@ -308,11 +307,6 @@ void AppendSourceFilesInFolder(memory_arena *Arena, str8_list *SourceFilesFromFo
 			}
 		}
 	}
-}
-
-void MakeDirectoryFromPath(memory_arena *Arena, str8 Path)
-{
-	mkdir(CStrFromStr8(Arena, Path), 0755);
 }
 
 b32 PathExists(memory_arena *Arena, str8 Filename)
@@ -394,7 +388,7 @@ b32 ExecuteCommand(memory_arena *Arena, str8 EntireCommandAndArguments, b32 *Fai
 	posix_spawn_file_actions_adddup2(&SpawnActions, Pipes[1], STDOUT_FILENO);
 	posix_spawn_file_actions_addclose(&SpawnActions, Pipes[0]);
 
-	char** CompilerArguments = (char**)ArenaPushZero(Arena, 1024);
+	char** CompilerArguments = (char**)ArenaPush(Arena, 1024);
 	u64 ArgumentIndex = 0;
 	for(u64 Index = 0; Index < EntireCommandAndArguments.Size; Index++, ArgumentIndex++)
 	{
@@ -421,7 +415,7 @@ b32 ExecuteCommand(memory_arena *Arena, str8 EntireCommandAndArguments, b32 *Fai
 		s64 NumberOfBytesRead = 0;
 		str8_list StdOutList = {0};
 
-		u8 *BackingMemory = ArenaPushZero(Arena, 4096);
+		u8 *BackingMemory = ArenaPush(Arena, 4096);
 		while ((NumberOfBytesRead = read(Pipes[0], BackingMemory, 4096)) > 0)
 		{
 			str8 String = {.Bytes = (s8*)BackingMemory, .Size = NumberOfBytesRead};
@@ -635,20 +629,6 @@ s64 WaveGetLaneIndex(wave_info *WaveInfo)
 {
 	return WaveInfo->Lane;
 }
-
-u64 NearestPowerOfTwo(u64 Value)
-{
-	if(Value == 0) return 1;
-	Value -= 1;
-	Value |= Value >> 1;
-	Value |= Value >> 2;
-	Value |= Value >> 4;
-	Value |= Value >> 8;
-	Value |= Value >> 16;
-	Value |= Value >> 32;
-	return Value + 1;
-}
-
 /*
 This could be faster probably but it's fine and works,
 I don't own a threadripper so this will be fine for
@@ -690,16 +670,6 @@ u64 ExclusiveWavePrefixSum(wave_info *WaveInfo, u64 Value)
 	return PerLaneSum;
 }
 
-u64 WaveSum(wave_info *WaveInfo, u64 Value)
-{
-	WaveBarrier(WaveInfo->Shared->Barrier);
-	atomic_store_explicit(WaveInfo->Shared->Data + 0, 0, memory_order_release);
-	WaveBarrier(WaveInfo->Shared->Barrier);
-	atomic_fetch_add_explicit(WaveInfo->Shared->Data + 0, Value, memory_order_consume);
-	WaveBarrier(WaveInfo->Shared->Barrier);
-	return atomic_load_explicit(WaveInfo->Shared->Data + 0, memory_order_acquire);
-}
-
 b32 WaveAnyTrue(wave_info *WaveInfo, b32 Expression)
 {
 	WaveBarrier(WaveInfo->Shared->Barrier);
@@ -708,16 +678,6 @@ b32 WaveAnyTrue(wave_info *WaveInfo, b32 Expression)
 	atomic_fetch_add_explicit(WaveInfo->Shared->Data + 0, Expression, memory_order_consume);
 	WaveBarrier(WaveInfo->Shared->Barrier);
 	return atomic_load_explicit(WaveInfo->Shared->Data + 0, memory_order_acquire) > 0;
-}
-
-b32 WaveAllTrue(wave_info *WaveInfo, b32 Expression)
-{
-	WaveBarrier(WaveInfo->Shared->Barrier);
-	atomic_store_explicit(WaveInfo->Shared->Data + 0, 0, memory_order_release);
-	WaveBarrier(WaveInfo->Shared->Barrier);
-	atomic_fetch_add_explicit(WaveInfo->Shared->Data + 0, Expression, memory_order_acq_rel);
-	WaveBarrier(WaveInfo->Shared->Barrier);
-	return atomic_load_explicit(WaveInfo->Shared->Data + 0, memory_order_acquire) == WaveInfo->Shared->LaneCount;
 }
 
 #elif defined(_WIN32)
@@ -812,7 +772,7 @@ void AppendSourceFilesInFolder(memory_arena *Arena, str8_list *SourceFilesFromFo
 str8 GetExecutableDirectory(memory_arena *Arena)
 {
 	DWORD NumberOfBytes = GetCurrentDirectoryA(0, 0);
-	u8* BackingMemory = ArenaPushZero(Arena, NumberOfBytes);
+	u8* BackingMemory = ArenaPush(Arena, NumberOfBytes);
 
 	GetCurrentDirectoryA(NumberOfBytes, (LPSTR)BackingMemory);
 
@@ -821,12 +781,6 @@ str8 GetExecutableDirectory(memory_arena *Arena)
 	Result.Bytes = (s8*)BackingMemory;
 
 	return Result;
-}
-
-
-void MakeDirectoryFromPath(memory_arena *Arena, str8 Path)
-{
-	CreateDirectoryA(CStrFromStr8(Arena, Path), Null);
 }
 
 b32 PathExists(memory_arena *Arena, str8 Filename)
@@ -902,7 +856,7 @@ b32 ExecuteCommand(memory_arena *Arena, str8 EntireCommandAndArguments, b32 *Fai
 		str8_list StdOutList = {0};
 		for (;;)
 		{
-			u8* BackingMemory = ArenaPushZero(Arena, 4096);
+			u8* BackingMemory = ArenaPush(Arena, 4096);
 			BOOL Success = ReadFile(StdOutHandleRead, BackingMemory, 4096, &NumberOfBytesRead, NULL);
 			if (!Success || NumberOfBytesRead == 0)
 			{
@@ -1100,19 +1054,6 @@ s64 WaveGetLaneIndex(wave_info *WaveInfo)
 	return WaveInfo->Lane;
 }
 
-u64 NearestPowerOfTwo(u64 Value)
-{
-	if(Value == 0) return 1;
-	Value -= 1;
-	Value |= Value >> 1;
-	Value |= Value >> 2;
-	Value |= Value >> 4;
-	Value |= Value >> 8;
-	Value |= Value >> 16;
-	Value |= Value >> 32;
-	return Value + 1;
-}
-
 /*
 GPU Gems 3
 https://www.youtube.com/watch?v=1G8CZioSjnM
@@ -1148,16 +1089,6 @@ u64 ExclusiveWavePrefixSum(wave_info *WaveInfo, u64 Value)
 	return PerLaneSum;
 }
 
-u64 WaveSum(wave_info *WaveInfo, u64 Value)
-{
-	WaveBarrier(WaveInfo->Shared->Barrier);
-	atomic_store_explicit(WaveInfo->Shared->Data + 0, 0, memory_order_release);
-	WaveBarrier(WaveInfo->Shared->Barrier);
-	atomic_fetch_add_explicit(WaveInfo->Shared->Data + 0, Value, memory_order_consume);
-	WaveBarrier(WaveInfo->Shared->Barrier);
-	return atomic_load_explicit(WaveInfo->Shared->Data + 0, memory_order_acquire);
-}
-
 b32 WaveAnyTrue(wave_info *WaveInfo, b32 Expression)
 {
 	WaveBarrier(WaveInfo->Shared->Barrier);
@@ -1167,18 +1098,6 @@ b32 WaveAnyTrue(wave_info *WaveInfo, b32 Expression)
 	WaveBarrier(WaveInfo->Shared->Barrier);
 	return atomic_load_explicit(WaveInfo->Shared->Data + 0, memory_order_acquire) > 0;
 }
-
-b32 WaveAllTrue(wave_info *WaveInfo, b32 Expression)
-{
-	WaveBarrier(WaveInfo->Shared->Barrier);
-	atomic_store_explicit(WaveInfo->Shared->Data + 0, 0, memory_order_release);
-	WaveBarrier(WaveInfo->Shared->Barrier);
-	atomic_fetch_add_explicit(WaveInfo->Shared->Data + 0, Expression, memory_order_acq_rel);
-	WaveBarrier(WaveInfo->Shared->Barrier);
-	return atomic_load_explicit(WaveInfo->Shared->Data + 0, memory_order_acquire) == WaveInfo->Shared->LaneCount;
-}
-
-
 
 str8_list ListOfDirectoryEntriesFromPath(memory_arena *Arena, str8 Path)
 {
@@ -1205,47 +1124,6 @@ int MoveFileOnDisk(memory_arena *Arena, str8 Source, str8 Destination)
 					   CStrFromStr8(Arena, Destination),
 					   MOVEFILE_COPY_ALLOWED | MOVEFILE_REPLACE_EXISTING);
 }
-
-str8_array ArrayOfDirectoryEntriesFromPath(memory_arena *Arena, str8 Path)
-{
-
-	s64 Count = 0;
-	{
-		WIN32_FIND_DATAA FindData = {0};
-		str8 Directory = Str8PushF(Arena, "%.*s\\*", Str8ToPrintfArgs(Path));
-		HANDLE FindHandle = FindFirstFileA(CStrFromStr8(Arena, Directory), &FindData);
-		b32 NextFile = FindHandle != INVALID_HANDLE_VALUE;
-		for(;NextFile != False; NextFile = FindNextFileA(FindHandle, &FindData))
-		{
-			if(FindData.dwFileAttributes != INVALID_FILE_ATTRIBUTES && !(FindData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
-			{
-				Count += 1;
-			}
-		}
-	}
-
-	str8_array Result = {0};
-	Result.Count = Count;
-	Result.Items = (str8*)ArenaPush(Arena, Count*sizeof(str8));
-
-	{
-		WIN32_FIND_DATAA FindData = {0};
-		str8 Directory = Str8PushF(Arena, "%.*s\\*", Str8ToPrintfArgs(Path));
-		HANDLE FindHandle = FindFirstFileA(CStrFromStr8(Arena, Directory), &FindData);
-		b32 NextFile = FindHandle != INVALID_HANDLE_VALUE;
-		s64 Index = 0;
-		for(;NextFile != False; NextFile = FindNextFileA(FindHandle, &FindData))
-		{
-			if(FindData.dwFileAttributes != INVALID_FILE_ATTRIBUTES && !(FindData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
-			{
-				Result.Items[Index++] = Str8PushF(Arena, "%.*s%s", Str8ToPrintfArgs(Path), FindData.cFileName);
-			}
-		}
-	}
-
-	return Result;
-}
-
 #endif
 
 u8* ArenaPush(memory_arena *Arena, s64 Bytes)
@@ -1259,6 +1137,7 @@ u8* ArenaPush(memory_arena *Arena, s64 Bytes)
 	}
 	u8* Memory = Arena->Start + Arena->At;
 	Arena->At += Bytes;
+	MemoryZero(Memory, Bytes);
 
 	return Memory;
 }
@@ -1274,13 +1153,6 @@ u8 *ArenaPushTransient(memory_arena *Arena, s64 Bytes)
 	}
 	u8* Memory = Arena->Start + Arena->At;
 
-	return Memory;
-}
-
-u8 *ArenaPushZero(memory_arena *Arena, s64 Bytes)
-{
-	u8 *Memory = ArenaPush(Arena, Bytes);
-	MemoryZero(Memory, Bytes);
 	return Memory;
 }
 
@@ -1308,7 +1180,7 @@ str8 Str8PushF(memory_arena *Arena, char *Format, ...)
 
 char *CStrFromStr8(memory_arena *Arena, str8 String)
 {
-	char *Result = (char *)ArenaPushZero(Arena, String.Size + 1);
+	char *Result = (char *)ArenaPush(Arena, String.Size + 1);
 	MemoryCopy(Result, String.Bytes, String.Size);
 	return Result;
 }
@@ -1337,7 +1209,7 @@ b32  Str8EndsWith(str8 String, str8 EndsWith)
 
 void Str8ListAppend(memory_arena *Arena, str8_list *List, str8 String)
 {
-	str8_list_node *Node = ArenaPushTypeZero(Arena, str8_list_node);
+	str8_list_node *Node = ArenaPushType(Arena, str8_list_node);
 	Node->String = Str8PushF(Arena, "%.*s", Str8ToPrintfArgs(String));
 	if (List->First == Null)
 	{
@@ -1848,21 +1720,6 @@ b32 Build(wave_info *WaveInfo, memory_arena *Arena, build_options BuildOptions)
 
 	return (AnyFailedToBuild || AnyFailedToLink);
 
-}
-
-
-str8 PathFromFilePath(memory_arena *Arena, str8 SourceFilePath)
-{
-	return Str8UpToLastCharacter(Arena, SourceFilePath, '/');
-}
-
-str8 FileNameFromFilePath(memory_arena *Arena, str8 FilePath)
-{
-	str8 Path = PathFromFilePath(Arena, FilePath);
-	str8 FileName = Str8PushF(Arena, "%.*s", Str8ToPrintfArgs(FilePath));
-	FileName.Bytes += Path.Size + 1;
-	FileName.Size -= Path.Size + 1;
-	return FileName;
 }
 
 str8 ForwardSlashPathFromPath(str8 Path)

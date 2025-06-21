@@ -308,8 +308,7 @@ ui_widget *UI_WidgetFromString(ui_context *UI, str8 String)
 		Widget = NextWidget;
 		Widget->Name = Str8Copy(UI->Arena, String);
 		Widget->Hash = Hash;
-
-		Widget = NextWidget;
+		assert(Str8Equal(Widget->Name, String));
 	}
 	else if(Widget->Hash == 0)
 	{
@@ -318,10 +317,10 @@ ui_widget *UI_WidgetFromString(ui_context *UI, str8 String)
 
 		Widget->Hash = Hash;
 		Widget->Name = Str8Copy(UI->Arena, String);
+		assert(Str8Equal(Widget->Name, String));
 	}
 
 	assert(Widget->Hash != 0);
-	assert(Str8Equal(Widget->Name, String));
 
 	return Widget;
 }

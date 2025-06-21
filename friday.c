@@ -233,7 +233,7 @@ int main(s32 ArgCount, char **Args)
 	memory_arena SharedArena = {0};
 	SharedArena.Start = MemoryReserve(GigaBytes(64));
 
-	shared_wave_info *Shared = (shared_wave_info*)ArenaPushZero(&SharedArena, sizeof(shared_wave_info));
+	shared_wave_info *Shared = (shared_wave_info*)ArenaPush(&SharedArena, sizeof(shared_wave_info));
 	Shared->ArgCount = ArgCount;
 	Shared->Args = Args;
 	Shared->Arena = SharedArena;

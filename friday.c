@@ -1,5 +1,6 @@
 #include "friday.h"
 #include "memory.h"
+#include "strings.h"
 
 Entry(InputWaveInfo)
 {
@@ -131,29 +132,47 @@ Entry(InputWaveInfo)
 
 		if(OS == OS_WINDOWS)
 		{
-			Str8ListAppend(&Arena, &Shaders, Str8("shaders/hlsl/triangle.hlsl"));
-			Str8ListAppend(&Arena, &Shaders, Str8("shaders/hlsl/glyph.hlsl"));
-			Str8ListAppend(&Arena, &Shaders, Str8("shaders/hlsl/gaussian.hlsl"));
-			Str8ListAppend(&Arena, &Shaders, Str8("shaders/hlsl/bloom.hlsl"));
-
-			Str8ListAppend(&Arena, &ShaderVariableNames, Str8("G_TriangleShader"));
-			Str8ListAppend(&Arena, &ShaderVariableNames, Str8("G_GlyphShader"));
-			Str8ListAppend(&Arena, &ShaderVariableNames, Str8("G_GaussianShader"));
-			Str8ListAppend(&Arena, &ShaderVariableNames, Str8("G_BloomShader"));
+			str8_list Entries = ListOfDirectoryEntriesFromPath(&Arena, Str8("shaders/hlsl/"));
+			for(str8_list_node *File = Entries.First; File; File = File->Next)
+			{
+				if(Str8EndsWith(File->String, Str8(".hlsl")))
+				{
+					str8 FileName = Str8UpToLastCharacter(&Arena, File->String, '.');
+					Str8ListAppend(&Arena, &Shaders, Str8PushF(
+						&Arena, "%.*s/%.*s",
+						Str8ToPrintfArgs(Str8("shaders/hlsl/")),
+						Str8ToPrintfArgs(File->String)
+					));
+					str8 CapitalFileName = FileName;
+					CapitalFileName.Bytes[0] = CapitalFileName.Bytes[0] - 'a' + 'A';
+					Str8ListAppend(&Arena, &ShaderVariableNames, Str8PushF(
+						&Arena,
+						"G_%.*sShader", Str8ToPrintfArgs(CapitalFileName))
+					);
+				}
+			}
 		}
 		else
 		{
-			Str8ListAppend(&Arena, &Shaders, Str8("shaders/msl/triangle.metal"));
-			Str8ListAppend(&Arena, &Shaders, Str8("shaders/msl/glyph.metal"));
-			Str8ListAppend(&Arena, &Shaders, Str8("shaders/msl/bloom.metal"));
-			Str8ListAppend(&Arena, &Shaders, Str8("shaders/msl/point.metal"));
-			Str8ListAppend(&Arena, &Shaders, Str8("shaders/msl/line.metal"));
-
-			Str8ListAppend(&Arena, &ShaderVariableNames, Str8("G_TriangleShader"));
-			Str8ListAppend(&Arena, &ShaderVariableNames, Str8("G_GlyphShader"));
-			Str8ListAppend(&Arena, &ShaderVariableNames, Str8("G_BloomShader"));
-			Str8ListAppend(&Arena, &ShaderVariableNames, Str8("G_PointShader"));
-			Str8ListAppend(&Arena, &ShaderVariableNames, Str8("G_LineShader"));
+			str8_list Entries = ListOfDirectoryEntriesFromPath(&Arena, Str8("shaders/msl/"));
+			for(str8_list_node *File = Entries.First; File; File = File->Next)
+			{
+				if(Str8EndsWith(File->String, Str8(".metal")))
+				{
+					str8 FileName = Str8UpToLastCharacter(&Arena, File->String, '.');
+					Str8ListAppend(&Arena, &Shaders, Str8PushF(
+						&Arena, "%.*s/%.*s",
+						Str8ToPrintfArgs(Str8("shaders/msl/")),
+						Str8ToPrintfArgs(File->String)
+					));
+					str8 CapitalFileName = FileName;
+					CapitalFileName.Bytes[0] = CapitalFileName.Bytes[0] - 'a' + 'A';
+					Str8ListAppend(&Arena, &ShaderVariableNames, Str8PushF(
+						&Arena,
+						"G_%.*sShader", Str8ToPrintfArgs(CapitalFileName))
+					);
+				}
+			}
 		}
 
 		EmbedFiles(&Arena, Shaders, Str8("embed/shaders.h"), ShaderVariableNames);

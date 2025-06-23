@@ -103,35 +103,73 @@ mayday_context;
 #define SOKOL_LOG_IMPL
 #include "sokol_log.h"
 
-void OS_Update_(void *Data)
+void OS_Update(void *Data)
 {
 	mayday_context *M = Data;
 	UI_Begin(M->UI);
 	R_PushScissor(M->Render, v4i(0, 0, sapp_width(), sapp_height()));
 	R_PushTransform(M->Render, Orthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
-	//D_DrawQuad(M->Draw, M->FrameArena, v2f(100, 100), 100, 200, v4f(0, 1, 0, 1));
-	ui_signal Button = UI_TextButton(
-		M->UI, M->Draw, M->FrameArena,
-		Str8("asdfasdfasdf"), 60, 
-		v2f(800, 200), v4f(1, 1, 1.0, 1)
-	);
-	// D_DrawQuad(M->Draw, M->FrameArena, v2f(200, 200), 100, 200, v4f(0, 1, 0, 1));
-	// D_DrawStr8(M->Draw, M->FrameArena, M->CodeFont, v2f(300, 300), v4f(1, 1, 1, 1), 64, Str8("Rungalo Bungalo"));
-	
-	m44f Persp = Perspective(sapp_widthf()/sapp_heightf(), 35, 0.01, 10000.0);
-	m44f View = M44FLookAt(v3f(0, 0, 5), v3f(0, 0, 0), v3f(0, 1, 0));
-	R_PushTransform(M->Render, Mul(Persp, View));
-	D_DrawCubePoints(
-		M->Draw, M->FrameArena, v3f(0, 0, -10),
-		v3f(1, 1, 1), v4f(1, 1, 1, 1)
-	);
+	{
+		stbtt_vertex *Vertices;
+		f32 Scale = stbtt_ScaleForPixelHeight(&M->CodeFont.Info, 512);
+		s32 GlyphIndex = stbtt_FindGlyphIndex(&M->CodeFont.Info, 'A');
+		s32 NumberOfVertices = stbtt_GetGlyphShape(&M->CodeFont.Info, GlyphIndex, &Vertices);
 
-	R_PopTransform(M->Render);
+		v3f *Points = ArenaPushArrayZero(M->FrameArena, v3f, NumberOfVertices*3);
+		int NumberOfPoints = 0;
+
+		v2f Last = {0};
+		for (s32 I = 0; I < NumberOfVertices; I++)
+		{
+			stbtt_vertex *V = Vertices + I;
+			switch(V->type)
+			{
+			case STBTT_vmove:
+			{
+				Last = v2f(V->x * Scale, V->y * Scale);
+			}
+			break;
+			case STBTT_vcurve:
+			{
+				v2f Control = v2f(V->cx * Scale, V->cy * Scale);
+				v2f End = v2f(V->x * Scale, V->y * Scale);
+				Points[NumberOfPoints++] = v3f(Last.X, Last.Y, 0.0);
+				Points[NumberOfPoints++] = v3f(Control.X, Control.Y, 0.0);
+				Points[NumberOfPoints++] = v3f(End.X, End.Y, 0.0);
+				Last = End;
+			}
+			break;
+			case STBTT_vline:
+			{
+				v2f End = v2f(V->x * Scale, V->y * Scale);
+				v2f Control = v2f((Last.X + End.X)*0.5, (Last.Y + End.Y)*0.5);
+				Points[NumberOfPoints++] = v3f(Last.X, Last.Y, 0.0);
+				Points[NumberOfPoints++] = v3f(Control.X, Control.Y, 0.0);
+				Points[NumberOfPoints++] = v3f(End.X, End.Y, 0.0);
+				Last = End;
+			}
+			break;
+			}
+		}
+
+		LogInfo("NumberOfVertices: ?s32 | NumberOfPoints: ?s32", NumberOfVertices, NumberOfPoints);
+
+		for(int Point = 0; Point < NumberOfPoints; Point++)
+		{
+			Points[Point].X += 256;
+			Points[Point].Y += 256;
+		}
+		for(int Point = 0; Point < NumberOfPoints-1; Point++)
+		{
+			D_DrawLinesArray(M->Draw, M->FrameArena, Points + Point, 2, v4f(1, 1, 1, 1));	
+		}
+		
+		D_DrawPointsArray(M->Draw, M->FrameArena, Points, NumberOfPoints, 10, v4f(1, 1, 1, 1));
+	}
 	R_PopTransform(M->Render);
 	R_PopScissor(M->Render);
 
 	R_Update(M->Render, M->FrameArena);
-	D_GlyphsToAtlas(M->Draw);
 	ArenaReset(M->FrameArena);
 	m_arena *TempArena = M->FrameArena;
 	M->FrameArena = M->PreviousFrameArena;
@@ -141,7 +179,7 @@ void OS_Update_(void *Data)
 	M->UI->EventFirst = Null;
 }
 
-void OS_Update(void *Data)
+void OS_Update_(void *Data)
 {
 	mayday_context *M = Data;
 

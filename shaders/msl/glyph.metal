@@ -24,6 +24,7 @@ struct uniforms
 
 vertex vertex_output VertexMain(constant vertex_input *Vertices [[buffer(0)]],
 								constant uniforms &Uniforms [[buffer(1)]],
+								device float &Curves [[buffer(2)]],
 								uint VertexID [[vertex_id]])
 {
 	vertex_output Output;

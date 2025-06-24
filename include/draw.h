@@ -11,6 +11,13 @@ typedef struct d_font
 	int LineGap;
 } d_font;
 
+typedef struct curve
+{
+	v2f Start;
+	v2f Control;
+	v2f End;
+} curve;
+
 typedef struct d_atlas_glyph
 {
 	u64 Hash;
@@ -20,6 +27,10 @@ typedef struct d_atlas_glyph
 	v4i BitmapBox;
 	u32 CodePoint;
 	f32 AdvanceX;
+
+	curve *Curves;
+	int CurveCount;
+
 	struct d_atlas_glyph *NextInHashSlot;
 
 	struct d_atlas_glyph *NextInLRU;

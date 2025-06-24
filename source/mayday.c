@@ -152,8 +152,6 @@ void OS_Update(void *Data)
 			}
 		}
 
-		LogInfo("NumberOfVertices: ?s32 | NumberOfPoints: ?s32", NumberOfVertices, NumberOfPoints);
-
 		for(int Point = 0; Point < NumberOfPoints; Point++)
 		{
 			Points[Point].X += 256;

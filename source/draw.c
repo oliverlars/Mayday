@@ -519,11 +519,23 @@ void D_Draw3DStr8(draw_context *D,
 			continue;
 		}
 
+		for(int CurveIndex = 0; CurveIndex < Glyph->CurveCount; CurveIndex++)
+		{
+			v2f Start = Glyph->Curves[CurveIndex].Start;
+			v2f End = Glyph->Curves[CurveIndex].End;
+			v3f Line[2] = 
+			{
+				v3f(Position.X + Start.X*Scale, Position.Y + Start.Y*Scale, 0.0),
+				v3f(Position.X + End.X*Scale, Position.Y + End.Y*Scale, 0.0)
+			};
+			D_DrawLinesArray(D, Arena, Line, 2, Colour);
+		}
+
 		Position.X += AdvanceX;
 	}
 
-	Command.Type = R_COMMAND_GLYPH;
-	R_PushCommand(R, Arena, Command);
+	// Command.Type = R_COMMAND_GLYPH;
+	// R_PushCommand(R, Arena, Command);
 }
 
 void D_DrawStr8(draw_context *D,

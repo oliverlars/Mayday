@@ -34,6 +34,10 @@ typedef struct d3d11_context
 	ID3D11VertexShader    *BloomVertexShader;
 	ID3D11PixelShader     *BloomPixelShader;
 
+	ID3D11VertexShader    *LineVertexShader;
+	ID3D11PixelShader     *LinePixelShader;
+	ID3D11InputLayout     *LineInputLayout;
+
 	ID3D11Texture2D          *FontAtlasTexture;
 	ID3D11ShaderResourceView *FontAtlasTextureView;
 

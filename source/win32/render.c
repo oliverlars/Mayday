@@ -19,16 +19,6 @@ typedef struct uniforms
 	m44f PVMMatrix;
 } uniforms;
 
-typedef struct gpu_vertex
-{
-	v4f Position;
-	v4f Colour;
-	v4f UV;
-	f32 PointSize;
-	v3f Padding;
-}
-gpu_vertex;
-
 void R_TextureFromBytes(render_context *R, u8 *Bytes, s32 Width, s32 Height)
 {
 	d3d11_context *D3D11 = R->Backend;
@@ -164,6 +154,69 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 			TrianglePixelShaderObject->lpVtbl->GetBufferPointer(TrianglePixelShaderObject),
 			TrianglePixelShaderObject->lpVtbl->GetBufferSize(TrianglePixelShaderObject),
 			Null, &D3D11->TrianglePixelShader
+		);
+	}
+
+	// LINE SHADER
+	{
+		ID3DBlob *LineVertexShaderObject;
+		ID3DBlob *Error;
+		HRESULT Compiled;
+		Compiled = D3DCompile(G_LineShader, sizeof(G_LineShader),
+				Null, Null, Null,
+				"VertexMain",
+				"vs_5_0",
+				0, 0,
+				&LineVertexShaderObject, &Error);
+		if(FAILED(Compiled))
+		{
+			char *ErrorMessage = (char*)(Error->lpVtbl->GetBufferPointer(Error));
+			LogError("[VERTEX] ?cstr", ErrorMessage);
+			Error->lpVtbl->Release(Error);
+		}
+		
+		D3D11->Device->lpVtbl->CreateVertexShader(
+			D3D11->Device,
+			LineVertexShaderObject->lpVtbl->GetBufferPointer(LineVertexShaderObject),
+			LineVertexShaderObject->lpVtbl->GetBufferSize(LineVertexShaderObject),
+			Null, &D3D11->LineVertexShader
+		);
+
+		D3D11_INPUT_ELEMENT_DESC VertexAttributes[] =
+		{
+			{ "POS", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0,                            0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+			{ "COL", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+			{ "START", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+			{ "END", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		};
+
+		D3D11->Device->lpVtbl->CreateInputLayout(
+			D3D11->Device,
+			VertexAttributes,
+			ARRAYSIZE(VertexAttributes),
+			LineVertexShaderObject->lpVtbl->GetBufferPointer(LineVertexShaderObject),
+			LineVertexShaderObject->lpVtbl->GetBufferSize(LineVertexShaderObject),
+			&D3D11->LineInputLayout);
+
+		ID3DBlob *LinePixelShaderObject;
+		Compiled = D3DCompile(G_LineShader, sizeof(G_LineShader),
+				Null, Null, Null,
+				"PixelMain",
+				"ps_5_0",
+				0, 0,
+				&LinePixelShaderObject, &Error);
+		if(FAILED(Compiled))
+		{
+			char *ErrorMessage = (char*)(Error->lpVtbl->GetBufferPointer(Error));
+			LogError("[PIXEL] ?cstr", ErrorMessage);
+			Error->lpVtbl->Release(Error);
+		}
+
+		D3D11->Device->lpVtbl->CreatePixelShader(
+			D3D11->Device,
+			LinePixelShaderObject->lpVtbl->GetBufferPointer(LinePixelShaderObject),
+			LinePixelShaderObject->lpVtbl->GetBufferSize(LinePixelShaderObject),
+			Null, &D3D11->LinePixelShader
 		);
 	}
 
@@ -661,18 +714,36 @@ void R_Update(render_context *R, m_arena *FrameArena)
 
 	
 	int TotalVertices = 0;
-	int VertexOffset = 0;
+	int VertexOffsetInBytes = 0;
 
 	int ResourceIndex = R->Frame % FRAMES_IN_FLIGHT;
-
 	D3D11_MAP VertexWriteMode = D3D11_MAP_WRITE_DISCARD;
+
+	typedef struct triangle_vertex
+	{
+		v4f Position;
+		v4f Colour;
+		v4f UV;
+		f32 PointSize;
+		v3f Padding;
+	} triangle_vertex;
+
+	typedef struct line_vertex
+	{
+		v4f Position;
+		v4f Colour;
+		v2f Start;
+		v2f End;
+		v4f Padding;
+	} line_vertex;
 	for(r_command *Command = R->CommandsFirst; Command != Null; Command = Command->Next)
 	{
 		if(0){}
 		else if(Command->Type == R_COMMAND_TRIANGLE || Command->Type == R_COMMAND_GLYPH)
 		{
-			gpu_vertex *GPUVertices = (gpu_vertex*)ArenaPushArrayZero(Scratch.Arena,
-															 	 	  gpu_vertex, Command->VerticesCount);
+
+			triangle_vertex *GPUVertices = (triangle_vertex*)ArenaPushArrayZero(Scratch.Arena,
+															 	 	  triangle_vertex, Command->VerticesCount);
 			for(int V = 0; V < Command->VerticesCount; V++)
 			{
 				v4f P = Command->Vertices[V].Position;
@@ -691,12 +762,53 @@ void R_Update(render_context *R, m_arena *FrameArena)
 				0,
 				VertexWriteMode, 0, &TriangleVertexBufferResource
 			);
-			gpu_vertex* Vertices = (gpu_vertex*)TriangleVertexBufferResource.pData;
+			triangle_vertex* Vertices = (triangle_vertex*)TriangleVertexBufferResource.pData;
 
 			MemoryCopy(
-				Vertices + VertexOffset + TotalVertices,
+				(u8*)Vertices + VertexOffsetInBytes + TotalVertices*sizeof(triangle_vertex),
 				GPUVertices,
-				sizeof(gpu_vertex)*Command->VerticesCount
+				sizeof(triangle_vertex)*Command->VerticesCount
+			);
+			D3D11->DeviceContext->lpVtbl->Unmap(
+				D3D11->DeviceContext,
+				(ID3D11Resource*)D3D11->VertexBuffers[ResourceIndex],
+				0
+			);
+			VertexWriteMode = D3D11_MAP_WRITE_NO_OVERWRITE;
+
+			TotalVertices += Command->VerticesCount;
+		}
+		else if(Command->Type == R_COMMAND_LINES)
+		{
+			line_vertex *GPUVertices = (line_vertex*)ArenaPushArrayZero(Scratch.Arena,
+															 	 	  line_vertex, Command->VerticesCount);
+			for(int V = 0; V < Command->VerticesCount; V++)
+			{
+				v4f P = Command->Vertices[V].Position;
+				v2f UV = Command->Vertices[V].UV;
+				v4f Colour = Command->Vertices[V].Colour;
+				v2f Start = Command->Vertices[V].Start;
+				v2f End = Command->Vertices[V].End;
+				GPUVertices[V].Position = P;
+				GPUVertices[V].Colour = Colour;
+				GPUVertices[V].Start = Start;
+				GPUVertices[V].End = End;
+			}
+
+			D3D11_MAPPED_SUBRESOURCE LineVertexBufferResource;
+
+			D3D11->DeviceContext->lpVtbl->Map(
+				D3D11->DeviceContext,
+				(ID3D11Resource*)D3D11->VertexBuffers[ResourceIndex],
+				0,
+				VertexWriteMode, 0, &LineVertexBufferResource
+			);
+			line_vertex* Vertices = (line_vertex*)LineVertexBufferResource.pData;
+
+			MemoryCopy(
+				(u8*)Vertices + VertexOffsetInBytes + TotalVertices*sizeof(line_vertex),
+				GPUVertices,
+				sizeof(line_vertex)*Command->VerticesCount
 			);
 			D3D11->DeviceContext->lpVtbl->Unmap(
 				D3D11->DeviceContext,
@@ -735,12 +847,74 @@ void R_Update(render_context *R, m_arena *FrameArena)
 				0
 			);
 
-			if(Command->Type == R_COMMAND_TRIANGLE)
+			if(Command->Type == R_COMMAND_LINES)
+			{
+				D3D11->DeviceContext->lpVtbl->IASetPrimitiveTopology(D3D11->DeviceContext, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+				D3D11->DeviceContext->lpVtbl->IASetInputLayout(D3D11->DeviceContext, D3D11->LineInputLayout);
+				u32 Stride = sizeof(line_vertex);
+				u32 Offset = VertexOffsetInBytes;
+				D3D11->DeviceContext->lpVtbl->IASetVertexBuffers(D3D11->DeviceContext, 0, 1, &D3D11->VertexBuffers[ResourceIndex], &Stride, &Offset);
+				D3D11->DeviceContext->lpVtbl->VSSetShader(
+					D3D11->DeviceContext,
+					D3D11->LineVertexShader,
+					Null, 
+					0
+				);
+				D3D11->DeviceContext->lpVtbl->VSSetConstantBuffers(
+					D3D11->DeviceContext,
+					0, 1,
+					&D3D11->UniformBuffers[ResourceIndex]
+				);
+				D3D11->DeviceContext->lpVtbl->RSSetViewports(
+					D3D11->DeviceContext,
+					1, &Viewport
+				);
+
+				D3D11_RECT ScissorRect =
+				{
+					Command->Scissor.X,
+					Command->Scissor.Y,
+					Command->Scissor.X + Command->Scissor.Z,
+					Command->Scissor.Y + Command->Scissor.W,
+				};
+				D3D11->DeviceContext->lpVtbl->RSSetScissorRects(
+					D3D11->DeviceContext,
+					1,
+					&ScissorRect
+				);
+				D3D11->DeviceContext->lpVtbl->RSSetState(
+					D3D11->DeviceContext,
+					D3D11->RasterizerState
+				);
+				D3D11->DeviceContext->lpVtbl->PSSetShader(
+					D3D11->DeviceContext,
+					D3D11->LinePixelShader,
+					Null, 0
+				);
+				D3D11->DeviceContext->lpVtbl->OMSetRenderTargets(
+					D3D11->DeviceContext, 
+					1, &D3D11->BaseFrameBufferRTV, Null
+				);
+				D3D11->DeviceContext->lpVtbl->OMSetDepthStencilState(
+					D3D11->DeviceContext,
+					D3D11->DepthStencilState, 
+					0
+				);
+				D3D11->DeviceContext->lpVtbl->OMSetBlendState(
+					D3D11->DeviceContext,
+					D3D11->BlendState, Null,
+					0xFFFFFFFF
+				);
+				D3D11->DeviceContext->lpVtbl->Draw(D3D11->DeviceContext, TotalVertices, 0);
+				VertexOffsetInBytes += TotalVertices*sizeof(line_vertex);
+				TotalVertices = 0;
+			}
+			else if(Command->Type == R_COMMAND_TRIANGLE)
 			{
 				D3D11->DeviceContext->lpVtbl->IASetPrimitiveTopology(D3D11->DeviceContext, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 				D3D11->DeviceContext->lpVtbl->IASetInputLayout(D3D11->DeviceContext, D3D11->TriangleInputLayout);
-				u32 Stride = sizeof(gpu_vertex);
-				u32 Offset = VertexOffset*sizeof(gpu_vertex);
+				u32 Stride = sizeof(triangle_vertex);
+				u32 Offset = VertexOffsetInBytes;
 				D3D11->DeviceContext->lpVtbl->IASetVertexBuffers(D3D11->DeviceContext, 0, 1, &D3D11->VertexBuffers[ResourceIndex], &Stride, &Offset);
 				D3D11->DeviceContext->lpVtbl->VSSetShader(
 					D3D11->DeviceContext,
@@ -794,15 +968,15 @@ void R_Update(render_context *R, m_arena *FrameArena)
 					0xFFFFFFFF
 				);
 				D3D11->DeviceContext->lpVtbl->Draw(D3D11->DeviceContext, TotalVertices, 0);
-				VertexOffset += TotalVertices;
+				VertexOffsetInBytes += TotalVertices*sizeof(triangle_vertex);
 				TotalVertices = 0;
 			}
 			else if(Command->Type == R_COMMAND_GLYPH)
 			{
 				D3D11->DeviceContext->lpVtbl->IASetPrimitiveTopology(D3D11->DeviceContext, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 				D3D11->DeviceContext->lpVtbl->IASetInputLayout(D3D11->DeviceContext, D3D11->GlyphInputLayout);
-				u32 Stride = sizeof(gpu_vertex);
-				u32 Offset = VertexOffset*sizeof(gpu_vertex);
+				u32 Stride = sizeof(triangle_vertex);
+				u32 Offset = VertexOffsetInBytes;
 				D3D11->DeviceContext->lpVtbl->IASetVertexBuffers(D3D11->DeviceContext, 0, 1, &D3D11->VertexBuffers[ResourceIndex], &Stride, &Offset);
 				D3D11->DeviceContext->lpVtbl->VSSetShader(
 					D3D11->DeviceContext,
@@ -864,7 +1038,7 @@ void R_Update(render_context *R, m_arena *FrameArena)
 					0xFFFFFFFF
 				);
 				D3D11->DeviceContext->lpVtbl->Draw(D3D11->DeviceContext, TotalVertices, 0);
-				VertexOffset += TotalVertices;
+				VertexOffsetInBytes += TotalVertices*sizeof(triangle_vertex);
 				TotalVertices = 0;
 			}
 		}

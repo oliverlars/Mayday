@@ -361,7 +361,6 @@ void D_DrawQuad(draw_context *D,
 	r_command Command = {0};
 	Command.Vertices = ArenaPushArrayZero(Arena, r_vertex, 6);
 	Command.VerticesCount = 6;
-	Command.VerticesFormat = R_VF_POSITION | R_VF_UV;
 
 	r_vertex *R_Vertices = Command.Vertices;
 
@@ -404,7 +403,6 @@ void D_Draw3DStr8(draw_context *D,
 	r_command Command = {0};
 	Command.Vertices = (r_vertex*)ArenaPushZero(Arena, TotalTriangleCount*sizeof(r_vertex));
 	Command.VerticesCount = TotalTriangleCount;
-	Command.VerticesFormat = R_VF_POSITION | R_VF_UV;
 
 	u64 Hash = M_FNVHashBytes(M_FNV_HASH_START, (u8*)&Font, sizeof(d_font));
 	Hash = M_FNVHashBytes(Hash, (u8*)&HeightInPixels, sizeof(f32));
@@ -632,7 +630,6 @@ void D_DrawCubePoints(draw_context *D,
 	r_command Command = {0};
 	Command.Vertices = ArenaPushArrayZero(Arena, r_vertex, 8);
 	Command.VerticesCount = 8;
-	Command.VerticesFormat = R_VF_POSITION | R_VF_COLOUR;
 
 	r_vertex *R_Vertices = Command.Vertices;
 
@@ -681,7 +678,6 @@ void D_DrawPointsArray(draw_context *D,
 	r_command Command = {0};
 	Command.Vertices = (r_vertex*)ArenaPushArrayZero(Arena, r_vertex, PositionsCount);
 	Command.VerticesCount = PositionsCount;
-	Command.VerticesFormat = R_VF_POSITION | R_VF_COLOUR;
 
 	r_vertex *R_Vertices = Command.Vertices;
 
@@ -708,20 +704,54 @@ void D_DrawLinesArray(draw_context *D,
 {
 	render_context *R = D->Render;
 	r_command Command = {0};
-	Command.Vertices = (r_vertex*)ArenaPushArrayZero(Arena, r_vertex, PositionsCount);
-	Command.VerticesCount = PositionsCount;
-	Command.VerticesFormat = R_VF_POSITION | R_VF_COLOUR;
-
+	Command.Vertices = (r_vertex*)ArenaPushArrayZero(Arena, r_vertex, PositionsCount/2*6);
+	Command.VerticesCount = 6*PositionsCount/2;
 	r_vertex *R_Vertices = Command.Vertices;
 
-	for(int V = 0; V < PositionsCount; V++)
+	// for(int V = 0; V < PositionsCount; V++)
+	// {
+	// 	r_vertex Vertex = {
+	// 		.Position = v4f(Positions[V].X, Positions[V].Y, Positions[V].Z, 1),
+	// 		.Colour = Colour,
+	// 	};
+
+	// 	*R_Vertices++ = Vertex;
+	// }
+
+	for(int P = 0; P < PositionsCount; P += 2)
 	{
-		r_vertex Vertex = {
-			.Position = v4f(Positions[V].X, Positions[V].Y, Positions[V].Z, 1),
-			.Colour = Colour,
+		v3f A = Positions[P];
+		v3f B = Positions[P + 1];
+		v2f BL = v2f(Min(A.X, B.X), Min(A.Y, B.Y));
+		v2f TR = v2f(Max(A.X, B.X), Max(A.Y, B.Y));
+		BL.X -= 1;
+		BL.Y -= 1;
+		TR.X += 1;
+		TR.Y += 1;
+		f32 Width = TR.X - BL.X;
+		f32 Height = fabs(TR.Y - BL.Y);
+		v2f Vertices[6] =
+		{
+			v2f(BL.X, BL.Y),
+			v2f(TR.X, BL.Y),
+			v2f(TR.X, TR.Y),
+
+			v2f(BL.X, BL.Y),
+			v2f(BL.X, TR.Y),
+			v2f(TR.X, TR.Y),
 		};
 
-		*R_Vertices++ = Vertex;
+		for(int V = 0; V < 6; V++)
+		{
+			r_vertex Vertex = {
+				.Position = v4f(Vertices[V].X, Vertices[V].Y, A.Z, 1),
+				.Colour = Colour,
+				.Start = v2f(A.X, A.Y),
+				.End = v2f(B.X, B.Y),
+			};
+			*R_Vertices++ = Vertex;
+		}
+
 	}
 	Command.Type = R_COMMAND_LINES;
 	R_PushCommand(R, Arena, Command);

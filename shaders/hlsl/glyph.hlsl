@@ -5,8 +5,8 @@ SamplerState Sampler:   register(s0);
 
 struct vertex_input
 {
-    float4 Position: POS;
-    float4 Colour:   COL;
+	float4 Position: POS;
+	float4 Colour:   COL;
 	float4 UV:       TEX;
 	float  PointSize: PSIZE;
 };

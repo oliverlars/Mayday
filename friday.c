@@ -1,6 +1,5 @@
 #include "friday.h"
 #include "memory.h"
-#include "strings.h"
 
 Entry(InputWaveInfo)
 {

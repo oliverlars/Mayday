@@ -23,6 +23,7 @@ typedef struct uniforms
 	m44f PVMMatrix;
 } uniforms;
 
+
 typedef struct gpu_vertex
 {
 	v4f Position;
@@ -32,6 +33,17 @@ typedef struct gpu_vertex
 	v3f Padding;
 }
 gpu_vertex;
+
+typedef struct gpu_line_vertex
+{
+	v4f Position;
+	v4f Colour;
+	v2f Start;
+	v2f End;
+	v4f Padding;
+}
+gpu_line_vertex;
+
 // Dumb hack
 void R_TextureFromBytes(render_context *R, u8 *Bytes, s32 Width, s32 Height)
 {
@@ -330,7 +342,13 @@ metal_shader R_LineShader(render_context *R)
 	VertexDescriptor.attributes[1].format = MTLVertexFormatFloat4;
 	VertexDescriptor.attributes[1].offset = sizeof(v4f);
 	VertexDescriptor.attributes[1].bufferIndex = 0;
-	VertexDescriptor.layouts[0].stride = sizeof(gpu_vertex);
+	VertexDescriptor.attributes[2].format = MTLVertexFormatFloat2;
+	VertexDescriptor.attributes[2].offset = sizeof(v2f);
+	VertexDescriptor.attributes[2].bufferIndex = 0;
+	VertexDescriptor.attributes[3].format = MTLVertexFormatFloat2;
+	VertexDescriptor.attributes[3].offset = sizeof(v2f);
+	VertexDescriptor.attributes[3].bufferIndex = 0;
+	VertexDescriptor.layouts[0].stride = sizeof(gpu_line_vertex);
 
 	PipelineDescriptor.vertexDescriptor = VertexDescriptor;
 
@@ -462,14 +480,15 @@ void R_RenderLines(render_context *R, id<MTLCommandBuffer> CommandBuffer, v4i Sc
 	PassDesc.depthAttachment.storeAction = MTLStoreActionStore;
 
 	MTLDepthStencilDescriptor *DepthStencilDescriptor = [MTLDepthStencilDescriptor new];
-	DepthStencilDescriptor.depthCompareFunction = MTLCompareFunctionLess;
-	DepthStencilDescriptor.depthWriteEnabled = YES;
 	id<MTLDepthStencilState> DepthStencilState = [Metal->Device newDepthStencilStateWithDescriptor:DepthStencilDescriptor];
 
 	id<MTLRenderCommandEncoder> Encoder = [CommandBuffer renderCommandEncoderWithDescriptor:PassDesc];
 	[Encoder setRenderPipelineState:Metal->LineShader.PipelineState];
+	[Encoder setFrontFacingWinding:MTLWindingClockwise];
+	[Encoder setCullMode:(MTLCullModeNone)];
 	[Encoder setVertexBuffer:Metal->VertexBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:VertexOffset atIndex:0];
 	[Encoder setVertexBuffer:Metal->UniformBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:UniformOffset atIndex:1];
+	[Encoder setDepthStencilState:DepthStencilState];
 
 	MTLScissorRect ScissorRect = {
 		.x = Scissor.X,
@@ -480,9 +499,7 @@ void R_RenderLines(render_context *R, id<MTLCommandBuffer> CommandBuffer, v4i Sc
 
 	[Encoder setScissorRect:ScissorRect];
 
-	[Encoder drawPrimitives:MTLPrimitiveTypeLine vertexStart:0 vertexCount:VertexCount];
-
-
+	[Encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:VertexCount];
 
 	[Encoder endEncoding];
 }
@@ -643,7 +660,7 @@ void R_Update(render_context *R, m_arena *FrameArena)
 
 
 	int TotalVertices = 0;
-	int VertexOffset = 0;
+	int VertexOffsetInBytes = 0;
 
 	int ResourceIndex = R->Frame % FRAMES_IN_FLIGHT;
 
@@ -668,7 +685,7 @@ void R_Update(render_context *R, m_arena *FrameArena)
 				GPUVertices[V].Colour = Colour;
 				GPUVertices[V].UV = v4f(UV.X, UV.Y, 0, 0);
 			}
-			MemoryCopy(Metal->VertexBuffers[ResourceIndex].contents + VertexOffset*sizeof(gpu_vertex) + TotalVertices*sizeof(gpu_vertex),
+			MemoryCopy(Metal->VertexBuffers[ResourceIndex].contents + VertexOffsetInBytes + TotalVertices*sizeof(gpu_vertex),
 					GPUVertices, sizeof(gpu_vertex)*Command->VerticesCount);
 			TotalVertices += Command->VerticesCount;
 		}
@@ -684,7 +701,7 @@ void R_Update(render_context *R, m_arena *FrameArena)
 				GPUVertices[V].Position = P;
 				GPUVertices[V].Colour = Colour;
 			}
-			MemoryCopy(Metal->VertexBuffers[ResourceIndex].contents + VertexOffset*sizeof(gpu_vertex) + TotalVertices*sizeof(gpu_vertex),
+			MemoryCopy(Metal->VertexBuffers[ResourceIndex].contents + VertexOffsetInBytes + TotalVertices*sizeof(gpu_vertex),
 					GPUVertices, sizeof(gpu_vertex)*Command->VerticesCount);
 			TotalVertices += Command->VerticesCount;
 		}
@@ -702,23 +719,27 @@ void R_Update(render_context *R, m_arena *FrameArena)
 				GPUVertices[V].Colour = Colour;
 				GPUVertices[V].PointSize = PointSize;
 			}
-			MemoryCopy(Metal->VertexBuffers[ResourceIndex].contents + VertexOffset*sizeof(gpu_vertex) + TotalVertices*sizeof(gpu_vertex),
+			MemoryCopy(Metal->VertexBuffers[ResourceIndex].contents + VertexOffsetInBytes + TotalVertices*sizeof(gpu_vertex),
 					GPUVertices, sizeof(gpu_vertex)*Command->VerticesCount);
 			TotalVertices += Command->VerticesCount;
 		}
 		else if(Command->Type == R_COMMAND_LINES)
 		{
-			gpu_vertex *GPUVertices = (gpu_vertex*)ArenaPushArrayZero(Scratch.Arena,
-															 		  gpu_vertex, Command->VerticesCount);
+			gpu_line_vertex *GPUVertices = (gpu_line_vertex*)ArenaPushArrayZero(Scratch.Arena,
+															 		  gpu_line_vertex, Command->VerticesCount);
 			for(int V = 0; V < Command->VerticesCount; V++)
 			{
 				v4f P = Command->Vertices[V].Position;
 				v2f UV = Command->Vertices[V].UV;
 				v4f Colour = Command->Vertices[V].Colour;
+				v2f Start = Command->Vertices[V].Start;
+				v2f End = Command->Vertices[V].End;
 				GPUVertices[V].Position = P;
 				GPUVertices[V].Colour = Colour;
+				GPUVertices[V].Start = Start;
+				GPUVertices[V].End = End;
 			}
-			MemoryCopy(Metal->VertexBuffers[ResourceIndex].contents + VertexOffset*sizeof(gpu_vertex) + TotalVertices*sizeof(gpu_vertex),
+			MemoryCopy(Metal->VertexBuffers[ResourceIndex].contents + VertexOffsetInBytes + TotalVertices*sizeof(gpu_vertex),
 					GPUVertices, sizeof(gpu_vertex)*Command->VerticesCount);
 			TotalVertices += Command->VerticesCount;
 		}
@@ -732,26 +753,26 @@ void R_Update(render_context *R, m_arena *FrameArena)
 
 			if(Command->Type == R_COMMAND_GLYPH)
 			{
-				R_RenderGlyphs(R, CommandBuffer, Command->Scissor, TotalVertices, VertexOffset*sizeof(gpu_vertex), UniformOffset*sizeof(uniforms));
-				VertexOffset += TotalVertices;
+				R_RenderGlyphs(R, CommandBuffer, Command->Scissor, TotalVertices, VertexOffsetInBytes, UniformOffset*sizeof(uniforms));
+				VertexOffsetInBytes += TotalVertices*sizeof(gpu_vertex);
 				TotalVertices = 0;
 			}
 			else if(Command->Type == R_COMMAND_TRIANGLE)
 			{
-				R_RenderTriangles(R, CommandBuffer, Command->Scissor, TotalVertices, VertexOffset*sizeof(gpu_vertex), UniformOffset*sizeof(uniforms));
-				VertexOffset += TotalVertices;
+				R_RenderTriangles(R, CommandBuffer, Command->Scissor, TotalVertices, VertexOffsetInBytes, UniformOffset*sizeof(uniforms));
+				VertexOffsetInBytes += TotalVertices*sizeof(gpu_vertex);
 				TotalVertices = 0;
 			}
 			else if(Command->Type == R_COMMAND_POINTS)
 			{
-				R_RenderPoints(R, CommandBuffer, Command->Scissor, TotalVertices, VertexOffset*sizeof(gpu_vertex), UniformOffset*sizeof(uniforms));
-				VertexOffset += TotalVertices;
+				R_RenderPoints(R, CommandBuffer, Command->Scissor, TotalVertices, VertexOffsetInBytes, UniformOffset*sizeof(uniforms));
+				VertexOffsetInBytes += TotalVertices*sizeof(gpu_vertex);
 				TotalVertices = 0;
 			}
 			else if(Command->Type == R_COMMAND_LINES)
 			{
-				R_RenderLines(R, CommandBuffer, Command->Scissor, TotalVertices, VertexOffset*sizeof(gpu_vertex), UniformOffset*sizeof(uniforms));
-				VertexOffset += TotalVertices;
+				R_RenderLines(R, CommandBuffer, Command->Scissor, TotalVertices, VertexOffsetInBytes, UniformOffset*sizeof(uniforms));
+				VertexOffsetInBytes += TotalVertices*sizeof(gpu_line_vertex);
 				TotalVertices = 0;
 			}
 

@@ -159,10 +159,20 @@ void OS_Update_(void *Data)
 		}
 		for(int Point = 0; Point < NumberOfPoints-1; Point++)
 		{
-			D_DrawLinesArray(M->Draw, M->FrameArena, Points + Point, 2, v4f(1, 1, 1, 1));	
+			//D_DrawLinesArray(M->Draw, M->FrameArena, Points + Point, 2, v4f(1, 1, 1, 1));	
 		}
+
+		v3f Line[2] = 
+		{
+			v3f(0, 0, 0),
+			v3f(100, 100, 0)
+		};
+
+		D_DrawLinesArray(M->Draw, M->FrameArena, Line, 2, v4f(1, 1, 1, 1));	
+
+		//D_DrawLinesArray(M->Draw, M->FrameArena, Points + Point, 2, v4f(1, 1, 1, 1));	
 		
-		D_DrawPointsArray(M->Draw, M->FrameArena, Points, NumberOfPoints, 10, v4f(1, 1, 1, 1));
+		//D_DrawPointsArray(M->Draw, M->FrameArena, Points, NumberOfPoints, 10, v4f(1, 1, 1, 1));
 	}
 	R_PopTransform(M->Render);
 	R_PopScissor(M->Render);

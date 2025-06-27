@@ -40,7 +40,6 @@ typedef struct gpu_line_vertex
 	v4f Colour;
 	v2f Start;
 	v2f End;
-	v4f Padding;
 }
 gpu_line_vertex;
 
@@ -343,10 +342,10 @@ metal_shader R_LineShader(render_context *R)
 	VertexDescriptor.attributes[1].offset = sizeof(v4f);
 	VertexDescriptor.attributes[1].bufferIndex = 0;
 	VertexDescriptor.attributes[2].format = MTLVertexFormatFloat2;
-	VertexDescriptor.attributes[2].offset = sizeof(v2f);
+	VertexDescriptor.attributes[2].offset = sizeof(v4f)*2;
 	VertexDescriptor.attributes[2].bufferIndex = 0;
 	VertexDescriptor.attributes[3].format = MTLVertexFormatFloat2;
-	VertexDescriptor.attributes[3].offset = sizeof(v2f);
+	VertexDescriptor.attributes[3].offset = sizeof(v4f)*2 + sizeof(v2f);
 	VertexDescriptor.attributes[3].bufferIndex = 0;
 	VertexDescriptor.layouts[0].stride = sizeof(gpu_line_vertex);
 
@@ -474,21 +473,11 @@ void R_RenderLines(render_context *R, id<MTLCommandBuffer> CommandBuffer, v4i Sc
 	PassDesc.colorAttachments[0].loadAction = MTLLoadActionLoad;
 	PassDesc.colorAttachments[0].storeAction = MTLStoreActionStore;
 	PassDesc.colorAttachments[0].clearColor = MTLClearColorMake(0.0,0.0,0.0,1);
-
-	PassDesc.depthAttachment.texture = Metal->DepthTexture;
-	PassDesc.depthAttachment.loadAction = MTLLoadActionLoad;
-	PassDesc.depthAttachment.storeAction = MTLStoreActionStore;
-
-	MTLDepthStencilDescriptor *DepthStencilDescriptor = [MTLDepthStencilDescriptor new];
-	id<MTLDepthStencilState> DepthStencilState = [Metal->Device newDepthStencilStateWithDescriptor:DepthStencilDescriptor];
-
+	
 	id<MTLRenderCommandEncoder> Encoder = [CommandBuffer renderCommandEncoderWithDescriptor:PassDesc];
 	[Encoder setRenderPipelineState:Metal->LineShader.PipelineState];
 	[Encoder setFrontFacingWinding:MTLWindingClockwise];
-	[Encoder setCullMode:(MTLCullModeNone)];
-	[Encoder setVertexBuffer:Metal->VertexBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:VertexOffset atIndex:0];
-	[Encoder setVertexBuffer:Metal->UniformBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:UniformOffset atIndex:1];
-	[Encoder setDepthStencilState:DepthStencilState];
+	[Encoder setCullMode:(MTLCullModeNone)];;
 
 	MTLScissorRect ScissorRect = {
 		.x = Scissor.X,
@@ -498,6 +487,9 @@ void R_RenderLines(render_context *R, id<MTLCommandBuffer> CommandBuffer, v4i Sc
 	};
 
 	[Encoder setScissorRect:ScissorRect];
+
+	[Encoder setVertexBuffer:Metal->VertexBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:VertexOffset atIndex:0];
+	[Encoder setVertexBuffer:Metal->UniformBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:UniformOffset atIndex:1];
 
 	[Encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:VertexCount];
 
@@ -730,7 +722,6 @@ void R_Update(render_context *R, m_arena *FrameArena)
 			for(int V = 0; V < Command->VerticesCount; V++)
 			{
 				v4f P = Command->Vertices[V].Position;
-				v2f UV = Command->Vertices[V].UV;
 				v4f Colour = Command->Vertices[V].Colour;
 				v2f Start = Command->Vertices[V].Start;
 				v2f End = Command->Vertices[V].End;
@@ -739,8 +730,8 @@ void R_Update(render_context *R, m_arena *FrameArena)
 				GPUVertices[V].Start = Start;
 				GPUVertices[V].End = End;
 			}
-			MemoryCopy(Metal->VertexBuffers[ResourceIndex].contents + VertexOffsetInBytes + TotalVertices*sizeof(gpu_vertex),
-					GPUVertices, sizeof(gpu_vertex)*Command->VerticesCount);
+			MemoryCopy(Metal->VertexBuffers[ResourceIndex].contents + VertexOffsetInBytes + TotalVertices*sizeof(gpu_line_vertex),
+					GPUVertices, sizeof(gpu_line_vertex)*Command->VerticesCount);
 			TotalVertices += Command->VerticesCount;
 		}
 

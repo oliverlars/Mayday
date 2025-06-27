@@ -169,7 +169,7 @@ void OS_Update(void *Data)
 		};
 
 		D_DrawLinesArray(M->Draw, M->FrameArena, Line, 2, v4f(1, 1, 1, 1));	
-
+		//D_DrawQuad(M->Draw, M->FrameArena, v2f(0, 0), 100, 100, v4f(1, 1, 1, 1));
 		//D_DrawLinesArray(M->Draw, M->FrameArena, Points + Point, 2, v4f(1, 1, 1, 1));	
 		
 		//D_DrawPointsArray(M->Draw, M->FrameArena, Points, NumberOfPoints, 10, v4f(1, 1, 1, 1));

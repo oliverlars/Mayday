@@ -43,19 +43,19 @@ vertex vertex_output VertexMain(constant vertex_input *Vertices [[buffer(0)]],
 
 fragment float4 FragmentMain(vertex_output Input [[stage_in]])
 {
-	//float Distance = DistanceToSegment(Input.Position.xy, Input.Start, Input.End);
+	float Distance = DistanceToSegment(Input.Position.xy, Input.Start, Input.End);
 
 	return float4(1, 0, 0, 1);
 
-	// if(Distance < 0.0)
-	// {
-	// 	return float4(0, 1, 0, 1.0);
-	// }
-	// else
-	// {
-	// 	return float4(1, 0, 0, 1.0);
-	// }
+	if(Distance < 0.0)
+	{
+		return float4(0, 1, 0, 1.0);
+	}
+	else
+	{
+		return float4(1, 0, 0, 1.0);
+	}
 
-	// float4 Colour = float4(Input.Colour.rgb, 1.0);
-	// return Colour;
+	float4 Colour = float4(Input.Colour.rgb, 1.0);
+	return Colour;
 }

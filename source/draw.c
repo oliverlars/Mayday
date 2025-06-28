@@ -722,6 +722,28 @@ void D_DrawLinesArray(draw_context *D,
 	{
 		v3f A = Positions[P];
 		v3f B = Positions[P + 1];
+
+		m44f Transform = R_CurrentTransform(D->Render);
+
+		v4f A4D = Mul(Transform, v4f(A.X, A.Y, A.Z, 1.0));
+		//A4D = Div(A4D, v4f(A4D.W, A4D.W, A4D.W, A4D.W));
+		A = v3f(A4D.X, A4D.Y, A4D.Z);
+
+		v4f B4D = Mul(Transform, v4f(B.X, B.Y, B.Z, 1.0));
+		//B4D = Div(B4D, v4f(B4D.W, B4D.W, B4D.W, B4D.W));
+		B = v3f(B4D.X, B4D.Y, B4D.Z);
+
+		A.X = D->ViewportSize.X * (A.X*0.5);
+		B.X = D->ViewportSize.X * (B.X*0.5); 
+
+		A.Y = D->ViewportSize.Y * (A.Y*0.5);
+		B.Y = D->ViewportSize.Y * (B.Y*0.5);
+
+		LogInfo("?f32 ?f32", B.X, B.Y);
+
+		A.Z = 0.0;
+		B.Z = 0.0;
+
 		v2f BL = v2f(Min(A.X, B.X), Min(A.Y, B.Y));
 		v2f TR = v2f(Max(A.X, B.X), Max(A.Y, B.Y));
 		BL.X -= 1;
@@ -748,6 +770,8 @@ void D_DrawLinesArray(draw_context *D,
 				.Colour = Colour,
 				.Start = v2f(A.X, A.Y),
 				.End = v2f(B.X, B.Y),
+				.Width = Width,
+				.Height = Height,
 			};
 			*R_Vertices++ = Vertex;
 		}

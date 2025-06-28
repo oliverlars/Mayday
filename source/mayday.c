@@ -106,6 +106,8 @@ mayday_context;
 void OS_Update(void *Data)
 {
 	mayday_context *M = Data;
+
+	M->Draw->ViewportSize = v2f(sapp_widthf(), sapp_heightf());
 	UI_Begin(M->UI);
 	R_PushScissor(M->Render, v4i(0, 0, sapp_width(), sapp_height()));
 	R_PushTransform(M->Render, Orthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));

@@ -10,6 +10,8 @@ typedef struct r_vertex
 	f32 PointSize;
 	v2f Start;
 	v2f End;
+	f32 Width;
+	f32 Height;
 } r_vertex;
 
 typedef enum r_texture_format

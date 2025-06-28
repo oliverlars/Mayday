@@ -46,6 +46,8 @@ typedef struct draw_context
 	m_arena *Arena;
 	render_context *Render;
 
+	v2f ViewportSize;
+
 	d_atlas_glyph GlyphTable[D_GLYPH_TABLE_SIZE];
 
 	d_atlas_glyph *OldestGlyph;

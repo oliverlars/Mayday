@@ -38,14 +38,14 @@ vertex vertex_output VertexMain(constant vertex_input *Vertices [[buffer(0)]],
 	vertex_output Output;
 	Output.Position = Uniforms.PVMMatrix * Vertices[VertexID].Position;
 	Output.Colour = Vertices[VertexID].Colour;
+	Output.Start = Vertices[VertexID].Start;
+	Output.End = Vertices[VertexID].End;
 	return Output;
 }
 
 fragment float4 FragmentMain(vertex_output Input [[stage_in]])
 {
-	float Distance = DistanceToSegment(Input.Position.xy, Input.Start, Input.End);
-
-	return float4(1, 0, 0, 1);
+	float Distance = DistanceToSegment(Input.Position.xy, float2(0, 0), float2(100, 100)) - 5.0;
 
 	if(Distance < 0.0)
 	{
@@ -55,7 +55,5 @@ fragment float4 FragmentMain(vertex_output Input [[stage_in]])
 	{
 		return float4(1, 0, 0, 1.0);
 	}
-
-	float4 Colour = float4(Input.Colour.rgb, 1.0);
-	return Colour;
+	return float4(0.0);
 }

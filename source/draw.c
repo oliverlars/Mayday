@@ -718,28 +718,31 @@ void D_DrawLinesArray(draw_context *D,
 	// 	*R_Vertices++ = Vertex;
 	// }
 
+	m44f Transform = R_CurrentTransform(D->Render);
+
+	
+
+	m44f Ortho = M44FOrthographic(0, D->ViewportSize.X, 0, D->ViewportSize.Y, -1000.0, 1000.0);
+	R_PushTransform(D->Render, Ortho);
+
 	for(int P = 0; P < PositionsCount; P += 2)
 	{
 		v3f A = Positions[P];
 		v3f B = Positions[P + 1];
 
-		m44f Transform = R_CurrentTransform(D->Render);
-
-		v4f A4D = Mul(Transform, v4f(A.X, A.Y, A.Z, 1.0));
-		//A4D = Div(A4D, v4f(A4D.W, A4D.W, A4D.W, A4D.W));
+		v4f A4D = Mul(M44FTranspose(Transform), v4f(A.X, A.Y, A.Z, 1.0));
+		A4D = Div(A4D, v4f(A4D.W, A4D.W, A4D.W, A4D.W));
 		A = v3f(A4D.X, A4D.Y, A4D.Z);
 
-		v4f B4D = Mul(Transform, v4f(B.X, B.Y, B.Z, 1.0));
-		//B4D = Div(B4D, v4f(B4D.W, B4D.W, B4D.W, B4D.W));
+		v4f B4D = Mul(M44FTranspose(Transform), v4f(B.X, B.Y, B.Z, 1.0));
+		B4D = Div(B4D, v4f(B4D.W, B4D.W, B4D.W, B4D.W));
 		B = v3f(B4D.X, B4D.Y, B4D.Z);
 
-		A.X = D->ViewportSize.X * (A.X*0.5);
-		B.X = D->ViewportSize.X * (B.X*0.5); 
+		A.X = D->ViewportSize.X * (A.X*0.5 + 0.5);
+		B.X = D->ViewportSize.X * (B.X*0.5 + 0.5); 
 
-		A.Y = D->ViewportSize.Y * (A.Y*0.5);
-		B.Y = D->ViewportSize.Y * (B.Y*0.5);
-
-		LogInfo("?f32 ?f32", B.X, B.Y);
+		A.Y = D->ViewportSize.Y * (A.Y*0.5 + 0.5);
+		B.Y = D->ViewportSize.Y * (B.Y*0.5 + 0.5);
 
 		A.Z = 0.0;
 		B.Z = 0.0;
@@ -750,7 +753,7 @@ void D_DrawLinesArray(draw_context *D,
 		BL.Y -= 1;
 		TR.X += 1;
 		TR.Y += 1;
-		f32 Width = TR.X - BL.X;
+		f32 Width = fabs(TR.X - BL.X);
 		f32 Height = fabs(TR.Y - BL.Y);
 		v2f Vertices[6] =
 		{
@@ -779,6 +782,8 @@ void D_DrawLinesArray(draw_context *D,
 	}
 	Command.Type = R_COMMAND_LINES;
 	R_PushCommand(R, Arena, Command);
+
+	R_PopTransform(D->Render);
 }
 
 

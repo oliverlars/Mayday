@@ -110,7 +110,7 @@ void OS_Update(void *Data)
 	M->Draw->ViewportSize = v2f(sapp_widthf(), sapp_heightf());
 	UI_Begin(M->UI);
 	R_PushScissor(M->Render, v4i(0, 0, sapp_width(), sapp_height()));
-	R_PushTransform(M->Render, Orthographic(0.0, sapp_widthf(), 0.0, sapp_heightf(), -1000.0, 1000.0));
+	R_PushTransform(M->Render, Orthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
 	{
 		stbtt_vertex *Vertices;
 		f32 Scale = stbtt_ScaleForPixelHeight(&M->CodeFont.Info, 512);
@@ -167,7 +167,7 @@ void OS_Update(void *Data)
 		v3f Line[2] = 
 		{
 			v3f(0, 0, 0),
-			v3f(100, -100, 0)
+			v3f(100, 100, 0)
 		};
 
 		D_DrawLinesArray(M->Draw, M->FrameArena, Line, 2, v4f(1, 1, 1, 1));	
@@ -696,7 +696,7 @@ int main()
 	cursor Cursor = {0};
 	M.Edit->Cursors = &Cursor;
 
-	M.Window = OS_MakeWindow(Str8("Mayday!"), 3024/2, 1964/2);
+	M.Window = OS_MakeWindow(Str8("Mayday!"), 3024, 1964);
 
 	M.CodeFont = D_LoadFontFromTTF(M.Draw, G_BerkeleyMonoRegular);
 	M.RegularFont = D_LoadFontFromTTF(M.Draw, G_BasementGrotesque);

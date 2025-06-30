@@ -708,16 +708,6 @@ void D_DrawLinesArray(draw_context *D,
 	Command.VerticesCount = 6*PositionsCount/2;
 	r_vertex *R_Vertices = Command.Vertices;
 
-	// for(int V = 0; V < PositionsCount; V++)
-	// {
-	// 	r_vertex Vertex = {
-	// 		.Position = v4f(Positions[V].X, Positions[V].Y, Positions[V].Z, 1),
-	// 		.Colour = Colour,
-	// 	};
-
-	// 	*R_Vertices++ = Vertex;
-	// }
-
 	m44f Transform = R_CurrentTransform(D->Render);
 
 	
@@ -751,15 +741,15 @@ void D_DrawLinesArray(draw_context *D,
 		A.Y = D->ViewportSize.Y * (A.Y*0.5 + 0.5);
 		B.Y = D->ViewportSize.Y * (B.Y*0.5 + 0.5);
 
-		A.Z = 0.0;
-		B.Z = 0.0;
+		
+		
 
 		v2f BL = v2f(Min(A.X, B.X), Min(A.Y, B.Y));
 		v2f TR = v2f(Max(A.X, B.X), Max(A.Y, B.Y));
-		BL.X -= 1;
-		BL.Y -= 1;
-		TR.X += 1;
-		TR.Y += 1;
+		BL.X -= 5;
+		BL.Y -= 5;
+		TR.X += 5;
+		TR.Y += 5;
 		f32 Width = fabs(TR.X - BL.X);
 		f32 Height = fabs(TR.Y - BL.Y);
 		v2f Vertices[6] =
@@ -780,8 +770,7 @@ void D_DrawLinesArray(draw_context *D,
 				.Colour = Colour,
 				.Start = v2f(A.X, A.Y),
 				.End = v2f(B.X, B.Y),
-				.Width = Width,
-				.Height = Height,
+				.Thickness = 1.0
 			};
 			*R_Vertices++ = Vertex;
 		}

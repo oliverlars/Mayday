@@ -16,11 +16,15 @@
 #include "shaders.h"
 #include "log.h"
 
+
+#include <stdalign.h>
+
 #include "darwin/metal_render.h"
 
 typedef struct uniforms
 {
 	m44f PVMMatrix;
+	u64 PaddingToMakeChatGPTLeaveMeTheFuckAlone[24];
 } uniforms;
 
 
@@ -30,7 +34,7 @@ typedef struct gpu_vertex
 	v4f Colour;
 	v4f UV;
 	f32 PointSize;
-	v3f Padding;
+	f32 Padding[3];
 }
 gpu_vertex;
 
@@ -40,6 +44,8 @@ typedef struct gpu_line_vertex
 	v4f Colour;
 	v2f Start;
 	v2f End;
+	f32 Thickness;
+	f32 Padding[3];
 }
 gpu_line_vertex;
 
@@ -347,6 +353,9 @@ metal_shader R_LineShader(render_context *R)
 	VertexDescriptor.attributes[3].format = MTLVertexFormatFloat2;
 	VertexDescriptor.attributes[3].offset = sizeof(v4f)*2 + sizeof(v2f);
 	VertexDescriptor.attributes[3].bufferIndex = 0;
+	VertexDescriptor.attributes[4].format = MTLVertexFormatFloat;
+	VertexDescriptor.attributes[4].offset = sizeof(v4f)*2 + sizeof(v2f)*2;
+	VertexDescriptor.attributes[4].bufferIndex = 0;
 	VertexDescriptor.layouts[0].stride = sizeof(gpu_line_vertex);
 
 	PipelineDescriptor.vertexDescriptor = VertexDescriptor;
@@ -725,10 +734,12 @@ void R_Update(render_context *R, m_arena *FrameArena)
 				v4f Colour = Command->Vertices[V].Colour;
 				v2f Start = Command->Vertices[V].Start;
 				v2f End = Command->Vertices[V].End;
+				f32 Thickness = Command->Vertices[V].Thickness;
 				GPUVertices[V].Position = P;
 				GPUVertices[V].Colour = Colour;
 				GPUVertices[V].Start = Start;
 				GPUVertices[V].End = End;
+				GPUVertices[V].Thickness = Thickness;
 			}
 			MemoryCopy(Metal->VertexBuffers[ResourceIndex].contents + VertexOffsetInBytes + TotalVertices*sizeof(gpu_line_vertex),
 					GPUVertices, sizeof(gpu_line_vertex)*Command->VerticesCount);

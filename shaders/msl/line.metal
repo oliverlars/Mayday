@@ -6,16 +6,18 @@ struct vertex_output
 {
 	float4 Position [[position]];
 	float4 Colour;
-	float2 Start;
-	float2 End;
+	[[flat]] float2 Start;
+	[[flat]] float2 End;
+	[[flat]] float Thickness;
 };
 
 struct vertex_input
 {
-	float4 Position [[attribute(0)]];
-	float4 Colour   [[attribute(1)]];
-	float2 Start    [[attribute(2)]];
-	float2 End      [[attribute(3)]];
+	float4 Position  [[attribute(0)]];
+	float4 Colour    [[attribute(1)]];
+	float2 Start     [[attribute(2)]];
+	float2 End       [[attribute(3)]];
+	float  Thickness [[attribute(4)]];
 };
 
 struct uniforms
@@ -40,11 +42,15 @@ vertex vertex_output VertexMain(constant vertex_input *Vertices [[buffer(0)]],
 	Output.Colour = Vertices[VertexID].Colour;
 	Output.Start = Vertices[VertexID].Start;
 	Output.End = Vertices[VertexID].End;
+	Output.Thickness = Vertices[VertexID].Thickness;
 	return Output;
 }
 
 fragment float4 FragmentMain(vertex_output Input [[stage_in]])
 {
-	float Distance = DistanceToSegment(Input.Position.xy, Input.Start, Input.End) - 1.0;
-	return float4(Input.Colour.rgb, float(Distance < 0.0));
+	float Distance = DistanceToSegment(Input.Position.xy, Input.Start, Input.End);
+	float HalfThickness = 0.5 * Input.Thickness;
+	float AA = smoothstep(HalfThickness + HalfThickness*fwidth(Distance), HalfThickness - HalfThickness*fwidth(Distance), Distance);
+
+	return float4(Input.Colour.rgb, float(AA));
 }

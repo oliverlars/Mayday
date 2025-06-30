@@ -161,7 +161,7 @@ void OS_Update(void *Data)
 		}
 		for(int Point = 0; Point < NumberOfPoints-1; Point++)
 		{
-			//D_DrawLinesArray(M->Draw, M->FrameArena, Points + Point, 2, v4f(1, 1, 1, 1));	
+			D_DrawLinesArray(M->Draw, M->FrameArena, Points + Point, 2, v4f(1, 1, 1, 1));	
 		}
 
 		v3f Line[2] = 
@@ -170,7 +170,7 @@ void OS_Update(void *Data)
 			v3f(100, 100, 0)
 		};
 
-		D_DrawLinesArray(M->Draw, M->FrameArena, Line, 2, v4f(1, 1, 1, 1));	
+		//D_DrawLinesArray(M->Draw, M->FrameArena, Line, 2, v4f(1, 1, 1, 1));	
 		//D_DrawQuad(M->Draw, M->FrameArena, v2f(0, 0), 100, 100, v4f(1, 1, 1, 1));
 		//D_DrawLinesArray(M->Draw, M->FrameArena, Points + Point, 2, v4f(1, 1, 1, 1));	
 		
@@ -729,7 +729,7 @@ int main()
 #if defined(OS_WINDOWS)
 	SAPPDesc->high_dpi = true;
 #elif defined(OS_DARWIN)
-	SAPPDesc->high_dpi = false;
+	SAPPDesc->high_dpi = true;
 #endif
 	SAPPDesc->logger.func = slog_func;
 	SAPPDesc->cleanup_userdata_cb = OS_Exit;

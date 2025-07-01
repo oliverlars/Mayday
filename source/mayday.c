@@ -111,7 +111,7 @@ void OS_Update(void *Data)
 	UI_Begin(M->UI);
 	R_PushScissor(M->Render, v4i(0, 0, sapp_width(), sapp_height()));
 	R_PushTransform(M->Render, Orthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
-	{
+	if(0){
 		stbtt_vertex *Vertices;
 		f32 Scale = stbtt_ScaleForPixelHeight(&M->CodeFont.Info, 512);
 		s32 GlyphIndex = stbtt_FindGlyphIndex(&M->CodeFont.Info, 'A');
@@ -176,6 +176,20 @@ void OS_Update(void *Data)
 		
 		//D_DrawPointsArray(M->Draw, M->FrameArena, Points, NumberOfPoints, 10, v4f(1, 1, 1, 1));
 	}
+	R_PopTransform(M->Render);
+
+	R_PushTransform(M->Render, Orthographic(0.0, sapp_widthf()/2.0, 0.0, sapp_heightf()/2.0, -1000.0, 1000.0));
+
+	v3f Line[2] = 
+	{
+		v3f(0, 0, 0),
+		v3f(100, 100, 0)
+	};
+
+	//D_DrawLinesArray(M->Draw, M->FrameArena, Line, 2, v4f(0, 1, 0, 1));	
+
+	D_DrawStr8(M->Draw, M->FrameArena, M->CodeFont, v2f(200, 500), v4f(0, 1, 0, 1), 100, Str8("This text is upside down"));
+
 	R_PopTransform(M->Render);
 	R_PopScissor(M->Render);
 

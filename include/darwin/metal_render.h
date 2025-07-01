@@ -26,6 +26,7 @@ typedef struct metal_context
 	metal_shader               GlyphShader;
 	metal_shader               PointShader;
 	metal_shader               LineShader;
+	metal_shader               BezierShader;
 
 	id<MTLTexture>             DepthTexture;
 	id<MTLTexture>             BaseFrameBuffer;

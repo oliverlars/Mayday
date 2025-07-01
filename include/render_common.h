@@ -9,6 +9,7 @@ typedef struct r_vertex
 	v2f UV;
 	f32 PointSize;
 	v2f Start;
+	v2f Control;
 	v2f End;
 	f32 Thickness;
 } r_vertex;
@@ -35,6 +36,7 @@ typedef enum r_command_type
 	R_COMMAND_BLOOM,
 	R_COMMAND_POINTS,
 	R_COMMAND_LINES,
+	R_COMMAND_BEZIER,
 } r_command_type;
 
 

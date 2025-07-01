@@ -9,6 +9,7 @@ struct vertex_output
 	[[flat]] float2 Start;
 	[[flat]] float2 End;
 	[[flat]] float Thickness;
+	[[flat]] int   Type;
 };
 
 struct vertex_input
@@ -18,6 +19,7 @@ struct vertex_input
 	float2 Start     [[attribute(2)]];
 	float2 End       [[attribute(3)]];
 	float  Thickness [[attribute(4)]];
+	int    Type      [[attribute(5)]];
 };
 
 struct uniforms
@@ -25,6 +27,7 @@ struct uniforms
 	float4x4 PVMMatrix;
 };
 
+// https://iquilezles.org/articles/distfunctions2d/
 float DistanceToSegment(float2 Position, float2 Start, float2 End)
 {
 	float2 EndToStart = End - Start;

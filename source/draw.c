@@ -524,12 +524,11 @@ void D_Draw3DStr8(draw_context *D,
 			v2f Start = Glyph->Curves[CurveIndex].Start;
 			v2f Control = Glyph->Curves[CurveIndex].Control;
 			v2f End = Glyph->Curves[CurveIndex].End;
-			LogInfo("?v2f ?v2f ?v2f", Start, Control, End);
 			v3f Line[3] = 
 			{
-				v3f(Position.X + Start.X*Scale, Position.Y + Start.Y*Scale, 0.0),
-				v3f(Position.X + Control.X*Scale, Position.Y + Control.Y*Scale, 0.0),
-				v3f(Position.X + End.X*Scale, Position.Y + End.Y*Scale, 0.0)
+				v3f(Position.X + Start.X*Scale, Position.Y - Start.Y*Scale, 0.0),
+				v3f(Position.X + Control.X*Scale, Position.Y - Control.Y*Scale, 0.0),
+				v3f(Position.X + End.X*Scale, Position.Y - End.Y*Scale, 0.0)
 			};
 			D_DrawBezierArray(D, Arena, Line, 3, Colour);
 		}

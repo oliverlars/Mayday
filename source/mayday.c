@@ -180,16 +180,17 @@ void OS_Update(void *Data)
 
 	R_PushTransform(M->Render, Orthographic(0.0, sapp_widthf()/2.0, 0.0, sapp_heightf()/2.0, -1000.0, 1000.0));
 
-	v3f Line[2] = 
-	{
-		v3f(0, 0, 0),
-		v3f(100, 100, 0)
-	};
 
-	//D_DrawLinesArray(M->Draw, M->FrameArena, Line, 2, v4f(0, 1, 0, 1));	
+
 
 	D_DrawStr8(M->Draw, M->FrameArena, M->CodeFont, v2f(200, 500), v4f(0, 1, 0, 1), 100, Str8("This text is upside down"));
-
+	v3f Line[2] = 
+	{
+		v3f(200, 500, 0),
+		v3f(400, 500, 0)
+	};
+	//D_DrawLinesArray(M->Draw, M->FrameArena, Line, 2, v4f(0, 1, 0, 1));	
+	D_DrawLinesArray(M->Draw, M->FrameArena, Line, 2, v4f(1, 1, 1, 1));
 	R_PopTransform(M->Render);
 	R_PopScissor(M->Render);
 

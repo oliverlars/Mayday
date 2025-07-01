@@ -698,6 +698,98 @@ void D_DrawPointsArray(draw_context *D,
 	R_PushCommand(R, Arena, Command);
 }
 
+void D_DrawBezierArray(draw_context *D,
+					  m_arena *Arena,
+					  v3f *Positions,
+					  int PositionsCount,
+					  v4f Colour)
+{
+	render_context *R = D->Render;
+	r_command Command = {0};
+	Command.Vertices = (r_vertex*)ArenaPushArrayZero(Arena, r_vertex, PositionsCount/3*6);
+	Command.VerticesCount = 6*PositionsCount/3;
+	r_vertex *R_Vertices = Command.Vertices;
+
+	m44f Transform = R_CurrentTransform(D->Render);
+
+	m44f Ortho = M44FOrthographic(0, D->ViewportSize.X, 0.0, D->ViewportSize.Y, -1000.0, 1000.0);
+	R_PushTransform(D->Render, Ortho);
+
+	for(int P = 0; P < PositionsCount; P += 3)
+	{
+		v3f A = Positions[P];
+		v3f B = Positions[P + 1];
+		v3f C = Positions[P + 2];
+
+		v4f A4D = Mul(M44FTranspose(Transform), v4f(A.X, A.Y, A.Z, 1.0));
+		A4D = Div(A4D, v4f(A4D.W, A4D.W, A4D.W, A4D.W));
+		A = v3f(A4D.X, A4D.Y, A4D.Z);
+
+		v4f B4D = Mul(M44FTranspose(Transform), v4f(B.X, B.Y, B.Z, 1.0));
+		B4D = Div(B4D, v4f(B4D.W, B4D.W, B4D.W, B4D.W));
+		B = v3f(B4D.X, B4D.Y, B4D.Z);
+
+		v4f C4D = Mul(M44FTranspose(Transform), v4f(B.X, B.Y, B.Z, 1.0));
+		C4D = Div(C4D, v4f(C4D.W, C4D.W, C4D.W, C4D.W));
+		C = v3f(C4D.X, C4D.Y, C4D.Z);
+
+		A.X = D->ViewportSize.X * (A.X*0.5 + 0.5);
+		B.X = D->ViewportSize.X * (B.X*0.5 + 0.5); 
+		C.X = D->ViewportSize.X * (C.X*0.5 + 0.5); 
+
+		// We flip the NDC Y coordinate so that when we do the
+		// SDF evaluation the [[position]]/fragCoord position aligns
+		// with our coordinate system.
+		// TODO(Oliver): explain this better
+		A.Y = -A.Y;
+		B.Y = -B.Y;
+		C.Y = -C.Y;
+
+		A.Y = D->ViewportSize.Y * (A.Y*0.5 + 0.5);
+		B.Y = D->ViewportSize.Y * (B.Y*0.5 + 0.5);
+		C.Y = D->ViewportSize.Y * (C.Y*0.5 + 0.5);
+
+		
+		
+
+		v2f BL = v2f(Min(Min(A.X, B.X), C.X), Min(Min(A.Y, B.Y), C.Y));
+		v2f TR = v2f(Max(Max(A.X, B.X), C.X), Max(Max(A.Y, B.Y), C.Y));
+		BL.X -= 5;
+		BL.Y -= 5;
+		TR.X += 5;
+		TR.Y += 5;
+		f32 Width = fabs(TR.X - BL.X);
+		f32 Height = fabs(TR.Y - BL.Y);
+		v2f Vertices[6] =
+		{
+			v2f(BL.X, BL.Y),
+			v2f(TR.X, BL.Y),
+			v2f(TR.X, TR.Y),
+
+			v2f(BL.X, BL.Y),
+			v2f(BL.X, TR.Y),
+			v2f(TR.X, TR.Y),
+		};
+
+		for(int V = 0; V < 6; V++)
+		{
+			r_vertex Vertex = {
+				.Position = v4f(Vertices[V].X, Vertices[V].Y, A.Z, 1),
+				.Colour = Colour,
+				.Start = v2f(A.X, A.Y),
+				.Control = v2f(B.X, B.Y),
+				.End = v2f(C.X, C.Y),
+				.Thickness = 2.0
+			};
+			*R_Vertices++ = Vertex;
+		}
+
+	}
+	Command.Type = R_COMMAND_LINES;
+	R_PushCommand(R, Arena, Command);
+
+	R_PopTransform(D->Render);
+}
 
 void D_DrawLinesArray(draw_context *D,
 					  m_arena *Arena,

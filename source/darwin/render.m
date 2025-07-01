@@ -867,7 +867,7 @@ void R_Update(render_context *R, m_arena *FrameArena)
 			else if(Command->Type == R_COMMAND_BEZIER)
 			{
 				R_RenderBeziers(R, CommandBuffer, Command->Scissor, TotalVertices, VertexOffsetInBytes, UniformOffset*sizeof(uniforms));
-				VertexOffsetInBytes += TotalVertices*sizeof(gpu_line_vertex);
+				VertexOffsetInBytes += TotalVertices*sizeof(gpu_bezier_vertex);
 				TotalVertices = 0;
 			}
 

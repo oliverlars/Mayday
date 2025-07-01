@@ -6,11 +6,10 @@ struct vertex_output
 {
 	float4 Position [[position]];
 	float4 Colour;
-	[[flat]] float2 Start;
-	[[flat]] float2 Control;
-	[[flat]] float2 End;
-	[[flat]] float Thickness;
-	[[flat]] int   Type;
+	float2 Start;
+	float2 Control;
+	float2 End;
+	float Thickness;
 };
 
 struct vertex_input
@@ -20,7 +19,7 @@ struct vertex_input
 	float2 Start     [[attribute(2)]];
 	float2 Control   [[attribute(3)]];
 	float2 End       [[attribute(4)]];
-	float  Thickness [[attribute(4)]];
+	float  Thickness [[attribute(5)]];
 };
 
 struct uniforms
@@ -41,7 +40,9 @@ float DistanceToBezier(float2 Pos, float2 A, float2 B, float2 C)
 	float2 b = A - 2.0*B + C;
 	float2 c = a * 2.0;
 	float2 d = A - Pos;
-	float kk = 1.0/dot(b,b);
+	// HACK(Oliver): This max(...) is to protect against dividing by really small values
+	// Likely a symptom of doing all the calculations in Pixel space and not UV space
+	float kk = 1.0/max(dot(b,b), 0.1);
 	float kx = kk * dot(a,b);
 	float ky = kk * (2.0*dot(a,a)+dot(d,b)) / 3.0;
 	float kz = kk * dot(d,a);      

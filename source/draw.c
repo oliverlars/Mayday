@@ -522,14 +522,16 @@ void D_Draw3DStr8(draw_context *D,
 		for(int CurveIndex = 0; CurveIndex < Glyph->CurveCount; CurveIndex++)
 		{
 			v2f Start = Glyph->Curves[CurveIndex].Start;
+			v2f Control = Glyph->Curves[CurveIndex].Control;
 			v2f End = Glyph->Curves[CurveIndex].End;
-			v3f Line[2] = 
+			LogInfo("?v2f ?v2f ?v2f", Start, Control, End);
+			v3f Line[3] = 
 			{
 				v3f(Position.X + Start.X*Scale, Position.Y + Start.Y*Scale, 0.0),
+				v3f(Position.X + Control.X*Scale, Position.Y + Control.Y*Scale, 0.0),
 				v3f(Position.X + End.X*Scale, Position.Y + End.Y*Scale, 0.0)
 			};
-			D_DrawLinesArray(D, Arena, Line, 2, Colour);
-			
+			D_DrawBezierArray(D, Arena, Line, 3, Colour);
 		}
 
 		Position.X += AdvanceX;
@@ -729,7 +731,7 @@ void D_DrawBezierArray(draw_context *D,
 		B4D = Div(B4D, v4f(B4D.W, B4D.W, B4D.W, B4D.W));
 		B = v3f(B4D.X, B4D.Y, B4D.Z);
 
-		v4f C4D = Mul(M44FTranspose(Transform), v4f(B.X, B.Y, B.Z, 1.0));
+		v4f C4D = Mul(M44FTranspose(Transform), v4f(C.X, C.Y, C.Z, 1.0));
 		C4D = Div(C4D, v4f(C4D.W, C4D.W, C4D.W, C4D.W));
 		C = v3f(C4D.X, C4D.Y, C4D.Z);
 
@@ -785,7 +787,7 @@ void D_DrawBezierArray(draw_context *D,
 		}
 
 	}
-	Command.Type = R_COMMAND_LINES;
+	Command.Type = R_COMMAND_BEZIER;
 	R_PushCommand(R, Arena, Command);
 
 	R_PopTransform(D->Render);

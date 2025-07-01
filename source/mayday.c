@@ -159,9 +159,9 @@ void OS_Update(void *Data)
 			Points[Point].X += 256;
 			Points[Point].Y += 256;
 		}
-		for(int Point = 0; Point < NumberOfPoints-1; Point++)
+		for(int Point = 0; Point < NumberOfPoints-1; Point += 3)
 		{
-			D_DrawLinesArray(M->Draw, M->FrameArena, Points + Point, 2, v4f(1, 1, 1, 1));	
+			D_DrawBezierArray(M->Draw, M->FrameArena, Points + Point, 3, v4f(1, 1, 1, 1));	
 		}
 
 		v3f Line[2] = 

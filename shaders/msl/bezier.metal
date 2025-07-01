@@ -9,7 +9,8 @@ struct vertex_output
 	float2 Start;
 	float2 Control;
 	float2 End;
-	float Thickness;
+	float  Thickness;
+	bool   EvaluateAsLine;
 };
 
 struct vertex_input
@@ -34,15 +35,22 @@ float dot2(T Value)
 }
 
 // https://iquilezles.org/articles/distfunctions2d/
+float DistanceToSegment(float2 Position, float2 Start, float2 End)
+{
+	float2 EndToStart = End - Start;
+	float2 PositionToStart = Position - Start;
+	float H = clamp( dot(PositionToStart, EndToStart)/dot(EndToStart,EndToStart), 0.0, 1.0);
+	return length(PositionToStart - H*EndToStart);
+}
+
+// https://iquilezles.org/articles/distfunctions2d/
 float DistanceToBezier(float2 Pos, float2 A, float2 B, float2 C)
 {
 	float2 a = B - A;
 	float2 b = A - 2.0*B + C;
 	float2 c = a * 2.0;
 	float2 d = A - Pos;
-	// HACK(Oliver): This max(...) is to protect against dividing by really small values
-	// Likely a symptom of doing all the calculations in Pixel space and not UV space
-	float kk = 1.0/max(dot(b,b), 0.1);
+	float kk = 1.0/dot(b,b);
 	float kx = kk * dot(a,b);
 	float ky = kk * (2.0*dot(a,a)+dot(d,b)) / 3.0;
 	float kz = kk * dot(d,a);      
@@ -74,6 +82,14 @@ float DistanceToBezier(float2 Pos, float2 A, float2 B, float2 C)
 	return sqrt(res);
 }
 
+bool AreColinear(float2 A, float2 B, float2 C) {
+	float2 AB = B - A;
+	float2 AC = C - A;
+	float Cross = AB.x * AC.y - AB.y * AC.x;
+	// Since they're in pixel space we can afford a larger tolerance.
+	return fabs(Cross) < 1.0;
+}
+
 vertex vertex_output VertexMain(constant vertex_input *Vertices [[buffer(0)]],
 								constant uniforms &Uniforms [[buffer(1)]],
 								uint VertexID [[vertex_id]])
@@ -85,14 +101,25 @@ vertex vertex_output VertexMain(constant vertex_input *Vertices [[buffer(0)]],
 	Output.Control = Vertices[VertexID].Control;
 	Output.End = Vertices[VertexID].End;
 	Output.Thickness = Vertices[VertexID].Thickness;
+	Output.EvaluateAsLine = AreColinear(Output.Start, Output.Control, Output.End);
 	return Output;
 }
 
 fragment float4 FragmentMain(vertex_output Input [[stage_in]])
 {
-	float Distance = DistanceToBezier(Input.Position.xy, Input.Start, Input.Control, Input.End);
+	float Distance;
+	if(Input.EvaluateAsLine)
+	{
+		
+		Distance = DistanceToSegment(Input.Position.xy, Input.Start, Input.End);
+	}
+	else
+	{
+		Distance = DistanceToBezier(Input.Position.xy, Input.Start, Input.Control, Input.End);
+	}
+
 	float HalfThickness = 0.5 * Input.Thickness;
-	float AA = smoothstep(HalfThickness + HalfThickness*fwidth(Distance), HalfThickness - HalfThickness*fwidth(Distance), Distance);
+	float AA = smoothstep(HalfThickness + HalfThickness, HalfThickness - HalfThickness, Distance);
 
 	return float4(Input.Colour.rgb, float(AA));
 }

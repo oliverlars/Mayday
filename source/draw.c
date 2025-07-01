@@ -781,7 +781,7 @@ void D_DrawBezierArray(draw_context *D,
 				.Start = v2f(A.X, A.Y),
 				.Control = v2f(B.X, B.Y),
 				.End = v2f(C.X, C.Y),
-				.Thickness = 2.0
+				.Thickness = 1.0
 			};
 			*R_Vertices++ = Vertex;
 		}

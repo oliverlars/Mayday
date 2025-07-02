@@ -221,6 +221,71 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 		);
 	}
 
+	// BEZIER SHADER
+	{
+		ID3DBlob *BezierVertexShaderObject;
+		ID3DBlob *Error;
+		HRESULT Compiled;
+		Compiled = D3DCompile(G_BezierShader, sizeof(G_BezierShader),
+				Null, Null, Null,
+				"VertexMain",
+				"vs_5_0",
+				0, 0,
+				&BezierVertexShaderObject, &Error);
+		if(FAILED(Compiled))
+		{
+			char *ErrorMessage = (char*)(Error->lpVtbl->GetBufferPointer(Error));
+			LogError("[VERTEX] ?cstr", ErrorMessage);
+			Error->lpVtbl->Release(Error);
+		}
+		
+		D3D11->Device->lpVtbl->CreateVertexShader(
+			D3D11->Device,
+			BezierVertexShaderObject->lpVtbl->GetBufferPointer(BezierVertexShaderObject),
+			BezierVertexShaderObject->lpVtbl->GetBufferSize(BezierVertexShaderObject),
+			Null, &D3D11->BezierVertexShader
+		);
+
+		D3D11_INPUT_ELEMENT_DESC VertexAttributes[] =
+		{
+			{ "POS", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0,                            0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+			{ "COL", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+			{ "START", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+			{ "CONTROL", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+			{ "END", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+			{ "THICKNESS", 0, DXGI_FORMAT_R32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		};
+
+		D3D11->Device->lpVtbl->CreateInputLayout(
+			D3D11->Device,
+			VertexAttributes,
+			ARRAYSIZE(VertexAttributes),
+			BezierVertexShaderObject->lpVtbl->GetBufferPointer(BezierVertexShaderObject),
+			BezierVertexShaderObject->lpVtbl->GetBufferSize(BezierVertexShaderObject),
+			&D3D11->BezierInputLayout);
+
+		ID3DBlob *BezierPixelShaderObject;
+		Compiled = D3DCompile(G_BezierShader, sizeof(G_BezierShader),
+				Null, Null, Null,
+				"PixelMain",
+				"ps_5_0",
+				0, 0,
+				&BezierPixelShaderObject, &Error);
+		if(FAILED(Compiled))
+		{
+			char *ErrorMessage = (char*)(Error->lpVtbl->GetBufferPointer(Error));
+			LogError("[PIXEL] ?cstr", ErrorMessage);
+			Error->lpVtbl->Release(Error);
+		}
+
+		D3D11->Device->lpVtbl->CreatePixelShader(
+			D3D11->Device,
+			BezierPixelShaderObject->lpVtbl->GetBufferPointer(BezierPixelShaderObject),
+			BezierPixelShaderObject->lpVtbl->GetBufferSize(BezierPixelShaderObject),
+			Null, &D3D11->BezierPixelShader
+		);
+	}
+
 	// GLYPH SHADER
 	{
 		ID3DBlob *GlyphVertexShaderObject;
@@ -738,6 +803,17 @@ void R_Update(render_context *R, m_arena *FrameArena)
 		f32 Thickness;
 		v3f Padding;
 	} line_vertex;
+
+	typedef struct bezier_vertex
+	{
+		v4f Position;
+		v4f Colour;
+		v2f Start;
+		v2f Control;
+		v2f End;
+		f32 Thickness;
+		v3f Padding;
+	} bezier_vertex;
 	for(r_command *Command = R->CommandsFirst; Command != Null; Command = Command->Next)
 	{
 		if(0){}
@@ -813,6 +889,51 @@ void R_Update(render_context *R, m_arena *FrameArena)
 				(u8*)Vertices + VertexOffsetInBytes + TotalVertices*sizeof(line_vertex),
 				GPUVertices,
 				sizeof(line_vertex)*Command->VerticesCount
+			);
+			D3D11->DeviceContext->lpVtbl->Unmap(
+				D3D11->DeviceContext,
+				(ID3D11Resource*)D3D11->VertexBuffers[ResourceIndex],
+				0
+			);
+			VertexWriteMode = D3D11_MAP_WRITE_NO_OVERWRITE;
+
+			TotalVertices += Command->VerticesCount;
+		}
+		else if(Command->Type == R_COMMAND_BEZIER)
+		{
+			bezier_vertex *GPUVertices = (bezier_vertex*)ArenaPushArrayZero(Scratch.Arena,
+															 	 	  bezier_vertex, Command->VerticesCount);
+			for(int V = 0; V < Command->VerticesCount; V++)
+			{
+				v4f P = Command->Vertices[V].Position;
+				v2f UV = Command->Vertices[V].UV;
+				v4f Colour = Command->Vertices[V].Colour;
+				v2f Start = Command->Vertices[V].Start;
+				v2f Control = Command->Vertices[V].Control;
+				v2f End = Command->Vertices[V].End;
+				f32 Thickness = Command->Vertices[V].Thickness;
+				GPUVertices[V].Position = P;
+				GPUVertices[V].Colour = Colour;
+				GPUVertices[V].Start = Start;
+				GPUVertices[V].Control = Control;
+				GPUVertices[V].End = End;
+				GPUVertices[V].Thickness = Thickness;
+			}
+
+			D3D11_MAPPED_SUBRESOURCE BezierVertexBufferResource;
+
+			D3D11->DeviceContext->lpVtbl->Map(
+				D3D11->DeviceContext,
+				(ID3D11Resource*)D3D11->VertexBuffers[ResourceIndex],
+				0,
+				VertexWriteMode, 0, &BezierVertexBufferResource
+			);
+			bezier_vertex* Vertices = (bezier_vertex*)BezierVertexBufferResource.pData;
+
+			MemoryCopy(
+				(u8*)Vertices + VertexOffsetInBytes + TotalVertices*sizeof(bezier_vertex),
+				GPUVertices,
+				sizeof(bezier_vertex)*Command->VerticesCount
 			);
 			D3D11->DeviceContext->lpVtbl->Unmap(
 				D3D11->DeviceContext,
@@ -911,6 +1032,68 @@ void R_Update(render_context *R, m_arena *FrameArena)
 				);
 				D3D11->DeviceContext->lpVtbl->Draw(D3D11->DeviceContext, TotalVertices, 0);
 				VertexOffsetInBytes += TotalVertices*sizeof(line_vertex);
+				TotalVertices = 0;
+			}
+			if(Command->Type == R_COMMAND_BEZIER)
+			{
+				D3D11->DeviceContext->lpVtbl->IASetPrimitiveTopology(D3D11->DeviceContext, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+				D3D11->DeviceContext->lpVtbl->IASetInputLayout(D3D11->DeviceContext, D3D11->BezierInputLayout);
+				u32 Stride = sizeof(bezier_vertex);
+				u32 Offset = VertexOffsetInBytes;
+				D3D11->DeviceContext->lpVtbl->IASetVertexBuffers(D3D11->DeviceContext, 0, 1, &D3D11->VertexBuffers[ResourceIndex], &Stride, &Offset);
+				D3D11->DeviceContext->lpVtbl->VSSetShader(
+					D3D11->DeviceContext,
+					D3D11->BezierVertexShader,
+					Null, 
+					0
+				);
+				D3D11->DeviceContext->lpVtbl->VSSetConstantBuffers(
+					D3D11->DeviceContext,
+					0, 1,
+					&D3D11->UniformBuffers[ResourceIndex]
+				);
+				D3D11->DeviceContext->lpVtbl->RSSetViewports(
+					D3D11->DeviceContext,
+					1, &Viewport
+				);
+
+				D3D11_RECT ScissorRect =
+				{
+					Command->Scissor.X,
+					Command->Scissor.Y,
+					Command->Scissor.X + Command->Scissor.Z,
+					Command->Scissor.Y + Command->Scissor.W,
+				};
+				D3D11->DeviceContext->lpVtbl->RSSetScissorRects(
+					D3D11->DeviceContext,
+					1,
+					&ScissorRect
+				);
+				D3D11->DeviceContext->lpVtbl->RSSetState(
+					D3D11->DeviceContext,
+					D3D11->RasterizerState
+				);
+				D3D11->DeviceContext->lpVtbl->PSSetShader(
+					D3D11->DeviceContext,
+					D3D11->BezierPixelShader,
+					Null, 0
+				);
+				D3D11->DeviceContext->lpVtbl->OMSetRenderTargets(
+					D3D11->DeviceContext, 
+					1, &D3D11->BaseFrameBufferRTV, Null
+				);
+				D3D11->DeviceContext->lpVtbl->OMSetDepthStencilState(
+					D3D11->DeviceContext,
+					D3D11->DepthStencilState, 
+					0
+				);
+				D3D11->DeviceContext->lpVtbl->OMSetBlendState(
+					D3D11->DeviceContext,
+					D3D11->BlendState, Null,
+					0xFFFFFFFF
+				);
+				D3D11->DeviceContext->lpVtbl->Draw(D3D11->DeviceContext, TotalVertices, 0);
+				VertexOffsetInBytes += TotalVertices*sizeof(bezier_vertex);
 				TotalVertices = 0;
 			}
 			else if(Command->Type == R_COMMAND_TRIANGLE)

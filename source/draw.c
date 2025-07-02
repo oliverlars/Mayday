@@ -530,7 +530,7 @@ void D_Draw3DStr8(draw_context *D,
 				v3f(Position.X + Control.X*Scale, Position.Y - Control.Y*Scale, 0.0),
 				v3f(Position.X + End.X*Scale, Position.Y - End.Y*Scale, 0.0)
 			};
-			D_DrawBezierArray(D, Arena, Line, 3, 1.0, Colour);
+			D_DrawBezierArray(D, Arena, Line, 3, 2.0, Colour);
 		}
 
 		Position.X += AdvanceX;
@@ -756,10 +756,10 @@ void D_DrawBezierArray(draw_context *D,
 
 		v2f BL = v2f(Min(Min(A.X, B.X), C.X), Min(Min(A.Y, B.Y), C.Y));
 		v2f TR = v2f(Max(Max(A.X, B.X), C.X), Max(Max(A.Y, B.Y), C.Y));
-		BL.X -= 5;
-		BL.Y -= 5;
-		TR.X += 5;
-		TR.Y += 5;
+		BL.X -= Thickness + 5;
+		BL.Y -= Thickness + 5;
+		TR.X += Thickness + 5;
+		TR.Y += Thickness + 5;
 		f32 Width = fabs(TR.X - BL.X);
 		f32 Height = fabs(TR.Y - BL.Y);
 		v2f Vertices[6] =
@@ -844,10 +844,10 @@ void D_DrawLinesArray(draw_context *D,
 
 		v2f BL = v2f(Min(A.X, B.X), Min(A.Y, B.Y));
 		v2f TR = v2f(Max(A.X, B.X), Max(A.Y, B.Y));
-		BL.X -= 5;
-		BL.Y -= 5;
-		TR.X += 5;
-		TR.Y += 5;
+		BL.X -= Thickness + 5;
+		BL.Y -= Thickness + 5;
+		TR.X += Thickness + 5;
+		TR.Y += Thickness + 5;
 		f32 Width = fabs(TR.X - BL.X);
 		f32 Height = fabs(TR.Y - BL.Y);
 		v2f Vertices[6] =

@@ -188,6 +188,7 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 			{ "COL", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 			{ "START", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 			{ "END", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+			{ "THICKNESS", 0, DXGI_FORMAT_R32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		};
 
 		D3D11->Device->lpVtbl->CreateInputLayout(
@@ -734,7 +735,8 @@ void R_Update(render_context *R, m_arena *FrameArena)
 		v4f Colour;
 		v2f Start;
 		v2f End;
-		v4f Padding;
+		f32 Thickness;
+		v3f Padding;
 	} line_vertex;
 	for(r_command *Command = R->CommandsFirst; Command != Null; Command = Command->Next)
 	{
@@ -789,10 +791,12 @@ void R_Update(render_context *R, m_arena *FrameArena)
 				v4f Colour = Command->Vertices[V].Colour;
 				v2f Start = Command->Vertices[V].Start;
 				v2f End = Command->Vertices[V].End;
+				f32 Thickness = Command->Vertices[V].Thickness;
 				GPUVertices[V].Position = P;
 				GPUVertices[V].Colour = Colour;
 				GPUVertices[V].Start = Start;
 				GPUVertices[V].End = End;
+				GPUVertices[V].Thickness = Thickness;
 			}
 
 			D3D11_MAPPED_SUBRESOURCE LineVertexBufferResource;

@@ -1,9 +1,10 @@
 struct vertex_input
 {
-	float4 Position: POS;
-	float4 Colour:   COL;
-	float2 Start:    START;
-	float2 End:      END;
+	float4 Position:  POS;
+	float4 Colour:    COL;
+	float2 Start:     START;
+	float2 End:       END;
+	float  Thickness: THICKNESS;
 };
 
 struct vertex_output
@@ -13,6 +14,7 @@ struct vertex_output
 
 	nointerpolation float2 Start: START;
 	nointerpolation float2 End: END;
+	float Thickness: THICKNESS;
 };
 
 cbuffer uniforms : register(b0)
@@ -37,6 +39,7 @@ vertex_output VertexMain(vertex_input Vertex)
 
 	Output.Start = Vertex.Start;
 	Output.End   = Vertex.End;
+	Output.Thickness = Vertex.Thickness;
 
 
 	return Output;
@@ -44,21 +47,10 @@ vertex_output VertexMain(vertex_input Vertex)
 
 float4 PixelMain(vertex_output Input) : SV_TARGET
 {
-	float4 Colour = Input.Colour;
-	float Distance = DistanceToSegment(Input.Position.xy, Input.Start, Input.End) - 5.0;
+	float HalfThickness = 0.5 * Input.Thickness;
+	float Distance = DistanceToSegment(Input.Position.xy, Input.Start, Input.End) - HalfThickness;
+	float AA = smoothstep(HalfThickness + HalfThickness, HalfThickness - HalfThickness, Distance);
 
-	float HalfWidth    = 1.0;
-	float AntiAliasing = 1.0;
-
-	float Alpha = smoothstep(HalfWidth + AntiAliasing, HalfWidth, Distance);
-
-	if(Distance < 0.0)
-	{
-		return float4(0, 1, 0, 1);
-	}
-	else
-	{
-		return float4(1, 0, 0 , 1.0);
-	}
+	return float4(Input.Colour.rgb, float(AA));
 
 }

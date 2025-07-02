@@ -125,13 +125,29 @@ void D_DrawLinesArray(draw_context *D,
 					  m_arena *Arena,
 					  v3f *Positions,
 					  int PositionsCount,
+					  f32 Thickness,
 					  v4f Colour);
+
+void D_DrawLine(draw_context *D,
+				m_arena *Arena,
+				v3f Start,
+				v3f End,
+				f32 Thickness,
+				v4f Colour);
 
 void D_DrawBezierArray(draw_context *D,
 					  m_arena *Arena,
 					  v3f *Positions,
 					  int PositionsCount,
+					  f32 Thickness,
 					  v4f Colour);
+
+void D_DrawBezier(draw_context *D,
+				  m_arena *Arena,
+				  v3f Start,
+				  v3f Control,
+				  v3f End,
+				  v4f Colour);
 
 void D_DrawGrid(draw_context *Draw, m_arena *Arena, f32 Size, s32 Count);
 

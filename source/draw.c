@@ -464,7 +464,7 @@ void D_Draw3DStr8(draw_context *D,
 			P[0] = v3f(Position.X, Position.Y + LineHeight/2.0 - 10.0, 0.0);
 			P[1] = P[0];
 			P[1].X += (Kern + Glyph->AdvanceX) * Scale * TabMultiplier;
-			D_DrawLinesArray(D, Arena, P, 2, v4f(0.1, 0.02, 0.0, 0.25));
+			D_DrawLinesArray(D, Arena, P, 2, 1.0, v4f(0.1, 0.02, 0.0, 0.25));
 		}
 
 		f32 GlyphWidth = ((f32)(Glyph->Box.Z - Glyph->Box.X)*Scale);
@@ -530,7 +530,7 @@ void D_Draw3DStr8(draw_context *D,
 				v3f(Position.X + Control.X*Scale, Position.Y - Control.Y*Scale, 0.0),
 				v3f(Position.X + End.X*Scale, Position.Y - End.Y*Scale, 0.0)
 			};
-			D_DrawBezierArray(D, Arena, Line, 3, Colour);
+			D_DrawBezierArray(D, Arena, Line, 3, 1.0, Colour);
 		}
 
 		Position.X += AdvanceX;
@@ -703,6 +703,7 @@ void D_DrawBezierArray(draw_context *D,
 					  m_arena *Arena,
 					  v3f *Positions,
 					  int PositionsCount,
+					  f32 Thickness,
 					  v4f Colour)
 {
 	render_context *R = D->Render;
@@ -780,7 +781,7 @@ void D_DrawBezierArray(draw_context *D,
 				.Start = v2f(A.X, A.Y),
 				.Control = v2f(B.X, B.Y),
 				.End = v2f(C.X, C.Y),
-				.Thickness = 1.0
+				.Thickness = Thickness,
 			};
 			*R_Vertices++ = Vertex;
 		}
@@ -796,6 +797,7 @@ void D_DrawLinesArray(draw_context *D,
 					  m_arena *Arena,
 					  v3f *Positions,
 					  int PositionsCount,
+					  f32 Thickness,
 					  v4f Colour)
 {
 	render_context *R = D->Render;
@@ -866,7 +868,7 @@ void D_DrawLinesArray(draw_context *D,
 				.Colour = Colour,
 				.Start = v2f(A.X, A.Y),
 				.End = v2f(B.X, B.Y),
-				.Thickness = 2.0
+				.Thickness = Thickness
 			};
 			*R_Vertices++ = Vertex;
 		}
@@ -902,7 +904,7 @@ void D_DrawGrid(draw_context *Draw, m_arena *Arena, f32 Size, s32 Count)
 		Lines[Index++] = v3f(X, -2, HalfSize);
 	}
 
-	D_DrawLinesArray(Draw, Arena, Lines, LineCount * 2, v4f(1.0, .05, 0, 1));
+	D_DrawLinesArray(Draw, Arena, Lines, LineCount * 2, 1.0, v4f(1.0, .05, 0, 1));
 }
 
 void D_DrawGrid2D(draw_context *Draw, m_arena *Arena, f32 Size, s32 Count)
@@ -928,5 +930,5 @@ void D_DrawGrid2D(draw_context *Draw, m_arena *Arena, f32 Size, s32 Count)
 		Lines[Index++] = v3f(X, HalfSize, 0);
 	}
 
-	D_DrawLinesArray(Draw, Arena, Lines, LineCount * 2, v4f(0.05, .0, 0, 1));
+	D_DrawLinesArray(Draw, Arena, Lines, LineCount * 2, 1.0, v4f(0.05, .0, 0, 1));
 }

@@ -26,7 +26,7 @@ cbuffer uniforms : register(b0)
 	row_major float4x4 PVMMatrix;
 };
 
-StructuredBuffer<float2> Curves : register(t0);
+StructuredBuffer<float2> Curves : register(t1);
 
 float4 ToSRGB(float4 LinearRGB)
 {
@@ -140,6 +140,30 @@ float4 PixelMain(vertex_output Input) : SV_TARGET
 		}
 	}
 
-	float4 Colour = float4(Input.Colour.rgb, float(Input.CurveCount)/200.0);
+	{
+		// Visualize control points.
+		float2 fw = ddx(Size);
+		float r = 4.0 * 0.5 * (fw.x + fw.y);
+		for (int i = 0; i < Input.CurveCount; i++) {
+			float2 p0 = Curves[(Input.CurveStart + i)*3 + 0];
+			float2 p1 = Curves[(Input.CurveStart + i)*3 + 1];
+			float2 p2 = Curves[(Input.CurveStart + i)*3 + 2];
+			
+			p0 -= Size;
+			p1 -= Size;
+			p2 -= Size;
+
+			if (dot(p0, p0) < r*r || dot(p2, p2) < r*r) {
+				return float4(0, 1, 0, 1);
+			}
+
+			if (dot(p1, p1) < r*r) {
+				return float4(1, 0, 1, 1);
+			}
+		}
+	}
+
+	//float4 Colour = float4(Input.Colour.rgb, float(Input.CurveCount)/200.0);
+	float4 Colour = float4(Input.Colour.rgb, FontAtlas.Sample(Sampler, Input.UV).r*Input.Colour.a);
 	return Colour;
 }

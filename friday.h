@@ -1378,6 +1378,30 @@ str8 Str8UpToLastCharacter(memory_arena *Arena, str8 InputPath, u8 Character)
 	return Path;
 }
 
+str8 Str8FromLastCharacter(memory_arena *Arena, str8 InputPath, u8 Character)
+{
+	s64 StartIndex = 0;
+	b32 FoundCharacter = False;
+	for (int I = InputPath.Size; I > 0; I--)
+	{
+		if (InputPath.Bytes[I-1] == Character)
+		{
+			FoundCharacter = True;
+			StartIndex = I;
+			break;
+		}
+	}
+
+	str8 Result = {0};
+	if (FoundCharacter)
+	{
+		Result.Size = InputPath.Size - StartIndex;
+		Result.Bytes = (s8*)ArenaPush(Arena, Result.Size);
+		MemoryCopy(Result.Bytes, InputPath.Bytes + StartIndex, Result.Size);
+	}
+	return Result;
+}
+
 
 void FindAllIncludesInFile(memory_arena *Arena, str8 Filename, str8_list IncludePaths, str8_list *IncludeChainFiles)
 {
@@ -1479,6 +1503,24 @@ void EmbedFiles(memory_arena *Arena, str8_list SourcePaths, str8 DestinationPath
 {
 	str8_list Embed = {0};
 	str8_list_node *Name = Names.First;
+
+	str8 HeaderPath = Str8PushF(Arena, "%.*s.h", Str8ToPrintfArgs(Str8UpToLastCharacter(Arena, DestinationPath, '.')));
+
+	for(str8_list_node *SourcePath = SourcePaths.First;
+		SourcePath != Null;
+		SourcePath = SourcePath->Next)
+	{
+		Str8ListAppend(Arena, &Embed, Str8PushF(Arena, "extern unsigned char %.*s[];\n", Str8ToPrintfArgs(Name->String)));
+		Name = Name->Next;
+	}
+
+	WriteStringToDisk(Arena, HeaderPath, Str8ListJoin(Arena, Embed));
+
+	Embed = (str8_list){0};
+	Name = Names.First;
+
+	Str8ListAppend(Arena, &Embed, Str8PushF(Arena, "#include \"%.*s\"\n", Str8ToPrintfArgs(Str8FromLastCharacter(Arena, HeaderPath, '/'))));
+
 	for(str8_list_node *SourcePath = SourcePaths.First;
 		SourcePath != Null;
 		SourcePath = SourcePath->Next)
@@ -1489,7 +1531,7 @@ void EmbedFiles(memory_arena *Arena, str8_list SourcePaths, str8 DestinationPath
 			return;
 		}
 		str8 File = LoadEntireFileIntoMemory(Arena, SourcePath->String);
-		Str8ListAppend(Arena, &Embed, Str8PushF(Arena, "static unsigned char %.*s[] =\n{\n", Str8ToPrintfArgs(Name->String)));
+		Str8ListAppend(Arena, &Embed, Str8PushF(Arena, "unsigned char %.*s[] =\n{\n", Str8ToPrintfArgs(Name->String)));
 		Name = Name->Next;
 		for(s64 At = 0; At < File.Size;)
 		{

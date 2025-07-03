@@ -174,7 +174,7 @@ Entry(InputWaveInfo)
 			}
 		}
 
-		EmbedFiles(&Arena, Shaders, Str8("embed/shaders.h"), ShaderVariableNames);
+		EmbedFiles(&Arena, Shaders, Str8("embed/shaders.c"), ShaderVariableNames);
 
 		BuildOptions = (build_options){
 			.Compiler = Compiler,

@@ -1,4 +1,5 @@
-static unsigned char G_BerkeleyMonoRegular[] =
+#include "berkeley_mono_font.h"
+unsigned char G_BerkeleyMonoRegular[] =
 {
     0x00, 0x01, 0x00, 0x00,
     0x00, 0x12, 0x01, 0x00,
@@ -23171,7 +23172,7 @@ static unsigned char G_BerkeleyMonoRegular[] =
 
 };
 
-static unsigned char G_BebasNeueRegular[] =
+unsigned char G_BebasNeueRegular[] =
 {
     0x00, 0x01, 0x00, 0x00,
     0x00, 0x11, 0x01, 0x00,
@@ -37595,7 +37596,7 @@ static unsigned char G_BebasNeueRegular[] =
 
 };
 
-static unsigned char G_BasementGrotesque[] =
+unsigned char G_BasementGrotesque[] =
 {
     0x4f, 0x54, 0x54, 0x4f,
     0x00, 0x0c, 0x00, 0x80,
@@ -47685,7 +47686,7 @@ static unsigned char G_BasementGrotesque[] =
 
 };
 
-static unsigned char G_Doto[] =
+unsigned char G_Doto[] =
 {
     0x00, 0x01, 0x00, 0x00,
     0x00, 0x12, 0x01, 0x00,
@@ -161870,7 +161871,7 @@ static unsigned char G_Doto[] =
 
 };
 
-static unsigned char G_CocogooseBorder[] =
+unsigned char G_CocogooseBorder[] =
 {
     0x00, 0x01, 0x00, 0x00,
     0x00, 0x11, 0x01, 0x00,
@@ -319715,7 +319716,7 @@ static unsigned char G_CocogooseBorder[] =
 
 };
 
-static unsigned char G_CocogooseGradient[] =
+unsigned char G_CocogooseGradient[] =
 {
     0x00, 0x01, 0x00, 0x00,
     0x00, 0x11, 0x01, 0x00,
@@ -486065,7 +486066,7 @@ static unsigned char G_CocogooseGradient[] =
 
 };
 
-static unsigned char G_CocogooseRegular[] =
+unsigned char G_CocogooseRegular[] =
 {
     0x00, 0x01, 0x00, 0x00,
     0x00, 0x11, 0x01, 0x00,

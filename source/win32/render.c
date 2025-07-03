@@ -1330,7 +1330,7 @@ void R_Update(render_context *R, m_arena *FrameArena)
 
 				D3D11->DeviceContext->lpVtbl->PSSetShaderResources(
 					D3D11->DeviceContext,
-					0, 1, &D3D11->FontAtlasTextureView
+					1, 1, &D3D11->FontAtlasTextureView
 				);
 				D3D11->DeviceContext->lpVtbl->PSSetSamplers(
 					D3D11->DeviceContext,

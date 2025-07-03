@@ -12,6 +12,8 @@ typedef struct r_vertex
 	v2f Control;
 	v2f End;
 	f32 Thickness;
+	int CurveStart;
+	int CurveCount;
 } r_vertex;
 
 typedef enum r_texture_format

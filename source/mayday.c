@@ -103,7 +103,7 @@ mayday_context;
 #define SOKOL_LOG_IMPL
 #include "sokol_log.h"
 
-void OS_Update_(void *Data)
+void OS_Update(void *Data)
 {
 	mayday_context *M = Data;
 
@@ -133,7 +133,7 @@ void OS_Update_(void *Data)
 	M->UI->EventFirst = Null;
 }
 
-void OS_Update(void *Data)
+void OS_Update_(void *Data)
 {
 	mayday_context *M = Data;
 

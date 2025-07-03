@@ -344,12 +344,21 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 	// GLYPH SHADER
 	{
 		ID3DBlob *GlyphVertexShaderObject;
-		D3DCompile(G_GlyphShader, sizeof(G_GlyphShader),
+		ID3DBlob *Error;
+		HRESULT Compiled;
+		Compiled = D3DCompile(G_GlyphShader, sizeof(G_GlyphShader),
 				Null, Null, Null,
 				"VertexMain",
 				"vs_5_0",
 				0, 0,
-				&GlyphVertexShaderObject, Null);
+				&GlyphVertexShaderObject, &Error);
+		if(FAILED(Compiled))
+		{
+			char *ErrorMessage = (char*)(Error->lpVtbl->GetBufferPointer(Error));
+			LogError("[VERTEX] ?cstr", ErrorMessage);
+			Error->lpVtbl->Release(Error);
+		}
+		
 		
 		D3D11->Device->lpVtbl->CreateVertexShader(
 			D3D11->Device,
@@ -365,7 +374,8 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 			{ "POS", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0,                            0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 			{ "COL", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 			{ "TEX", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-			{ "PSIZE", 0, DXGI_FORMAT_R32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+			{ "CURVESTART", 0, DXGI_FORMAT_R32_UINT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+			{ "CURVECOUNT", 0, DXGI_FORMAT_R32_UINT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		};
 
 		D3D11->Device->lpVtbl->CreateInputLayout(
@@ -377,13 +387,18 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 			&D3D11->GlyphInputLayout);
 
 		ID3DBlob *GlyphPixelShaderObject;
-		D3DCompile(G_GlyphShader, sizeof(G_GlyphShader),
+		Compiled = D3DCompile(G_GlyphShader, sizeof(G_GlyphShader),
 				Null, Null, Null,
 				"PixelMain",
 				"ps_5_0",
 				0, 0,
-				&GlyphPixelShaderObject, Null);
-
+				&GlyphPixelShaderObject, &Error);
+		if(FAILED(Compiled))
+		{
+			char *ErrorMessage = (char*)(Error->lpVtbl->GetBufferPointer(Error));
+			LogError("[PIXEL] ?cstr", ErrorMessage);
+			Error->lpVtbl->Release(Error);
+		}
 		D3D11->Device->lpVtbl->CreatePixelShader(
 			D3D11->Device,
 			GlyphPixelShaderObject->lpVtbl->GetBufferPointer(GlyphPixelShaderObject),
@@ -870,10 +885,60 @@ void R_Update(render_context *R, m_arena *FrameArena)
 		f32 Thickness;
 		v3f Padding;
 	} bezier_vertex;
+
+	typedef struct glyph_vertex
+	{
+		v4f Position;
+		v4f Colour;
+		v4f UV;
+		int CurveStart;
+		int CurveCount;
+		f32 Padding[2];
+	} glyph_vertex;
 	for(r_command *Command = R->CommandsFirst; Command != Null; Command = Command->Next)
 	{
 		if(0){}
-		else if(Command->Type == R_COMMAND_TRIANGLE || Command->Type == R_COMMAND_GLYPH)
+		else if(Command->Type == R_COMMAND_GLYPH)
+		{
+			glyph_vertex *GPUVertices = (glyph_vertex*)ArenaPushArrayZero(Scratch.Arena,
+															 	 	  glyph_vertex, Command->VerticesCount);
+			for(int V = 0; V < Command->VerticesCount; V++)
+			{
+				v4f P = Command->Vertices[V].Position;
+				v2f UV = Command->Vertices[V].UV;
+				v4f Colour = Command->Vertices[V].Colour;
+				GPUVertices[V].Position = P;
+				GPUVertices[V].Colour = Colour;
+				GPUVertices[V].UV = v4f(UV.X, UV.Y, 0, 1);
+				GPUVertices[V].CurveStart = Command->Vertices[V].CurveStart;
+				GPUVertices[V].CurveCount = Command->Vertices[V].CurveCount;
+			}
+
+			D3D11_MAPPED_SUBRESOURCE TriangleVertexBufferResource;
+
+			D3D11->DeviceContext->lpVtbl->Map(
+				D3D11->DeviceContext,
+				(ID3D11Resource*)D3D11->VertexBuffers[ResourceIndex],
+				0,
+				VertexWriteMode, 0, &TriangleVertexBufferResource
+			);
+			glyph_vertex* Vertices = (glyph_vertex*)TriangleVertexBufferResource.pData;
+
+			MemoryCopy(
+				(u8*)Vertices + VertexOffsetInBytes + TotalVertices*sizeof(glyph_vertex),
+				GPUVertices,
+				sizeof(glyph_vertex)*Command->VerticesCount
+			);
+			D3D11->DeviceContext->lpVtbl->Unmap(
+				D3D11->DeviceContext,
+				(ID3D11Resource*)D3D11->VertexBuffers[ResourceIndex],
+				0
+			);
+			VertexWriteMode = D3D11_MAP_WRITE_NO_OVERWRITE;
+
+			TotalVertices += Command->VerticesCount;		
+		}
+		else if(Command->Type == R_COMMAND_TRIANGLE)
 		{
 
 			triangle_vertex *GPUVertices = (triangle_vertex*)ArenaPushArrayZero(Scratch.Arena,

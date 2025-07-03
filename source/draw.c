@@ -189,7 +189,7 @@ void CurvesFromCodePoint(draw_context *Draw, m_arena *Arena, u32 CodePoint, d_fo
 		Draw->Curves[Draw->CurveCount++] = Curves[0][Curve];
 	}
 
-	R_UpdateCurves(Draw->Render, (v2f*)Curves[0], CurveCount[0]*3, CurveCountSoFar);
+	R_UpdateCurves(Draw->Render, (v2f*)Curves[0], CurveCount[0]*3, CurveCountSoFar*3);
 }
 
 
@@ -521,6 +521,8 @@ void D_Draw3DStr8(draw_context *D,
 				.Position = v4f(Vertices[V].X, Vertices[V].Y, Position.Z, 1),
 				.UV = DivV2F(UVs[V], V2FromF32((f32)D_FONT_ATLAS_SIZE)),
 				.Colour = Colours[NewLine],
+				.CurveStart = Glyph->CurveStart,
+				.CurveCount = Glyph->CurveCount
 			};
 
 			Vertex.Position.Y += (Glyph->Box.Y*Scale);
@@ -549,14 +551,14 @@ void D_Draw3DStr8(draw_context *D,
 				v3f(Position.X + Control.X*Scale, Position.Y - Control.Y*Scale, 0.0),
 				v3f(Position.X + End.X*Scale, Position.Y - End.Y*Scale, 0.0)
 			};
-			D_DrawBezierArray(D, Arena, Line, 3, 2.0, Colour);
+			//D_DrawBezierArray(D, Arena, Line, 3, 2.0, Colour);
 		}
 
 		Position.X += AdvanceX;
 	}
 
-	// Command.Type = R_COMMAND_GLYPH;
-	// R_PushCommand(R, Arena, Command);
+	Command.Type = R_COMMAND_GLYPH;
+	R_PushCommand(R, Arena, Command);
 }
 
 void D_DrawStr8(draw_context *D,

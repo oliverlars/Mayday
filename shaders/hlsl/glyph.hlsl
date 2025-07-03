@@ -8,7 +8,8 @@ struct vertex_input
 	float4 Position: POS;
 	float4 Colour:   COL;
 	float4 UV:       TEX;
-	float  PointSize: PSIZE;
+	int    CurveStart: CURVESTART;
+	int    CurveCount: CURVECOUNT;
 };
 
 struct vertex_output
@@ -16,12 +17,16 @@ struct vertex_output
 	float4 Position: SV_POSITION;
 	float4 Colour:  COL;
 	float2 UV:      TEXCOORD0;
+	int    CurveStart: CURVESTART;
+	int    CurveCount: CURVECOUNT;
 };
 
 cbuffer uniforms : register(b0)
 {
 	row_major float4x4 PVMMatrix;
-}
+};
+
+StructuredBuffer<float2> Curves : register(t0);
 
 float4 ToSRGB(float4 LinearRGB)
 {

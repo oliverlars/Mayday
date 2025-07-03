@@ -29,6 +29,7 @@ typedef struct d_atlas_glyph
 	f32 AdvanceX;
 
 	curve *Curves;
+	int CurveStart;
 	int CurveCount;
 
 	struct d_atlas_glyph *NextInHashSlot;
@@ -41,6 +42,8 @@ typedef struct d_atlas_glyph
 
 #define D_FONT_ATLAS_SIZE (4096)
 
+#define D_MAX_CURVES (MegaBytes(16))
+
 typedef struct draw_context
 {
 	m_arena *Arena;
@@ -52,6 +55,9 @@ typedef struct draw_context
 
 	d_atlas_glyph *OldestGlyph;
 	d_atlas_glyph *NewestGlyph;
+
+	curve *Curves;
+	int CurveCount;
 
 	u64 HashOfNewestGlyph;
 

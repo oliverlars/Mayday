@@ -19,6 +19,31 @@ typedef struct uniforms
 	m44f PVMMatrix;
 } uniforms;
 
+void R_UpdateCurves(render_context *Render, v2f *CurvePoints, int CurvePointsCount, int CurvePointsSoFar)
+{
+	d3d11_context *D3D11 = Render->Backend;
+	D3D11_MAPPED_SUBRESOURCE CurveBufferResource;
+
+	D3D11->DeviceContext->lpVtbl->Map(
+		D3D11->DeviceContext,
+		(ID3D11Resource*)D3D11->CurvesBuffer,
+		0,
+		D3D11_MAP_WRITE_NO_OVERWRITE, 0, &CurveBufferResource
+	);
+	v2f* Curves = (v2f*)CurveBufferResource.pData;
+
+	MemoryCopy(
+		(u8*)Curves + CurvePointsSoFar,
+		CurvePoints,
+		CurvePointsCount*sizeof(v2f)/3
+	);
+	D3D11->DeviceContext->lpVtbl->Unmap(
+		D3D11->DeviceContext,
+		(ID3D11Resource*)D3D11->CurvesBuffer,
+		0
+	);
+}
+
 void R_TextureFromBytes(render_context *R, u8 *Bytes, s32 Width, s32 Height)
 {
 	d3d11_context *D3D11 = R->Backend;
@@ -91,6 +116,36 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 											&TriangleVertexBufferDescription,
 											NULL,
 											&D3D11->VertexBuffers[ResourceIndex]);
+	}
+
+	{
+		D3D11_BUFFER_DESC CurveBufferDescription = {};
+		CurveBufferDescription.Usage = D3D11_USAGE_DYNAMIC;
+		CurveBufferDescription.ByteWidth = MegaBytes(32);
+		CurveBufferDescription.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+		CurveBufferDescription.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+		CurveBufferDescription.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
+		CurveBufferDescription.StructureByteStride = sizeof(f32) * 2;
+		
+		D3D11->Device->lpVtbl->CreateBuffer(
+			D3D11->Device,
+			&CurveBufferDescription,
+			Null,
+			&D3D11->CurvesBuffer
+		);
+
+		D3D11_SHADER_RESOURCE_VIEW_DESC CurvesBufferShaderResourceView = {};
+		CurvesBufferShaderResourceView.Format = DXGI_FORMAT_UNKNOWN;
+		CurvesBufferShaderResourceView.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
+		// Number of curves, each curve consists of 6 f32 values
+		CurvesBufferShaderResourceView.Buffer.NumElements = MegaBytes(32) / sizeof(f32) / 6;
+
+		D3D11->Device->lpVtbl->CreateShaderResourceView(
+			D3D11->Device,
+			(ID3D11Resource*)D3D11->CurvesBuffer,
+			&CurvesBufferShaderResourceView,
+			&D3D11->CurvesResourceView
+		);
 	}
 
 
@@ -785,6 +840,7 @@ void R_Update(render_context *R, m_arena *FrameArena)
 	int ResourceIndex = R->Frame % FRAMES_IN_FLIGHT;
 	D3D11_MAP VertexWriteMode = D3D11_MAP_WRITE_DISCARD;
 
+
 	typedef struct triangle_vertex
 	{
 		v4f Position;
@@ -1202,6 +1258,11 @@ void R_Update(render_context *R, m_arena *FrameArena)
 					D3D11->GlyphPixelShader,
 					Null, 0
 				);
+				D3D11->DeviceContext->lpVtbl->PSSetShaderResources(
+					D3D11->DeviceContext,
+					0, 1, &D3D11->CurvesResourceView
+				);
+
 				D3D11->DeviceContext->lpVtbl->PSSetShaderResources(
 					D3D11->DeviceContext,
 					0, 1, &D3D11->FontAtlasTextureView

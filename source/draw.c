@@ -124,7 +124,7 @@ void PopGlyphOffLRU(draw_context *D_Context)
 	}
 }
 
-void CurvesFromCodePoint(m_arena *Arena, u32 CodePoint, d_font Font, int *CurveCount, curve **Curves)
+void CurvesFromCodePoint(draw_context *Draw, m_arena *Arena, u32 CodePoint, d_font Font, int *CurveCount, curve **Curves)
 {
 	assert(CurveCount != 0);
 	assert(Curves != Null);
@@ -132,9 +132,17 @@ void CurvesFromCodePoint(m_arena *Arena, u32 CodePoint, d_font Font, int *CurveC
 	stbtt_vertex *Vertices;
 	s32 NumberOfVertices = stbtt_GetGlyphShape(&Font.Info, GlyphIndex, &Vertices);
 
+
+	if(Draw->Curves == Null)
+	{
+		Draw->Curves = ArenaPushArrayZero(Draw->Arena, curve, D_MAX_CURVES);
+	}
+
 	// This is probably more than enough memory
 	Curves[0] = ArenaPushArrayZero(Arena, curve, NumberOfVertices);
-	CurveCount[0] = 0;	
+	CurveCount[0] = 0;
+
+	int CurveCountSoFar = Draw->CurveCount;
 
 	v2f First = {0};
 	for (s32 I = 0; I < NumberOfVertices; I++)
@@ -175,6 +183,13 @@ void CurvesFromCodePoint(m_arena *Arena, u32 CodePoint, d_font Font, int *CurveC
 		break;
 		}
 	}
+
+	for(int Curve = 0; Curve < CurveCount[0]; Curve++)
+	{
+		Draw->Curves[Draw->CurveCount++] = Curves[0][Curve];
+	}
+
+	R_UpdateCurves(Draw->Render, (v2f*)Curves[0], CurveCount[0]*3, CurveCountSoFar);
 }
 
 
@@ -223,7 +238,8 @@ d_atlas_glyph *D_GlyphFromCodePoint(draw_context *D, d_font Font, s32 HeightInPi
 								  BitmapBox.Z - BitmapBox.X,
 								  Scale, Scale,
 								  NextGlyph->CodePoint);
-		CurvesFromCodePoint(D->Arena, CodePoint, Font, &Glyph->CurveCount, &Glyph->Curves);
+		NextGlyph->CurveStart = D->CurveCount;
+		CurvesFromCodePoint(D, D->Arena, CodePoint, Font, &Glyph->CurveCount, &Glyph->Curves);
 		NextGlyph->BitmapBox = BitmapBox;
 		ResultGlyph = NextGlyph;
 	}
@@ -257,7 +273,8 @@ d_atlas_glyph *D_GlyphFromCodePoint(draw_context *D, d_font Font, s32 HeightInPi
 								  BitmapBox.Z - BitmapBox.X,
 								  Scale, Scale,
 								  Glyph->CodePoint);
-		CurvesFromCodePoint(D->Arena, CodePoint, Font, &Glyph->CurveCount, &Glyph->Curves);
+		Glyph->CurveStart = D->CurveCount;
+		CurvesFromCodePoint(D, D->Arena, CodePoint, Font, &Glyph->CurveCount, &Glyph->Curves);
 		Glyph->BitmapBox = BitmapBox;
 	}
 
@@ -309,7 +326,8 @@ d_atlas_glyph *D_GlyphFromCodePoint2(draw_context *D, u64 FontHash, d_font Font,
 								  BitmapBox.Z - BitmapBox.X,
 								  Scale, Scale,
 								  NextGlyph->CodePoint);
-		CurvesFromCodePoint(D->Arena, CodePoint, Font, &Glyph->CurveCount, &Glyph->Curves);
+		NextGlyph->CurveStart = D->CurveCount;
+		CurvesFromCodePoint(D, D->Arena, CodePoint, Font, &Glyph->CurveCount, &Glyph->Curves);
 		NextGlyph->BitmapBox = BitmapBox;
 		ResultGlyph = NextGlyph;
 	}
@@ -344,7 +362,8 @@ d_atlas_glyph *D_GlyphFromCodePoint2(draw_context *D, u64 FontHash, d_font Font,
 								  BitmapBox.Z - BitmapBox.X,
 								  Scale, Scale,
 								  Glyph->CodePoint);
-		CurvesFromCodePoint(D->Arena, CodePoint, Font, &Glyph->CurveCount, &Glyph->Curves);
+		Glyph->CurveStart = D->CurveCount;
+		CurvesFromCodePoint(D, D->Arena, CodePoint, Font, &Glyph->CurveCount, &Glyph->Curves);
 		Glyph->BitmapBox = BitmapBox;
 		ResultGlyph = Glyph;
 	}

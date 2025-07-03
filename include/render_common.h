@@ -95,3 +95,5 @@ v4i R_CurrentScissor(render_context *Render);
 
 m44f R_CurrentTransform(render_context *Render);
 m44f R_CurrentInverseTransform(render_context *Render);
+
+void R_UpdateCurves(render_context *Render, v2f *CurvePoints, int CurvePointsCount, int CurvePointsSoFar);

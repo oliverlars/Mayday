@@ -42,6 +42,9 @@ typedef struct d3d11_context
 	ID3D11PixelShader     *BezierPixelShader;
 	ID3D11InputLayout     *BezierInputLayout;
 
+	ID3D11Buffer              *CurvesBuffer;
+	ID3D11ShaderResourceView  *CurvesResourceView;
+
 	ID3D11Texture2D          *FontAtlasTexture;
 	ID3D11ShaderResourceView *FontAtlasTextureView;
 

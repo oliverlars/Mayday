@@ -1,6 +1,7 @@
-extern unsigned char G_BezierShader[];
-extern unsigned char G_BloomShader[];
-extern unsigned char G_GaussianShader[];
-extern unsigned char G_GlyphShader[];
-extern unsigned char G_LineShader[];
-extern unsigned char G_TriangleShader[];
+struct embed_data { unsigned int *Data; unsigned long long Length; };
+extern struct embed_data G_BezierShader;
+extern struct embed_data G_BloomShader;
+extern struct embed_data G_GaussianShader;
+extern struct embed_data G_GlyphShader;
+extern struct embed_data G_LineShader;
+extern struct embed_data G_TriangleShader;

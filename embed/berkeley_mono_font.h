@@ -1,5 +1,5 @@
 #include "berkeley_mono_font.h"
-unsigned char G_BerkeleyMonoRegular[] =
+unsigned int G_BerkeleyMonoRegularData[] =
 {
     0x00, 0x01, 0x00, 0x00,
     0x00, 0x12, 0x01, 0x00,
@@ -23172,7 +23172,11 @@ unsigned char G_BerkeleyMonoRegular[] =
 
 };
 
-unsigned char G_BebasNeueRegular[] =
+struct embed_data G_BerkeleyMonoRegular = {
+.Data = G_BerkeleyMonoRegularData;
+.Length = 92672;
+};
+unsigned int G_BebasNeueRegularData[] =
 {
     0x00, 0x01, 0x00, 0x00,
     0x00, 0x11, 0x01, 0x00,
@@ -37596,7 +37600,11 @@ unsigned char G_BebasNeueRegular[] =
 
 };
 
-unsigned char G_BasementGrotesque[] =
+struct embed_data G_BebasNeueRegular = {
+.Data = G_BebasNeueRegularData;
+.Length = 57676;
+};
+unsigned int G_BasementGrotesqueData[] =
 {
     0x4f, 0x54, 0x54, 0x4f,
     0x00, 0x0c, 0x00, 0x80,
@@ -47686,7 +47694,11 @@ unsigned char G_BasementGrotesque[] =
 
 };
 
-unsigned char G_Doto[] =
+struct embed_data G_BasementGrotesque = {
+.Data = G_BasementGrotesqueData;
+.Length = 40340;
+};
+unsigned int G_DotoData[] =
 {
     0x00, 0x01, 0x00, 0x00,
     0x00, 0x12, 0x01, 0x00,
@@ -161871,7 +161883,11 @@ unsigned char G_Doto[] =
 
 };
 
-unsigned char G_CocogooseBorder[] =
+struct embed_data G_Doto = {
+.Data = G_DotoData;
+.Length = 456720;
+};
+unsigned int G_CocogooseBorderData[] =
 {
     0x00, 0x01, 0x00, 0x00,
     0x00, 0x11, 0x01, 0x00,
@@ -319716,7 +319732,11 @@ unsigned char G_CocogooseBorder[] =
 
 };
 
-unsigned char G_CocogooseGradient[] =
+struct embed_data G_CocogooseBorder = {
+.Data = G_CocogooseBorderData;
+.Length = 631360;
+};
+unsigned int G_CocogooseGradientData[] =
 {
     0x00, 0x01, 0x00, 0x00,
     0x00, 0x11, 0x01, 0x00,
@@ -486066,7 +486086,11 @@ unsigned char G_CocogooseGradient[] =
 
 };
 
-unsigned char G_CocogooseRegular[] =
+struct embed_data G_CocogooseGradient = {
+.Data = G_CocogooseGradientData;
+.Length = 665380;
+};
+unsigned int G_CocogooseRegularData[] =
 {
     0x00, 0x01, 0x00, 0x00,
     0x00, 0x11, 0x01, 0x00,
@@ -567530,3 +567554,7 @@ unsigned char G_CocogooseRegular[] =
 
 };
 
+struct embed_data G_CocogooseRegular = {
+.Data = G_CocogooseRegularData;
+.Length = 325836;
+};

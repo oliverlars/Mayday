@@ -154,7 +154,7 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 		ID3DBlob *TriangleVertexShaderObject;
 		ID3DBlob *Error;
 		HRESULT Compiled;
-		Compiled = D3DCompile(G_TriangleShader, sizeof(G_TriangleShader),
+		Compiled = D3DCompile(G_TriangleShader.Data, G_TriangleShader.Length,
 				Null, Null, Null,
 				"VertexMain",
 				"vs_5_0",
@@ -191,7 +191,7 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 			&D3D11->TriangleInputLayout);
 
 		ID3DBlob *TrianglePixelShaderObject;
-		Compiled = D3DCompile(G_TriangleShader, sizeof(G_TriangleShader),
+		Compiled = D3DCompile(G_TriangleShader.Data, G_TriangleShader.Length,
 				Null, Null, Null,
 				"PixelMain",
 				"ps_5_0",
@@ -217,7 +217,7 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 		ID3DBlob *LineVertexShaderObject;
 		ID3DBlob *Error;
 		HRESULT Compiled;
-		Compiled = D3DCompile(G_LineShader, sizeof(G_LineShader),
+		Compiled = D3DCompile(G_LineShader.Data, G_LineShader.Length,
 				Null, Null, Null,
 				"VertexMain",
 				"vs_5_0",
@@ -255,7 +255,7 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 			&D3D11->LineInputLayout);
 
 		ID3DBlob *LinePixelShaderObject;
-		Compiled = D3DCompile(G_LineShader, sizeof(G_LineShader),
+		Compiled = D3DCompile(G_LineShader.Data, G_LineShader.Length,
 				Null, Null, Null,
 				"PixelMain",
 				"ps_5_0",
@@ -281,7 +281,7 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 		ID3DBlob *BezierVertexShaderObject;
 		ID3DBlob *Error;
 		HRESULT Compiled;
-		Compiled = D3DCompile(G_BezierShader, sizeof(G_BezierShader),
+		Compiled = D3DCompile(G_BezierShader.Data, G_BezierShader.Length,
 				Null, Null, Null,
 				"VertexMain",
 				"vs_5_0",
@@ -320,7 +320,7 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 			&D3D11->BezierInputLayout);
 
 		ID3DBlob *BezierPixelShaderObject;
-		Compiled = D3DCompile(G_BezierShader, sizeof(G_BezierShader),
+		Compiled = D3DCompile(G_BezierShader.Data, G_BezierShader.Length,
 				Null, Null, Null,
 				"PixelMain",
 				"ps_5_0",
@@ -346,7 +346,7 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 		ID3DBlob *GlyphVertexShaderObject;
 		ID3DBlob *Error;
 		HRESULT Compiled;
-		Compiled = D3DCompile(G_GlyphShader, sizeof(G_GlyphShader),
+		Compiled = D3DCompile(G_GlyphShader.Data, G_GlyphShader.Length,
 				Null, Null, Null,
 				"VertexMain",
 				"vs_5_0",
@@ -387,7 +387,7 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 			&D3D11->GlyphInputLayout);
 
 		ID3DBlob *GlyphPixelShaderObject;
-		Compiled = D3DCompile(G_GlyphShader, sizeof(G_GlyphShader),
+		Compiled = D3DCompile(G_GlyphShader.Data, G_GlyphShader.Length,
 				Null, Null, Null,
 				"PixelMain",
 				"ps_5_0",
@@ -413,7 +413,7 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 		ID3DBlob *Error;
 		HRESULT Compiled;
 
-		Compiled = D3DCompile(G_GaussianShader, sizeof(G_GaussianShader),
+		Compiled = D3DCompile(G_GaussianShader.Data, G_GaussianShader.Length,
 				Null, Null, Null,
 				"VertexMain",
 				"vs_5_0",
@@ -434,7 +434,7 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 		);
 
 		ID3DBlob *HorizontalGaussianPixelShaderObject;
-		Compiled = D3DCompile(G_GaussianShader, sizeof(G_GaussianShader),
+		Compiled = D3DCompile(G_GaussianShader.Data, G_GaussianShader.Length,
 				Null, Null, Null,
 				"BlurHorizontal",
 				"ps_5_0",
@@ -455,7 +455,7 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 		);
 
 		ID3DBlob *VerticalGaussianPixelShaderObject;
-		Compiled = D3DCompile(G_GaussianShader, sizeof(G_GaussianShader),
+		Compiled = D3DCompile(G_GaussianShader.Data, G_GaussianShader.Length,
 				Null, Null, Null,
 				"BlurVertical",
 				"ps_5_0",
@@ -482,7 +482,7 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 		ID3DBlob *Error;
 		HRESULT Compiled;
 
-		Compiled = D3DCompile(G_BloomShader, sizeof(G_BloomShader),
+		Compiled = D3DCompile(G_BloomShader.Data, G_BloomShader.Length,
 				Null, Null, Null,
 				"VertexMain",
 				"vs_5_0",
@@ -503,7 +503,7 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 		);
 
 		ID3DBlob *BloomPixelShaderObject;
-		Compiled = D3DCompile(G_BloomShader, sizeof(G_BloomShader),
+		Compiled = D3DCompile(G_BloomShader.Data, G_BloomShader.Length,
 				Null, Null, Null,
 				"PixelMain",
 				"ps_5_0",

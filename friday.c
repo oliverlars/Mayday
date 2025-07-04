@@ -89,6 +89,11 @@ Entry(InputWaveInfo)
 		AppendSourceFilesInFolder(&Arena, &SourceFiles, Str8("source"));
 		AppendSourceFilesInFolder(&Arena, &SourceFiles, Str8("source/ui"));
 
+		
+		// There must be a way to do this automatically instead of specifying it
+		// here...
+		GenerateEmbedHeaderEveryTime(memory_arena *Arena, str8 DestinationPath)
+
 		str8_list Fonts = {0};
 		Str8ListAppend(&Arena, &Fonts, Str8("fonts/BerkeleyMono-Regular.ttf"));
 		Str8ListAppend(&Arena, &Fonts, Str8("fonts/BebasNeue-Regular.ttf"));

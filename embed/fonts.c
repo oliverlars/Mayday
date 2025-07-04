@@ -1,5 +1,5 @@
 #include "fonts.h"
-static unsigned int G_BerkeleyMonoRegularData[] =
+static unsigned char G_BerkeleyMonoRegularData[] =
 {
     0x00, 0x01, 0x00, 0x00,
     0x00, 0x12, 0x01, 0x00,
@@ -23172,11 +23172,11 @@ static unsigned int G_BerkeleyMonoRegularData[] =
 
 };
 
-struct embed_data  G_BerkeleyMonoRegular = {
+embed_data G_BerkeleyMonoRegular = {
 	.Data = G_BerkeleyMonoRegularData,
 	.Length = 92672,
 };
-static unsigned int G_BebasNeueRegularData[] =
+static unsigned char G_BebasNeueRegularData[] =
 {
     0x00, 0x01, 0x00, 0x00,
     0x00, 0x11, 0x01, 0x00,
@@ -37600,11 +37600,11 @@ static unsigned int G_BebasNeueRegularData[] =
 
 };
 
-struct embed_data  G_BebasNeueRegular = {
+embed_data G_BebasNeueRegular = {
 	.Data = G_BebasNeueRegularData,
 	.Length = 57676,
 };
-static unsigned int G_BasementGrotesqueData[] =
+static unsigned char G_BasementGrotesqueData[] =
 {
     0x4f, 0x54, 0x54, 0x4f,
     0x00, 0x0c, 0x00, 0x80,
@@ -47694,11 +47694,11 @@ static unsigned int G_BasementGrotesqueData[] =
 
 };
 
-struct embed_data  G_BasementGrotesque = {
+embed_data G_BasementGrotesque = {
 	.Data = G_BasementGrotesqueData,
 	.Length = 40340,
 };
-static unsigned int G_DotoData[] =
+static unsigned char G_DotoData[] =
 {
     0x00, 0x01, 0x00, 0x00,
     0x00, 0x12, 0x01, 0x00,
@@ -161883,11 +161883,11 @@ static unsigned int G_DotoData[] =
 
 };
 
-struct embed_data  G_Doto = {
+embed_data G_Doto = {
 	.Data = G_DotoData,
 	.Length = 456720,
 };
-static unsigned int G_CocogooseBorderData[] =
+static unsigned char G_CocogooseBorderData[] =
 {
     0x00, 0x01, 0x00, 0x00,
     0x00, 0x11, 0x01, 0x00,
@@ -319732,11 +319732,11 @@ static unsigned int G_CocogooseBorderData[] =
 
 };
 
-struct embed_data  G_CocogooseBorder = {
+embed_data G_CocogooseBorder = {
 	.Data = G_CocogooseBorderData,
 	.Length = 631360,
 };
-static unsigned int G_CocogooseGradientData[] =
+static unsigned char G_CocogooseGradientData[] =
 {
     0x00, 0x01, 0x00, 0x00,
     0x00, 0x11, 0x01, 0x00,
@@ -486086,11 +486086,11 @@ static unsigned int G_CocogooseGradientData[] =
 
 };
 
-struct embed_data  G_CocogooseGradient = {
+embed_data G_CocogooseGradient = {
 	.Data = G_CocogooseGradientData,
 	.Length = 665380,
 };
-static unsigned int G_CocogooseRegularData[] =
+static unsigned char G_CocogooseRegularData[] =
 {
     0x00, 0x01, 0x00, 0x00,
     0x00, 0x11, 0x01, 0x00,
@@ -567554,7 +567554,7 @@ static unsigned int G_CocogooseRegularData[] =
 
 };
 
-struct embed_data  G_CocogooseRegular = {
+embed_data G_CocogooseRegular = {
 	.Data = G_CocogooseRegularData,
 	.Length = 325836,
 };

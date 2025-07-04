@@ -1,5 +1,5 @@
 #include "shaders.h"
-static unsigned int G_BezierShaderData[] =
+static unsigned char G_BezierShaderData[] =
 {
     0x73, 0x74, 0x72, 0x75,
     0x63, 0x74, 0x20, 0x76,
@@ -846,11 +846,11 @@ static unsigned int G_BezierShaderData[] =
     0x0d,0x0a, 0x7d, 
 };
 
-struct embed_data  G_BezierShader = {
+embed_data G_BezierShader = {
 	.Data = G_BezierShaderData,
 	.Length = 3371,
 };
-static unsigned int G_BloomShaderData[] =
+static unsigned char G_BloomShaderData[] =
 {
     0x54, 0x65, 0x78, 0x74,
     0x75, 0x72, 0x65, 0x32,
@@ -1222,11 +1222,11 @@ static unsigned int G_BloomShaderData[] =
     0x7d,0x0d, 0x0a, 
 };
 
-struct embed_data  G_BloomShader = {
+embed_data G_BloomShader = {
 	.Data = G_BloomShaderData,
 	.Length = 1471,
 };
-static unsigned int G_GaussianShaderData[] =
+static unsigned char G_GaussianShaderData[] =
 {
     0x0d, 0x0a, 0x0d, 0x0a,
     0x54, 0x65, 0x78, 0x74,
@@ -1681,11 +1681,11 @@ static unsigned int G_GaussianShaderData[] =
     0x0d,0x0a, 
 };
 
-struct embed_data  G_GaussianShader = {
+embed_data G_GaussianShader = {
 	.Data = G_GaussianShaderData,
 	.Length = 1802,
 };
-static unsigned int G_GlyphShaderData[] =
+static unsigned char G_GlyphShaderData[] =
 {
     0x0d, 0x0a, 0x0d, 0x0a,
     0x54, 0x65, 0x78, 0x74,
@@ -2750,11 +2750,11 @@ static unsigned int G_GlyphShaderData[] =
     0x0d,0x0a, 
 };
 
-struct embed_data  G_GlyphShader = {
+embed_data G_GlyphShader = {
 	.Data = G_GlyphShaderData,
 	.Length = 4242,
 };
-static unsigned int G_LineShaderData[] =
+static unsigned char G_LineShaderData[] =
 {
     0x73, 0x74, 0x72, 0x75,
     0x63, 0x74, 0x20, 0x76,
@@ -3099,11 +3099,11 @@ static unsigned int G_LineShaderData[] =
     0x0d,0x0a, 0x7d, 
 };
 
-struct embed_data  G_LineShader = {
+embed_data G_LineShader = {
 	.Data = G_LineShaderData,
 	.Length = 1363,
 };
-static unsigned int G_TriangleShaderData[] =
+static unsigned char G_TriangleShaderData[] =
 {
     0x73, 0x74, 0x72, 0x75,
     0x63, 0x74, 0x20, 0x76,
@@ -3391,7 +3391,7 @@ static unsigned int G_TriangleShaderData[] =
     0x7d,
 };
 
-struct embed_data  G_TriangleShader = {
+embed_data G_TriangleShader = {
 	.Data = G_TriangleShaderData,
 	.Length = 1133,
 };

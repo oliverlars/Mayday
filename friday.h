@@ -1499,13 +1499,10 @@ void FindAllIncludesInFile(memory_arena *Arena, str8 Filename, str8_list Include
 	}
 }
 
-void GenerateEmbedHeaderIfNotAlreadyGenerated(memory_arena *Arena, str8 DestinationPath)
+void GenerateEmbedHeader(memory_arena *Arena, str8 DestinationPath)
 {
 	str8 FilePath = Str8PushF(Arena, "%.*s/embed.h", Str8ToPrintfArgs(DestinationPath));
-	if(!PathExists(Arena, FilePath))
-	{
-		WriteStringToDisk(Arena, FilePath, Str8("#pragma once \n struct embed_data { unsigned char *Data; unsigned long long Length; };"));
-	}
+	WriteStringToDisk(Arena, FilePath, Str8("#pragma once \n typedef struct embed_data { unsigned char *Data; unsigned long long Length; } embed_data;"));
 }
 
 void EmbedFiles(memory_arena *Arena, str8_list SourcePaths, str8 DestinationPath, str8_list Names)
@@ -1513,20 +1510,15 @@ void EmbedFiles(memory_arena *Arena, str8_list SourcePaths, str8 DestinationPath
 	str8_list Embed = {0};
 	str8_list_node *Name = Names.First;
 
-
-	GenerateEmbedHeaderIfNotAlreadyGenerated(Arena, Str8UpToLastCharacter(Arena, DestinationPath, '/'));
-
 	str8 HeaderPath = Str8PushF(Arena, "%.*s.h", Str8ToPrintfArgs(Str8UpToLastCharacter(Arena, DestinationPath, '.')));
 
 	Str8ListAppend(Arena, &Embed, Str8("#pragma once\n #include \"embed.h\" \n"));
-
-	str8 EmbedDataStruct = Str8("struct embed_data ");
 
 	for(str8_list_node *SourcePath = SourcePaths.First;
 		SourcePath != Null;
 		SourcePath = SourcePath->Next)
 	{
-		Str8ListAppend(Arena, &Embed, Str8PushF(Arena, "extern %.*s %.*s;\n", Str8ToPrintfArgs(EmbedDataStruct), Str8ToPrintfArgs(Name->String)));
+		Str8ListAppend(Arena, &Embed, Str8PushF(Arena, "extern embed_data %.*s;\n", Str8ToPrintfArgs(Name->String)));
 		Name = Name->Next;
 	}
 
@@ -1547,7 +1539,7 @@ void EmbedFiles(memory_arena *Arena, str8_list SourcePaths, str8 DestinationPath
 			return;
 		}
 		str8 File = LoadEntireFileIntoMemory(Arena, SourcePath->String);
-		Str8ListAppend(Arena, &Embed, Str8PushF(Arena, "static unsigned int %.*sData[] =\n{\n", Str8ToPrintfArgs(Name->String)));
+		Str8ListAppend(Arena, &Embed, Str8PushF(Arena, "static unsigned char %.*sData[] =\n{\n", Str8ToPrintfArgs(Name->String)));
 		for(s64 At = 0; At < File.Size;)
 		{
 			u8* Byte = (u8*)(File.Bytes + At);
@@ -1589,7 +1581,7 @@ void EmbedFiles(memory_arena *Arena, str8_list SourcePaths, str8 DestinationPath
 			}
 		}
 		Str8ListAppend(Arena, &Embed, Str8("\n};\n\n"));
-		Str8ListAppend(Arena, &Embed, Str8PushF(Arena, "%.*s %.*s = {\n", Str8ToPrintfArgs(EmbedDataStruct), Str8ToPrintfArgs(Name->String)));
+		Str8ListAppend(Arena, &Embed, Str8PushF(Arena, "embed_data %.*s = {\n", Str8ToPrintfArgs(Name->String)));
 		Str8ListAppend(Arena, &Embed, Str8PushF(Arena, "	.Data = %.*sData,\n", Str8ToPrintfArgs(Name->String)));
 		Str8ListAppend(Arena, &Embed, Str8PushF(Arena, "	.Length = %llu,\n",  File.Size));
 		Str8ListAppend(Arena, &Embed, Str8PushF(Arena, "};\n"));

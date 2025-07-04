@@ -8,7 +8,7 @@
 #include "strings.h"
 
 #include "draw.h"
-#include "berkeley_mono_font.h"
+#include "fonts.h"
 #include "render.h"
 #include "edit.h"
 
@@ -548,7 +548,7 @@ void OS_Initialise(void *Data)
 
 	M->Buffer.String.Bytes = ArenaPushZero(M->PermanentArena, MegaBytes(1));
 	M->Buffer.String.Size = sizeof(G_TriangleShader);
-	MemoryCopy(M->Buffer.String.Bytes, G_TriangleShader, sizeof(G_TriangleShader));
+	MemoryCopy(M->Buffer.String.Bytes, G_TriangleShader.Data, G_TriangleShader.Length);
 
 	M->TextBoxBuffer.String.Bytes = ArenaPushArrayZero(M->PermanentArena, u8, 8192);
 	M->TextBoxBuffer.HeightInPixels = 60;
@@ -642,12 +642,12 @@ int main()
 
 	M.Window = OS_MakeWindow(Str8("Mayday!"), 3024, 1964);
 
-	M.CodeFont = D_LoadFontFromTTF(M.Draw, G_BerkeleyMonoRegular);
-	M.RegularFont = D_LoadFontFromTTF(M.Draw, G_BasementGrotesque);
-	M.OutlineFont = D_LoadFontFromTTF(M.Draw, G_CocogooseBorder);
-	M.LogoFont = D_LoadFontFromTTF(M.Draw, G_CocogooseRegular);
-	M.GradientFont = D_LoadFontFromTTF(M.Draw,G_CocogooseGradient);
-	M.StatusFont = D_LoadFontFromTTF(M.Draw, G_Doto);
+	M.CodeFont = D_LoadFontFromTTF(M.Draw, G_BerkeleyMonoRegular.Data);
+	M.RegularFont = D_LoadFontFromTTF(M.Draw, G_BasementGrotesque.Data);
+	M.OutlineFont = D_LoadFontFromTTF(M.Draw, G_CocogooseBorder.Data);
+	M.LogoFont = D_LoadFontFromTTF(M.Draw, G_CocogooseRegular.Data);
+	M.GradientFont = D_LoadFontFromTTF(M.Draw,G_CocogooseGradient.Data);
+	M.StatusFont = D_LoadFontFromTTF(M.Draw, G_Doto.Data);
 
 	M.UI->Font = M.CodeFont;
 	M.LookFrom.Z = 120;

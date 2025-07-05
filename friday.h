@@ -890,7 +890,7 @@ str8 LinkCommandFromBuildOptions(memory_arena *Arena, build_options *BuildOption
 {
 	str8 LinkCommand = Str8PushF(
 		Arena,
-		"link /nologo /INCREMENTAL:NO /DEBUG %.*s/PDB:build/%.*s.pdb /OUT:%.*s%.*s.exe %.*s",
+		"link /OPT:NOREF /OPT:NOICF /nologo /INCREMENTAL:NO /DEBUG %.*s/PDB:build/%.*s.pdb /OUT:%.*s%.*s.exe %.*s",
 		Str8ToPrintfArgs(Str8ListJoin(Arena, BuildOptions->ExtraLinkFlags)),
 		Str8ToPrintfArgs(BuildOptions->OutputName),
 		Str8ToPrintfArgs(BuildOptions->OutputPath),

@@ -428,25 +428,6 @@ b32 ExecuteCommand(memory_arena *Arena, str8 EntireCommandAndArguments, b32 *Fai
 	return ProcessStatus == 0;
 }
 
-b32 StartApplication(memory_arena *Arena, str8 PathToApplication)
-{
-	pid_t ProcessID;
-	posix_spawn_file_actions_t SpawnActions;
-	posix_spawn_file_actions_init(&SpawnActions);
-
-	char *Arguments[2] = {0};
-	Arguments[0] = CStrFromStr8(Arena, PathToApplication);
-	Arguments[1] = Null;
-	s32 ProcessStatus = posix_spawnp(&ProcessID, Arguments[0], &SpawnActions, Null, Arguments, environ);
-	if (ProcessStatus == 0)
-	{
-		s32 ExitCode;
-		waitpid(ProcessID, &ExitCode, 0);
-	}
-
-	return ProcessStatus == 0;
-}
-
 str8 CompileCommandFromBuildOptions(memory_arena *Arena, build_options *BuildOptions, str8 HashedFilename, str8 SourceFilename)
 {
 	str8 DebugOrRelease[2] =
@@ -867,43 +848,6 @@ b32 ExecuteCommand(memory_arena *Arena, str8 EntireCommandAndArguments, b32 *Fai
 		}
 		str8 OutputString = Str8ListJoin(Arena, StdOutList);
 		printf("%.*s", Str8ToPrintfArgs(OutputString));
-	}
-
-	return ProcessStatus;
-}
-
-b32 StartApplication(memory_arena *Arena, str8 PathToApplication)
-{
-	STARTUPINFOA StartupInfo = {0};
-	PROCESS_INFORMATION ProcessInfo = {0};
-
-	StartupInfo.cb = sizeof(StartupInfo);
-
-	SECURITY_ATTRIBUTES SecurityAttributes = {0};
-	SecurityAttributes.nLength = sizeof(SECURITY_ATTRIBUTES);
-	SecurityAttributes.bInheritHandle = True;
-
-	HANDLE StdOutHandleRead = 0;
-	HANDLE StdOutHandleWrite = 0;
-
-	SetHandleInformation(StdOutHandleRead, HANDLE_FLAG_INHERIT, 0);
-
-	StartupInfo.dwFlags    = STARTF_USESTDHANDLES;
-	StartupInfo.hStdOutput = StdOutHandleWrite;
-	StartupInfo.hStdError  = StdOutHandleWrite;
-
-	CreatePipe(&StdOutHandleRead, &StdOutHandleWrite, &SecurityAttributes, 0);
-
-	b32 ProcessStatus = CreateProcessA(0, CStrFromStr8(Arena, PathToApplication),
-									   0, 0, 1, 0, 0, 0, &StartupInfo, &ProcessInfo);
-	if (ProcessStatus)
-	{
-		WaitForSingleObject(ProcessInfo.hProcess, INFINITE);
-		DWORD ExitCode;
-		GetExitCodeProcess(ProcessInfo.hProcess, &ExitCode);
-		CloseHandle(ProcessInfo.hProcess);
-		CloseHandle(ProcessInfo.hThread);
-		CloseHandle(StdOutHandleWrite);
 	}
 
 	return ProcessStatus;

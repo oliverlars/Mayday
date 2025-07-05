@@ -92,7 +92,7 @@ Entry(InputWaveInfo)
 		
 		// There must be a way to do this automatically instead of specifying it
 		// here...
-		GenerateEmbedHeaderEveryTime(memory_arena *Arena, str8 DestinationPath)
+		GenerateEmbedHeader(&Arena, Str8("embed/"));
 
 		str8_list Fonts = {0};
 		Str8ListAppend(&Arena, &Fonts, Str8("fonts/BerkeleyMono-Regular.ttf"));
@@ -227,7 +227,8 @@ Entry(InputWaveInfo)
 
 		if(ShouldRun && !FailedToBuild)
 		{
-			StartApplication(&Arena, PathToExecutable);
+			b32 Outcome = False;
+			ExecuteCommand(&Arena, PathToExecutable, &Outcome);
 		}
 
 		if(!FailedToBuild && OS == OS_DARWIN)
@@ -263,5 +264,4 @@ int main(s32 ArgCount, char **Args)
 	Shared->Args = Args;
 	Shared->Arena = SharedArena;
 	Dispatch(Shared, GetNumberOfCPUs());
-	WaveBarrier(Shared->Barrier);
 }

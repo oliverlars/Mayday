@@ -227,6 +227,7 @@ Entry(InputWaveInfo)
 
 		if(ShouldRun && !FailedToBuild)
 		{
+			printf("\nStarting Mayday...\n\n");
 			b32 Outcome = False;
 			ExecuteCommand(&Arena, PathToExecutable, &Outcome);
 		}

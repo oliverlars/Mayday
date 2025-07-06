@@ -28,35 +28,6 @@ cbuffer uniforms : register(b0)
 
 StructuredBuffer<float2> Curves : register(t1);
 
-float4 ToSRGB(float4 LinearRGB)
-{
-	float3 Higher = float3(1.055, 1.055, 1.055)*pow(LinearRGB.rgb, float3(1.0/2.4, 1.0/2.4, 1.0/2.4)) - float3(0.055, 0.055, 0.055);
-	float3 Lower = LinearRGB.rgb * float3(12.92, 12.92, 12.92);
-
-	float3 RGB = float3(0.0, 0.0, 0.0);
-	if(all(LinearRGB.rgb < float3(0.0031308, 0.0031308, 0.0031308)))
-	{
-		RGB = Lower;
-	}
-	else
-	{
-		RGB = Higher;
-	}
-
-	return float4(RGB, LinearRGB.a);
-}
-
-float3 TonemapToACESFilm(float3 X)
-{
-	float A = 2.51;
-	float B = 0.03;
-	float C = 2.43;
-	float D = 0.59;
-	float E = 0.14;
-
-	return clamp((X * (A*X + B)) / (X * (C*X + D) + E), 0.0, 1.0);
-}
-
 vertex_output VertexMain(vertex_input Vertex)
 {
 	vertex_output Output;
@@ -140,30 +111,34 @@ float4 PixelMain(vertex_output Input) : SV_TARGET
 		}
 	}
 
-	{
-		// Visualize control points.
-		float2 fw = ddx(Size);
-		float r = 4.0 * 0.5 * (fw.x + fw.y);
-		for (int i = 0; i < Input.CurveCount; i++) {
-			float2 p0 = Curves[(Input.CurveStart + i)*3 + 0];
-			float2 p1 = Curves[(Input.CurveStart + i)*3 + 1];
-			float2 p2 = Curves[(Input.CurveStart + i)*3 + 2];
+	// {
+	// 	// Visualize control points.
+	// 	float2 fw = ddx(Size);
+	// 	float r = 4.0 * 0.5 * (fw.x + fw.y);
+	// 	for (int i = 0; i < Input.CurveCount; i++) {
+	// 		// float2 p0 = Curves[(Input.CurveStart + i)*3 + 0];
+	// 		// float2 p1 = Curves[(Input.CurveStart + i)*3 + 1];
+	// 		// float2 p2 = Curves[(Input.CurveStart + i)*3 + 2];
+
+	// 		float2 p0 = float2(0.0, 0.0);
+	// 		float2 p1 = float2(0.5, 0.5);
+	// 		float2 p2 = float2(1.0, 1.0);
 			
-			p0 -= Size;
-			p1 -= Size;
-			p2 -= Size;
+	// 		// p0 -= Size;
+	// 		// p1 -= Size;
+	// 		// p2 -= Size;
 
-			if (dot(p0, p0) < r*r || dot(p2, p2) < r*r) {
-				return float4(0, 1, 0, 1);
-			}
+	// 		if (dot(p0, p0) < r*r || dot(p2, p2) < r*r) {
+	// 			return float4(0, 1, 0, 1);
+	// 		}
 
-			if (dot(p1, p1) < r*r) {
-				return float4(1, 0, 1, 1);
-			}
-		}
-	}
+	// 		if (dot(p1, p1) < r*r) {
+	// 			return float4(1, 0, 1, 1);
+	// 		}
+	// 	}
+	// }
 
 	//float4 Colour = float4(Input.Colour.rgb, float(Input.CurveCount)/200.0);
-	float4 Colour = float4(Input.Colour.rgb, FontAtlas.Sample(Sampler, Input.UV).r*Input.Colour.a);
+	float4 Colour = float4(Input.Colour.rgb, Alpha);
 	return Colour;
 }

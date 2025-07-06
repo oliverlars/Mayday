@@ -1,101 +1,101 @@
 [
     {
-        "directory": "C:/Mayday",
+        "directory": "c:/Mayday",
         "command": "cl.exe /c /TC  /D_WIN64 /experimental:c11atomics /std:c17  /nologo /FS /EHsc source/draw.c /Zi /Od /Fobuild/source/draw.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/draw.c"
     },
     {
-        "directory": "C:/Mayday",
+        "directory": "c:/Mayday",
         "command": "cl.exe /c /TC  /D_WIN64 /experimental:c11atomics /std:c17  /nologo /FS /EHsc source/edit.c /Zi /Od /Fobuild/source/edit.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/edit.c"
     },
     {
-        "directory": "C:/Mayday",
+        "directory": "c:/Mayday",
         "command": "cl.exe /c /TC  /D_WIN64 /experimental:c11atomics /std:c17  /nologo /FS /EHsc source/fdg.c /Zi /Od /Fobuild/source/fdg.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/fdg.c"
     },
     {
-        "directory": "C:/Mayday",
+        "directory": "c:/Mayday",
         "command": "cl.exe /c /TC  /D_WIN64 /experimental:c11atomics /std:c17  /nologo /FS /EHsc source/log.c /Zi /Od /Fobuild/source/log.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/log.c"
     },
     {
-        "directory": "C:/Mayday",
+        "directory": "c:/Mayday",
         "command": "cl.exe /c /TC  /D_WIN64 /experimental:c11atomics /std:c17  /nologo /FS /EHsc source/maths.c /Zi /Od /Fobuild/source/maths.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/maths.c"
     },
     {
-        "directory": "C:/Mayday",
+        "directory": "c:/Mayday",
         "command": "cl.exe /c /TC  /D_WIN64 /experimental:c11atomics /std:c17  /nologo /FS /EHsc source/mayday.c /Zi /Od /Fobuild/source/mayday.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/mayday.c"
     },
     {
-        "directory": "C:/Mayday",
+        "directory": "c:/Mayday",
         "command": "cl.exe /c /TC  /D_WIN64 /experimental:c11atomics /std:c17  /nologo /FS /EHsc source/render_common.c /Zi /Od /Fobuild/source/render_common.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/render_common.c"
     },
     {
-        "directory": "C:/Mayday",
+        "directory": "c:/Mayday",
         "command": "cl.exe /c /TC  /D_WIN64 /experimental:c11atomics /std:c17  /nologo /FS /EHsc source/strings.c /Zi /Od /Fobuild/source/strings.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/strings.c"
     },
     {
-        "directory": "C:/Mayday",
+        "directory": "c:/Mayday",
         "command": "cl.exe /c /TC  /D_WIN64 /experimental:c11atomics /std:c17  /nologo /FS /EHsc source/ui/ui_buffer.c /Zi /Od /Fobuild/source/ui/ui_buffer.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/ui/ui_buffer.c"
     },
     {
-        "directory": "C:/Mayday",
+        "directory": "c:/Mayday",
         "command": "cl.exe /c /TC  /D_WIN64 /experimental:c11atomics /std:c17  /nologo /FS /EHsc source/ui/ui_core.c /Zi /Od /Fobuild/source/ui/ui_core.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/ui/ui_core.c"
     },
     {
-        "directory": "C:/Mayday",
+        "directory": "c:/Mayday",
         "command": "cl.exe /c /TC  /D_WIN64 /experimental:c11atomics /std:c17  /nologo /FS /EHsc source/ui/ui_orbit.c /Zi /Od /Fobuild/source/ui/ui_orbit.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/ui/ui_orbit.c"
     },
     {
-        "directory": "C:/Mayday",
+        "directory": "c:/Mayday",
         "command": "cl.exe /c /TC  /D_WIN64 /experimental:c11atomics /std:c17  /nologo /FS /EHsc source/ui/ui_tree.c /Zi /Od /Fobuild/source/ui/ui_tree.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/ui/ui_tree.c"
     },
     {
-        "directory": "C:/Mayday",
+        "directory": "c:/Mayday",
         "command": "cl.exe /c /TC  /D_WIN64 /experimental:c11atomics /std:c17  /nologo /FS /EHsc embed//fonts.c /Zi /Od /Fobuild/embed//fonts.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "embed//fonts.c"
     },
     {
-        "directory": "C:/Mayday",
+        "directory": "c:/Mayday",
         "command": "cl.exe /c /TC  /D_WIN64 /experimental:c11atomics /std:c17  /nologo /FS /EHsc embed//shaders.c /Zi /Od /Fobuild/embed//shaders.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "embed//shaders.c"
     },
     {
-        "directory": "C:/Mayday",
+        "directory": "c:/Mayday",
         "command": "cl.exe /c /TC  /D_WIN64 /experimental:c11atomics /std:c17  /nologo /FS /EHsc source/win32/memory.c /Zi /Od /Fobuild/source/win32/memory.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/win32/memory.c"
     },
     {
-        "directory": "C:/Mayday",
+        "directory": "c:/Mayday",
         "command": "cl.exe /c /TC  /D_WIN64 /experimental:c11atomics /std:c17  /nologo /FS /EHsc source/win32/os.c /Zi /Od /Fobuild/source/win32/os.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/win32/os.c"
     },
     {
-        "directory": "C:/Mayday",
+        "directory": "c:/Mayday",
         "command": "cl.exe /c /TC  /D_WIN64 /experimental:c11atomics /std:c17  /nologo /FS /EHsc source/win32/render.c /Zi /Od /Fobuild/source/win32/render.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/win32/render.c"
     },
     {
-        "directory": "C:/Mayday",
+        "directory": "c:/Mayday",
         "command": "cl.exe /c /TC  /D_WIN64 /experimental:c11atomics /std:c17  /nologo /FS /EHsc source/win32/wave.c /Zi /Od /Fobuild/source/win32/wave.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/win32/wave.c"
     },
     {
-        "directory": "C:/Mayday",
+        "directory": "c:/Mayday",
         "command": "cl.exe /c /TC  /D_WIN64 /experimental:c11atomics /std:c17  /nologo /FS /EHsc external/stb_truetype.c /Zi /Od /Fobuild/external/stb_truetype.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "external/stb_truetype.c"
     },
     {
-        "directory": "C:/Mayday",
+        "directory": "c:/Mayday",
         "command": "cl.exe /c /TC  /D_WIN64 /experimental:c11atomics /std:c17  /nologo /FS /EHsc external/win32/sokol_app.c /Zi /Od /Fobuild/external/win32/sokol_app.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "external/win32/sokol_app.c"
     }

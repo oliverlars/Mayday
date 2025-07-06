@@ -911,7 +911,7 @@ void R_Update(render_context *R, m_arena *FrameArena)
 				GPUVertices[V].Colour = Colour;
 				GPUVertices[V].UV = v4f(UV.X, UV.Y, 0, 1);
 				GPUVertices[V].CurveStart = Command->Vertices[V].CurveStart;
-				GPUVertices[V].CurveCount = Command->Vertices[V].CurveCount;
+				GPUVertices[V].CurveCount = Command->Vertices[V].CurveCount*3;
 			}
 
 			D3D11_MAPPED_SUBRESOURCE TriangleVertexBufferResource;
@@ -1325,12 +1325,12 @@ void R_Update(render_context *R, m_arena *FrameArena)
 				);
 				D3D11->DeviceContext->lpVtbl->PSSetShaderResources(
 					D3D11->DeviceContext,
-					0, 1, &D3D11->CurvesResourceView
+					1, 1, &D3D11->CurvesResourceView
 				);
 
 				D3D11->DeviceContext->lpVtbl->PSSetShaderResources(
 					D3D11->DeviceContext,
-					1, 1, &D3D11->FontAtlasTextureView
+					0, 1, &D3D11->FontAtlasTextureView
 				);
 				D3D11->DeviceContext->lpVtbl->PSSetSamplers(
 					D3D11->DeviceContext,

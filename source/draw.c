@@ -124,7 +124,7 @@ void PopGlyphOffLRU(draw_context *D_Context)
 	}
 }
 
-void CurvesFromCodePoint(draw_context *Draw, m_arena *Arena, d_atlas_glyph *Glyph, u32 CodePoint, d_font Font, int *CurveCount, curve **Curves)
+void CurvesFromCodePoint(draw_context *Draw, m_arena *Arena, d_atlas_glyph *Glyph, f32 Scale, u32 CodePoint, d_font Font, int *CurveCount, v2f **Curves)
 {
 	assert(CurveCount != 0);
 	assert(Curves != Null);
@@ -135,14 +135,16 @@ void CurvesFromCodePoint(draw_context *Draw, m_arena *Arena, d_atlas_glyph *Glyp
 
 	if(Draw->Curves == Null)
 	{
-		Draw->Curves = ArenaPushArrayZero(Draw->Arena, curve, D_MAX_CURVES);
+		Draw->Curves = ArenaPushArrayZero(Draw->Arena, v2f, D_MAX_CURVES*3);
 	}
 
 	// This is probably more than enough memory
-	Curves[0] = ArenaPushArrayZero(Arena, curve, NumberOfVertices);
+	Curves[0] = ArenaPushArrayZero(Arena, v2f, NumberOfVertices*3);
 	CurveCount[0] = 0;
 
 	int CurveCountSoFar = Draw->CurveCount;
+
+	m_scratch_arena Scratch = ScratchBegin(&Arena, 1);
 
 	v2f First = {0};
 	for (s32 I = 0; I < NumberOfVertices; I++)
@@ -159,12 +161,9 @@ void CurvesFromCodePoint(draw_context *Draw, m_arena *Arena, d_atlas_glyph *Glyp
 		{
 			v2f Control = v2f(V->cx, V->cy);
 			v2f End = v2f(V->x, V->y);
-			Curves[0][CurveCount[0]++] = 
-			(curve){
-				v2f(First.X, First.Y),
-				v2f(Control.X, Control.Y),
-				v2f(End.X, End.Y)
-			};
+			Curves[0][CurveCount[0]++] = v2f(First.X, First.Y);
+			Curves[0][CurveCount[0]++] = v2f(Control.X, Control.Y);
+			Curves[0][CurveCount[0]++] = v2f(End.X, End.Y);
 			First = End;
 		}
 		break;
@@ -172,12 +171,9 @@ void CurvesFromCodePoint(draw_context *Draw, m_arena *Arena, d_atlas_glyph *Glyp
 		{
 			v2f End = v2f(V->x, V->y);
 			v2f Control = v2f((First.X + End.X)*0.5, (First.Y + End.Y)*0.5);
-			Curves[0][CurveCount[0]++] = 
-			(curve){
-				v2f(First.X, First.Y),
-				v2f(Control.X, Control.Y),
-				v2f(End.X, End.Y)
-			};
+			Curves[0][CurveCount[0]++] = v2f(First.X, First.Y);
+			Curves[0][CurveCount[0]++] = v2f(Control.X, Control.Y);
+			Curves[0][CurveCount[0]++] = v2f(End.X, End.Y);
 			First = End;
 		}
 		break;
@@ -189,19 +185,24 @@ void CurvesFromCodePoint(draw_context *Draw, m_arena *Arena, d_atlas_glyph *Glyp
 		Draw->Curves[Draw->CurveCount++] = Curves[0][Curve];
 	}
 
-	m_scratch_arena Scratch = ScratchBegin(&Arena, 1);
 	
-	v2f *UVSpaceCurves = ArenaPushArrayZero(Scratch.Arena, v2f, CurveCount[0]*3);
-	for (int I = 0; I < CurveCount[0]*3; I++)
+	v2f *UVSpaceCurves = ArenaPushArrayZero(Scratch.Arena, v2f, CurveCount[0]);
+	for (int I = 0; I < CurveCount[0]; I++)
 	{
 		int Width = Glyph->BitmapBox.Z - Glyph->BitmapBox.X;
 		int Height = Glyph->BitmapBox.W - Glyph->BitmapBox.Y;
-		UVSpaceCurves[I] = ((v2f*)Curves)[I];
-		UVSpaceCurves[I].X /= (f32)Width;
-		UVSpaceCurves[I].Y /= (f32)Height;
+		UVSpaceCurves[I] = Draw->Curves[CurveCountSoFar + I];
+		// UVSpaceCurves[I].X *= Scale;
+		// UVSpaceCurves[I].Y *= Scale;
+		// UVSpaceCurves[I].X /= (f32)Width;
+		// UVSpaceCurves[I].Y /= (f32)Height;
+		// assert(UVSpaceCurves[I].X >= 0.0 && UVSpaceCurves[I].X < 1.0);
+		// assert(UVSpaceCurves[I].Y >= 0.0 && UVSpaceCurves[I].Y < 1.0);
 	}
 
 	R_UpdateCurves(Draw->Render, UVSpaceCurves, CurveCount[0]*3, CurveCountSoFar*3);
+
+	ScratchEnd(Scratch);
 }
 
 
@@ -251,8 +252,8 @@ d_atlas_glyph *D_GlyphFromCodePoint(draw_context *D, d_font Font, s32 HeightInPi
 								  Scale, Scale,
 								  NextGlyph->CodePoint);
 		NextGlyph->CurveStart = D->CurveCount;
-		CurvesFromCodePoint(D, D->Arena, NextGlyph, CodePoint, Font, &Glyph->CurveCount, &Glyph->Curves);
 		NextGlyph->BitmapBox = BitmapBox;
+		CurvesFromCodePoint(D, D->Arena, NextGlyph, Scale, CodePoint, Font, &Glyph->CurveCount, &Glyph->Curves);
 		ResultGlyph = NextGlyph;
 	}
 	else if(Glyph->Hash == 0)
@@ -286,8 +287,8 @@ d_atlas_glyph *D_GlyphFromCodePoint(draw_context *D, d_font Font, s32 HeightInPi
 								  Scale, Scale,
 								  Glyph->CodePoint);
 		Glyph->CurveStart = D->CurveCount;
-		CurvesFromCodePoint(D, D->Arena, Glyph, CodePoint, Font, &Glyph->CurveCount, &Glyph->Curves);
 		Glyph->BitmapBox = BitmapBox;
+		CurvesFromCodePoint(D, D->Arena, Glyph, Scale, CodePoint, Font, &Glyph->CurveCount, &Glyph->Curves);
 	}
 
 	assert(CodePoint == ResultGlyph->CodePoint);
@@ -339,8 +340,8 @@ d_atlas_glyph *D_GlyphFromCodePoint2(draw_context *D, u64 FontHash, d_font Font,
 								  Scale, Scale,
 								  NextGlyph->CodePoint);
 		NextGlyph->CurveStart = D->CurveCount;
-		CurvesFromCodePoint(D, D->Arena, NextGlyph, CodePoint, Font, &Glyph->CurveCount, &Glyph->Curves);
 		NextGlyph->BitmapBox = BitmapBox;
+		CurvesFromCodePoint(D, D->Arena, NextGlyph, Scale, CodePoint, Font, &Glyph->CurveCount, &Glyph->Curves);
 		ResultGlyph = NextGlyph;
 	}
 	else if(Glyph->Hash == 0)
@@ -375,8 +376,8 @@ d_atlas_glyph *D_GlyphFromCodePoint2(draw_context *D, u64 FontHash, d_font Font,
 								  Scale, Scale,
 								  Glyph->CodePoint);
 		Glyph->CurveStart = D->CurveCount;
-		CurvesFromCodePoint(D, D->Arena, Glyph, CodePoint, Font, &Glyph->CurveCount, &Glyph->Curves);
 		Glyph->BitmapBox = BitmapBox;
+		CurvesFromCodePoint(D, D->Arena, Glyph, Scale, CodePoint, Font, &Glyph->CurveCount, &Glyph->Curves);
 		ResultGlyph = Glyph;
 	}
 
@@ -508,11 +509,11 @@ void D_Draw3DStr8(draw_context *D,
 		{
 			v2f(Position.X, Position.Y),
 			v2f(Position.X + GlyphWidth, Position.Y),
-			v2f(Position.X + GlyphWidth, Position.Y - GlyphHeight),
+			v2f(Position.X + GlyphWidth, Position.Y + GlyphHeight),
 
 			v2f(Position.X, Position.Y),
-			v2f(Position.X, Position.Y - GlyphHeight),
-			v2f(Position.X + GlyphWidth, Position.Y - GlyphHeight),
+			v2f(Position.X, Position.Y + GlyphHeight),
+			v2f(Position.X + GlyphWidth, Position.Y + GlyphHeight),
 		};
 
 		v2f UVs[6] =
@@ -552,18 +553,18 @@ void D_Draw3DStr8(draw_context *D,
 			continue;
 		}
 
-		for(int CurveIndex = 0; CurveIndex < Glyph->CurveCount; CurveIndex++)
+		for(int CurveIndex = 0; CurveIndex < Glyph->CurveCount; CurveIndex += 3)
 		{
-			v2f Start = Glyph->Curves[CurveIndex].Start;
-			v2f Control = Glyph->Curves[CurveIndex].Control;
-			v2f End = Glyph->Curves[CurveIndex].End;
+			v2f Start = Glyph->Curves[CurveIndex + 0];
+			v2f Control = Glyph->Curves[CurveIndex + 1];
+			v2f End = Glyph->Curves[CurveIndex + 2];
 			v3f Line[3] = 
 			{
 				v3f(Position.X + Start.X*Scale, Position.Y - Start.Y*Scale, 0.0),
 				v3f(Position.X + Control.X*Scale, Position.Y - Control.Y*Scale, 0.0),
 				v3f(Position.X + End.X*Scale, Position.Y - End.Y*Scale, 0.0)
 			};
-			//D_DrawBezierArray(D, Arena, Line, 3, 2.0, Colour);
+			D_DrawBezierArray(D, Arena, Line, 3, 2.0, Colour);
 		}
 
 		Position.X += AdvanceX;

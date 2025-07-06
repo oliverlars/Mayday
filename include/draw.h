@@ -11,13 +11,6 @@ typedef struct d_font
 	int LineGap;
 } d_font;
 
-typedef struct curve
-{
-	v2f Start;
-	v2f Control;
-	v2f End;
-} curve;
-
 typedef struct d_atlas_glyph
 {
 	u64 Hash;
@@ -28,7 +21,7 @@ typedef struct d_atlas_glyph
 	u32 CodePoint;
 	f32 AdvanceX;
 
-	curve *Curves;
+	v2f *Curves;
 	int CurveStart;
 	int CurveCount;
 
@@ -56,7 +49,7 @@ typedef struct draw_context
 	d_atlas_glyph *OldestGlyph;
 	d_atlas_glyph *NewestGlyph;
 
-	curve *Curves;
+	v2f *Curves;
 	int CurveCount;
 
 	u64 HashOfNewestGlyph;

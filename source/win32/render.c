@@ -24,12 +24,24 @@ void R_UpdateCurves(render_context *Render, v2f *CurvePoints, int CurvePointsCou
 	d3d11_context *D3D11 = Render->Backend;
 	D3D11_MAPPED_SUBRESOURCE CurveBufferResource;
 
-	D3D11->DeviceContext->lpVtbl->Map(
-		D3D11->DeviceContext,
-		(ID3D11Resource*)D3D11->CurvesBuffer,
-		0,
-		D3D11_MAP_WRITE_NO_OVERWRITE, 0, &CurveBufferResource
-	);
+	if(CurvePointsSoFar > 0)
+	{
+		D3D11->DeviceContext->lpVtbl->Map(
+			D3D11->DeviceContext,
+			(ID3D11Resource*)D3D11->CurvesBuffer,
+			0,
+			D3D11_MAP_WRITE_NO_OVERWRITE, 0, &CurveBufferResource
+		);
+	}
+	else
+	{
+		D3D11->DeviceContext->lpVtbl->Map(
+			D3D11->DeviceContext,
+			(ID3D11Resource*)D3D11->CurvesBuffer,
+			0,
+			D3D11_MAP_WRITE_DISCARD, 0, &CurveBufferResource
+		);		
+	}
 	v2f* Curves = (v2f*)CurveBufferResource.pData;
 
 	MemoryCopy(

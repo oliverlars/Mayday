@@ -136,8 +136,6 @@ void CurvesFromCodePoint(draw_context *Draw, m_arena *Arena, d_atlas_glyph *Glyp
 	Curves[0] = ArenaPushArrayZero(Arena, v2f, NumberOfVertices*3);
 	CurveCount[0] = 0;
 
-	int CurveCountSoFar = Draw->CurveCount;
-
 	m_scratch_arena Scratch = ScratchBegin(&Arena, 1);
 
 	v2f First = {0};
@@ -173,14 +171,16 @@ void CurvesFromCodePoint(draw_context *Draw, m_arena *Arena, d_atlas_glyph *Glyp
 		break;
 		}
 	}
+
+	LogInfo("CurveCount: ?u32 | NumberOfVertices*3: ?u32", CurveCount[0], NumberOfVertices*3);
 	
 	v2f *UVSpaceCurves = ArenaPushArrayZero(Scratch.Arena, v2f, CurveCount[0]);
 	for (int I = 0; I < CurveCount[0]; I++)
 	{
 		int Width = Glyph->BitmapBox.Z - Glyph->BitmapBox.X;
 		int Height = Glyph->BitmapBox.W - Glyph->BitmapBox.Y;
-		UVSpaceCurves[I] = Curves[0][CurveCountSoFar + I];
-		UVSpaceCurves[I].Y += Glyph->BitmapBox.Y;
+		UVSpaceCurves[I] = Curves[0][I];
+		UVSpaceCurves[I].Y -= Glyph->BitmapBox.Y;
 		UVSpaceCurves[I].X -= Glyph->BitmapBox.X;
 		UVSpaceCurves[I].X *= Scale;
 		UVSpaceCurves[I].Y *= Scale;
@@ -190,8 +190,9 @@ void CurvesFromCodePoint(draw_context *Draw, m_arena *Arena, d_atlas_glyph *Glyp
 		// assert(UVSpaceCurves[I].Y >= 0.0 && UVSpaceCurves[I].Y < 1.0);
 	}
 
-	R_UpdateCurves(Draw->Render, UVSpaceCurves, CurveCount[0], CurveCountSoFar);
+	R_UpdateCurves(Draw->Render, UVSpaceCurves, CurveCount[0], Draw->CurveCount);
 
+	Draw->CurveCount += CurveCount[0];
 	ScratchEnd(Scratch);
 }
 
@@ -539,9 +540,6 @@ void D_Draw3DStr8(draw_context *D,
 				.CurveStart = Glyph->CurveStart,
 				.CurveCount = Glyph->CurveCount
 			};
-
-			Vertex.Position.Y += (Glyph->Box.Y*Scale);
-			Vertex.Position.X += (Glyph->Box.X*Scale);
 
 			if(CodePoint != ' ') *R_Vertices++ = Vertex;
 		}

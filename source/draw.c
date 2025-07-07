@@ -132,12 +132,6 @@ void CurvesFromCodePoint(draw_context *Draw, m_arena *Arena, d_atlas_glyph *Glyp
 	stbtt_vertex *Vertices;
 	s32 NumberOfVertices = stbtt_GetGlyphShape(&Font.Info, GlyphIndex, &Vertices);
 
-
-	if(Draw->Curves == Null)
-	{
-		Draw->Curves = ArenaPushArrayZero(Draw->Arena, v2f, D_MAX_CURVES*3);
-	}
-
 	// This is probably more than enough memory
 	Curves[0] = ArenaPushArrayZero(Arena, v2f, NumberOfVertices*3);
 	CurveCount[0] = 0;
@@ -179,28 +173,24 @@ void CurvesFromCodePoint(draw_context *Draw, m_arena *Arena, d_atlas_glyph *Glyp
 		break;
 		}
 	}
-
-	for(int Curve = 0; Curve < CurveCount[0]; Curve++)
-	{
-		Draw->Curves[Draw->CurveCount++] = Curves[0][Curve];
-	}
-
 	
 	v2f *UVSpaceCurves = ArenaPushArrayZero(Scratch.Arena, v2f, CurveCount[0]);
 	for (int I = 0; I < CurveCount[0]; I++)
 	{
 		int Width = Glyph->BitmapBox.Z - Glyph->BitmapBox.X;
 		int Height = Glyph->BitmapBox.W - Glyph->BitmapBox.Y;
-		UVSpaceCurves[I] = Draw->Curves[CurveCountSoFar + I];
-		// UVSpaceCurves[I].X *= Scale;
-		// UVSpaceCurves[I].Y *= Scale;
-		// UVSpaceCurves[I].X /= (f32)Width;
-		// UVSpaceCurves[I].Y /= (f32)Height;
+		UVSpaceCurves[I] = Curves[0][CurveCountSoFar + I];
+		UVSpaceCurves[I].Y += Glyph->BitmapBox.Y;
+		UVSpaceCurves[I].X -= Glyph->BitmapBox.X;
+		UVSpaceCurves[I].X *= Scale;
+		UVSpaceCurves[I].Y *= Scale;
+		UVSpaceCurves[I].X /= (f32)Width;
+		UVSpaceCurves[I].Y /= (f32)Height;
 		// assert(UVSpaceCurves[I].X >= 0.0 && UVSpaceCurves[I].X < 1.0);
 		// assert(UVSpaceCurves[I].Y >= 0.0 && UVSpaceCurves[I].Y < 1.0);
 	}
 
-	R_UpdateCurves(Draw->Render, UVSpaceCurves, CurveCount[0]*3, CurveCountSoFar*3);
+	R_UpdateCurves(Draw->Render, UVSpaceCurves, CurveCount[0], CurveCountSoFar);
 
 	ScratchEnd(Scratch);
 }
@@ -516,23 +506,35 @@ void D_Draw3DStr8(draw_context *D,
 			v2f(Position.X + GlyphWidth, Position.Y + GlyphHeight),
 		};
 
+		// v2f UVs[6] =
+		// {
+
+		// 	v2f(Glyph->AtlasPosition.X, Glyph->AtlasPosition.Y + GlyphBitmapHeight),
+		// 	v2f(Glyph->AtlasPosition.X + GlyphBitmapWidth, Glyph->AtlasPosition.Y + GlyphBitmapHeight),
+		// 	v2f(Glyph->AtlasPosition.X + GlyphBitmapWidth, Glyph->AtlasPosition.Y),
+
+		// 	v2f(Glyph->AtlasPosition.X, Glyph->AtlasPosition.Y + GlyphBitmapHeight),
+		// 	v2f(Glyph->AtlasPosition.X, Glyph->AtlasPosition.Y),
+		// 	v2f(Glyph->AtlasPosition.X + GlyphBitmapWidth, Glyph->AtlasPosition.Y)
+		// };
+		
 		v2f UVs[6] =
 		{
 
-			v2f(Glyph->AtlasPosition.X, Glyph->AtlasPosition.Y + GlyphBitmapHeight),
-			v2f(Glyph->AtlasPosition.X + GlyphBitmapWidth, Glyph->AtlasPosition.Y + GlyphBitmapHeight),
-			v2f(Glyph->AtlasPosition.X + GlyphBitmapWidth, Glyph->AtlasPosition.Y),
+			v2f(0.0f, 1.0f),
+			v2f(1.0f, 1.0f),
+			v2f(1.0f, 0.0f),
 
-			v2f(Glyph->AtlasPosition.X, Glyph->AtlasPosition.Y + GlyphBitmapHeight),
-			v2f(Glyph->AtlasPosition.X, Glyph->AtlasPosition.Y),
-			v2f(Glyph->AtlasPosition.X + GlyphBitmapWidth, Glyph->AtlasPosition.Y)
+			v2f(0.0f, 1.0f),
+			v2f(0.0f, 0.0f),
+			v2f(1.0f, 0.0f)
 		};
 
 		for(int V = 0; V < 6; V++)
 		{
 			r_vertex Vertex = {
 				.Position = v4f(Vertices[V].X, Vertices[V].Y, Position.Z, 1),
-				.UV = DivV2F(UVs[V], V2FromF32((f32)D_FONT_ATLAS_SIZE)),
+				.UV = UVs[V],
 				.Colour = Colours[NewLine],
 				.CurveStart = Glyph->CurveStart,
 				.CurveCount = Glyph->CurveCount

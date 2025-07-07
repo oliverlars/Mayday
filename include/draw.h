@@ -49,7 +49,7 @@ typedef struct draw_context
 	d_atlas_glyph *OldestGlyph;
 	d_atlas_glyph *NewestGlyph;
 
-	v2f *Curves;
+	
 	int CurveCount;
 
 	u64 HashOfNewestGlyph;

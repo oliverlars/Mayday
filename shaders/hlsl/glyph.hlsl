@@ -17,8 +17,8 @@ struct vertex_output
 	float4 Position: SV_POSITION;
 	float4 Colour:  COL;
 	float2 UV:      TEXCOORD0;
-	int    CurveStart: CURVESTART;
-	int    CurveCount: CURVECOUNT;
+	nointerpolation int    CurveStart: CURVESTART;
+	nointerpolation int    CurveCount: CURVECOUNT;
 };
 
 cbuffer uniforms : register(b0)
@@ -95,13 +95,13 @@ float4 PixelMain(vertex_output Input) : SV_TARGET
 	float Alpha = 0.0;
 
 	float2 Size = Input.UV;
-	float2 InverseDiameter = 1.0 / ddx(Size);
+	float2 InverseDiameter = 1.0 / (abs(ddx(Size)) + abs(ddy(Size)));
 	for(int offset = -1; offset <= 1; offset += 1) {
 		Size = Size + float2(0, offset) * ddx(Size) / 3.0;
-		for (int i = 0; i < Input.CurveCount; i++) {
-			float2 p0 = Curves[(Input.CurveStart + i)*3 + 0];
-			float2 p1 = Curves[(Input.CurveStart + i)*3 + 1];
-			float2 p2 = Curves[(Input.CurveStart + i)*3 + 2];
+		for (int i = 0; i < Input.CurveCount; i += 3) {
+			float2 p0 = Curves[(Input.CurveStart + i) + 0];
+			float2 p1 = Curves[(Input.CurveStart + i) + 1];
+			float2 p2 = Curves[(Input.CurveStart + i) + 2];
 
 			p0 -= Size;
 			p1 -= Size;
@@ -113,20 +113,16 @@ float4 PixelMain(vertex_output Input) : SV_TARGET
 
 	// {
 	// 	// Visualize control points.
-	// 	float2 fw = ddx(Size);
+	// 	float2 fw = abs(ddx(Size)) + abs(ddy(Size));
 	// 	float r = 4.0 * 0.5 * (fw.x + fw.y);
-	// 	for (int i = 0; i < Input.CurveCount; i++) {
-	// 		// float2 p0 = Curves[(Input.CurveStart + i)*3 + 0];
-	// 		// float2 p1 = Curves[(Input.CurveStart + i)*3 + 1];
-	// 		// float2 p2 = Curves[(Input.CurveStart + i)*3 + 2];
-
-	// 		float2 p0 = float2(0.0, 0.0);
-	// 		float2 p1 = float2(0.5, 0.5);
-	// 		float2 p2 = float2(1.0, 1.0);
+	// 	for (int i = 0; i < Input.CurveCount; i += 3) {
+	// 		float2 p0 = Curves[(Input.CurveStart + i) + 0];
+	// 		float2 p1 = Curves[(Input.CurveStart + i) + 1];
+	// 		float2 p2 = Curves[(Input.CurveStart + i) + 2];
 			
-	// 		// p0 -= Size;
-	// 		// p1 -= Size;
-	// 		// p2 -= Size;
+	// 		p0 -= Size;
+	// 		p1 -= Size;
+	// 		p2 -= Size;
 
 	// 		if (dot(p0, p0) < r*r || dot(p2, p2) < r*r) {
 	// 			return float4(0, 1, 0, 1);
@@ -139,6 +135,6 @@ float4 PixelMain(vertex_output Input) : SV_TARGET
 	// }
 
 	//float4 Colour = float4(Input.Colour.rgb, float(Input.CurveCount)/200.0);
-	float4 Colour = float4(Input.Colour.rgb, Alpha);
+	float4 Colour = float4(Input.Colour.rgb, Alpha/3.0);
 	return Colour;
 }

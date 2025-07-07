@@ -33,9 +33,9 @@ void R_UpdateCurves(render_context *Render, v2f *CurvePoints, int CurvePointsCou
 	v2f* Curves = (v2f*)CurveBufferResource.pData;
 
 	MemoryCopy(
-		(u8*)Curves + CurvePointsSoFar,
+		(u8*)Curves + CurvePointsSoFar*sizeof(v2f),
 		CurvePoints,
-		CurvePointsCount*sizeof(v2f)/3
+		CurvePointsCount*sizeof(v2f)
 	);
 	D3D11->DeviceContext->lpVtbl->Unmap(
 		D3D11->DeviceContext,
@@ -906,12 +906,13 @@ void R_Update(render_context *R, m_arena *FrameArena)
 			{
 				v4f P = Command->Vertices[V].Position;
 				v2f UV = Command->Vertices[V].UV;
+				LogInfo("UV: ?v2f", UV);
 				v4f Colour = Command->Vertices[V].Colour;
 				GPUVertices[V].Position = P;
 				GPUVertices[V].Colour = Colour;
 				GPUVertices[V].UV = v4f(UV.X, UV.Y, 0, 1);
 				GPUVertices[V].CurveStart = Command->Vertices[V].CurveStart;
-				GPUVertices[V].CurveCount = Command->Vertices[V].CurveCount*3;
+				GPUVertices[V].CurveCount = Command->Vertices[V].CurveCount;
 			}
 
 			D3D11_MAPPED_SUBRESOURCE TriangleVertexBufferResource;

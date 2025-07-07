@@ -918,7 +918,6 @@ void R_Update(render_context *R, m_arena *FrameArena)
 			{
 				v4f P = Command->Vertices[V].Position;
 				v2f UV = Command->Vertices[V].UV;
-				LogInfo("UV: ?v2f", UV);
 				v4f Colour = Command->Vertices[V].Colour;
 				GPUVertices[V].Position = P;
 				GPUVertices[V].Colour = Colour;

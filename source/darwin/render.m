@@ -60,6 +60,11 @@ typedef struct gpu_bezier_vertex
 }
 gpu_bezier_vertex;
 
+void R_UpdateCurves(render_context *Render, v2f *CurvePoints, int CurvePointsCount, int CurvePointsSoFar)
+{
+
+}
+
 // Dumb hack
 void R_TextureFromBytes(render_context *R, u8 *Bytes, s32 Width, s32 Height)
 {
@@ -119,8 +124,8 @@ metal_shader R_BloomShader(render_context *R)
 	metal_shader Shader = {0};
 
 	NSError* Error = nil;
-	NSString* Source = [[NSString alloc] initWithBytes:(const void*)G_BloomShader
-									length:sizeof(G_BloomShader)
+	NSString* Source = [[NSString alloc] initWithBytes:(const void*)G_BloomShader.Data
+									length:G_BloomShader.Length
 									encoding:NSUTF8StringEncoding];
 	Shader.Library                   = [Metal->Device newLibraryWithSource:Source options:nil error:&Error];
 	id<MTLFunction> VertexFunction   = [Shader.Library newFunctionWithName:@"VertexMain"];
@@ -153,8 +158,8 @@ metal_shader R_GlyphShader(render_context *R)
 	metal_shader Shader = {0};
 
 	NSError* Error = nil;
-	NSString* Source = [[NSString alloc] initWithBytes:(const void*)G_GlyphShader
-											length:sizeof(G_GlyphShader)
+	NSString* Source = [[NSString alloc] initWithBytes:(const void*)G_GlyphShader.Data
+											length:G_GlyphShader.Length
 											encoding:NSUTF8StringEncoding];
 	Shader.Library                    = [Metal->Device newLibraryWithSource:Source options:nil error:&Error];
 	id<MTLFunction> VertexFunction    = [Shader.Library newFunctionWithName:@"VertexMain"];
@@ -213,8 +218,8 @@ metal_shader R_TriangleShader(render_context *R)
 	metal_shader Shader = {0};
 
 	NSError* Error = nil;
-	NSString* Source = [[NSString alloc] initWithBytes:(const void*)G_TriangleShader
-											length:sizeof(G_TriangleShader)
+	NSString* Source = [[NSString alloc] initWithBytes:(const void*)G_TriangleShader.Data
+											length:G_TriangleShader.Length
 											encoding:NSUTF8StringEncoding];
 	Shader.Library                    = [Metal->Device newLibraryWithSource:Source options:nil error:&Error];
 	id<MTLFunction> VertexFunction    = [Shader.Library newFunctionWithName:@"VertexMain"];
@@ -258,8 +263,8 @@ metal_shader R_PointShader(render_context *R)
 	metal_shader Shader = {0};
 
 	NSError* Error = nil;
-	NSString* Source = [[NSString alloc] initWithBytes:(const void*)G_PointShader
-											length:sizeof(G_PointShader)
+	NSString* Source = [[NSString alloc] initWithBytes:(const void*)G_PointShader.Data
+											length:G_PointShader.Length
 											encoding:NSUTF8StringEncoding];
 	Shader.Library                    = [Metal->Device newLibraryWithSource:Source options:nil error:&Error];
 	id<MTLFunction> VertexFunction    = [Shader.Library newFunctionWithName:@"VertexMain"];
@@ -303,8 +308,8 @@ metal_shader R_LineShader(render_context *R)
 	metal_shader Shader = {0};
 
 	NSError* Error = nil;
-	NSString* Source = [[NSString alloc] initWithBytes:(const void*)G_LineShader
-											length:sizeof(G_LineShader)
+	NSString* Source = [[NSString alloc] initWithBytes:(const void*)G_LineShader.Data
+											length:G_LineShader.Length
 											encoding:NSUTF8StringEncoding];
 	Shader.Library                    = [Metal->Device newLibraryWithSource:Source options:nil error:&Error];
 	id<MTLFunction> VertexFunction    = [Shader.Library newFunctionWithName:@"VertexMain"];
@@ -357,8 +362,8 @@ metal_shader R_BezierShader(render_context *R)
 	metal_shader Shader = {0};
 
 	NSError* Error = nil;
-	NSString* Source = [[NSString alloc] initWithBytes:(const void*)G_BezierShader
-											length:sizeof(G_BezierShader)
+	NSString* Source = [[NSString alloc] initWithBytes:(const void*)G_BezierShader.Data
+											length:G_BezierShader.Length
 											encoding:NSUTF8StringEncoding];
 	Shader.Library                    = [Metal->Device newLibraryWithSource:Source options:nil error:&Error];
 	id<MTLFunction> VertexFunction    = [Shader.Library newFunctionWithName:@"VertexMain"];

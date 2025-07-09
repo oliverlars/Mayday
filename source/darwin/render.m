@@ -431,6 +431,9 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 						options:MTLResourceStorageModeShared];
 	}
 
+	Metal->CurveBuffer = [Metal->Device newBufferWithLength:MegaBytes(32)
+						  options:MTLResourceStorageModeShared];
+
 	{
 		MTLTextureDescriptor *Desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm
 														width:Size.X
@@ -642,6 +645,7 @@ void R_RenderGlyphs(render_context *R, id<MTLCommandBuffer> CommandBuffer, v4i S
 	[Encoder setVertexBuffer:Metal->VertexBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:VertexOffset atIndex:0];
 	[Encoder setVertexBuffer:Metal->UniformBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:UniformOffset atIndex:1];
 	[Encoder setFragmentTexture:Metal->FontAtlasTexture atIndex:0];
+	[Encoder setFragmentBuffer:Metal->CurveBuffer offset:0 atIndex:0];
 	[Encoder setFragmentSamplerState:Metal->SamplerState atIndex:0];
 
 	[Encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:VertexCount];

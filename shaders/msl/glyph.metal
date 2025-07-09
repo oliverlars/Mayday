@@ -24,7 +24,6 @@ struct uniforms
 
 vertex vertex_output VertexMain(constant vertex_input *Vertices [[buffer(0)]],
 								constant uniforms &Uniforms [[buffer(1)]],
-								device float &Curves [[buffer(2)]],
 								uint VertexID [[vertex_id]])
 {
 	vertex_output Output;
@@ -36,6 +35,7 @@ vertex vertex_output VertexMain(constant vertex_input *Vertices [[buffer(0)]],
 
 fragment float4 FragmentMain(vertex_output Input [[stage_in]],
 							 texture2d<float> FontAtlas [[texture(0)]],
+							 device float &Curves [[buffer(0)]],
 							 sampler Sampler [[sampler(0)]])
 {
 	float4 Colour = float4(Input.Colour.rgb, FontAtlas.sample(Sampler, Input.UV).r*Input.Colour.a);

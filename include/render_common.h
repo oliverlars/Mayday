@@ -1,6 +1,5 @@
 #include "maths.h"
 
-
 typedef struct r_vertex
 {
 	v4f Position;

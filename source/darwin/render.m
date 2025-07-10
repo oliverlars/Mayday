@@ -42,9 +42,9 @@ typedef struct gpu_glyph_vertex
 	v4f Position;
 	v4f Colour;
 	v4f UV;
-	f32 PointSize;
 	u32 CurveStart;
 	u32 CurveCount;
+	f32 PointSize;
 	f32 Padding;
 }
 gpu_glyph_vertex;
@@ -213,7 +213,7 @@ metal_shader R_GlyphShader(render_context *R)
 	VertexDescriptor.attributes[4].format = MTLVertexFormatUInt;
 	VertexDescriptor.attributes[4].offset = 3*sizeof(v4f) + sizeof(u32);
 	VertexDescriptor.attributes[4].bufferIndex = 0;
-	VertexDescriptor.layouts[0].stride = sizeof(gpu_vertex);
+	VertexDescriptor.layouts[0].stride = sizeof(gpu_glyph_vertex);
 
 	PipelineDescriptor.vertexDescriptor = VertexDescriptor;
 

@@ -34,6 +34,8 @@ vertex vertex_output VertexMain(constant vertex_input *Vertices [[buffer(0)]],
 	Output.Position = Uniforms.PVMMatrix * Vertices[VertexID].Position;
 	Output.Colour = Vertices[VertexID].Colour;
 	Output.UV = Vertices[VertexID].UV.xy;
+	Output.CurveStart = Vertices[VertexID].CurveStart;
+	Output.CurveCount = Vertices[VertexID].CurveCount;
 	return Output;
 }
 

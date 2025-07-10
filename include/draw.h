@@ -14,10 +14,7 @@ typedef struct d_font
 typedef struct d_atlas_glyph
 {
 	u64 Hash;
-	u8 *Data;
-	v2f AtlasPosition;
 	v4i Box;
-	v4i BitmapBox;
 	u32 CodePoint;
 	f32 AdvanceX;
 
@@ -70,8 +67,6 @@ d_atlas_glyph *D_GlyphFromCodePoint2(draw_context *D_Context,
 									u32 CodePoint);
 
 void D_EvictGlyphFromTable(draw_context *D_Context, d_atlas_glyph *Glyph);
-
-void D_GlyphsToAtlas(draw_context *D_Context);
 
 
 d_font D_LoadFontFromFile(draw_context *D_Context, str8 FileName);

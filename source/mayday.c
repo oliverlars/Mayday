@@ -439,8 +439,6 @@ void OS_Update(void *Data)
 
 	R_Update(M->Render, M->FrameArena);
 
-	D_GlyphsToAtlas(M->Draw);
-
 	ArenaReset(M->FrameArena);
 	m_arena *TempArena = M->FrameArena;
 	M->FrameArena = M->PreviousFrameArena;

@@ -114,7 +114,7 @@ fragment float4 FragmentMain(vertex_output Input [[stage_in]],
 		}
 	}
 
-	{
+	if(0){
 		// Visualize control points.
 		float2 fw = abs(dfdx(Size)) + abs(dfdy(Size));
 		float r = 4.0 * 0.5 * (fw.x + fw.y);

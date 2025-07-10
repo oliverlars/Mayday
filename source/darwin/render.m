@@ -37,6 +37,18 @@ typedef struct gpu_vertex
 }
 gpu_vertex;
 
+typedef struct gpu_glyph_vertex
+{
+	v4f Position;
+	v4f Colour;
+	v4f UV;
+	f32 PointSize;
+	u32 CurveStart;
+	u32 CurveCount;
+	f32 Padding;
+}
+gpu_glyph_vertex;
+
 typedef struct gpu_line_vertex
 {
 	v4f Position;
@@ -63,6 +75,9 @@ gpu_bezier_vertex;
 void R_UpdateCurves(render_context *Render, v2f *CurvePoints, int CurvePointsCount, int CurvePointsSoFar)
 {
 
+	metal_context *Metal = Render->Backend;
+	MemoryCopy(Metal->CurveBuffer.contents + CurvePointsSoFar*sizeof(v2f),
+					CurvePoints, CurvePointsCount*sizeof(v2f));
 }
 
 // Dumb hack
@@ -192,6 +207,12 @@ metal_shader R_GlyphShader(render_context *R)
 	VertexDescriptor.attributes[2].format = MTLVertexFormatFloat4;
 	VertexDescriptor.attributes[2].offset = 2*sizeof(v4f);
 	VertexDescriptor.attributes[2].bufferIndex = 0;
+	VertexDescriptor.attributes[3].format = MTLVertexFormatUInt;
+	VertexDescriptor.attributes[3].offset = 3*sizeof(v4f);
+	VertexDescriptor.attributes[3].bufferIndex = 0;
+	VertexDescriptor.attributes[4].format = MTLVertexFormatUInt;
+	VertexDescriptor.attributes[4].offset = 3*sizeof(v4f) + sizeof(u32);
+	VertexDescriptor.attributes[4].bufferIndex = 0;
 	VertexDescriptor.layouts[0].stride = sizeof(gpu_vertex);
 
 	PipelineDescriptor.vertexDescriptor = VertexDescriptor;
@@ -749,19 +770,23 @@ void R_Update(render_context *R, m_arena *FrameArena)
 		if(0){}
 		else if(Command->Type == R_COMMAND_GLYPH)
 		{
-			gpu_vertex *GPUVertices = (gpu_vertex*)ArenaPushArrayZero(Scratch.Arena,
-																	  gpu_vertex, Command->VerticesCount);
+			gpu_glyph_vertex *GPUVertices = (gpu_glyph_vertex*)ArenaPushArrayZero(Scratch.Arena,
+																	  gpu_glyph_vertex, Command->VerticesCount);
 			for(int V = 0; V < Command->VerticesCount; V++)
 			{
 				v4f P = Command->Vertices[V].Position;
 				v2f UV = Command->Vertices[V].UV;
 				v4f Colour = Command->Vertices[V].Colour;
+				u32 CurveStart = Command->Vertices[V].CurveStart;
+				u32 CurveCount = Command->Vertices[V].CurveCount;
 				GPUVertices[V].Position = P;
 				GPUVertices[V].Colour = Colour;
+				GPUVertices[V].CurveStart = CurveStart;
+				GPUVertices[V].CurveCount = CurveCount;
 				GPUVertices[V].UV = v4f(UV.X, UV.Y, 0, 0);
 			}
-			MemoryCopy(Metal->VertexBuffers[ResourceIndex].contents + VertexOffsetInBytes + TotalVertices*sizeof(gpu_vertex),
-					GPUVertices, sizeof(gpu_vertex)*Command->VerticesCount);
+			MemoryCopy(Metal->VertexBuffers[ResourceIndex].contents + VertexOffsetInBytes + TotalVertices*sizeof(gpu_glyph_vertex),
+					GPUVertices, sizeof(gpu_glyph_vertex)*Command->VerticesCount);
 			TotalVertices += Command->VerticesCount;
 		}
 		else if(Command->Type == R_COMMAND_TRIANGLE)

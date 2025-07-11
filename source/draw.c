@@ -65,6 +65,9 @@ void CurvesFromCodePoint(draw_context *Draw, m_arena *Arena, d_atlas_glyph *Glyp
 	f32 Width = (f32)(Box.Z - Box.X);
 	f32 Height = (f32)(Box.W - Box.Y);
 	v2f Size = v2f(Width, Height);
+
+	v2f Shift = v2f(Box.X, Box.Y);
+
 	// This is probably more than enough memory
 	Curves[0] = ArenaPushArrayZero(Arena, v2f, NumberOfVertices*3);
 	CurveCount[0] = 0;
@@ -79,13 +82,13 @@ void CurvesFromCodePoint(draw_context *Draw, m_arena *Arena, d_atlas_glyph *Glyp
 		{
 		case STBTT_vmove:
 		{
-			First = v2f(V->x, V->y);
+			First = Sub(v2f(V->x, V->y), Shift);
 		}
 		break;
 		case STBTT_vcurve:
 		{
-			v2f Control = v2f(V->cx, V->cy);
-			v2f End = v2f(V->x, V->y);
+			v2f Control = Sub(v2f(V->cx, V->cy), Shift);
+			v2f End = Sub(v2f(V->x, V->y), Shift);
 			Curves[0][CurveCount[0]++] = Div(v2f(First.X, First.Y), Size);
 			Curves[0][CurveCount[0]++] = Div(v2f(Control.X, Control.Y), Size);
 			Curves[0][CurveCount[0]++] = Div(v2f(End.X, End.Y), Size);
@@ -94,7 +97,7 @@ void CurvesFromCodePoint(draw_context *Draw, m_arena *Arena, d_atlas_glyph *Glyp
 		break;
 		case STBTT_vline:
 		{
-			v2f End = v2f(V->x, V->y);
+			v2f End = Sub(v2f(V->x, V->y), Shift);
 			v2f Control = v2f((First.X + End.X)*0.5, (First.Y + End.Y)*0.5);
 			Curves[0][CurveCount[0]++] = Div(v2f(First.X, First.Y), Size);
 			Curves[0][CurveCount[0]++] = Div(v2f(Control.X, Control.Y), Size);

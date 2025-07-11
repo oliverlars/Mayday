@@ -302,7 +302,7 @@ v2f E_GetPositionFromEditableBuffer(edit_context *E,
 			TabMultiplier *= 4.0;
 		}
 
-		d_atlas_glyph *Glyph  = D_GlyphFromCodePoint(D, Font, Buffer.HeightInPixels, CodePoint);
+		d_atlas_glyph *Glyph  = D_GlyphFromCodePoint(D, Font, CodePoint);
 
 		Result.X += Glyph->AdvanceX * Scale * TabMultiplier;
 	}
@@ -348,7 +348,7 @@ v2f E_GetVisualPositionFromEditableBuffer(edit_context *E,
 			TabMultiplier *= 4.0;
 		}
 
-		d_atlas_glyph *Glyph  = D_GlyphFromCodePoint(D, Font, Buffer.HeightInPixels, CodePoint);
+		d_atlas_glyph *Glyph  = D_GlyphFromCodePoint(D, Font, CodePoint);
 
 		Result.X += Glyph->AdvanceX * Scale * TabMultiplier;
 	}
@@ -459,7 +459,7 @@ int E_GetMaxTextWidthFromRange(edit_context *E, draw_context *D,
 
 			TabMultiplier *= 4.0;
 		}
-		d_atlas_glyph *Glyph  = D_GlyphFromCodePoint(D, Font, Buffer->HeightInPixels, CodePoint);
+		d_atlas_glyph *Glyph  = D_GlyphFromCodePoint(D, Font, CodePoint);
 
 		X += Glyph->AdvanceX * Scale * TabMultiplier;
 		MaxWidth = Max(X, MaxWidth);
@@ -489,7 +489,7 @@ int E_IndexFromPosition(edit_context *Edit, draw_context *Draw, d_font Font,
 			TabMultiplier *= 4.0;
 		}
 
-		d_atlas_glyph *Glyph  = D_GlyphFromCodePoint(Draw, Font, Buffer->HeightInPixels, CodePoint);
+		d_atlas_glyph *Glyph  = D_GlyphFromCodePoint(Draw, Font, CodePoint);
 
 		if(Position.Y > (BufferPosition.Y + LineHeight))
 		{
@@ -534,7 +534,7 @@ int E_IndexFromVisualXAndLineStart(edit_context *E, draw_context *D, d_font Font
 
 			TabMultiplier *= 4.0;
 		}
-		d_atlas_glyph *Glyph  = D_GlyphFromCodePoint(D, Font, Buffer->HeightInPixels, CodePoint);
+		d_atlas_glyph *Glyph  = D_GlyphFromCodePoint(D, Font, CodePoint);
 
 		X += Glyph->AdvanceX * Scale * TabMultiplier;
 	}

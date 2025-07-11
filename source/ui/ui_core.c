@@ -218,7 +218,7 @@ int UI_GetTextWidth(d_font Font, draw_context *Draw, str8 String, f32 HeightInPi
 		u32 CodePoint = String.Bytes[I];
 		u32 NextCodePoint = String.Bytes[Min(String.Size, I + 1)];
 		f32 TabMultiplier = 1.0;
-		d_atlas_glyph *Glyph = D_GlyphFromCodePoint(Draw, Font, 1.0, CodePoint);
+		d_atlas_glyph *Glyph = D_GlyphFromCodePoint(Draw, Font, CodePoint);
 		if(CodePoint == '\t') TabMultiplier = 4.0;
 
 		int Kern = stbtt_GetCodepointKernAdvance(&Font.Info, String.Bytes[I], NextCodePoint);

@@ -51,7 +51,7 @@ void PopGlyphOffLRU(draw_context *D_Context)
 	}
 }
 
-void CurvesFromCodePoint(draw_context *Draw, m_arena *Arena, d_atlas_glyph *Glyph, f32 Scale, u32 CodePoint, d_font Font, int *CurveCount, v2f **Curves)
+void CurvesFromCodePoint(draw_context *Draw, m_arena *Arena, d_atlas_glyph *Glyph, u32 CodePoint, d_font Font, int *CurveCount, v2f **Curves)
 {
 	assert(CurveCount != 0);
 	assert(Curves != Null);
@@ -59,6 +59,12 @@ void CurvesFromCodePoint(draw_context *Draw, m_arena *Arena, d_atlas_glyph *Glyp
 	stbtt_vertex *Vertices;
 	s32 NumberOfVertices = stbtt_GetGlyphShape(&Font.Info, GlyphIndex, &Vertices);
 
+
+	v4i Box = {0};
+	stbtt_GetGlyphBox(&Font.Info, GlyphIndex, &Box.X, &Box.Y, &Box.Z, &Box.W);
+	f32 Width = (f32)(Box.Z - Box.X);
+	f32 Height = (f32)(Box.W - Box.Y);
+	v2f Size = v2f(Width, Height);
 	// This is probably more than enough memory
 	Curves[0] = ArenaPushArrayZero(Arena, v2f, NumberOfVertices*3);
 	CurveCount[0] = 0;
@@ -80,9 +86,9 @@ void CurvesFromCodePoint(draw_context *Draw, m_arena *Arena, d_atlas_glyph *Glyp
 		{
 			v2f Control = v2f(V->cx, V->cy);
 			v2f End = v2f(V->x, V->y);
-			Curves[0][CurveCount[0]++] = v2f(First.X, First.Y);
-			Curves[0][CurveCount[0]++] = v2f(Control.X, Control.Y);
-			Curves[0][CurveCount[0]++] = v2f(End.X, End.Y);
+			Curves[0][CurveCount[0]++] = Div(v2f(First.X, First.Y), Size);
+			Curves[0][CurveCount[0]++] = Div(v2f(Control.X, Control.Y), Size);
+			Curves[0][CurveCount[0]++] = Div(v2f(End.X, End.Y), Size);
 			First = End;
 		}
 		break;
@@ -90,58 +96,31 @@ void CurvesFromCodePoint(draw_context *Draw, m_arena *Arena, d_atlas_glyph *Glyp
 		{
 			v2f End = v2f(V->x, V->y);
 			v2f Control = v2f((First.X + End.X)*0.5, (First.Y + End.Y)*0.5);
-			Curves[0][CurveCount[0]++] = v2f(First.X, First.Y);
-			Curves[0][CurveCount[0]++] = v2f(Control.X, Control.Y);
-			Curves[0][CurveCount[0]++] = v2f(End.X, End.Y);
+			Curves[0][CurveCount[0]++] = Div(v2f(First.X, First.Y), Size);
+			Curves[0][CurveCount[0]++] = Div(v2f(Control.X, Control.Y), Size);
+			Curves[0][CurveCount[0]++] = Div(v2f(End.X, End.Y), Size);
 			First = End;
 		}
 		break;
 		}
 	}
 
-	LogInfo("CurveCount: ?u32 | NumberOfVertices*3: ?u32", CurveCount[0], NumberOfVertices*3);
-	
-	v2f *UVSpaceCurves = ArenaPushArrayZero(Scratch.Arena, v2f, CurveCount[0]);
-	for (int I = 0; I < CurveCount[0]; I++)
-	{
-		v4i BitmapBox = {0};
-		stbtt_GetCodepointBitmapBox(&Font.Info,
-									CodePoint,
-									Scale, Scale,
-									&BitmapBox.X, &BitmapBox.Y,
-									&BitmapBox.Z, &BitmapBox.W);
-		int Width = BitmapBox.Z - BitmapBox.X;
-		int Height = BitmapBox.W - BitmapBox.Y;
-		UVSpaceCurves[I] = Curves[0][I];
-		UVSpaceCurves[I].Y -= BitmapBox.Y;
-		UVSpaceCurves[I].X -= BitmapBox.X;
-		UVSpaceCurves[I].X *= Scale;
-		UVSpaceCurves[I].Y *= Scale;
-		UVSpaceCurves[I].X /= (f32)Width;
-		UVSpaceCurves[I].Y /= (f32)Height;
-		// assert(UVSpaceCurves[I].X >= 0.0 && UVSpaceCurves[I].X < 1.0);
-		// assert(UVSpaceCurves[I].Y >= 0.0 && UVSpaceCurves[I].Y < 1.0);
-	}
-
-	R_UpdateCurves(Draw->Render, UVSpaceCurves, CurveCount[0], Draw->CurveCount);
-
+	R_UpdateCurves(Draw->Render, Curves[0], CurveCount[0], Draw->CurveCount);
 	Draw->CurveCount += CurveCount[0];
+	
 	ScratchEnd(Scratch);
 }
 
 
-d_atlas_glyph *D_GlyphFromCodePoint(draw_context *D, d_font Font, s32 HeightInPixels, u32 CodePoint)
+d_atlas_glyph *D_GlyphFromCodePoint(draw_context *D, d_font Font, u32 CodePoint)
 {
 	per_thread_context *ThreadContext = GetThreadLocalContext();
 	u64 Hash = M_FNVHashBytes(M_FNV_HASH_START, (u8*)&Font, sizeof(d_font));
-	//Hash = M_FNVHashBytes(Hash, (u8*)&HeightInPixels, sizeof(s32));
 	Hash = M_FNVHashBytes(Hash, (u8*)&CodePoint, sizeof(u32));
 
 	d_atlas_glyph *Glyph = D->GlyphTable + (Hash % D_GLYPH_TABLE_SIZE);
 	for(;Glyph->NextInHashSlot != Null && Glyph->Hash != Hash; Glyph = Glyph->NextInHashSlot);
 	d_atlas_glyph *ResultGlyph = Glyph;
-
-	float Scale = stbtt_ScaleForPixelHeight(&Font.Info, HeightInPixels);
 
 	if(Glyph->Hash != 0 && Glyph->Hash != Hash)
 	{
@@ -160,7 +139,7 @@ d_atlas_glyph *D_GlyphFromCodePoint(draw_context *D, d_font Font, s32 HeightInPi
 		PushGlyphOntoLRU(D, NextGlyph);
 
 		NextGlyph->CurveStart = D->CurveCount;
-		CurvesFromCodePoint(D, D->Arena, NextGlyph, Scale, CodePoint, Font, &Glyph->CurveCount, &Glyph->Curves);
+		CurvesFromCodePoint(D, D->Arena, NextGlyph, CodePoint, Font, &Glyph->CurveCount, &Glyph->Curves);
 		ResultGlyph = NextGlyph;
 	}
 	else if(Glyph->Hash == 0)
@@ -177,16 +156,8 @@ d_atlas_glyph *D_GlyphFromCodePoint(draw_context *D, d_font Font, s32 HeightInPi
 															&Glyph->Box.Z, &Glyph->Box.W);
 		PushGlyphOntoLRU(D, Glyph);
 
-
-		v4i BitmapBox = {0};
-		stbtt_GetCodepointBitmapBox(&Font.Info,
-									CodePoint,
-									Scale, Scale,
-									&BitmapBox.X, &BitmapBox.Y,
-									&BitmapBox.Z, &BitmapBox.W);
-		int GlyphSizeInBytes = (BitmapBox.Z - BitmapBox.X)*(BitmapBox.W - BitmapBox.Y);
 		Glyph->CurveStart = D->CurveCount;
-		CurvesFromCodePoint(D, D->Arena, Glyph, Scale, CodePoint, Font, &Glyph->CurveCount, &Glyph->Curves);
+		CurvesFromCodePoint(D, D->Arena, Glyph, CodePoint, Font, &Glyph->CurveCount, &Glyph->Curves);
 	}
 
 	assert(CodePoint == ResultGlyph->CodePoint);
@@ -194,7 +165,7 @@ d_atlas_glyph *D_GlyphFromCodePoint(draw_context *D, d_font Font, s32 HeightInPi
 	return ResultGlyph;
 }
 
-d_atlas_glyph *D_GlyphFromCodePoint2(draw_context *D, u64 FontHash, d_font Font, s32 HeightInPixels, u32 CodePoint)
+d_atlas_glyph *D_GlyphFromCodePoint2(draw_context *D, u64 FontHash, d_font Font, u32 CodePoint)
 {
 	per_thread_context *ThreadContext = GetThreadLocalContext();
 	u64 Hash = M_FNVHashBytes(FontHash, (u8*)&CodePoint, sizeof(u32));
@@ -202,8 +173,6 @@ d_atlas_glyph *D_GlyphFromCodePoint2(draw_context *D, u64 FontHash, d_font Font,
 	d_atlas_glyph *Glyph = D->GlyphTable + (Hash % D_GLYPH_TABLE_SIZE);
 	for(;Glyph->NextInHashSlot != Null && Glyph->Hash != Hash; Glyph = Glyph->NextInHashSlot);
 	d_atlas_glyph *ResultGlyph = Glyph;
-
-	float Scale = stbtt_ScaleForPixelHeight(&Font.Info, HeightInPixels);
 
 	if(Glyph->Hash != 0 && Glyph->Hash != Hash)
 	{
@@ -221,16 +190,8 @@ d_atlas_glyph *D_GlyphFromCodePoint2(draw_context *D, u64 FontHash, d_font Font,
 
 		PushGlyphOntoLRU(D, NextGlyph);
 
-		v4i BitmapBox = {0};
-		stbtt_GetCodepointBitmapBox(&Font.Info,
-									CodePoint,
-									Scale, Scale,
-									&BitmapBox.X, &BitmapBox.Y,
-									&BitmapBox.Z, &BitmapBox.W);
-
-		int GlyphSizeInBytes = (BitmapBox.Z - BitmapBox.X)*(BitmapBox.W - BitmapBox.Y);
 		NextGlyph->CurveStart = D->CurveCount;
-		CurvesFromCodePoint(D, D->Arena, NextGlyph, Scale, CodePoint, Font, &Glyph->CurveCount, &Glyph->Curves);
+		CurvesFromCodePoint(D, D->Arena, NextGlyph,CodePoint, Font, &Glyph->CurveCount, &Glyph->Curves);
 		ResultGlyph = NextGlyph;
 	}
 	else if(Glyph->Hash == 0)
@@ -248,16 +209,8 @@ d_atlas_glyph *D_GlyphFromCodePoint2(draw_context *D, u64 FontHash, d_font Font,
 															&Glyph->Box.Z, &Glyph->Box.W);
 		PushGlyphOntoLRU(D, Glyph);
 
-
-		v4i BitmapBox = {0};
-		stbtt_GetCodepointBitmapBox(&Font.Info,
-									CodePoint,
-									Scale, Scale,
-									&BitmapBox.X, &BitmapBox.Y,
-									&BitmapBox.Z, &BitmapBox.W);
-		int GlyphSizeInBytes = (BitmapBox.Z - BitmapBox.X)*(BitmapBox.W - BitmapBox.Y);
 		Glyph->CurveStart = D->CurveCount;
-		CurvesFromCodePoint(D, D->Arena, Glyph, Scale, CodePoint, Font, &Glyph->CurveCount, &Glyph->Curves);
+		CurvesFromCodePoint(D, D->Arena, Glyph, CodePoint, Font, &Glyph->CurveCount, &Glyph->Curves);
 		ResultGlyph = Glyph;
 	}
 
@@ -360,7 +313,7 @@ void D_Draw3DStr8(draw_context *D,
 
 		f32 LineHeight = (Font.Ascent - Font.Descent + Font.LineGap)*Scale;
 
-		d_atlas_glyph *Glyph  = D_GlyphFromCodePoint2(D, Hash, Font, HeightInPixels, CodePoint);
+		d_atlas_glyph *Glyph  = D_GlyphFromCodePoint2(D, Hash, Font, CodePoint);
 		int Kern = stbtt_GetCodepointKernAdvance(&Font.Info, CodePoint, NextCodePoint);
 		f32 AdvanceX = (Kern + Glyph->AdvanceX) * Scale * TabMultiplier;
 
@@ -449,19 +402,19 @@ void D_Draw3DStr8(draw_context *D,
 			continue;
 		}
 
-		// for(int CurveIndex = 0; CurveIndex < Glyph->CurveCount; CurveIndex += 3)
-		// {
-		// 	v2f Start = Glyph->Curves[CurveIndex + 0];
-		// 	v2f Control = Glyph->Curves[CurveIndex + 1];
-		// 	v2f End = Glyph->Curves[CurveIndex + 2];
-		// 	v3f Line[3] = 
-		// 	{
-		// 		v3f(Position.X + Start.X*Scale, Position.Y - Start.Y*Scale, 0.0),
-		// 		v3f(Position.X + Control.X*Scale, Position.Y - Control.Y*Scale, 0.0),
-		// 		v3f(Position.X + End.X*Scale, Position.Y - End.Y*Scale, 0.0)
-		// 	};
-		// 	D_DrawBezierArray(D, Arena, Line, 3, 2.0, Colour);
-		// }
+		for(int CurveIndex = 0; CurveIndex < Glyph->CurveCount; CurveIndex += 3)
+		{
+			v2f Start = Glyph->Curves[CurveIndex + 0];
+			v2f Control = Glyph->Curves[CurveIndex + 1];
+			v2f End = Glyph->Curves[CurveIndex + 2];
+			v3f Line[3] = 
+			{
+				v3f(Position.X + Start.X*Scale, Position.Y - Start.Y*Scale, 0.0),
+				v3f(Position.X + Control.X*Scale, Position.Y - Control.Y*Scale, 0.0),
+				v3f(Position.X + End.X*Scale, Position.Y - End.Y*Scale, 0.0)
+			};
+			D_DrawBezierArray(D, Arena, Line, 3, 2.0, Colour);
+		}
 
 		Position.X += AdvanceX;
 	}
@@ -527,7 +480,7 @@ void D_DrawSelectionRange(draw_context *D,
 			{
 				// NOTE(Oliver): I only do this so that you can see if you're selecting
 				// whitespace
-				d_atlas_glyph *Space  = D_GlyphFromCodePoint2(D, Hash, Font, HeightInPixels, ' ');
+				d_atlas_glyph *Space  = D_GlyphFromCodePoint2(D, Hash, Font, ' ');
 				Position.X += Space->AdvanceX * Scale * TabMultiplier;
 			}
 			D_DrawQuad(D, Arena, v2f(SelectionStartX, Position.Y + Font.Descent*Scale), Position.X - SelectionStartX, (Font.Ascent - Font.Descent + Font.LineGap)*Scale, Colour);
@@ -542,7 +495,7 @@ void D_DrawSelectionRange(draw_context *D,
 		}
 
 
-		d_atlas_glyph *Glyph  = D_GlyphFromCodePoint(D, Font, HeightInPixels, CodePoint);
+		d_atlas_glyph *Glyph  = D_GlyphFromCodePoint(D, Font, CodePoint);
 
 		Position.X += Glyph->AdvanceX * Scale * TabMultiplier;
 	}

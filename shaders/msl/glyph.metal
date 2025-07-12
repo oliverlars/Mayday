@@ -141,5 +141,6 @@ fragment float4 FragmentMain(vertex_output Input [[stage_in]],
 		}
 	}
 
+
 	return float4(Input.Colour.rgb, Input.Colour.a * Alpha / 3.0);
 }

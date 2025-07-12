@@ -76,8 +76,14 @@ void R_UpdateCurves(render_context *Render, v2f *CurvePoints, int CurvePointsCou
 {
 
 	metal_context *Metal = Render->Backend;
-	MemoryCopy(Metal->CurveBuffer.contents + CurvePointsSoFar*sizeof(v2f),
+	if(!Metal->Curves)
+	{
+		Metal->Curves = ArenaPushArray(Render->Arena, v2f, MegaBytes(16));
+	}
+	MemoryCopy(Metal->Curves + CurvePointsSoFar,
 					CurvePoints, CurvePointsCount*sizeof(v2f));
+	Metal->TotalCurvesSoFar += CurvePointsCount;
+
 }
 
 // Dumb hack
@@ -450,10 +456,10 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 
 		Metal->UniformBuffers[ResourceIndex] = [Metal->Device newBufferWithLength:MegaBytes(128)
 						options:MTLResourceStorageModeShared];
-	}
 
-	Metal->CurveBuffer = [Metal->Device newBufferWithLength:MegaBytes(32)
-						  options:MTLResourceStorageModeShared];
+		Metal->CurveBuffer[ResourceIndex] = [Metal->Device newBufferWithLength:MegaBytes(32)
+			options:MTLResourceStorageModeShared];
+	}
 
 	{
 		MTLTextureDescriptor *Desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm
@@ -666,7 +672,7 @@ void R_RenderGlyphs(render_context *R, id<MTLCommandBuffer> CommandBuffer, v4i S
 	[Encoder setVertexBuffer:Metal->VertexBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:VertexOffset atIndex:0];
 	[Encoder setVertexBuffer:Metal->UniformBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:UniformOffset atIndex:1];
 	[Encoder setFragmentTexture:Metal->FontAtlasTexture atIndex:0];
-	[Encoder setFragmentBuffer:Metal->CurveBuffer offset:0 atIndex:0];
+	[Encoder setFragmentBuffer:Metal->CurveBuffer[R->Frame % FRAMES_IN_FLIGHT] offset:0 atIndex:0];
 	[Encoder setFragmentSamplerState:Metal->SamplerState atIndex:0];
 
 	[Encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:VertexCount];
@@ -763,6 +769,10 @@ void R_Update(render_context *R, m_arena *FrameArena)
 	m_scratch_arena Scratch = ScratchBegin(0, 0);
 
 	int UniformOffset = 0;
+
+
+	MemoryCopy(Metal->CurveBuffer[R->Frame % 3].contents,
+					Metal->Curves, Metal->TotalCurvesSoFar*sizeof(v2f));
 
 	for(r_command *Command = R->CommandsFirst; Command != Null; Command = Command->Next)
 	{

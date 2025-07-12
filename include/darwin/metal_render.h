@@ -32,7 +32,10 @@ typedef struct metal_context
 	id<MTLTexture>             BaseFrameBuffer;
 	id<MTLTexture>             BlurredFrameBuffer;
 
-	id<MTLBuffer>              CurveBuffer;
+	id<MTLBuffer>              CurveBuffer[FRAMES_IN_FLIGHT];
+
+	v2f                        *Curves;
+	int                        TotalCurvesSoFar;
 
 	id<MTLTexture>             FontAtlasTexture;
 

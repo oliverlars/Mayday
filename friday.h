@@ -378,15 +378,17 @@ HACK(Oliver): Fix ExecuteCommand spaces
  */
 b32 ExecuteCommand(memory_arena *Arena, str8 EntireCommandAndArguments, b32 *FailedToExecute)
 {
-	s32 Pipes[2];
+	s32 Pipes[2] = {0};
 	pid_t ProcessID;
 	posix_spawn_file_actions_t SpawnActions;
 
 	pipe(Pipes);
 
 	posix_spawn_file_actions_init(&SpawnActions);
+
 	posix_spawn_file_actions_adddup2(&SpawnActions, Pipes[1], STDOUT_FILENO);
 	posix_spawn_file_actions_addclose(&SpawnActions, Pipes[0]);
+	posix_spawn_file_actions_addclose(&SpawnActions, Pipes[1]);
 
 	char** CompilerArguments = (char**)ArenaPush(Arena, 1024);
 	u64 ArgumentIndex = 0;
@@ -407,22 +409,26 @@ b32 ExecuteCommand(memory_arena *Arena, str8 EntireCommandAndArguments, b32 *Fai
 	{
 		close(Pipes[1]);
 
-		s32 ExitCode;
-		waitpid(ProcessID, &ExitCode, 0);
-
-		FailedToExecute[0] = WEXITSTATUS(ExitCode) != 0;
-
-		s64 NumberOfBytesRead = 0;
 		str8_list StdOutList = {0};
 
+		s32 ExitCode;
 		u8 *BackingMemory = ArenaPush(Arena, 4096);
-		while ((NumberOfBytesRead = read(Pipes[0], BackingMemory, 4096)) > 0)
+		do
 		{
+			waitpid(ProcessID, &ExitCode, WUNTRACED | WCONTINUED);
+			s64 NumberOfBytesRead = read(Pipes[0], BackingMemory, 4096);
+			if (NumberOfBytesRead <= 0)
+			{
+				//continue;
+			}
 			str8 String = {.Bytes = (s8*)BackingMemory, .Size = NumberOfBytesRead};
-			Str8ListAppend(Arena, &StdOutList, String);
-		}
-		str8 OutputString = Str8ListJoin(Arena, StdOutList);
-		printf("%.*s", Str8ToPrintfArgs(OutputString));
+			printf("%.*s", Str8ToPrintfArgs(String));
+		} while(!WIFEXITED(ExitCode));
+		close(Pipes[0]);
+		
+
+
+		FailedToExecute[0] = (WIFEXITED(ExitCode) && WEXITSTATUS(ExitCode) != 0);
 	}
 
 	return ProcessStatus == 0;

@@ -107,7 +107,7 @@ void CurvesFromCodePoint(draw_context *Draw, m_arena *Arena, d_atlas_glyph *Glyp
 		break;
 		}
 	}
-
+	
 	R_UpdateCurves(Draw->Render, Curves[0], CurveCount[0], Draw->CurveCount);
 	Draw->CurveCount += CurveCount[0];
 	

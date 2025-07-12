@@ -67,6 +67,7 @@ r_command;
 
 typedef struct render_context
 {
+	m_arena *Arena;
 	r_command *CommandsFirst;
 	r_command *CommandsLast;
 

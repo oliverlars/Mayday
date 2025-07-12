@@ -373,7 +373,7 @@ void OS_Update(void *Data)
 
 				str8 Folder = Str8PushF(M->FrameArena, "?S##f32", Node->String, Pos.Y);
 
-				UI_PushStyle(M->UI, (ui_style){.Font = M->RegularFont });
+				UI_PushStyle(M->UI, (ui_style){.Font = M->CodeFont });
 				str8 LastModified = OS_GetLastModifiedTime(M->FrameArena, Node->String);
 				UI_Label(M->UI, M->Draw, M->FrameArena, LastModified, 60, Add(Pos, v2f(0, 20)), v4f(0.2, 0.01, 0.0, 0.1));
 				ui_signal Button = UI_TextButton(M->UI, M->Draw, M->FrameArena, Folder, 30, Pos, v4f(0.3, 0.3, 0.3, 1));
@@ -632,6 +632,7 @@ int main()
 	M.UI->Arena = Arena;
 	M.Draw->Render = M.Render;
 	M.Draw->Arena = Arena;
+	M.Render->Arena = Arena;
 	M.Edit->Arena = Arena;
 	M.Edit->Temp = ArenaPushZero(Arena, MegaBytes(1));
 
@@ -642,9 +643,9 @@ int main()
 
 	M.CodeFont = D_LoadFontFromTTF(M.Draw, G_BerkeleyMonoRegular.Data);
 	M.RegularFont = D_LoadFontFromTTF(M.Draw, G_BasementGrotesque.Data);
-	M.OutlineFont = D_LoadFontFromTTF(M.Draw, G_CocogooseBorder.Data);
-	M.LogoFont = D_LoadFontFromTTF(M.Draw, G_CocogooseRegular.Data);
-	M.GradientFont = D_LoadFontFromTTF(M.Draw,G_CocogooseGradient.Data);
+	M.OutlineFont = D_LoadFontFromTTF(M.Draw, G_BerkeleyMonoRegular.Data);
+	M.LogoFont = D_LoadFontFromTTF(M.Draw, G_BerkeleyMonoRegular.Data);
+	M.GradientFont = D_LoadFontFromTTF(M.Draw,G_BerkeleyMonoRegular.Data);
 	M.StatusFont = D_LoadFontFromTTF(M.Draw, G_Doto.Data);
 
 	M.UI->Font = M.CodeFont;

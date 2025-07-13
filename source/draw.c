@@ -405,19 +405,19 @@ void D_Draw3DStr8(draw_context *D,
 			continue;
 		}
 
-		for(int CurveIndex = 0; CurveIndex < Glyph->CurveCount; CurveIndex += 3)
-		{
-			v2f Start = Glyph->Curves[CurveIndex + 0];
-			v2f Control = Glyph->Curves[CurveIndex + 1];
-			v2f End = Glyph->Curves[CurveIndex + 2];
-			v3f Line[3] = 
-			{
-				v3f(Position.X + Start.X*Scale, Position.Y - Start.Y*Scale, 0.0),
-				v3f(Position.X + Control.X*Scale, Position.Y - Control.Y*Scale, 0.0),
-				v3f(Position.X + End.X*Scale, Position.Y - End.Y*Scale, 0.0)
-			};
-			D_DrawBezierArray(D, Arena, Line, 3, 2.0, Colour);
-		}
+		// for(int CurveIndex = 0; CurveIndex < Glyph->CurveCount; CurveIndex += 3)
+		// {
+		// 	v2f Start = Glyph->Curves[CurveIndex + 0];
+		// 	v2f Control = Glyph->Curves[CurveIndex + 1];
+		// 	v2f End = Glyph->Curves[CurveIndex + 2];
+		// 	v3f Line[3] = 
+		// 	{
+		// 		v3f(Position.X + Start.X*Scale, Position.Y - Start.Y*Scale, 0.0),
+		// 		v3f(Position.X + Control.X*Scale, Position.Y - Control.Y*Scale, 0.0),
+		// 		v3f(Position.X + End.X*Scale, Position.Y - End.Y*Scale, 0.0)
+		// 	};
+		// 	//D_DrawBezierArray(D, Arena, Line, 3, 2.0, Colour);
+		// }
 
 		Position.X += AdvanceX;
 	}

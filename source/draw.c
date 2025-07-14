@@ -285,7 +285,6 @@ void D_Draw3DStr8(draw_context *D,
 	Command.VerticesCount = TotalTriangleCount;
 
 	u64 Hash = M_FNVHashBytes(M_FNV_HASH_START, (u8*)&Font, sizeof(d_font));
-	Hash = M_FNVHashBytes(Hash, (u8*)&HeightInPixels, sizeof(f32));
 
 	f32 StartX = Position.X;
 	r_vertex *R_Vertices = Command.Vertices;

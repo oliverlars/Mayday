@@ -52,6 +52,9 @@ typedef struct mayday_context
 	d_font OutlineFont;
 	d_font GradientFont;
 
+
+	f32 BufferFontHeight;
+	f32 BufferFontHeightTarget;
 	editable_buffer Buffer;
 	cursor Cursor;
 
@@ -118,6 +121,8 @@ void OS_Update_(void *Data)
 		v3f(200, 500, 0),
 		v3f(400, 500, 0)
 	};
+
+	D_DrawQuad(M->Draw, M->FrameArena, v2f(500, 600), 400, 200, v4f(1, 0, 1, 1));
 	//D_DrawLinesArray(M->Draw, M->FrameArena, Line, 2, v4f(0, 1, 0, 1));	
 	D_DrawLinesArray(M->Draw, M->FrameArena, Line, 2, 1.0, v4f(1, 1, 1, 1));
 	R_PopTransform(M->Render);
@@ -201,12 +206,15 @@ void OS_Update(void *Data)
 
 	if(UI_KeyDown(M->UI, SAPP_KEYCODE_EQUAL, SAPP_MODIFIER_SUPER))
 	{
-		M->Buffer.HeightInPixels += 5;
+		M->BufferFontHeightTarget += 5;
 	}
 	else if(UI_KeyDown(M->UI, SAPP_KEYCODE_MINUS, SAPP_MODIFIER_SUPER))
 	{
-		M->Buffer.HeightInPixels -= 5;
+		M->BufferFontHeightTarget -= 5;
 	}
+
+	M->BufferFontHeight = Lerp(M->BufferFontHeight, M->BufferFontHeightTarget, 0.1);
+	M->Buffer.HeightInPixels = M->BufferFontHeight;
 
 	if(M->UI->View == UI_VIEW_EDIT)
 	{
@@ -542,6 +550,8 @@ void OS_Initialise(void *Data)
 {
 	mayday_context *M = Data;
 	M->Buffer.HeightInPixels = 35;
+	M->BufferFontHeight = 35;
+	M->BufferFontHeightTarget = 35;
 	R_Init(M->Render, M->PermanentArena, v2i(sapp_width() , sapp_height()));
 
 	M->Buffer.String.Bytes = ArenaPushZero(M->PermanentArena, MegaBytes(1));

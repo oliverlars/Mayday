@@ -12,6 +12,8 @@ struct vertex_input
 {
 	float4 Position [[attribute(0)]];
 	float4 Colour   [[attribute(1)]];
+	float4 UV;
+	float PointSize;
 };
 
 struct uniforms

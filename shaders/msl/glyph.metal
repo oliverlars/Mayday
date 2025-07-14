@@ -99,9 +99,8 @@ fragment float4 FragmentMain(vertex_output Input [[stage_in]],
 
 	float2 Size = Input.UV;
 
-	// HACK(Oliver): This flip could happen in the CPU too, either in the curves place
-	// or the uv coordinate generation, but whatever its fine here i guess.
-	Size.y = 1.0 - Size.y;
+	//Size.y = 1.0 - Size.y;
+	
 	float2 InverseDiameter = 1.0 / (abs(dfdx(Size)) + abs(dfdy(Size)));
 	for(int offset = -1; offset <= 1; offset += 1) {
 		Size = Size + float2(0, offset) * dfdx(Size) / 3.0;
@@ -141,6 +140,6 @@ fragment float4 FragmentMain(vertex_output Input [[stage_in]],
 		}
 	}
 
-
+	//return float4(mix(float3(0, 1, 0), float3(0, 0, 1), Alpha/3.0), 1.0);
 	return float4(Input.Colour.rgb, Input.Colour.a * Alpha / 3.0);
 }

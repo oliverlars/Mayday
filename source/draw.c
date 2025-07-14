@@ -66,7 +66,9 @@ void CurvesFromCodePoint(draw_context *Draw, m_arena *Arena, d_atlas_glyph *Glyp
 	f32 Height = (f32)(Box.W - Box.Y);
 	v2f Size = v2f(Width, Height);
 
-	v2f Shift = v2f(Box.X, Box.Y);
+	assert(Height >= 0.0);
+
+	v2f Shift = v2f(Box.X, 0);
 
 	// This is probably more than enough memory
 	Curves[0] = ArenaPushArrayZero(Arena, v2f, NumberOfVertices*3);
@@ -89,9 +91,9 @@ void CurvesFromCodePoint(draw_context *Draw, m_arena *Arena, d_atlas_glyph *Glyp
 		{
 			v2f Control = Sub(v2f(V->cx, V->cy), Shift);
 			v2f End = Sub(v2f(V->x, V->y), Shift);
-			Curves[0][CurveCount[0]++] = Div(v2f(First.X, First.Y), Size);
-			Curves[0][CurveCount[0]++] = Div(v2f(Control.X, Control.Y), Size);
-			Curves[0][CurveCount[0]++] = Div(v2f(End.X, End.Y), Size);
+			Curves[0][CurveCount[0]++] = v2f(End.X, End.Y);
+			Curves[0][CurveCount[0]++] = v2f(Control.X, Control.Y);
+			Curves[0][CurveCount[0]++] = v2f(First.X, First.Y);
 			First = End;
 		}
 		break;
@@ -99,14 +101,22 @@ void CurvesFromCodePoint(draw_context *Draw, m_arena *Arena, d_atlas_glyph *Glyp
 		{
 			v2f End = Sub(v2f(V->x, V->y), Shift);
 			v2f Control = v2f((First.X + End.X)*0.5, (First.Y + End.Y)*0.5);
-			Curves[0][CurveCount[0]++] = Div(v2f(First.X, First.Y), Size);
-			Curves[0][CurveCount[0]++] = Div(v2f(Control.X, Control.Y), Size);
-			Curves[0][CurveCount[0]++] = Div(v2f(End.X, End.Y), Size);
+			Curves[0][CurveCount[0]++] = v2f(End.X, End.Y);
+			Curves[0][CurveCount[0]++] = v2f(Control.X, Control.Y);
+			Curves[0][CurveCount[0]++] = v2f(First.X, First.Y);
 			First = End;
 		}
 		break;
 		}
 	}
+
+	for(int I = 0; I < CurveCount[0]; I++)
+	{
+		Curves[0][I].X /= Size.X;
+		//assert(Curves[0][I].Y >= 0);
+		Curves[0][I].Y = (Height - Curves[0][I].Y) / Size.Y;
+	}
+
 	
 	R_UpdateCurves(Draw->Render, Curves[0], CurveCount[0], Draw->CurveCount);
 	Draw->CurveCount += CurveCount[0];

@@ -190,7 +190,6 @@ ui_orbit_signal UI_OrbitLabels(ui_context *UI, draw_context *Draw, edit_context 
 		OS_DirectoryTreeIterate(Tree, &It);)
 	{
 		if(It.Depth != ActiveDepth) continue;
-		f32 FontSize = 30;
 		v3f P = Orbit.Positions[Index++];
 
 		v4f P4D = v4f(P.X, P.Y, P.Z, 1.0);
@@ -216,11 +215,11 @@ ui_orbit_signal UI_OrbitLabels(ui_context *UI, draw_context *Draw, edit_context 
 		v3f C = LerpV3F(v3f(0, 0, 0), v3f(0.5, 0.2, 0.0), NormalizedDistance*NormalizedDistance);
 		Colour = v4f(C.X, C.Y, C.Z, 1.0);
 
+		f32 FontSize = Lerp(10.0f, 30.0f, NormalizedDistance*NormalizedDistance);
 
 		if(It.Index == ActiveItem)
 		{
 			Colour = v4f(0.8, 0.6, 0.4, 1.0);
-			FontSize = 40;
 		}
 
 		if(It.Current->Type == OS_DIR_ENTRY_FOLDER)
@@ -239,6 +238,7 @@ ui_orbit_signal UI_OrbitLabels(ui_context *UI, draw_context *Draw, edit_context 
 
 				if((Button.Hover || Button.HotAnimation > 0))
 				{
+					FontSize *= (1.0 + UI->HotAnimation);
 					Result.AnyHovering |= Button.Hover;
 					str8 LastModified = OS_GetLastModifiedTime(Arena, It.Current->PathAndName);
 					UI_PushStyle(UI, (ui_style){.Font = LogoFont});
@@ -266,13 +266,11 @@ ui_orbit_signal UI_OrbitLabels(ui_context *UI, draw_context *Draw, edit_context 
 		}
 
 		{
-			FontSize = 30;
 			str8 FileName = Str8FromLastCharacter(Arena, It.Current->PathAndName, '/');
 			if(It.Current->Type != OS_DIR_ENTRY_FOLDER)
 			{
 				if(Filter.Size == 0 || Str8FuzzyMatch(FileName, Filter))
 				{
-
 					ui_signal Button = {0};
 					if(NormalizedDistance > 0.5)
 					{

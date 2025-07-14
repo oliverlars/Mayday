@@ -113,7 +113,7 @@ void OS_Update_(void *Data)
 	M->Draw->ViewportSize = v2f(sapp_widthf(), sapp_heightf());
 	UI_Begin(M->UI);
 	R_PushScissor(M->Render, v4i(0, 0, sapp_width(), sapp_height()));
-	R_PushTransform(M->Render, Orthographic(0.0, sapp_widthf()/2.0, 0.0, sapp_heightf()/2.0, -1000.0, 1000.0));
+	R_PushTransform(M->Render, Orthographic(0.0, sapp_widthf()/2.0, sapp_heightf()/2.0, 0.0, -1000.0, 1000.0));
 
 	D_DrawStr8(M->Draw, M->FrameArena, M->CodeFont, v2f(200, 500), v4f(0, 1, 0, 1), 100, Str8("This text is upside down"));
 	v3f Line[2] = 

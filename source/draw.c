@@ -68,7 +68,7 @@ void CurvesFromCodePoint(draw_context *Draw, m_arena *Arena, d_atlas_glyph *Glyp
 
 	assert(Height >= 0.0);
 
-	v2f Shift = v2f(Box.X, 0);
+	v2f Shift = v2f(Box.X, Box.Y);
 
 	// This is probably more than enough memory
 	Curves[0] = ArenaPushArrayZero(Arena, v2f, NumberOfVertices*3);
@@ -347,16 +347,6 @@ void D_Draw3DStr8(draw_context *D,
 		f32 GlyphWidth = ((f32)(Glyph->Box.Z - Glyph->Box.X)*Scale);
 		f32 GlyphHeight = ((f32)(Glyph->Box.W - Glyph->Box.Y)*Scale);
 
-		v4i BitmapBox = {0};
-		stbtt_GetCodepointBitmapBox(&Font.Info,
-									CodePoint,
-									Scale, Scale,
-									&BitmapBox.X, &BitmapBox.Y,
-									&BitmapBox.Z, &BitmapBox.W);
-
-		f32 GlyphBitmapWidth = ((f32)(BitmapBox.Z - BitmapBox.X));
-		f32 GlyphBitmapHeight = ((f32)(BitmapBox.W - BitmapBox.Y));
-
 		v2f Vertices[6] =
 		{
 			v2f(Position.X, Position.Y),
@@ -395,7 +385,7 @@ void D_Draw3DStr8(draw_context *D,
 		for(int V = 0; V < 6; V++)
 		{
 			r_vertex Vertex = {
-				.Position = v4f(Vertices[V].X, Vertices[V].Y, Position.Z, 1),
+				.Position = v4f(Vertices[V].X, Vertices[V].Y + Glyph->Box.Y*Scale, Position.Z, 1),
 				.UV = UVs[V],
 				.Colour = Colours[NewLine],
 				.CurveStart = Glyph->CurveStart,

@@ -761,6 +761,10 @@ void R_Update(render_context *R, m_arena *FrameArena)
 	R_ClearAllTextures(R, CommandBuffer);
 
 
+	MemoryCopy(Metal->CurveBuffer[(R->Frame)% 3].contents,
+					Metal->Curves, Metal->TotalCurvesSoFar*sizeof(v2f));
+
+
 	int TotalVertices = 0;
 	int VertexOffsetInBytes = 0;
 
@@ -928,10 +932,6 @@ void R_Update(render_context *R, m_arena *FrameArena)
 
 	[CommandBuffer commit];
 	[CommandBuffer waitUntilCompleted];
-
-
-	MemoryCopy(Metal->CurveBuffer[(R->Frame)% 3].contents,
-					Metal->Curves, Metal->TotalCurvesSoFar*sizeof(v2f));
 
 
 	R->CommandsFirst = Null;

@@ -106,7 +106,7 @@ mayday_context;
 #define SOKOL_LOG_IMPL
 #include "sokol_log.h"
 
-void OS_Update_(void *Data)
+void OS_Update(void *Data)
 {
 	mayday_context *M = Data;
 
@@ -115,16 +115,20 @@ void OS_Update_(void *Data)
 	R_PushScissor(M->Render, v4i(0, 0, sapp_width(), sapp_height()));
 	R_PushTransform(M->Render, Orthographic(0.0, sapp_widthf()/2.0, sapp_heightf()/2.0, 0.0, -1000.0, 1000.0));
 
-	D_DrawStr8(M->Draw, M->FrameArena, M->CodeFont, v2f(200, 500), v4f(0, 1, 0, 1), 100, Str8("This text is upside down"));
+	//D_DrawStr8(M->Draw, M->FrameArena, M->CodeFont, v2f(200, 500), v4f(0, 1, 0, 1), 100, Str8("This text is upside down"));
 	v3f Line[2] = 
 	{
-		v3f(200, 500, 0),
-		v3f(400, 500, 0)
+		v3f(0, 0, 0),
+		v3f(5, 5, 0)
 	};
 
-	D_DrawQuad(M->Draw, M->FrameArena, v2f(500, 600), 400, 200, v4f(1, 0, 1, 1));
 	//D_DrawLinesArray(M->Draw, M->FrameArena, Line, 2, v4f(0, 1, 0, 1));	
-	D_DrawLinesArray(M->Draw, M->FrameArena, Line, 2, 1.0, v4f(1, 1, 1, 1));
+	m44f P = Perspective(sapp_widthf()/sapp_heightf(), 35, 0.01, 10000.0);
+	m44f PV = Mul( M44FLookAt(v3f(0, 0, 10), v3f(0, 0, 0), v3f(0, 1, 0)), P);
+	R_PushTransform(M->Render, PV);
+	D_Draw3DStr8(M->Draw, M->FrameArena, M->CodeFont, v3f(10, 10, 0), v4f(0, 1, 0, 1), 100, Str8("This text is upside down"));
+	D_DrawLinesArray(M->Draw, M->FrameArena, Line, 2, 5.0, v4f(1, 1, 1, 1));
+	R_PopTransform(M->Render);
 	R_PopTransform(M->Render);
 	R_PopScissor(M->Render);
 
@@ -138,7 +142,7 @@ void OS_Update_(void *Data)
 	M->UI->EventFirst = Null;
 }
 
-void OS_Update(void *Data)
+void OS_Update_(void *Data)
 {
 	mayday_context *M = Data;
 
@@ -257,67 +261,11 @@ void OS_Update(void *Data)
 		f32 MaxDepth = 0.0f;
 		if(OS_ValidPath(M->Folder))
 		{
-
-			UI_PushStyle(M->UI,(ui_style){.Font = M->LogoFont});
-			UI_Label(M->UI, M->Draw, M->FrameArena, Str8PushF(M->FrameArena, "?u32##Label", (int)(AngleOffset*100.0)), 250,
-					v2f(sapp_widthf() - 1300, sapp_heightf() - 200), v4f(0.2, 0.05, 0.0, 0.1));
-			UI_PopStyle(M->UI);
-			UI_Slider(M->UI, M->Draw, M->FrameArena, Str8("OrbitScrollBar"),
-					 v2f(sapp_widthf() - 1200, sapp_heightf() - 100), 300, &AngleOffset, v4f(0.3, 0.1, 0.0, 1.0));
-
 			// HACK(Oliver): This is annoying i have to do this twice
 			R_PopTransform(M->Render);
 
-			// HACK(Oliver): This is only here because i'm too lazy to make a new view
-			// for the homescreen
-			M->ViewSize = Lerp(M->ViewSize, M->ViewSizeTarget, 0.1);
-			M->LookAt = LerpV3F(M->LookAt, M->LookAtTarget, 0.1);
-			M->LookFrom = LerpV3F(M->LookFrom, M->LookFromTarget, 0.1);
-			if(M->OrbitDepth >= 1)
-			{
-				m44f CurrentTransform = R_CurrentTransform(M->Render);
-				v3f AP = M->OrbitPosition;
-				m44f T = Translate(v3f(AP.X, AP.Y, AP.Z));
-				R_PushTransform(M->Render, Mul(T, CurrentTransform));
-				ui_orbit OuterOrbit = UI_OrbitView(M->UI, M->Draw, M->FrameArena, M->FolderTree, M->OrbitItem, M->OrbitDepth, 25);
-				R_PopTransform(M->Render);
-
-				Orbit = UI_OrbitView(M->UI, M->Draw, M->FrameArena, M->FolderTree, M->OrbitItem, M->OrbitDepth + 1, 15);
-			}
-			else
-			{
-				Orbit = UI_OrbitView(M->UI, M->Draw, M->FrameArena, M->FolderTree, M->OrbitItem, M->OrbitDepth + 1, 15);
-			}
-
-			{
-				v4f P4D = v4f(Orbit.Positions[0].X, Orbit.Positions[0].Y, Orbit.Positions[0].Z, 1.0);
-				P4D = Mul(ModelView, P4D);
-
-				v3f P3D = v3f(P4D.X, P4D.Y, P4D.Z);
-
-				MinDepth = Dot(Sub(P3D, CameraPosition), CameraForward);
-				MaxDepth = MinDepth;
-			}
-
-			for(int I = 1; I < Orbit.Count; I++)
-			{
-				v4f P4D = v4f(Orbit.Positions[I].X, Orbit.Positions[I].Y, Orbit.Positions[I].Z, 1.0);
-				P4D = Mul(ModelView, P4D);
-
-				v3f P3D = v3f(P4D.X, P4D.Y, P4D.Z);
-
-				f32 Depth = Dot(Sub(P3D, CameraPosition), CameraForward);
-
-				if(Depth < MinDepth)
-				{
-					MinDepth = Depth;
-				}
-
-				if(Depth > MaxDepth)
-				{
-					MaxDepth = Depth;
-				}
-			}
+			
+			UI_TreeView(M->UI, M->Draw, &M->Shared, M->FrameArena, &M->TreeView, M->Folder, v3f(0.1, 0.1, 0.1));
 		}
 		else
 		{
@@ -325,16 +273,6 @@ void OS_Update(void *Data)
 		}
 
 		R_PushTransform(M->Render, Orthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
-
-		ui_orbit_signal OrbitSignal = {0};
-		if(OS_ValidPath(M->Folder))
-		{
-			m44f PVM = Mul(ModelView, P);
-			OrbitSignal = UI_OrbitLabels(M->UI, M->Draw, M->Edit,
-						   M->UI->Font, M->LogoFont, M->FrameArena, Orbit, M->FolderTree,
-						   CameraPosition, CameraForward, MinDepth, MaxDepth, M->OrbitItem, M->OrbitDepth + 1,
-						   Transform, ModelView, &M->TextBoxBuffer);
-		}
 
 		ui_tree_view_signal TreeSignal = {0};
 		if(!OS_ValidPath(M->Folder))
@@ -347,7 +285,7 @@ void OS_Update(void *Data)
 			{
 				if(Count == Middle)
 				{
-					D_DrawStr8(M->Draw, M->FrameArena, M->GradientFont,
+					D_DrawStr8(M->Draw, M->FrameArena, M->RegularFont,
 					   v2f(sapp_widthf()/2.0 + 200.0, Y),
 					   v4f(1.0, 0.0, 0.0, 0.1), LogoHeight, Str8("MAYDAY!"));
 				}
@@ -393,38 +331,6 @@ void OS_Update(void *Data)
 				}
 				Pos.Y -= 100;
 			}
-		}
-
-		if(OrbitSignal.AnyHovering)
-		{
-			AngleTarget -= 0.0001 / (f32)(M->OrbitDepth*2 + 1) + Scroll.X*0.01;
-		}
-		else
-		{
-			AngleTarget -= 0.001 / (f32)(M->OrbitDepth*2 + 1) + Scroll.X*0.01;
-
-		}
-		Angle = Lerp(Angle, AngleTarget, 0.1);
-		M->OrbitAnimation = Lerp(M->OrbitAnimation, M->OrbitAnimationTarget, 0.1);
-
-		if(OrbitSignal.Clicked)
-		{
-			M->OrbitItem = OrbitSignal.ActiveItem;
-			M->OrbitDepth = OrbitSignal.ActiveItemDepth;
-			M->OrbitPosition = OrbitSignal.ActiveItemPosition;
-			M->OrbitAnimationTarget += 10.0f;
-			//M->LookAtTarget = OrbitSignal.ActiveItemPosition;
-			//M->LookFromTarget = OrbitSignal.ActiveItemPosition;
-			//M->LookFromTarget.Z = (f32)(1.0 + M->OrbitDepth*35.0);
-
-			if(OrbitSignal.FileToLoad.Size > 0)
-			{
-				M->ActiveFilePath = Str8Copy(M->PermanentArena, OrbitSignal.FileToLoad);
-				M->Buffer.String = OS_LoadEntireFileIntoMemory(M->PermanentArena, OrbitSignal.FileToLoad);
-				M->Buffer.LastModifiedTime = OS_GetFileLastWriteTimestamp(M->ActiveFilePath);
-				M->UI->View = UI_VIEW_EDIT;
-			}
-			//M->ViewSizeTarget = (f32)(1.0 + M->OrbitDepth*25.0);
 		}
 
 		//D_DrawStr8(M->Draw, M->FrameArena, M->LogoFont, v2f(50, 50), v4f(1.0, 0.05, 0.0, 1), 100, Str8("MAYDAY!"));
@@ -659,7 +565,7 @@ int main()
 	M.StatusFont = D_LoadFontFromTTF(M.Draw, G_Doto.Data);
 
 	M.UI->Font = M.CodeFont;
-	M.LookFrom.Z = 120;
+	M.LookFrom.Z = 500;
 	M.LookFromTarget.Z = 70.0;
 	M.LookFromTarget.X = -20;
 
@@ -667,7 +573,7 @@ int main()
 
 	u64 Start = OS_TimeStampNow();
 
-	// DispatchInitialise(&M.Shared, 15);
+	DispatchInitialise(&M.Shared, 15);
 
 	//M.Folder = Str8("C:\\mayday\\");
 

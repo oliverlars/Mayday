@@ -51,6 +51,8 @@ float4 PixelMain(vertex_output Input) : SV_TARGET
 	float Distance = DistanceToSegment(Input.Position.xy, Input.Start, Input.End) - HalfThickness;
 	float AA = smoothstep(HalfThickness + HalfThickness, HalfThickness - HalfThickness, Distance);
 
+
+	return float4(1, 0, 0, 1);
 	return float4(Input.Colour.rgb, float(AA));
 
 }

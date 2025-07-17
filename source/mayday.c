@@ -119,15 +119,16 @@ void OS_Update(void *Data)
 	v3f Line[2] = 
 	{
 		v3f(0, 0, 0),
-		v3f(5, 5, 0)
+		v3f(2, 2, 0)
 	};
 
 	//D_DrawLinesArray(M->Draw, M->FrameArena, Line, 2, v4f(0, 1, 0, 1));	
 	m44f P = Perspective(sapp_widthf()/sapp_heightf(), 35, 0.01, 10000.0);
-	m44f PV = Mul( M44FLookAt(v3f(0, 0, 10), v3f(0, 0, 0), v3f(0, 1, 0)), P);
+	m44f PV = Mul( M44FLookAt(v3f(0, 0, -10), v3f(0, 0, 0), v3f(0, 1, 0)), P);
 	R_PushTransform(M->Render, PV);
-	D_Draw3DStr8(M->Draw, M->FrameArena, M->CodeFont, v3f(10, 10, 0), v4f(0, 1, 0, 1), 100, Str8("This text is upside down"));
+	D_Draw3DStr8(M->Draw, M->FrameArena, M->CodeFont, v3f(0, 0, 0), v4f(0, 1, 0, 1), 100, Str8("This text is upside down"));
 	D_DrawLinesArray(M->Draw, M->FrameArena, Line, 2, 5.0, v4f(1, 1, 1, 1));
+	D_DrawPointsArray(M->Draw, M->FrameArena, Line, 2, 5, v4f(1, 1, 1, 1));
 	R_PopTransform(M->Render);
 	R_PopTransform(M->Render);
 	R_PopScissor(M->Render);

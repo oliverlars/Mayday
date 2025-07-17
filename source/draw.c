@@ -725,7 +725,7 @@ void D_DrawLinesArray(draw_context *D,
 		B.Y = D->ViewportSize.Y * (B.Y*0.5 + 0.5);
 
 		
-		LogInfo("A: ?v2f B: ?v2f", A, B);
+
 
 		v2f BL = v2f(Min(A.X, B.X), Min(A.Y, B.Y));
 		v2f TR = v2f(Max(A.X, B.X), Max(A.Y, B.Y));
@@ -749,7 +749,7 @@ void D_DrawLinesArray(draw_context *D,
 		for(int V = 0; V < 6; V++)
 		{
 			r_vertex Vertex = {
-				.Position = v4f(Vertices[V].X, Vertices[V].Y, A.Z, 1),
+				.Position = v4f(Vertices[V].X, Vertices[V].Y, 0.0, 1),
 				.Colour = Colour,
 				.Start = v2f(A.X, A.Y),
 				.End = v2f(B.X, B.Y),

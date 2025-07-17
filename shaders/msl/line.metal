@@ -6,9 +6,9 @@ struct vertex_output
 {
 	float4 Position [[position]];
 	float4 Colour;
-	[[flat]] float2 Start;
-	[[flat]] float2 End;
-	[[flat]] float Thickness;
+	float2 Start;
+	float2 End;
+	float Thickness;
 };
 
 struct vertex_input
@@ -49,7 +49,7 @@ vertex vertex_output VertexMain(constant vertex_input *Vertices [[buffer(0)]],
 
 fragment float4 FragmentMain(vertex_output Input [[stage_in]])
 {
-	return float4(0, 1, 0, 1);
+	return float4(0, 0, 1, 1);
 	float HalfThickness = 0.5 * Input.Thickness;
 	float Distance = DistanceToSegment(Input.Position.xy, Input.Start, Input.End) - HalfThickness;
 	float AA = smoothstep(HalfThickness + HalfThickness, HalfThickness - HalfThickness, Distance);

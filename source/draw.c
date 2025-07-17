@@ -695,7 +695,7 @@ void D_DrawLinesArray(draw_context *D,
 
 	
 
-	m44f Ortho = M44FOrthographic(0, D->ViewportSize.X, D->ViewportSize.Y, 0.0, -1000.0, 1000.0);
+	m44f Ortho = M44FOrthographic(0, D->ViewportSize.X, 0.0, D->ViewportSize.Y, -1000.0, 1000.0);
 	R_PushTransform(D->Render, Ortho);
 
 	for(int P = 0; P < PositionsCount; P += 2)
@@ -718,8 +718,8 @@ void D_DrawLinesArray(draw_context *D,
 		// SDF evaluation the [[position]]/fragCoord position aligns
 		// with our coordinate system.
 		// TODO(Oliver): explain this better
-		// A.Y = -A.Y;
-		// B.Y = -B.Y;
+		A.Y = -A.Y;
+		B.Y = -B.Y;
 
 		A.Y = D->ViewportSize.Y * (A.Y*0.5 + 0.5);
 		B.Y = D->ViewportSize.Y * (B.Y*0.5 + 0.5);

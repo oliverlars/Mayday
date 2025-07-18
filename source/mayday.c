@@ -106,7 +106,7 @@ mayday_context;
 #define SOKOL_LOG_IMPL
 #include "sokol_log.h"
 
-void OS_Update(void *Data)
+void OS_Update_(void *Data)
 {
 	mayday_context *M = Data;
 
@@ -143,13 +143,14 @@ void OS_Update(void *Data)
 	M->UI->EventFirst = Null;
 }
 
-void OS_Update_(void *Data)
+void OS_Update(void *Data)
 {
 	mayday_context *M = Data;
 
 	if(M->UnFocused) return;
 
 	R_PushScissor(M->Render, v4i(0, 0, sapp_width(), sapp_height()));
+	M->Draw->ViewportSize = v2f(sapp_widthf(), sapp_heightf());
 
 	UI_Begin(M->UI);
 

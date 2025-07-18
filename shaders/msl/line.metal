@@ -53,5 +53,5 @@ fragment float4 FragmentMain(vertex_output Input [[stage_in]])
 	float Distance = DistanceToSegment(Input.Position.xy, Input.Start, Input.End) - HalfThickness;
 	float AA = smoothstep(HalfThickness + HalfThickness, HalfThickness - HalfThickness, Distance);
 
-	return float4(Input.Colour.rgb, float(AA));
+	return float4(Input.Colour.rgb, float(AA)*Input.Colour.a);
 }

@@ -570,18 +570,58 @@ void D_DrawPointsArray(draw_context *D,
 
 	r_vertex *R_Vertices = Command.Vertices;
 
-	for(int V = 0; V < PositionsCount; V++)
+
+	m44f Transform = R_CurrentTransform(D->Render);
+	m44f Ortho = M44FOrthographic(0, D->ViewportSize.X, 0.0, D->ViewportSize.Y, -1000.0, 1000.0);
+	R_PushTransform(D->Render, Ortho);
+
+	for(int P = 0; P < PositionsCount; P++)
 	{
-		r_vertex Vertex = {
-			.Position = v4f(Positions[V].X, Positions[V].Y, Positions[V].Z, 1),
-			.Colour = Colour,
-			.PointSize = PointSize,
+		v3f A = Positions[P];
+		v4f A4D = Mul(M44FTranspose(Transform), v4f(A.X, A.Y, A.Z, 1.0));
+		A4D = Div(A4D, v4f(A4D.W, A4D.W, A4D.W, A4D.W));
+		A = v3f(A4D.X, A4D.Y, A4D.Z);
+
+		A.X = D->ViewportSize.X * (A.X*0.5 + 0.5);
+		A.Y = -A.Y;
+
+		A.Y = D->ViewportSize.Y * (A.Y*0.5 + 0.5);
+
+		
+		f32 Width = PointSize/2.0;
+		f32 Height = PointSize/2.0;
+
+		v2f BL = v2f(A.X - PointSize/2.0, A.Y - PointSize/2.0);
+		v2f TR = v2f(A.X + PointSize/2.0, A.Y + PointSize/2.0);
+		BL.X -= 5;
+		BL.Y -= 5;
+		TR.X += 5;
+		TR.Y += 5;
+		v2f Vertices[6] =
+		{
+			v2f(BL.X, BL.Y),
+			v2f(TR.X, BL.Y),
+			v2f(TR.X, TR.Y),
+
+			v2f(BL.X, BL.Y),
+			v2f(BL.X, TR.Y),
+			v2f(TR.X, TR.Y),
 		};
 
-		*R_Vertices++ = Vertex;
+		for(int V = 0; V < 6; V++)
+		{
+			r_vertex Vertex = {
+				.Position = v4f(Vertices[V].X, Vertices[V].Y, 0.0, 1),
+				.Colour = Colour,
+				.PointSize = PointSize,
+			};
+			*R_Vertices++ = Vertex;
+		}
 	}
 	Command.Type = R_COMMAND_POINTS;
 	R_PushCommand(R, Arena, Command);
+
+	R_PopTransform(D->Render);
 }
 
 void D_DrawBezierArray(draw_context *D,

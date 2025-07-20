@@ -535,7 +535,7 @@ void R_RenderPoints(render_context *R, id<MTLCommandBuffer> CommandBuffer, v4i S
 
 	[Encoder setScissorRect:ScissorRect];
 
-	[Encoder drawPrimitives:MTLPrimitiveTypePoint vertexStart:0 vertexCount:VertexCount];
+	[Encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:VertexCount];
 
 
 	[Encoder endEncoding];

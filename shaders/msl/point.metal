@@ -38,7 +38,7 @@ fragment float4 FragmentMain(vertex_output Input [[stage_in]], float2 PointCoord
 	float4 Colour = Input.Colour;
 	if(length(PointCoordinate - float2(0.5)) > 0.5)
 	{
-		discard_fragment();
+		//discard_fragment();
 	}
 	return Colour;
 }

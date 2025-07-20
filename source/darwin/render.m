@@ -457,7 +457,7 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 		Metal->UniformBuffers[ResourceIndex] = [Metal->Device newBufferWithLength:MegaBytes(128)
 						options:MTLResourceStorageModeShared];
 
-		Metal->CurveBuffer[ResourceIndex] = [Metal->Device newBufferWithLength:MegaBytes(32)
+		Metal->CurveBuffer[ResourceIndex] = [Metal->Device newBufferWithLength:MegaBytes(128)
 			options:MTLResourceStorageModeShared];
 	}
 
@@ -525,7 +525,8 @@ void R_RenderPoints(render_context *R, id<MTLCommandBuffer> CommandBuffer, v4i S
 	[Encoder setRenderPipelineState:Metal->PointShader.PipelineState];
 	[Encoder setVertexBuffer:Metal->VertexBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:VertexOffset atIndex:0];
 	[Encoder setVertexBuffer:Metal->UniformBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:UniformOffset atIndex:1];
-
+	[Encoder setDepthStencilState:DepthStencilState];
+	
 	MTLScissorRect ScissorRect = {
 		.x = Scissor.X,
 		.y = Scissor.Y,

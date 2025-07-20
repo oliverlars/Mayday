@@ -5,7 +5,7 @@ using namespace metal;
 struct vertex_output
 {
 	float4 Position [[position]];
-	float PointSize [[point_size]];
+	float PointSize;
 	float4 Colour;
 };
 
@@ -33,12 +33,8 @@ vertex vertex_output VertexMain(constant vertex_input *Vertices [[buffer(0)]],
 	return Output;
 }
 
-fragment float4 FragmentMain(vertex_output Input [[stage_in]], float2 PointCoordinate [[point_coord]])
+fragment float4 FragmentMain(vertex_output Input [[stage_in]])
 {
 	float4 Colour = Input.Colour;
-	if(length(PointCoordinate - float2(0.5)) > 0.5)
-	{
-		//discard_fragment();
-	}
 	return Colour;
 }

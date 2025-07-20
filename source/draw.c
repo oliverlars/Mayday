@@ -565,8 +565,8 @@ void D_DrawPointsArray(draw_context *D,
 {
 	render_context *R = D->Render;
 	r_command Command = {0};
-	Command.Vertices = (r_vertex*)ArenaPushArrayZero(Arena, r_vertex, PositionsCount);
-	Command.VerticesCount = PositionsCount;
+	Command.Vertices = (r_vertex*)ArenaPushArrayZero(Arena, r_vertex, PositionsCount*6);
+	Command.VerticesCount = PositionsCount*6;
 
 	r_vertex *R_Vertices = Command.Vertices;
 

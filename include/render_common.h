@@ -1,19 +1,40 @@
+#include <stddef.h>
+
 #include "maths.h"
 
-typedef struct r_vertex
-{
-	v4f Position;
-	v4f Colour;
-	v4f Normal;
-	v2f UV;
-	f32 PointSize;
-	v2f Start;
-	v2f Control;
-	v2f End;
-	f32 Thickness;
-	int CurveStart;
-	int CurveCount;
-} r_vertex;
+#define FIELDS         \
+    X(v4f, Position, POSITION, 0)   \
+    X(v4f, Colour, COLOUR, 1)     \
+    X(v4f, Normal, NORMAL, 2)     \
+    X(v2f, UV, UV, 3)         \
+    X(f32, PointSize, POINT_SIZE, 4)  \
+    X(v2f, Start, START, 5)      \
+    X(v2f, Control, CONTROL, 6)    \
+    X(v2f, End, END, 7)        \
+    X(f32, Thickness, THICKNESS, 8)  \
+    X(u32, CurveStart, CURVE_START, 9) \
+    X(u32, CurveCount, CURVE_COUNT, 10)
+
+
+#define X(T, NAME, CAPS_NAME, INDEX) T NAME;
+typedef struct r_vertex { FIELDS } r_vertex;
+#undef X
+
+#define X(T, NAME, CAPS_NAME, INDEX) R_VA_##CAPS_NAME = 1 << INDEX,
+typedef enum r_vertex_attributes { FIELDS } r_vertex_attributes;
+#undef X
+
+#define X(T, NAME, CAPS_NAME, INDEX) R_VA_##CAPS_NAME,
+static u64 G_VertexAttributes[] = { FIELDS };
+#undef X
+
+#define X(T, NAME, CAPS_NAME, INDEX) sizeof(T),
+static u64 G_VertexAttributeSizes[] = { FIELDS };
+#undef X
+
+#define X(T, NAME, CAPS_NAME, INDEX) offsetof(r_vertex, NAME),
+static u64 G_VertexAttributeOffsets[] = { FIELDS };
+#undef X
 
 typedef enum r_texture_format
 {
@@ -40,8 +61,6 @@ typedef enum r_command_type
 	R_COMMAND_BEZIER,
 } r_command_type;
 
-
-
 typedef struct r_command
 {
 	//NOTE(Oliver): not sure this is really necessary
@@ -57,6 +76,8 @@ typedef struct r_command
 
 	m44f Transform;
 	v4i Scissor;
+
+	r_vertex_attributes Attributes;
 
 	struct r_command *Next;
 }
@@ -84,6 +105,8 @@ typedef struct render_context
 
 } render_context;
 
+r_vertex_attributes R_AttributesFromCommandType(r_command_type CommandType);
+
 void R_TextureFromBytes(render_context *R, u8 *Bytes, s32 Width, s32 Height);
 
 void R_PushCommand(render_context *R, m_arena *Arena, r_command Command);
@@ -99,3 +122,5 @@ m44f R_CurrentTransform(render_context *Render);
 m44f R_CurrentInverseTransform(render_context *Render);
 
 void R_UpdateCurves(render_context *Render, v2f *CurvePoints, int CurvePointsCount, int CurvePointsSoFar);
+
+s64 R_StrideFromAttributes(r_vertex_attributes Attributes);

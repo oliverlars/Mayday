@@ -15,10 +15,9 @@ struct vertex_input
 {
 	float4 Position [[attribute(0)]];
 	float4 Colour   [[attribute(1)]];
-	float4 UV       [[attribute(2)]];
+	float2 UV       [[attribute(2)]];
 	uint CurveStart [[attribute(3)]];
 	uint CurveCount [[attribute(4)]];
-	float  PointSize;
 };
 
 struct uniforms

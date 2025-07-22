@@ -26,52 +26,6 @@ typedef struct uniforms
 	m44f PVMMatrix;
 } uniforms;
 
-
-typedef struct gpu_vertex
-{
-	v4f Position;
-	v4f Colour;
-	v4f UV;
-	f32 PointSize;
-	f32 Padding[3];
-}
-gpu_vertex;
-
-typedef struct gpu_glyph_vertex
-{
-	v4f Position;
-	v4f Colour;
-	v4f UV;
-	u32 CurveStart;
-	u32 CurveCount;
-	f32 PointSize;
-	f32 Padding;
-}
-gpu_glyph_vertex;
-
-typedef struct gpu_line_vertex
-{
-	v4f Position;
-	v4f Colour;
-	v2f Start;
-	v2f End;
-	f32 Thickness;
-	f32 Padding[3];
-}
-gpu_line_vertex;
-
-typedef struct gpu_bezier_vertex
-{
-	v4f Position;
-	v4f Colour;
-	v2f Start;
-	v2f Control;
-	v2f End;
-	f32 Thickness;
-	f32 Padding;
-}
-gpu_bezier_vertex;
-
 void R_UpdateCurves(render_context *Render, v2f *CurvePoints, int CurvePointsCount, int CurvePointsSoFar)
 {
 
@@ -210,16 +164,16 @@ metal_shader R_GlyphShader(render_context *R)
 	VertexDescriptor.attributes[1].format = MTLVertexFormatFloat4;
 	VertexDescriptor.attributes[1].offset = sizeof(v4f);
 	VertexDescriptor.attributes[1].bufferIndex = 0;
-	VertexDescriptor.attributes[2].format = MTLVertexFormatFloat4;
+	VertexDescriptor.attributes[2].format = MTLVertexFormatFloat2;
 	VertexDescriptor.attributes[2].offset = 2*sizeof(v4f);
 	VertexDescriptor.attributes[2].bufferIndex = 0;
 	VertexDescriptor.attributes[3].format = MTLVertexFormatUInt;
-	VertexDescriptor.attributes[3].offset = 3*sizeof(v4f);
+	VertexDescriptor.attributes[3].offset = 2*sizeof(v4f) + sizeof(v2f);
 	VertexDescriptor.attributes[3].bufferIndex = 0;
 	VertexDescriptor.attributes[4].format = MTLVertexFormatUInt;
-	VertexDescriptor.attributes[4].offset = 3*sizeof(v4f) + sizeof(u32);
+	VertexDescriptor.attributes[4].offset = 2*sizeof(v4f) + sizeof(v2f) + sizeof(u32);
 	VertexDescriptor.attributes[4].bufferIndex = 0;
-	VertexDescriptor.layouts[0].stride = sizeof(gpu_glyph_vertex);
+	VertexDescriptor.layouts[0].stride = R_StrideFromAttributes(R_AttributesFromCommandType(R_COMMAND_GLYPH));
 
 	PipelineDescriptor.vertexDescriptor = VertexDescriptor;
 
@@ -276,7 +230,7 @@ metal_shader R_TriangleShader(render_context *R)
 	VertexDescriptor.attributes[1].format = MTLVertexFormatFloat4;
 	VertexDescriptor.attributes[1].offset = sizeof(v4f);
 	VertexDescriptor.attributes[1].bufferIndex = 0;
-	VertexDescriptor.layouts[0].stride = sizeof(gpu_vertex);
+	VertexDescriptor.layouts[0].stride = R_StrideFromAttributes(R_AttributesFromCommandType(R_COMMAND_TRIANGLE));
 
 	PipelineDescriptor.vertexDescriptor = VertexDescriptor;
 
@@ -321,7 +275,7 @@ metal_shader R_PointShader(render_context *R)
 	VertexDescriptor.attributes[1].format = MTLVertexFormatFloat4;
 	VertexDescriptor.attributes[1].offset = sizeof(v4f);
 	VertexDescriptor.attributes[1].bufferIndex = 0;
-	VertexDescriptor.layouts[0].stride = sizeof(gpu_vertex);
+	VertexDescriptor.layouts[0].stride = R_StrideFromAttributes(R_AttributesFromCommandType(R_COMMAND_POINTS));
 
 	PipelineDescriptor.vertexDescriptor = VertexDescriptor;
 
@@ -375,7 +329,7 @@ metal_shader R_LineShader(render_context *R)
 	VertexDescriptor.attributes[4].format = MTLVertexFormatFloat;
 	VertexDescriptor.attributes[4].offset = sizeof(v4f)*2 + sizeof(v2f)*2;
 	VertexDescriptor.attributes[4].bufferIndex = 0;
-	VertexDescriptor.layouts[0].stride = sizeof(gpu_line_vertex);
+	VertexDescriptor.layouts[0].stride = R_StrideFromAttributes(R_AttributesFromCommandType(R_COMMAND_LINES));
 
 	PipelineDescriptor.vertexDescriptor = VertexDescriptor;
 
@@ -432,7 +386,7 @@ metal_shader R_BezierShader(render_context *R)
 	VertexDescriptor.attributes[5].format = MTLVertexFormatFloat;
 	VertexDescriptor.attributes[5].offset = sizeof(v4f)*2 + sizeof(v2f)*3;
 	VertexDescriptor.attributes[5].bufferIndex = 0;
-	VertexDescriptor.layouts[0].stride = sizeof(gpu_bezier_vertex);
+	VertexDescriptor.layouts[0].stride = R_StrideFromAttributes(R_AttributesFromCommandType(R_COMMAND_BEZIER));
 
 	PipelineDescriptor.vertexDescriptor = VertexDescriptor;
 
@@ -770,117 +724,39 @@ void R_Update(render_context *R, m_arena *FrameArena)
 					Metal->Curves, Metal->TotalCurvesSoFar*sizeof(v2f));
 
 
-	int TotalVertices = 0;
-	int VertexOffsetInBytes = 0;
-
 	int ResourceIndex = R->Frame % FRAMES_IN_FLIGHT;
 
 	m_scratch_arena Scratch = ScratchBegin(0, 0);
 
 	int UniformOffset = 0;
 
+
+	u64 CurrentBatchOffsetInBytes = 0;
+	u64 VertexOffsetInBytes = 0;
 	for(r_command *Command = R->CommandsFirst; Command != Null; Command = Command->Next)
 	{
+		r_vertex_attributes Attributes = R_AttributesFromCommandType(Command->Type);
+		u64 Stride = R_StrideFromAttributes(Attributes);
+		u8 *GPUVertices = (u8*)ArenaPushArrayZero(Scratch.Arena, u8, Command->VerticesCount*Stride);
+		u64 Offset = 0;
+		for(int VertexIndex = 0; VertexIndex < Command->VerticesCount; VertexIndex++)
+		{
+			r_vertex V = Command->Vertices[VertexIndex];
+			for(int AttributeIndex = 0; AttributeIndex < ArrayCount(G_VertexAttributes); AttributeIndex++)
+			{
+				if(Attributes & G_VertexAttributes[AttributeIndex])
+				{
+					u64 AttributeSize = G_VertexAttributeSizes[AttributeIndex];
+					u8 *AttributeOffset = (u8*)Command->Vertices + G_VertexAttributeOffsets[AttributeIndex];
+					MemoryCopy(GPUVertices + Offset, AttributeOffset, AttributeSize);
+					Offset += AttributeSize;
+				}
+			}
+		}
 
-		if(0){}
-		else if(Command->Type == R_COMMAND_GLYPH)
-		{
-			gpu_glyph_vertex *GPUVertices = (gpu_glyph_vertex*)ArenaPushArrayZero(Scratch.Arena,
-																	  gpu_glyph_vertex, Command->VerticesCount);
-			for(int V = 0; V < Command->VerticesCount; V++)
-			{
-				v4f P = Command->Vertices[V].Position;
-				v2f UV = Command->Vertices[V].UV;
-				v4f Colour = Command->Vertices[V].Colour;
-				u32 CurveStart = Command->Vertices[V].CurveStart;
-				u32 CurveCount = Command->Vertices[V].CurveCount;
-				GPUVertices[V].Position = P;
-				GPUVertices[V].Colour = Colour;
-				GPUVertices[V].CurveStart = CurveStart;
-				GPUVertices[V].CurveCount = CurveCount;
-				GPUVertices[V].UV = v4f(UV.X, UV.Y, 0, 0);
-			}
-			MemoryCopy(Metal->VertexBuffers[ResourceIndex].contents + VertexOffsetInBytes + TotalVertices*sizeof(gpu_glyph_vertex),
-					GPUVertices, sizeof(gpu_glyph_vertex)*Command->VerticesCount);
-			TotalVertices += Command->VerticesCount;
-		}
-		else if(Command->Type == R_COMMAND_TRIANGLE)
-		{
-			gpu_vertex *GPUVertices = (gpu_vertex*)ArenaPushArrayZero(Scratch.Arena,
-															 	 	  gpu_vertex, Command->VerticesCount);
-			for(int V = 0; V < Command->VerticesCount; V++)
-			{
-				v4f P = Command->Vertices[V].Position;
-				v2f UV = Command->Vertices[V].UV;
-				v4f Colour = Command->Vertices[V].Colour;
-				GPUVertices[V].Position = P;
-				GPUVertices[V].Colour = Colour;
-			}
-			MemoryCopy(Metal->VertexBuffers[ResourceIndex].contents + VertexOffsetInBytes + TotalVertices*sizeof(gpu_vertex),
-					GPUVertices, sizeof(gpu_vertex)*Command->VerticesCount);
-			TotalVertices += Command->VerticesCount;
-		}
-		else if(Command->Type == R_COMMAND_POINTS)
-		{
-			gpu_vertex *GPUVertices = (gpu_vertex*)ArenaPushArrayZero(Scratch.Arena,
-																	  gpu_vertex, Command->VerticesCount);
-			for(int V = 0; V < Command->VerticesCount; V++)
-			{
-				v4f P = Command->Vertices[V].Position;
-				v2f UV = Command->Vertices[V].UV;
-				v4f Colour = Command->Vertices[V].Colour;
-				f32 PointSize = Command->Vertices[V].PointSize;
-				GPUVertices[V].Position = P;
-				GPUVertices[V].Colour = Colour;
-				GPUVertices[V].PointSize = PointSize;
-			}
-			MemoryCopy(Metal->VertexBuffers[ResourceIndex].contents + VertexOffsetInBytes + TotalVertices*sizeof(gpu_vertex),
-					GPUVertices, sizeof(gpu_vertex)*Command->VerticesCount);
-			TotalVertices += Command->VerticesCount;
-		}
-		else if(Command->Type == R_COMMAND_LINES)
-		{
-			gpu_line_vertex *GPUVertices = (gpu_line_vertex*)ArenaPushArrayZero(Scratch.Arena,
-															 		  gpu_line_vertex, Command->VerticesCount);
-			for(int V = 0; V < Command->VerticesCount; V++)
-			{
-				v4f P = Command->Vertices[V].Position;
-				v4f Colour = Command->Vertices[V].Colour;
-				v2f Start = Command->Vertices[V].Start;
-				v2f End = Command->Vertices[V].End;
-				f32 Thickness = Command->Vertices[V].Thickness;
-				GPUVertices[V].Position = P;
-				GPUVertices[V].Colour = Colour;
-				GPUVertices[V].Start = Start;
-				GPUVertices[V].End = End;
-				GPUVertices[V].Thickness = Thickness;
-			}
-			MemoryCopy(Metal->VertexBuffers[ResourceIndex].contents + VertexOffsetInBytes + TotalVertices*sizeof(gpu_line_vertex),
-					GPUVertices, sizeof(gpu_line_vertex)*Command->VerticesCount);
-			TotalVertices += Command->VerticesCount;
-		} else if(Command->Type == R_COMMAND_BEZIER)
-		{
-			gpu_bezier_vertex *GPUVertices = (gpu_bezier_vertex*)ArenaPushArrayZero(Scratch.Arena,
-															 		  gpu_bezier_vertex, Command->VerticesCount);
-			for(int V = 0; V < Command->VerticesCount; V++)
-			{
-				v4f P = Command->Vertices[V].Position;
-				v4f Colour = Command->Vertices[V].Colour;
-				v2f Start = Command->Vertices[V].Start;
-				v2f Control = Command->Vertices[V].Control;
-				v2f End = Command->Vertices[V].End;
-				f32 Thickness = Command->Vertices[V].Thickness;
-				GPUVertices[V].Position = P;
-				GPUVertices[V].Colour = Colour;
-				GPUVertices[V].Start = Start;
-				GPUVertices[V].Control = Control;
-				GPUVertices[V].End = End;
-				GPUVertices[V].Thickness = Thickness;
-			}
-			MemoryCopy(Metal->VertexBuffers[ResourceIndex].contents + VertexOffsetInBytes + TotalVertices*sizeof(gpu_bezier_vertex),
-					GPUVertices, sizeof(gpu_bezier_vertex)*Command->VerticesCount);
-			TotalVertices += Command->VerticesCount;
-		}
+		MemoryCopy(Metal->VertexBuffers[ResourceIndex].contents + CurrentBatchOffsetInBytes + VertexOffsetInBytes,
+					GPUVertices, Offset);
+		CurrentBatchOffsetInBytes += Offset;
 
 		if((Command->Next && Command->Next->Type != Command->Type) ||
 		   (Command->Next && !MemoryEqual(&Command->Transform, &Command->Next->Transform, sizeof(m44f))) ||
@@ -891,33 +767,33 @@ void R_Update(render_context *R, m_arena *FrameArena)
 
 			if(Command->Type == R_COMMAND_GLYPH)
 			{
-				R_RenderGlyphs(R, CommandBuffer, Command->Scissor, TotalVertices, VertexOffsetInBytes, UniformOffset*sizeof(uniforms));
-				VertexOffsetInBytes += TotalVertices*sizeof(gpu_vertex);
-				TotalVertices = 0;
+				R_RenderGlyphs(R, CommandBuffer, Command->Scissor, CurrentBatchOffsetInBytes/Stride, VertexOffsetInBytes, UniformOffset*sizeof(uniforms));
+				VertexOffsetInBytes += CurrentBatchOffsetInBytes;
+				CurrentBatchOffsetInBytes = 0;
 			}
 			else if(Command->Type == R_COMMAND_TRIANGLE)
 			{
-				R_RenderTriangles(R, CommandBuffer, Command->Scissor, TotalVertices, VertexOffsetInBytes, UniformOffset*sizeof(uniforms));
-				VertexOffsetInBytes += TotalVertices*sizeof(gpu_vertex);
-				TotalVertices = 0;
+				R_RenderTriangles(R, CommandBuffer, Command->Scissor, CurrentBatchOffsetInBytes/Stride, VertexOffsetInBytes, UniformOffset*sizeof(uniforms));
+				VertexOffsetInBytes += CurrentBatchOffsetInBytes;
+				CurrentBatchOffsetInBytes = 0;
 			}
 			else if(Command->Type == R_COMMAND_POINTS)
 			{
-				R_RenderPoints(R, CommandBuffer, Command->Scissor, TotalVertices, VertexOffsetInBytes, UniformOffset*sizeof(uniforms));
-				VertexOffsetInBytes += TotalVertices*sizeof(gpu_vertex);
-				TotalVertices = 0;
+				R_RenderPoints(R, CommandBuffer, Command->Scissor, CurrentBatchOffsetInBytes/Stride, VertexOffsetInBytes, UniformOffset*sizeof(uniforms));
+				VertexOffsetInBytes += CurrentBatchOffsetInBytes;
+				CurrentBatchOffsetInBytes = 0;
 			}
 			else if(Command->Type == R_COMMAND_LINES)
 			{
-				R_RenderLines(R, CommandBuffer, Command->Scissor, TotalVertices, VertexOffsetInBytes, UniformOffset*sizeof(uniforms));
-				VertexOffsetInBytes += TotalVertices*sizeof(gpu_line_vertex);
-				TotalVertices = 0;
+				R_RenderLines(R, CommandBuffer, Command->Scissor, CurrentBatchOffsetInBytes/Stride, VertexOffsetInBytes, UniformOffset*sizeof(uniforms));
+				VertexOffsetInBytes += CurrentBatchOffsetInBytes;
+				CurrentBatchOffsetInBytes = 0;
 			}
 			else if(Command->Type == R_COMMAND_BEZIER)
 			{
-				R_RenderBeziers(R, CommandBuffer, Command->Scissor, TotalVertices, VertexOffsetInBytes, UniformOffset*sizeof(uniforms));
-				VertexOffsetInBytes += TotalVertices*sizeof(gpu_bezier_vertex);
-				TotalVertices = 0;
+				R_RenderBeziers(R, CommandBuffer, Command->Scissor, CurrentBatchOffsetInBytes/Stride, VertexOffsetInBytes, UniformOffset*sizeof(uniforms));;
+				VertexOffsetInBytes += CurrentBatchOffsetInBytes;
+				CurrentBatchOffsetInBytes = 0;
 			}
 
 			UniformOffset += 1;

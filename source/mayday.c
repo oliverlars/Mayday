@@ -106,7 +106,7 @@ mayday_context;
 #define SOKOL_LOG_IMPL
 #include "sokol_log.h"
 
-void OS_Update_(void *Data)
+void OS_Update(void *Data)
 {
 	mayday_context *M = Data;
 
@@ -125,11 +125,15 @@ void OS_Update_(void *Data)
 	//D_DrawLinesArray(M->Draw, M->FrameArena, Line, 2, v4f(0, 1, 0, 1));	
 	m44f P = Perspective(sapp_widthf()/sapp_heightf(), 35, 0.01, 10000.0);
 	m44f PV = Mul( M44FLookAt(v3f(0, 0, -10), v3f(0, 0, 0), v3f(0, 1, 0)), P);
-	R_PushTransform(M->Render, PV);
-	D_Draw3DStr8(M->Draw, M->FrameArena, M->CodeFont, v3f(0, 0, 0), v4f(0, 1, 0, 1), 100, Str8("This text is upside down"));
-	D_DrawLinesArray(M->Draw, M->FrameArena, Line, 2, 5.0, v4f(1, 1, 1, 1));
-	D_DrawPointsArray(M->Draw, M->FrameArena, Line, 2, 5, v4f(1, 1, 1, 1));
-	R_PopTransform(M->Render);
+	// R_PushTransform(M->Render, PV);
+	// D_Draw3DStr8(M->Draw, M->FrameArena, M->CodeFont, v3f(0, 0, 0), v4f(0, 1, 0, 1), 100, Str8("This text is upside down"));
+	// D_DrawLinesArray(M->Draw, M->FrameArena, Line, 2, 5.0, v4f(1, 1, 1, 1));
+	// D_DrawPointsArray(M->Draw, M->FrameArena, Line, 2, 5, v4f(1, 1, 1, 1));
+	// R_PopTransform(M->Render);
+
+	//D_DrawQuad(M->Draw, M->FrameArena, v2f(200, 200), 200, 200, v4f(1, 1, 1, 1));
+	//D_DrawQuad(M->Draw, M->FrameArena, v2f(600, 600), 100, 200, v4f(1, 0, 1, 1));
+	D_DrawStr8(M->Draw, M->FrameArena, M->CodeFont, v2f(300, 200), v4f(0, 1, 0, 1), 100, Str8("This text is upside down"));
 	R_PopTransform(M->Render);
 	R_PopScissor(M->Render);
 
@@ -143,7 +147,7 @@ void OS_Update_(void *Data)
 	M->UI->EventFirst = Null;
 }
 
-void OS_Update(void *Data)
+void OS_Update_(void *Data)
 {
 	mayday_context *M = Data;
 

@@ -265,6 +265,7 @@ void D_DrawQuad(draw_context *D,
 		*R_Vertices++ = Vertex;
 	}
 	Command.Type = R_COMMAND_TRIANGLE;
+	Command.Attributes = R_AttributesFromCommandType(Command.Type);
 	R_PushCommand(R, Arena, Command);
 }
 
@@ -422,6 +423,7 @@ void D_Draw3DStr8(draw_context *D,
 	}
 
 	Command.Type = R_COMMAND_GLYPH;
+	Command.Attributes = R_AttributesFromCommandType(Command.Type);
 	R_PushCommand(R, Arena, Command);
 }
 
@@ -553,6 +555,7 @@ void D_DrawCubePoints(draw_context *D,
 		*R_Vertices++ = Vertex;
 	}
 	Command.Type = R_COMMAND_POINTS;
+	Command.Attributes = R_AttributesFromCommandType(Command.Type);
 	R_PushCommand(R, Arena, Command);
 }
 
@@ -619,6 +622,7 @@ void D_DrawPointsArray(draw_context *D,
 		}
 	}
 	Command.Type = R_COMMAND_POINTS;
+	Command.Attributes = R_AttributesFromCommandType(Command.Type);
 	R_PushCommand(R, Arena, Command);
 
 	R_PopTransform(D->Render);
@@ -713,6 +717,7 @@ void D_DrawBezierArray(draw_context *D,
 
 	}
 	Command.Type = R_COMMAND_BEZIER;
+	Command.Attributes = R_AttributesFromCommandType(Command.Type);
 	R_PushCommand(R, Arena, Command);
 
 	R_PopTransform(D->Render);
@@ -800,6 +805,7 @@ void D_DrawLinesArray(draw_context *D,
 
 	}
 	Command.Type = R_COMMAND_LINES;
+	Command.Attributes = R_AttributesFromCommandType(Command.Type);
 	R_PushCommand(R, Arena, Command);
 
 	R_PopTransform(D->Render);

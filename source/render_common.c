@@ -1,4 +1,78 @@
 #include "render_common.h"
+#include "misc.h"
+
+
+s64 R_StrideFromAttributes(r_vertex_attributes Attributes)
+{
+#define X(T, NAME, CAPS_NAME, INDEX) { R_VA_##CAPS_NAME, sizeof(T) },
+	static struct
+	{
+		r_vertex_attributes Attribute;
+		u64 Size;
+	} R_VertexAttributeSizes[] = { FIELDS };
+#undef X
+
+	s64 Stride = 0;
+	for(int I = 0; I < ArrayCount(R_VertexAttributeSizes); I++)
+	{
+		if(Attributes & R_VertexAttributeSizes[I].Attribute)
+		{
+			Stride += R_VertexAttributeSizes[I].Size;
+		}
+	}
+
+	return Stride;
+}
+
+
+r_vertex_attributes R_AttributesFromCommandType(r_command_type CommandType)
+{
+	r_vertex_attributes Result = 0;
+	switch(CommandType)
+	{
+		case R_COMMAND_TRIANGLE:
+		{
+			Result |= R_VA_POSITION;
+			Result |= R_VA_COLOUR;
+		} break;
+		case R_COMMAND_POINTS:
+		{
+			Result |= R_VA_POSITION;
+			Result |= R_VA_COLOUR;
+		} break;
+		case R_COMMAND_BEZIER:
+		{
+			Result |= R_VA_POSITION;
+			Result |= R_VA_COLOUR;
+			Result |= R_VA_START;
+			Result |= R_VA_CONTROL;
+			Result |= R_VA_END;
+			Result |= R_VA_THICKNESS;
+		} break;
+		case R_COMMAND_GLYPH:
+		{
+			Result |= R_VA_POSITION;
+			Result |= R_VA_COLOUR;
+			Result |= R_VA_UV;
+			Result |= R_VA_CURVE_START;
+			Result |= R_VA_CURVE_COUNT;
+		} break;
+		case R_COMMAND_BLOOM:
+		{
+
+		} break;
+		case R_COMMAND_LINES:
+		{
+			Result |= R_VA_POSITION;
+			Result |= R_VA_COLOUR;
+			Result |= R_VA_START;
+			Result |= R_VA_END;
+			Result |= R_VA_THICKNESS;
+		} break;
+	}
+
+	return Result;
+}
 
 void R_PushCommand(render_context *R, m_arena *Arena, r_command Command)
 {

@@ -4,23 +4,15 @@
 
 s64 R_StrideFromAttributes(r_vertex_attributes Attributes)
 {
-#define X(T, NAME, CAPS_NAME, INDEX) { R_VA_##CAPS_NAME, sizeof(T) },
-	static struct
-	{
-		r_vertex_attributes Attribute;
-		u64 Size;
-	} R_VertexAttributeSizes[] = { FIELDS };
-#undef X
 
 	s64 Stride = 0;
-	for(int I = 0; I < ArrayCount(R_VertexAttributeSizes); I++)
+	for(int I = 0; I < ArrayCount(G_VertexAttributeSizes); I++)
 	{
-		if(Attributes & R_VertexAttributeSizes[I].Attribute)
+		if(Attributes & G_VertexAttributes[I])
 		{
-			Stride += R_VertexAttributeSizes[I].Size;
+			Stride += G_VertexAttributeSizes[I];
 		}
 	}
-
 	return Stride;
 }
 

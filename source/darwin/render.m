@@ -741,13 +741,13 @@ void R_Update(render_context *R, m_arena *FrameArena)
 		u64 Offset = 0;
 		for(int VertexIndex = 0; VertexIndex < Command->VerticesCount; VertexIndex++)
 		{
-			r_vertex V = Command->Vertices[VertexIndex];
+			r_vertex *V = Command->Vertices + VertexIndex;
 			for(int AttributeIndex = 0; AttributeIndex < ArrayCount(G_VertexAttributes); AttributeIndex++)
 			{
 				if(Attributes & G_VertexAttributes[AttributeIndex])
 				{
 					u64 AttributeSize = G_VertexAttributeSizes[AttributeIndex];
-					u8 *AttributeOffset = (u8*)Command->Vertices + G_VertexAttributeOffsets[AttributeIndex];
+					u8 *AttributeOffset = (u8*)V + G_VertexAttributeOffsets[AttributeIndex];
 					MemoryCopy(GPUVertices + Offset, AttributeOffset, AttributeSize);
 					Offset += AttributeSize;
 				}
@@ -765,33 +765,34 @@ void R_Update(render_context *R, m_arena *FrameArena)
 			uniforms Uniforms = { Command->Transform };
 			MemoryCopy(Metal->UniformBuffers[R->Frame % FRAMES_IN_FLIGHT].contents + UniformOffset*sizeof(uniforms), &Uniforms, sizeof(Uniforms));
 
+			u64 VertexCount = CurrentBatchOffsetInBytes/Stride;
 			if(Command->Type == R_COMMAND_GLYPH)
 			{
-				R_RenderGlyphs(R, CommandBuffer, Command->Scissor, CurrentBatchOffsetInBytes/Stride, VertexOffsetInBytes, UniformOffset*sizeof(uniforms));
+				R_RenderGlyphs(R, CommandBuffer, Command->Scissor, VertexCount, VertexOffsetInBytes, UniformOffset*sizeof(uniforms));
 				VertexOffsetInBytes += CurrentBatchOffsetInBytes;
 				CurrentBatchOffsetInBytes = 0;
 			}
 			else if(Command->Type == R_COMMAND_TRIANGLE)
 			{
-				R_RenderTriangles(R, CommandBuffer, Command->Scissor, CurrentBatchOffsetInBytes/Stride, VertexOffsetInBytes, UniformOffset*sizeof(uniforms));
+				R_RenderTriangles(R, CommandBuffer, Command->Scissor, VertexCount, VertexOffsetInBytes, UniformOffset*sizeof(uniforms));
 				VertexOffsetInBytes += CurrentBatchOffsetInBytes;
 				CurrentBatchOffsetInBytes = 0;
 			}
 			else if(Command->Type == R_COMMAND_POINTS)
 			{
-				R_RenderPoints(R, CommandBuffer, Command->Scissor, CurrentBatchOffsetInBytes/Stride, VertexOffsetInBytes, UniformOffset*sizeof(uniforms));
+				R_RenderPoints(R, CommandBuffer, Command->Scissor, VertexCount, VertexOffsetInBytes, UniformOffset*sizeof(uniforms));
 				VertexOffsetInBytes += CurrentBatchOffsetInBytes;
 				CurrentBatchOffsetInBytes = 0;
 			}
 			else if(Command->Type == R_COMMAND_LINES)
 			{
-				R_RenderLines(R, CommandBuffer, Command->Scissor, CurrentBatchOffsetInBytes/Stride, VertexOffsetInBytes, UniformOffset*sizeof(uniforms));
+				R_RenderLines(R, CommandBuffer, Command->Scissor, VertexCount, VertexOffsetInBytes, UniformOffset*sizeof(uniforms));
 				VertexOffsetInBytes += CurrentBatchOffsetInBytes;
 				CurrentBatchOffsetInBytes = 0;
 			}
 			else if(Command->Type == R_COMMAND_BEZIER)
 			{
-				R_RenderBeziers(R, CommandBuffer, Command->Scissor, CurrentBatchOffsetInBytes/Stride, VertexOffsetInBytes, UniformOffset*sizeof(uniforms));;
+				R_RenderBeziers(R, CommandBuffer, Command->Scissor, VertexCount, VertexOffsetInBytes, UniformOffset*sizeof(uniforms));;
 				VertexOffsetInBytes += CurrentBatchOffsetInBytes;
 				CurrentBatchOffsetInBytes = 0;
 			}

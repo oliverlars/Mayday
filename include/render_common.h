@@ -2,7 +2,7 @@
 
 #include "maths.h"
 
-#define FIELDS         \
+#define VERTEX_ATTRIBUTE_FIELDS         \
     X(v4f, Position, POSITION, 0)   \
     X(v4f, Colour, COLOUR, 1)     \
     X(v4f, Normal, NORMAL, 2)     \
@@ -17,23 +17,23 @@
 
 
 #define X(T, NAME, CAPS_NAME, INDEX) T NAME;
-typedef struct r_vertex { FIELDS } r_vertex;
+typedef struct r_vertex { VERTEX_ATTRIBUTE_FIELDS } r_vertex;
 #undef X
 
 #define X(T, NAME, CAPS_NAME, INDEX) R_VA_##CAPS_NAME = 1 << INDEX,
-typedef enum r_vertex_attributes { FIELDS } r_vertex_attributes;
+typedef enum r_vertex_attributes { VERTEX_ATTRIBUTE_FIELDS } r_vertex_attributes;
 #undef X
 
 #define X(T, NAME, CAPS_NAME, INDEX) R_VA_##CAPS_NAME,
-static u64 G_VertexAttributes[] = { FIELDS };
+static u64 G_VertexAttributes[] = { VERTEX_ATTRIBUTE_FIELDS };
 #undef X
 
 #define X(T, NAME, CAPS_NAME, INDEX) sizeof(T),
-static u64 G_VertexAttributeSizes[] = { FIELDS };
+static u64 G_VertexAttributeSizes[] = { VERTEX_ATTRIBUTE_FIELDS };
 #undef X
 
 #define X(T, NAME, CAPS_NAME, INDEX) offsetof(r_vertex, NAME),
-static u64 G_VertexAttributeOffsets[] = { FIELDS };
+static u64 G_VertexAttributeOffsets[] = { VERTEX_ATTRIBUTE_FIELDS };
 #undef X
 
 typedef enum r_texture_format

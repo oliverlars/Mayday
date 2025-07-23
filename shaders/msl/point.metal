@@ -12,9 +12,9 @@ struct vertex_output
 
 struct vertex_input
 {
-	float4 Position [[attribute(0)]];
-	float4 Colour   [[attribute(1)]];
-	float PointSize [[attribute(2)]];
+	float4 Position  [[attribute(0)]];
+	float4 Colour    [[attribute(1)]];
+	float  PointSize [[attribute(2)]];
 };
 
 struct uniforms
@@ -43,6 +43,5 @@ fragment float4 FragmentMain(vertex_output Input [[stage_in]])
 	float4 Colour = Input.Colour;
 	float HalfPointSize = 0.5 * Input.PointSize;
 	float Distance = DistanceToCircle(Input.Position.xy, float2(0, 0), Input.PointSize);
-	if(Distance)
 	return Colour;
 }

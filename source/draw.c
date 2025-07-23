@@ -333,7 +333,7 @@ void D_Draw3DStr8(draw_context *D,
 		if(CodePoint == ' ')
 		{
 			v3f P = v3f(Position.X + 5.0, Position.Y + LineHeight/2.0 - 10.0, 0.0);
-			//D_DrawPointsArray(D, Arena, &P, 1, 10, v4f(0.1, 0.02, 0.0, 0.25));
+			D_DrawPointsArray(D, Arena, &P, 1, 10, v4f(0.1, 0.02, 0.0, 0.25));
 		}
 
 		if(String.Bytes[I] == '\t')

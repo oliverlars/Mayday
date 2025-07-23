@@ -3,6 +3,7 @@
 #include <ModelIO/ModelIO.h>
 #include <QuartzCore/QuartzCore.h>
 #include <MetalPerformanceShaders/MetalPerformanceShaders.h>
+#include <simd/simd.h>
 
 #include <assert.h>
 
@@ -38,6 +39,62 @@ void R_UpdateCurves(render_context *Render, v2f *CurvePoints, int CurvePointsCou
 					CurvePoints, CurvePointsCount*sizeof(v2f));
 	Metal->TotalCurvesSoFar += CurvePointsCount;
 
+}
+
+#define _METAL_TYPES_v4f Float4
+#define _METAL_TYPES_v2f Float2
+#define _METAL_TYPES_f32 Float
+#define _METAL_TYPES_u32 UInt
+#define MetalTypes(T) _METAL_TYPES_##T
+
+#define _METAL_SIMD_TYPES_v4f simd_float4
+#define _METAL_SIMD_TYPES_v2f simd_float2
+#define _METAL_SIMD_TYPES_f32 f32
+#define _METAL_SIMD_TYPES_u32 u32
+#define MetalSimdTypes(T) _METAL_SIMD_TYPES_##T
+
+
+int MTLVertexAlignmentFromAttribute(r_vertex_attributes Attribute)
+{
+	// NOTE(Oliver): We are assuming only one flag was passed in
+	int Index = CTZ_U64(Attribute);
+	#define X(T, NAME, CAPS_NAME, INDEX) alignof(MetalSimdTypes(T)),
+	int LUT[] = 
+	{
+		VERTEX_ATTRIBUTE_FIELDS
+	};
+	#undef X
+
+	return LUT[Index];
+}
+
+MTLVertexFormat MTLVertexFormatFromAttribute(r_vertex_attributes Attribute)
+{
+	// NOTE(Oliver): We are assuming only one flag was passed in
+	int Index = CTZ_U64(Attribute);
+	#define X(T, NAME, CAPS_NAME, INDEX) Concat(MTLVertexFormat, MetalTypes(T)),
+	MTLVertexFormat LUT[] = 
+	{
+		VERTEX_ATTRIBUTE_FIELDS
+	};
+	#undef X
+
+	return LUT[Index];
+}
+
+int MTLStrideFromAttributes(r_vertex_attributes Attributes)
+{
+	s64 Stride = 0;
+	for(int AttributeIndex = 0;
+		AttributeIndex < ArrayCount(G_VertexAttributeSizes);
+		AttributeIndex++)
+	{
+		if(Attributes & G_VertexAttributes[AttributeIndex])
+		{
+			Stride += MTLVertexAlignmentFromAttribute(G_VertexAttributes[AttributeIndex]);
+		}
+	}
+	return Stride;
 }
 
 // Dumb hack
@@ -158,22 +215,22 @@ metal_shader R_GlyphShader(render_context *R)
 
 
 	MTLVertexDescriptor *VertexDescriptor = [[MTLVertexDescriptor alloc] init];
-	VertexDescriptor.attributes[0].format = MTLVertexFormatFloat4;
-	VertexDescriptor.attributes[0].offset = 0;
-	VertexDescriptor.attributes[0].bufferIndex = 0;
-	VertexDescriptor.attributes[1].format = MTLVertexFormatFloat4;
-	VertexDescriptor.attributes[1].offset = sizeof(v4f);
-	VertexDescriptor.attributes[1].bufferIndex = 0;
-	VertexDescriptor.attributes[2].format = MTLVertexFormatFloat2;
-	VertexDescriptor.attributes[2].offset = 2*sizeof(v4f);
-	VertexDescriptor.attributes[2].bufferIndex = 0;
-	VertexDescriptor.attributes[3].format = MTLVertexFormatUInt;
-	VertexDescriptor.attributes[3].offset = 2*sizeof(v4f) + sizeof(v2f);
-	VertexDescriptor.attributes[3].bufferIndex = 0;
-	VertexDescriptor.attributes[4].format = MTLVertexFormatUInt;
-	VertexDescriptor.attributes[4].offset = 2*sizeof(v4f) + sizeof(v2f) + sizeof(u32);
-	VertexDescriptor.attributes[4].bufferIndex = 0;
-	VertexDescriptor.layouts[0].stride = R_StrideFromAttributes(R_AttributesFromCommandType(R_COMMAND_GLYPH));
+	r_vertex_attributes Attributes = R_AttributesFromCommandType(R_COMMAND_GLYPH);
+
+	int Index = 0;
+	int Offset = 0;
+	for(int AttributeIndex = 0; AttributeIndex < ArrayCount(G_VertexAttributes); AttributeIndex++)
+	{
+		if(Attributes & G_VertexAttributes[AttributeIndex])
+		{
+			VertexDescriptor.attributes[Index].format = MTLVertexFormatFromAttribute(G_VertexAttributes[AttributeIndex]);
+			VertexDescriptor.attributes[Index].offset = Offset;
+			VertexDescriptor.attributes[Index].bufferIndex = 0;
+			Index += 1;
+			Offset += MTLVertexAlignmentFromAttribute(G_VertexAttributeSizes[AttributeIndex]);
+		}
+	}
+	VertexDescriptor.layouts[0].stride = Offset;
 
 	PipelineDescriptor.vertexDescriptor = VertexDescriptor;
 
@@ -224,13 +281,22 @@ metal_shader R_TriangleShader(render_context *R)
 	PipelineDescriptor.depthAttachmentPixelFormat = MTLPixelFormatDepth32Float;
 
 	MTLVertexDescriptor *VertexDescriptor = [[MTLVertexDescriptor alloc] init];
-	VertexDescriptor.attributes[0].format = MTLVertexFormatFloat4;
-	VertexDescriptor.attributes[0].offset = 0;
-	VertexDescriptor.attributes[0].bufferIndex = 0;
-	VertexDescriptor.attributes[1].format = MTLVertexFormatFloat4;
-	VertexDescriptor.attributes[1].offset = sizeof(v4f);
-	VertexDescriptor.attributes[1].bufferIndex = 0;
-	VertexDescriptor.layouts[0].stride = R_StrideFromAttributes(R_AttributesFromCommandType(R_COMMAND_TRIANGLE));
+	r_vertex_attributes Attributes = R_AttributesFromCommandType(R_COMMAND_TRIANGLE);
+	
+	int Index = 0;
+	int Offset = 0;
+	for(int AttributeIndex = 0; AttributeIndex < ArrayCount(G_VertexAttributes); AttributeIndex++)
+	{
+		if(Attributes & G_VertexAttributes[AttributeIndex])
+		{
+			VertexDescriptor.attributes[Index].format = MTLVertexFormatFromAttribute(G_VertexAttributes[AttributeIndex]);
+			VertexDescriptor.attributes[Index].offset = Offset;
+			VertexDescriptor.attributes[Index].bufferIndex = 0;
+			Index += 1;
+			Offset += MTLVertexAlignmentFromAttribute(G_VertexAttributeSizes[AttributeIndex]);
+		}
+	}
+	VertexDescriptor.layouts[0].stride = Offset;
 
 	PipelineDescriptor.vertexDescriptor = VertexDescriptor;
 
@@ -269,13 +335,22 @@ metal_shader R_PointShader(render_context *R)
 	PipelineDescriptor.depthAttachmentPixelFormat = MTLPixelFormatDepth32Float;
 
 	MTLVertexDescriptor *VertexDescriptor = [[MTLVertexDescriptor alloc] init];
-	VertexDescriptor.attributes[0].format = MTLVertexFormatFloat4;
-	VertexDescriptor.attributes[0].offset = 0;
-	VertexDescriptor.attributes[0].bufferIndex = 0;
-	VertexDescriptor.attributes[1].format = MTLVertexFormatFloat4;
-	VertexDescriptor.attributes[1].offset = sizeof(v4f);
-	VertexDescriptor.attributes[1].bufferIndex = 0;
-	VertexDescriptor.layouts[0].stride = R_StrideFromAttributes(R_AttributesFromCommandType(R_COMMAND_POINTS));
+	r_vertex_attributes Attributes = R_AttributesFromCommandType(R_COMMAND_POINTS);
+	
+	int Index = 0;
+	int Offset = 0;
+	for(int AttributeIndex = 0; AttributeIndex < ArrayCount(G_VertexAttributes); AttributeIndex++)
+	{
+		if(Attributes & G_VertexAttributes[AttributeIndex])
+		{
+			VertexDescriptor.attributes[Index].format = MTLVertexFormatFromAttribute(G_VertexAttributes[AttributeIndex]);
+			VertexDescriptor.attributes[Index].offset = Offset;
+			VertexDescriptor.attributes[Index].bufferIndex = 0;
+			Index += 1;
+			Offset += MTLVertexAlignmentFromAttribute(G_VertexAttributeSizes[AttributeIndex]);
+		}
+	}
+	VertexDescriptor.layouts[0].stride = Offset;
 
 	PipelineDescriptor.vertexDescriptor = VertexDescriptor;
 
@@ -314,22 +389,21 @@ metal_shader R_LineShader(render_context *R)
 	PipelineDescriptor.depthAttachmentPixelFormat = MTLPixelFormatDepth32Float;
 
 	MTLVertexDescriptor *VertexDescriptor = [[MTLVertexDescriptor alloc] init];
-	VertexDescriptor.attributes[0].format = MTLVertexFormatFloat4;
-	VertexDescriptor.attributes[0].offset = 0;
-	VertexDescriptor.attributes[0].bufferIndex = 0;
-	VertexDescriptor.attributes[1].format = MTLVertexFormatFloat4;
-	VertexDescriptor.attributes[1].offset = sizeof(v4f);
-	VertexDescriptor.attributes[1].bufferIndex = 0;
-	VertexDescriptor.attributes[2].format = MTLVertexFormatFloat2;
-	VertexDescriptor.attributes[2].offset = sizeof(v4f)*2;
-	VertexDescriptor.attributes[2].bufferIndex = 0;
-	VertexDescriptor.attributes[3].format = MTLVertexFormatFloat2;
-	VertexDescriptor.attributes[3].offset = sizeof(v4f)*2 + sizeof(v2f);
-	VertexDescriptor.attributes[3].bufferIndex = 0;
-	VertexDescriptor.attributes[4].format = MTLVertexFormatFloat;
-	VertexDescriptor.attributes[4].offset = sizeof(v4f)*2 + sizeof(v2f)*2;
-	VertexDescriptor.attributes[4].bufferIndex = 0;
-	VertexDescriptor.layouts[0].stride = R_StrideFromAttributes(R_AttributesFromCommandType(R_COMMAND_LINES));
+	r_vertex_attributes Attributes = R_AttributesFromCommandType(R_COMMAND_LINES);
+	int Index = 0;
+	int Offset = 0;
+	for(int AttributeIndex = 0; AttributeIndex < ArrayCount(G_VertexAttributes); AttributeIndex++)
+	{
+		if(Attributes & G_VertexAttributes[AttributeIndex])
+		{
+			VertexDescriptor.attributes[Index].format = MTLVertexFormatFromAttribute(G_VertexAttributes[AttributeIndex]);
+			VertexDescriptor.attributes[Index].offset = Offset;
+			VertexDescriptor.attributes[Index].bufferIndex = 0;
+			Index += 1;
+			Offset += MTLVertexAlignmentFromAttribute(G_VertexAttributeSizes[AttributeIndex]);
+		}
+	}
+	VertexDescriptor.layouts[0].stride = Offset;
 
 	PipelineDescriptor.vertexDescriptor = VertexDescriptor;
 
@@ -368,25 +442,22 @@ metal_shader R_BezierShader(render_context *R)
 	PipelineDescriptor.depthAttachmentPixelFormat = MTLPixelFormatDepth32Float;
 
 	MTLVertexDescriptor *VertexDescriptor = [[MTLVertexDescriptor alloc] init];
-	VertexDescriptor.attributes[0].format = MTLVertexFormatFloat4;
-	VertexDescriptor.attributes[0].offset = 0;
-	VertexDescriptor.attributes[0].bufferIndex = 0;
-	VertexDescriptor.attributes[1].format = MTLVertexFormatFloat4;
-	VertexDescriptor.attributes[1].offset = sizeof(v4f);
-	VertexDescriptor.attributes[1].bufferIndex = 0;
-	VertexDescriptor.attributes[2].format = MTLVertexFormatFloat2;
-	VertexDescriptor.attributes[2].offset = sizeof(v4f)*2;
-	VertexDescriptor.attributes[2].bufferIndex = 0;
-	VertexDescriptor.attributes[3].format = MTLVertexFormatFloat2;
-	VertexDescriptor.attributes[3].offset = sizeof(v4f)*2 + sizeof(v2f);
-	VertexDescriptor.attributes[3].bufferIndex = 0;
-	VertexDescriptor.attributes[4].format = MTLVertexFormatFloat2;
-	VertexDescriptor.attributes[4].offset = sizeof(v4f)*2 + sizeof(v2f)*2;
-	VertexDescriptor.attributes[4].bufferIndex = 0;
-	VertexDescriptor.attributes[5].format = MTLVertexFormatFloat;
-	VertexDescriptor.attributes[5].offset = sizeof(v4f)*2 + sizeof(v2f)*3;
-	VertexDescriptor.attributes[5].bufferIndex = 0;
-	VertexDescriptor.layouts[0].stride = R_StrideFromAttributes(R_AttributesFromCommandType(R_COMMAND_BEZIER));
+	r_vertex_attributes Attributes = R_AttributesFromCommandType(R_COMMAND_BEZIER);
+	
+	int Index = 0;
+	int Offset = 0;
+	for(int AttributeIndex = 0; AttributeIndex < ArrayCount(G_VertexAttributes); AttributeIndex++)
+	{
+		if(Attributes & G_VertexAttributes[AttributeIndex])
+		{
+			VertexDescriptor.attributes[Index].format = MTLVertexFormatFromAttribute(G_VertexAttributes[AttributeIndex]);
+			VertexDescriptor.attributes[Index].offset = Offset;
+			VertexDescriptor.attributes[Index].bufferIndex = 0;
+			Index += 1;
+			Offset += MTLVertexAlignmentFromAttribute(G_VertexAttributeSizes[AttributeIndex]);
+		}
+	}
+	VertexDescriptor.layouts[0].stride = Offset;
 
 	PipelineDescriptor.vertexDescriptor = VertexDescriptor;
 
@@ -476,6 +547,7 @@ void R_RenderPoints(render_context *R, id<MTLCommandBuffer> CommandBuffer, v4i S
 	id<MTLDepthStencilState> DepthStencilState = [Metal->Device newDepthStencilStateWithDescriptor:DepthStencilDescriptor];
 
 	id<MTLRenderCommandEncoder> Encoder = [CommandBuffer renderCommandEncoderWithDescriptor:PassDesc];
+	[Encoder setLabel:@"Render Points"];
 	[Encoder setRenderPipelineState:Metal->PointShader.PipelineState];
 	[Encoder setVertexBuffer:Metal->VertexBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:VertexOffset atIndex:0];
 	[Encoder setVertexBuffer:Metal->UniformBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:UniformOffset atIndex:1];
@@ -511,9 +583,10 @@ void R_RenderLines(render_context *R, id<MTLCommandBuffer> CommandBuffer, v4i Sc
 	PassDesc.depthAttachment.storeAction = MTLStoreActionStore;
 	
 	id<MTLRenderCommandEncoder> Encoder = [CommandBuffer renderCommandEncoderWithDescriptor:PassDesc];
+	[Encoder setLabel:@"Render Lines"];
 	[Encoder setRenderPipelineState:Metal->LineShader.PipelineState];
 	[Encoder setFrontFacingWinding:MTLWindingClockwise];
-	[Encoder setCullMode:(MTLCullModeNone)];;
+	[Encoder setCullMode:(MTLCullModeNone)];
 
 	MTLScissorRect ScissorRect = {
 		.x = Scissor.X,
@@ -554,8 +627,8 @@ void R_RenderBeziers(render_context *R, id<MTLCommandBuffer> CommandBuffer, v4i 
 		.height = Scissor.W
 	};
 
+	[Encoder setLabel:@"Render Beziers"];
 	[Encoder setScissorRect:ScissorRect];
-
 	[Encoder setVertexBuffer:Metal->VertexBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:VertexOffset atIndex:0];
 	[Encoder setVertexBuffer:Metal->UniformBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:UniformOffset atIndex:1];
 
@@ -582,6 +655,7 @@ void R_RenderTriangles(render_context *R, id<MTLCommandBuffer> CommandBuffer, v4
 	id<MTLDepthStencilState> DepthStencilState = [Metal->Device newDepthStencilStateWithDescriptor:DepthStencilDescriptor];
 
 	id<MTLRenderCommandEncoder> Encoder = [CommandBuffer renderCommandEncoderWithDescriptor:PassDesc];
+	[Encoder setLabel:@"Render Triangles"];
 	[Encoder setRenderPipelineState:Metal->TriangleShader.PipelineState];
 	[Encoder setFrontFacingWinding:MTLWindingClockwise];
 	[Encoder setCullMode:(MTLCullModeNone)];
@@ -626,8 +700,8 @@ void R_RenderGlyphs(render_context *R, id<MTLCommandBuffer> CommandBuffer, v4i S
 		.height = Scissor.W
 	};
 
+	[Encoder setLabel:@"Render Glyphs"];
 	[Encoder setScissorRect:ScissorRect];
-
 	[Encoder setVertexBuffer:Metal->VertexBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:VertexOffset atIndex:0];
 	[Encoder setVertexBuffer:Metal->UniformBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:UniformOffset atIndex:1];
 	[Encoder setFragmentTexture:Metal->FontAtlasTexture atIndex:0];
@@ -657,6 +731,7 @@ void R_RenderFullscreenBloom(render_context *R, id<MTLCommandBuffer> CommandBuff
 	PassDesc.colorAttachments[0].clearColor = MTLClearColorMake(0.0,0.0,0.0,1);
 
 	id<MTLRenderCommandEncoder> Encoder = [CommandBuffer renderCommandEncoderWithDescriptor:PassDesc];
+	[Encoder setLabel:@"Render Bloom"];
 	[Encoder setRenderPipelineState:Metal->BloomShader.PipelineState];
 	[Encoder setFrontFacingWinding:MTLWindingClockwise];
 	[Encoder setCullMode:(MTLCullModeNone)];
@@ -736,7 +811,7 @@ void R_Update(render_context *R, m_arena *FrameArena)
 	for(r_command *Command = R->CommandsFirst; Command != Null; Command = Command->Next)
 	{
 		r_vertex_attributes Attributes = R_AttributesFromCommandType(Command->Type);
-		u64 Stride = R_StrideFromAttributes(Attributes);
+		u64 Stride = MTLStrideFromAttributes(Attributes);
 		u8 *GPUVertices = (u8*)ArenaPushArrayZero(Scratch.Arena, u8, Command->VerticesCount*Stride);
 		u64 Offset = 0;
 		for(int VertexIndex = 0; VertexIndex < Command->VerticesCount; VertexIndex++)
@@ -746,7 +821,7 @@ void R_Update(render_context *R, m_arena *FrameArena)
 			{
 				if(Attributes & G_VertexAttributes[AttributeIndex])
 				{
-					u64 AttributeSize = G_VertexAttributeSizes[AttributeIndex];
+					u64 AttributeSize = MTLVertexAlignmentFromAttribute(G_VertexAttributes[AttributeIndex]);
 					u8 *AttributeOffset = (u8*)V + G_VertexAttributeOffsets[AttributeIndex];
 					MemoryCopy(GPUVertices + Offset, AttributeOffset, AttributeSize);
 					Offset += AttributeSize;
@@ -769,33 +844,26 @@ void R_Update(render_context *R, m_arena *FrameArena)
 			if(Command->Type == R_COMMAND_GLYPH)
 			{
 				R_RenderGlyphs(R, CommandBuffer, Command->Scissor, VertexCount, VertexOffsetInBytes, UniformOffset*sizeof(uniforms));
-				VertexOffsetInBytes += CurrentBatchOffsetInBytes;
-				CurrentBatchOffsetInBytes = 0;
 			}
 			else if(Command->Type == R_COMMAND_TRIANGLE)
 			{
 				R_RenderTriangles(R, CommandBuffer, Command->Scissor, VertexCount, VertexOffsetInBytes, UniformOffset*sizeof(uniforms));
-				VertexOffsetInBytes += CurrentBatchOffsetInBytes;
-				CurrentBatchOffsetInBytes = 0;
 			}
 			else if(Command->Type == R_COMMAND_POINTS)
 			{
 				R_RenderPoints(R, CommandBuffer, Command->Scissor, VertexCount, VertexOffsetInBytes, UniformOffset*sizeof(uniforms));
-				VertexOffsetInBytes += CurrentBatchOffsetInBytes;
-				CurrentBatchOffsetInBytes = 0;
 			}
 			else if(Command->Type == R_COMMAND_LINES)
 			{
 				R_RenderLines(R, CommandBuffer, Command->Scissor, VertexCount, VertexOffsetInBytes, UniformOffset*sizeof(uniforms));
-				VertexOffsetInBytes += CurrentBatchOffsetInBytes;
-				CurrentBatchOffsetInBytes = 0;
 			}
 			else if(Command->Type == R_COMMAND_BEZIER)
 			{
 				R_RenderBeziers(R, CommandBuffer, Command->Scissor, VertexCount, VertexOffsetInBytes, UniformOffset*sizeof(uniforms));;
-				VertexOffsetInBytes += CurrentBatchOffsetInBytes;
-				CurrentBatchOffsetInBytes = 0;
 			}
+
+			VertexOffsetInBytes += CurrentBatchOffsetInBytes;
+			CurrentBatchOffsetInBytes = 0;
 
 			UniformOffset += 1;
 		}

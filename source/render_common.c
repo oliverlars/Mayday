@@ -1,6 +1,9 @@
 #include "render_common.h"
 #include "misc.h"
 
+#include "memory.h"
+
+
 
 s64 R_StrideFromAttributes(r_vertex_attributes Attributes)
 {
@@ -31,6 +34,7 @@ r_vertex_attributes R_AttributesFromCommandType(r_command_type CommandType)
 		{
 			Result |= R_VA_POSITION;
 			Result |= R_VA_COLOUR;
+			Result |= R_VA_POINT_SIZE;
 		} break;
 		case R_COMMAND_BEZIER:
 		{

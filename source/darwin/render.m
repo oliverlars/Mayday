@@ -68,6 +68,20 @@ int MTLVertexAlignmentFromAttribute(r_vertex_attributes Attribute)
 	return LUT[Index];
 }
 
+int MTLVertexSizeFromAttribute(r_vertex_attributes Attribute)
+{
+	// NOTE(Oliver): We are assuming only one flag was passed in
+	int Index = CTZ_U64(Attribute);
+	#define X(T, NAME, CAPS_NAME, INDEX) sizeof(MetalSimdTypes(T)),
+	int LUT[] = 
+	{
+		VERTEX_ATTRIBUTE_FIELDS
+	};
+	#undef X
+
+	return LUT[Index];
+}
+
 MTLVertexFormat MTLVertexFormatFromAttribute(r_vertex_attributes Attribute)
 {
 	// NOTE(Oliver): We are assuming only one flag was passed in
@@ -91,10 +105,12 @@ int MTLStrideFromAttributes(r_vertex_attributes Attributes)
 	{
 		if(Attributes & G_VertexAttributes[AttributeIndex])
 		{
-			Stride += MTLVertexAlignmentFromAttribute(G_VertexAttributes[AttributeIndex]);
+			int Size = MTLVertexSizeFromAttribute(G_VertexAttributes[AttributeIndex]);
+			int Alignment = MTLVertexAlignmentFromAttribute(G_VertexAttributes[AttributeIndex]);
+			Stride += Align(Size, Alignment);
 		}
 	}
-	return Stride;
+	return Align(Stride, 16);
 }
 
 // Dumb hack
@@ -216,7 +232,7 @@ metal_shader R_GlyphShader(render_context *R)
 
 	MTLVertexDescriptor *VertexDescriptor = [[MTLVertexDescriptor alloc] init];
 	r_vertex_attributes Attributes = R_AttributesFromCommandType(R_COMMAND_GLYPH);
-
+	
 	int Index = 0;
 	int Offset = 0;
 	for(int AttributeIndex = 0; AttributeIndex < ArrayCount(G_VertexAttributes); AttributeIndex++)
@@ -227,10 +243,14 @@ metal_shader R_GlyphShader(render_context *R)
 			VertexDescriptor.attributes[Index].offset = Offset;
 			VertexDescriptor.attributes[Index].bufferIndex = 0;
 			Index += 1;
-			Offset += MTLVertexAlignmentFromAttribute(G_VertexAttributeSizes[AttributeIndex]);
+			int Size = MTLVertexSizeFromAttribute(G_VertexAttributes[AttributeIndex]);
+			int Alignment = MTLVertexAlignmentFromAttribute(G_VertexAttributes[AttributeIndex]);
+			Offset += Size;
+			Offset = Align(Offset, Alignment);
 		}
 	}
-	VertexDescriptor.layouts[0].stride = Offset;
+	int Stride = Align(Offset, 16);
+	VertexDescriptor.layouts[0].stride = Stride;
 
 	PipelineDescriptor.vertexDescriptor = VertexDescriptor;
 
@@ -347,10 +367,14 @@ metal_shader R_PointShader(render_context *R)
 			VertexDescriptor.attributes[Index].offset = Offset;
 			VertexDescriptor.attributes[Index].bufferIndex = 0;
 			Index += 1;
-			Offset += MTLVertexAlignmentFromAttribute(G_VertexAttributeSizes[AttributeIndex]);
+			int Size = MTLVertexSizeFromAttribute(G_VertexAttributes[AttributeIndex]);
+			int Alignment = MTLVertexAlignmentFromAttribute(G_VertexAttributes[AttributeIndex]);
+			Offset += Size;
+			Offset = Align(Offset, Alignment);
 		}
 	}
-	VertexDescriptor.layouts[0].stride = Offset;
+	int Stride = Align(Offset, 16);
+	VertexDescriptor.layouts[0].stride = Stride;
 
 	PipelineDescriptor.vertexDescriptor = VertexDescriptor;
 
@@ -821,17 +845,22 @@ void R_Update(render_context *R, m_arena *FrameArena)
 			{
 				if(Attributes & G_VertexAttributes[AttributeIndex])
 				{
-					u64 AttributeSize = MTLVertexAlignmentFromAttribute(G_VertexAttributes[AttributeIndex]);
+
 					u8 *AttributeOffset = (u8*)V + G_VertexAttributeOffsets[AttributeIndex];
+					
+					int AttributeSize = MTLVertexSizeFromAttribute(G_VertexAttributes[AttributeIndex]);
+					int Alignment = MTLVertexAlignmentFromAttribute(G_VertexAttributes[AttributeIndex]);
+					
 					MemoryCopy(GPUVertices + Offset, AttributeOffset, AttributeSize);
 					Offset += AttributeSize;
+					Offset = Align(Offset, Alignment);
 				}
 			}
 		}
 
 		MemoryCopy(Metal->VertexBuffers[ResourceIndex].contents + CurrentBatchOffsetInBytes + VertexOffsetInBytes,
 					GPUVertices, Offset);
-		CurrentBatchOffsetInBytes += Offset;
+		CurrentBatchOffsetInBytes += Stride;
 
 		if((Command->Next && Command->Next->Type != Command->Type) ||
 		   (Command->Next && !MemoryEqual(&Command->Transform, &Command->Next->Transform, sizeof(m44f))) ||

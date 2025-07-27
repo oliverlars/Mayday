@@ -235,21 +235,25 @@ metal_shader R_GlyphShader(render_context *R)
 	
 	int Index = 0;
 	int Offset = 0;
+	int MaxAlignment = 0;  // Renamed for clarity
 	for(int AttributeIndex = 0; AttributeIndex < ArrayCount(G_VertexAttributes); AttributeIndex++)
 	{
 		if(Attributes & G_VertexAttributes[AttributeIndex])
 		{
+			int ThisAlignment = MTLVertexAlignmentFromAttribute(G_VertexAttributes[AttributeIndex]);
+			MaxAlignment = Max(MaxAlignment, ThisAlignment);
+
+			Offset = Align(Offset, ThisAlignment);  // Align before setting
 			VertexDescriptor.attributes[Index].format = MTLVertexFormatFromAttribute(G_VertexAttributes[AttributeIndex]);
 			VertexDescriptor.attributes[Index].offset = Offset;
 			VertexDescriptor.attributes[Index].bufferIndex = 0;
 			Index += 1;
+
 			int Size = MTLVertexSizeFromAttribute(G_VertexAttributes[AttributeIndex]);
-			int Alignment = MTLVertexAlignmentFromAttribute(G_VertexAttributes[AttributeIndex]);
 			Offset += Size;
-			Offset = Align(Offset, Alignment);
 		}
 	}
-	int Stride = Align(Offset, 16);
+	int Stride = Align(Offset, MaxAlignment);  // Align the final stride
 	VertexDescriptor.layouts[0].stride = Stride;
 
 	PipelineDescriptor.vertexDescriptor = VertexDescriptor;
@@ -837,6 +841,15 @@ void R_Update(render_context *R, m_arena *FrameArena)
 		r_vertex_attributes Attributes = R_AttributesFromCommandType(Command->Type);
 		u64 Stride = MTLStrideFromAttributes(Attributes);
 		u8 *GPUVertices = (u8*)ArenaPushArrayZero(Scratch.Arena, u8, Command->VerticesCount*Stride);
+		int MaxAlignment = 0;
+		for(int AttributeIndex = 0; AttributeIndex < ArrayCount(G_VertexAttributes); AttributeIndex++)
+		{
+			if(Attributes & G_VertexAttributes[AttributeIndex])
+			{
+				MaxAlignment = Max(MaxAlignment, MTLVertexAlignmentFromAttribute(G_VertexAttributes[AttributeIndex]));
+			}
+		}
+
 		u64 Offset = 0;
 		for(int VertexIndex = 0; VertexIndex < Command->VerticesCount; VertexIndex++)
 		{
@@ -845,22 +858,22 @@ void R_Update(render_context *R, m_arena *FrameArena)
 			{
 				if(Attributes & G_VertexAttributes[AttributeIndex])
 				{
-
+					int ThisAlignment = MTLVertexAlignmentFromAttribute(G_VertexAttributes[AttributeIndex]);
+					Offset = Align(Offset, ThisAlignment);
 					u8 *AttributeOffset = (u8*)V + G_VertexAttributeOffsets[AttributeIndex];
 					
 					int AttributeSize = MTLVertexSizeFromAttribute(G_VertexAttributes[AttributeIndex]);
-					int Alignment = MTLVertexAlignmentFromAttribute(G_VertexAttributes[AttributeIndex]);
-					
 					MemoryCopy(GPUVertices + Offset, AttributeOffset, AttributeSize);
 					Offset += AttributeSize;
-					Offset = Align(Offset, Alignment);
 				}
 			}
+			// Pad to full stride after each vertex
+			Offset = Align(Offset, MaxAlignment);
 		}
 
 		MemoryCopy(Metal->VertexBuffers[ResourceIndex].contents + CurrentBatchOffsetInBytes + VertexOffsetInBytes,
 					GPUVertices, Offset);
-		CurrentBatchOffsetInBytes += Stride;
+		CurrentBatchOffsetInBytes += Offset;
 
 		if((Command->Next && Command->Next->Type != Command->Type) ||
 		   (Command->Next && !MemoryEqual(&Command->Transform, &Command->Next->Transform, sizeof(m44f))) ||

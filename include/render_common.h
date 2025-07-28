@@ -13,7 +13,8 @@
     X(v2f, End, END, 7)        \
     X(f32, Thickness, THICKNESS, 8)  \
     X(u32, CurveStart, CURVE_START, 9) \
-    X(u32, CurveCount, CURVE_COUNT, 10)
+    X(u32, CurveCount, CURVE_COUNT, 10) \
+	X(v2f, Centre,     CENTRE,      11) 
 
 
 #define X(T, NAME, CAPS_NAME, INDEX) T NAME;

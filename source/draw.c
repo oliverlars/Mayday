@@ -611,12 +611,15 @@ void D_DrawPointsArray(draw_context *D,
 			v2f(TR.X, TR.Y),
 		};
 
+		v2f Centre = v2f((BL.X + TR.X)/2.0, (BL.Y + TR.Y)/2.0);
+
 		for(int V = 0; V < 6; V++)
 		{
 			r_vertex Vertex = {
 				.Position = v4f(Vertices[V].X, Vertices[V].Y, 0.0, 1),
 				.Colour = Colour,
 				.PointSize = PointSize,
+				.Centre = Centre,
 			};
 			*R_Vertices++ = Vertex;
 		}

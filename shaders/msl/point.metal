@@ -15,6 +15,7 @@ struct vertex_input
 	float4 Position  [[attribute(0)]];
 	float4 Colour    [[attribute(1)]];
 	float  PointSize [[attribute(2)]];
+	float2 Centre    [[attribute(3)]];
 };
 
 struct uniforms
@@ -30,6 +31,7 @@ vertex vertex_output VertexMain(constant vertex_input *Vertices [[buffer(0)]],
 	Output.Position = Uniforms.PVMMatrix * Vertices[VertexID].Position;
 	Output.Colour = Vertices[VertexID].Colour;
 	Output.PointSize = Vertices[VertexID].PointSize;
+	Output.Centre = Vertices[VertexID].Centre;
 	return Output;
 }
 
@@ -40,8 +42,8 @@ float DistanceToCircle(float2 Position, float2 Centre, float Radius)
 
 fragment float4 FragmentMain(vertex_output Input [[stage_in]])
 {
-	float4 Colour = Input.Colour;
-	float HalfPointSize = 0.5 * Input.PointSize;
-	float Distance = DistanceToCircle(Input.Position.xy, float2(0, 0), Input.PointSize);
-	return Colour;
+	float HalfPointSize = 0.5*Input.PointSize;
+	float Distance = DistanceToCircle(Input.Position.xy, Input.Centre, HalfPointSize);
+	float AA = smoothstep(HalfPointSize + HalfPointSize, HalfPointSize - HalfPointSize, Distance);
+	return float4(Input.Colour.rgb, AA*Input.Colour.a);
 }

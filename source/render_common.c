@@ -35,6 +35,7 @@ r_vertex_attributes R_AttributesFromCommandType(r_command_type CommandType)
 			Result |= R_VA_POSITION;
 			Result |= R_VA_COLOUR;
 			Result |= R_VA_POINT_SIZE;
+			Result |= R_VA_CENTRE;
 		} break;
 		case R_COMMAND_BEZIER:
 		{

@@ -235,7 +235,7 @@ metal_shader R_GlyphShader(render_context *R)
 	
 	int Index = 0;
 	int Offset = 0;
-	int MaxAlignment = 0;  // Renamed for clarity
+	int MaxAlignment = 0; 
 	for(int AttributeIndex = 0; AttributeIndex < ArrayCount(G_VertexAttributes); AttributeIndex++)
 	{
 		if(Attributes & G_VertexAttributes[AttributeIndex])
@@ -243,7 +243,7 @@ metal_shader R_GlyphShader(render_context *R)
 			int ThisAlignment = MTLVertexAlignmentFromAttribute(G_VertexAttributes[AttributeIndex]);
 			MaxAlignment = Max(MaxAlignment, ThisAlignment);
 
-			Offset = Align(Offset, ThisAlignment);  // Align before setting
+			Offset = Align(Offset, ThisAlignment);
 			VertexDescriptor.attributes[Index].format = MTLVertexFormatFromAttribute(G_VertexAttributes[AttributeIndex]);
 			VertexDescriptor.attributes[Index].offset = Offset;
 			VertexDescriptor.attributes[Index].bufferIndex = 0;
@@ -253,7 +253,7 @@ metal_shader R_GlyphShader(render_context *R)
 			Offset += Size;
 		}
 	}
-	int Stride = Align(Offset, MaxAlignment);  // Align the final stride
+	int Stride = Align(Offset, MaxAlignment);
 	VertexDescriptor.layouts[0].stride = Stride;
 
 	PipelineDescriptor.vertexDescriptor = VertexDescriptor;

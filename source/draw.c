@@ -559,6 +559,17 @@ void D_DrawCubePoints(draw_context *D,
 	R_PushCommand(R, Arena, Command);
 }
 
+int SortPointsByZ(const void *S, const void *T)
+{
+	// We assume these are in clip space
+	// such that Z is the distance from the camera
+	v4f *A = S;
+	v4f *B = T;
+	if(A->Z > B->Z) return -1;
+	if(A->Z < B->Z) return 1;
+	return 0;
+}
+
 void D_DrawPointsArray(draw_context *D,
 					  m_arena *Arena,
 					  v3f *Positions,
@@ -578,21 +589,29 @@ void D_DrawPointsArray(draw_context *D,
 	m44f Ortho = M44FOrthographic(0, D->ViewportSize.X, 0.0, D->ViewportSize.Y, -1000.0, 1000.0);
 	R_PushTransform(D->Render, Ortho);
 
+	m_scratch_arena Scratch = ScratchBegin(&Arena, 1);
+
+	v4f *TransformedPoints = ArenaPushArrayZero(Scratch.Arena, v4f, PositionsCount);
 	for(int P = 0; P < PositionsCount; P++)
 	{
 		v3f A = Positions[P];
 		v4f A4D = Mul(M44FTranspose(Transform), v4f(A.X, A.Y, A.Z, 1.0));
-		A4D = Div(A4D, v4f(A4D.W, A4D.W, A4D.W, A4D.W));
 		A = v3f(A4D.X, A4D.Y, A4D.Z);
+		TransformedPoints[P] = A4D;
+	}
 
+	qsort(TransformedPoints, PositionsCount, sizeof(v4f), SortPointsByZ);
+
+	for(int P = 0; P < PositionsCount; P++)
+	{
+		v4f A4D = TransformedPoints[P];
+		A4D = Div(A4D, v4f(A4D.W, A4D.W, A4D.W, A4D.W));
+		v3f A = v3f(A4D.X, A4D.Y, A4D.Z);
 		A.X = D->ViewportSize.X * (A.X*0.5 + 0.5);
 		A.Y = -A.Y;
 
 		A.Y = D->ViewportSize.Y * (A.Y*0.5 + 0.5);
 
-		
-		f32 Width = PointSize/2.0;
-		f32 Height = PointSize/2.0;
 
 		v2f BL = v2f(A.X - PointSize/2.0, A.Y - PointSize/2.0);
 		v2f TR = v2f(A.X + PointSize/2.0, A.Y + PointSize/2.0);

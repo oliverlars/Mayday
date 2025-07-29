@@ -44,6 +44,6 @@ fragment float4 FragmentMain(vertex_output Input [[stage_in]])
 {
 	float HalfPointSize = 0.5*Input.PointSize;
 	float Distance = DistanceToCircle(Input.Position.xy, Input.Centre, HalfPointSize);
-	float AA = smoothstep(HalfPointSize + HalfPointSize, HalfPointSize - HalfPointSize, Distance);
-	return float4(Input.Colour.rgb, AA*Input.Colour.a);
+	float AA = smoothstep(HalfPointSize, -HalfPointSize, Distance);
+	return float4(Input.Colour.rgb, Input.Colour.a*float(Distance < 0.0));
 }

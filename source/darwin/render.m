@@ -570,7 +570,9 @@ void R_RenderPoints(render_context *R, id<MTLCommandBuffer> CommandBuffer, v4i S
 	PassDesc.depthAttachment.storeAction = MTLStoreActionStore;
 
 	MTLDepthStencilDescriptor *DepthStencilDescriptor = [MTLDepthStencilDescriptor new];
-	DepthStencilDescriptor.depthCompareFunction = MTLCompareFunctionLess;
+	// This seems to fix blending for points? Not sure why it can't just be 
+	// MTLCompareFunctionLess
+	DepthStencilDescriptor.depthCompareFunction = MTLCompareFunctionLessEqual;
 	DepthStencilDescriptor.depthWriteEnabled = YES;
 	id<MTLDepthStencilState> DepthStencilState = [Metal->Device newDepthStencilStateWithDescriptor:DepthStencilDescriptor];
 

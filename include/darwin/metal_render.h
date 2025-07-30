@@ -14,6 +14,12 @@ typedef struct metal_shader
 	id<MTLLibrary> Library;
 } metal_shader;
 
+typedef struct metal_compute_shader
+{
+	id<MTLComputePipelineState> PipelineState;
+	id<MTLLibrary> Library;
+} metal_compute_shader;
+
 #define FRAMES_IN_FLIGHT (3)
 
 typedef struct metal_context
@@ -27,6 +33,10 @@ typedef struct metal_context
 	metal_shader               PointShader;
 	metal_shader               LineShader;
 	metal_shader               BezierShader;
+
+
+	id<MTLBuffer>              ComputeBuffer;
+	metal_compute_shader       ComputeTest;
 
 	id<MTLTexture>             DepthTexture;
 	id<MTLTexture>             BaseFrameBuffer;

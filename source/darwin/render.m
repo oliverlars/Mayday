@@ -166,6 +166,29 @@ id<MTLTexture> ResizeTexture(render_context *R, id<MTLTexture> Texture, CGSize S
 	return Result;
 }
 
+metal_compute_shader R_ComputeShader(render_context *R)
+{
+	metal_context *Metal = (metal_context*)R->Backend;
+	metal_compute_shader Shader = {0};
+
+	NSError* Error = nil;
+	NSString* Source = [[NSString alloc] initWithBytes:(const void*)G_ComputeShader.Data
+									length:G_ComputeShader.Length
+									encoding:NSUTF8StringEncoding];
+	Shader.Library = [Metal->Device newLibraryWithSource:Source options:nil error:&Error];
+	if(!Shader.Library)
+	{
+		LogError((char*)[Error.localizedDescription
+						 cStringUsingEncoding:NSUTF8StringEncoding]);
+	}
+
+	id<MTLFunction> KernelFunction   = [Shader.Library newFunctionWithName:@"ComputeMain"];
+
+	Shader.PipelineState = [Metal->Device newComputePipelineStateWithFunction:KernelFunction error:&Error];
+
+	return Shader;
+}
+
 metal_shader R_BloomShader(render_context *R)
 {
 	metal_context *Metal = (metal_context*)R->Backend;
@@ -182,7 +205,7 @@ metal_shader R_BloomShader(render_context *R)
 	MTLRenderPipelineDescriptor* PipelineDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
 	PipelineDescriptor.vertexFunction = VertexFunction;
 	PipelineDescriptor.fragmentFunction = FragmentFunction;
-	PipelineDescriptor.colorAttachments[0].pixelFormat = MTLPixelFormatBGRA8Unorm;
+	PipelineDescriptor.colorAttachments[0].pixelFormat = MTLPixelFormatBGRA8Unorm; 
 
 	MTLSamplerDescriptor *SamplerDescriptor = [[MTLSamplerDescriptor alloc] init];
 	SamplerDescriptor.minFilter = MTLSamplerMinMagFilterLinear;
@@ -514,6 +537,8 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 			options:MTLResourceStorageModeShared];
 	}
 
+	Metal->ComputeBuffer = [Metal->Device newBufferWithLength:1024 options:MTLResourceStorageModePrivate];
+
 	{
 		MTLTextureDescriptor *Desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm
 														width:Size.X
@@ -551,6 +576,7 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 	Metal->PointShader = R_PointShader(R);
 	Metal->LineShader = R_LineShader(R);
 	Metal->BezierShader = R_BezierShader(R);
+	Metal->ComputeTest = R_ComputeShader(R);
 
 	Metal->InFlightSemaphore = dispatch_semaphore_create(FRAMES_IN_FLIGHT);
 }
@@ -912,6 +938,21 @@ void R_Update(render_context *R, m_arena *FrameArena)
 			UniformOffset += 1;
 		}
 	}
+
+	MTLComputePassDescriptor *ComputePassDescriptor = [MTLComputePassDescriptor computePassDescriptor];
+	ComputePassDescriptor.dispatchType = MTLDispatchTypeConcurrent;
+	id<MTLComputeCommandEncoder> ComputeEncoder = [CommandBuffer computeCommandEncoderWithDescriptor:ComputePassDescriptor];
+	[ComputeEncoder setComputePipelineState: Metal->ComputeTest.PipelineState];
+	NSUInteger ThreadGroupSize = Metal->ComputeTest.PipelineState.maxTotalThreadsPerThreadgroup;
+	MTLSize GridSize = MTLSizeMake(1024, 1, 1);
+	if(ThreadGroupSize > 1024)
+	{
+		ThreadGroupSize = 1024;
+	}
+	[ComputeEncoder setBuffer:Metal->ComputeBuffer offset:0 atIndex:0];
+	[ComputeEncoder dispatchThreadgroups:GridSize threadsPerThreadgroup:MTLSizeMake(ThreadGroupSize, 1, 1)];
+
+	[ComputeEncoder endEncoding];
 
 	R_RenderFullscreenBloom(R, CommandBuffer);
 	[CommandBuffer presentDrawable:Metal->Drawable];

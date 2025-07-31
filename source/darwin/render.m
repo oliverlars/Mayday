@@ -1040,6 +1040,8 @@ void R_Update(render_context *R, m_arena *FrameArena)
 	ComputePassDescriptor.dispatchType = MTLDispatchTypeConcurrent;
 	id<MTLComputeCommandEncoder> ComputeEncoder = [CommandBuffer computeCommandEncoderWithDescriptor:ComputePassDescriptor];
 	[ComputeEncoder setComputePipelineState: Metal->ComputeTest.PipelineState];
+	[ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:0 atIndex:0];
+	[ComputeEncoder setBuffer:Metal->PerTileData[R->Frame % FRAMES_IN_FLIGHT] offset:0 atIndex:1];
 	[ComputeEncoder setTexture:Metal->BaseFrameBuffer atIndex:0];
 	[ComputeEncoder dispatchThreadgroups:ThreadGroupSize threadsPerThreadgroup:TilesPerThreadgroup];
 

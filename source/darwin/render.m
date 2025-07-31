@@ -537,13 +537,11 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 			options:MTLResourceStorageModeShared];
 	}
 
-	Metal->ComputeBuffer = [Metal->Device newBufferWithLength:1024 options:MTLResourceStorageModePrivate];
-
 	{
 		MTLTextureDescriptor *Desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm
 														width:Size.X
 														height:Size.Y mipmapped:NO];
-		Desc.usage = MTLTextureUsageShaderRead | MTLTextureUsageRenderTarget;
+		Desc.usage = MTLTextureUsageShaderRead | MTLTextureUsageShaderWrite | MTLTextureUsageRenderTarget;
 		Desc.storageMode = MTLStorageModePrivate;
 
 
@@ -846,6 +844,7 @@ void R_Update(render_context *R, m_arena *FrameArena)
 									CGSizeMake(Metal->Drawable.texture.width,
 												Metal->Drawable.texture.height));
 
+
 	id<MTLCommandBuffer> CommandBuffer = [Metal->CommandQueue commandBuffer];
 
 	R_ClearAllTextures(R, CommandBuffer);
@@ -939,18 +938,23 @@ void R_Update(render_context *R, m_arena *FrameArena)
 		}
 	}
 
+	NSUInteger TileWidth = 32;
+	NSUInteger TileHeight = 32;
+
+	MTLSize TilesPerThreadgroup = MTLSizeMake(TileWidth, TileHeight, 1);
+	MTLSize ThreadsPerGrid = MTLSizeMake(Metal->Drawable.texture.width, Metal->Drawable.texture.height, 1);
+	MTLSize ThreadGroupSize = MTLSizeMake(
+		(ThreadsPerGrid.width  + TileWidth  - 1) / TileWidth,
+		(ThreadsPerGrid.height + TileHeight - 1) / TileHeight,
+		1
+	);
+
 	MTLComputePassDescriptor *ComputePassDescriptor = [MTLComputePassDescriptor computePassDescriptor];
 	ComputePassDescriptor.dispatchType = MTLDispatchTypeConcurrent;
 	id<MTLComputeCommandEncoder> ComputeEncoder = [CommandBuffer computeCommandEncoderWithDescriptor:ComputePassDescriptor];
 	[ComputeEncoder setComputePipelineState: Metal->ComputeTest.PipelineState];
-	NSUInteger ThreadGroupSize = Metal->ComputeTest.PipelineState.maxTotalThreadsPerThreadgroup;
-	MTLSize GridSize = MTLSizeMake(1024, 1, 1);
-	if(ThreadGroupSize > 1024)
-	{
-		ThreadGroupSize = 1024;
-	}
-	[ComputeEncoder setBuffer:Metal->ComputeBuffer offset:0 atIndex:0];
-	[ComputeEncoder dispatchThreadgroups:GridSize threadsPerThreadgroup:MTLSizeMake(ThreadGroupSize, 1, 1)];
+	[ComputeEncoder setTexture:Metal->BaseFrameBuffer atIndex:0];
+	[ComputeEncoder dispatchThreadgroups:ThreadGroupSize threadsPerThreadgroup:TilesPerThreadgroup];
 
 	[ComputeEncoder endEncoding];
 

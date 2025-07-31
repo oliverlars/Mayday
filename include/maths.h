@@ -29,6 +29,7 @@ typedef struct random32_state
 } random32_state;
 
 f32 RandomBilateral(random32_state *State);
+f32 RandomUnilateral(random32_state *State);
 u32 XorShift32(random32_state *State);
 random32_state XorShiftInit();
 

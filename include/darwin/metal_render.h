@@ -35,7 +35,8 @@ typedef struct metal_context
 	metal_shader               BezierShader;
 
 
-	id<MTLBuffer>              ComputeBuffers[FRAMES_IN_FLIGHT];
+	id<MTLBuffer>              Data[FRAMES_IN_FLIGHT];
+	id<MTLBuffer>              PerTileData[FRAMES_IN_FLIGHT];
 	metal_compute_shader       ComputeTest;
 
 	id<MTLTexture>             DepthTexture;

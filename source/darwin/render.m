@@ -22,6 +22,8 @@
 
 #include "darwin/metal_render.h"
 
+#undef I
+
 typedef struct uniforms
 {
 	m44f PVMMatrix;
@@ -535,6 +537,12 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 
 		Metal->CurveBuffer[ResourceIndex] = [Metal->Device newBufferWithLength:MegaBytes(128)
 			options:MTLResourceStorageModeShared];
+
+		Metal->Data[ResourceIndex] = [Metal->Device newBufferWithLength:MegaBytes(128)
+			options:MTLResourceStorageModeShared];
+		
+		Metal->PerTileData[ResourceIndex] = [Metal->Device newBufferWithLength:MegaBytes(128)
+			options:MTLResourceStorageModeShared];
 	}
 
 	{
@@ -577,6 +585,85 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 	Metal->ComputeTest = R_ComputeShader(R);
 
 	Metal->InFlightSemaphore = dispatch_semaphore_create(FRAMES_IN_FLIGHT);
+}
+
+
+void ProcessAllPointsIntoComputeBuffers(render_context *R, v2i TileDimensions, v2i WindowDimensions)
+{
+	metal_context *Metal = R->Backend;
+
+	typedef struct per_tile_data
+	{
+		int At;
+		int Count;
+	} per_tile_data;
+	typedef struct data
+	{
+		v2f Position;
+		f32 Radius;
+	} data;
+
+	m_scratch_arena Scratch = ScratchBegin(0, 0);
+
+	per_tile_data *PerTileData = ArenaPushArrayZero(Scratch.Arena, per_tile_data, TileDimensions.X*TileDimensions.Y);
+	
+	// The most amount per tile we can have is 20 and that's a super edge case
+	// that i probably should never handle. That ends up being:
+	// NumberOfTiles * NumberOfShapes
+	data *Data = ArenaPushArrayZero(Scratch.Arena, data, 20*TileDimensions.X*TileDimensions.Y);
+	
+	random32_state State = {0};
+
+	data *Circles = ArenaPushArrayZero(Scratch.Arena, data, 20);
+	for(int I = 0; I < 20; I++)
+	{
+		f32 X = fmod(RandomUnilateral(&State), WindowDimensions.X);
+		f32 Y = fmod(RandomUnilateral(&State), WindowDimensions.Y);
+		Circles[I].Position = v2f(X, Y);
+		Circles[I].Radius = fmod(RandomUnilateral(&State), 50);
+	}
+
+
+	int TotalCount = 0;
+	for(int I = 0; I < TileDimensions.X*TileDimensions.Y; I++)
+	{
+		int TileX = I % TileDimensions.X;
+		int TileY = I / TileDimensions.Y;
+
+		v2i Corners[4] = 
+		{
+			v2i(TileX*32, TileY*32),
+			v2i(TileX*32 + 32, TileY*32),
+			v2i(TileX*32 + 32, TileY*32 + 32),
+			v2i(TileX*32, TileY*32),
+		};
+		PerTileData[I].At = TotalCount;
+		v2i TileTopRight = v2i(TileX*32 + 32, TileY*32);
+		for(int J = 0; J < 20; J++)
+		{
+			f32 Distance = sqrtf(Data->Position.X*Data->Position.X + Data->Position.Y*Data->Position.Y);
+			for(int C = 0; C < 4; C++)
+			{
+				v2i DistanceToCircle = {Data->Position.X, Data->Position.Y};
+				DistanceToCircle.X -= Corners[I].X;
+				DistanceToCircle.Y -= Corners[I].Y;
+				if(sqrtf(DistanceToCircle.X*DistanceToCircle.X + DistanceToCircle.Y*DistanceToCircle.Y) < Data->Radius)
+				{
+					PerTileData[I].At = 
+					PerTileData[I].Count++;
+					Data[TotalCount] = Data[J];
+					TotalCount++;
+				}
+			}
+		}
+	}
+
+	MemoryCopy(Metal->Data[R->Frame % FRAMES_IN_FLIGHT].contents, Data, TotalCount*sizeof(data));
+	MemoryCopy(Metal->PerTileData[R->Frame % FRAMES_IN_FLIGHT].contents, PerTileData, 5*sizeof(per_tile_data));
+
+
+
+	ScratchEnd(Scratch);
 }
 
 void R_RenderPoints(render_context *R, id<MTLCommandBuffer> CommandBuffer, v4i Scissor, int VertexCount, int VertexOffset, int UniformOffset)

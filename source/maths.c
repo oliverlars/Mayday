@@ -24,6 +24,13 @@ float RandomBilateral(random32_state *State)
 	return Result * 2.0f - 1.0f;
 }
 
+float RandomUnilateral(random32_state *State)
+{
+	float Result = (XorShift32(State) / (float)UINT32_MAX);
+
+	return Result;
+}
+
 u64 M_FNVHashString(u64 Hash, str8 String)
 {
 	for (s64 Index = 0; Index < String.Size; Index++)

@@ -19,14 +19,14 @@ u32 XorShift32(random32_state *State)
 
 float RandomBilateral(random32_state *State)
 {
-	float Result = (XorShift32(State) / (float)UINT32_MAX);
+	float Result = ((float)XorShift32(State) / (float)UINT32_MAX);
 
 	return Result * 2.0f - 1.0f;
 }
 
 float RandomUnilateral(random32_state *State)
 {
-	float Result = (XorShift32(State) / (float)UINT32_MAX);
+	float Result = ((float)XorShift32(State) / (float)UINT32_MAX);
 
 	return Result;
 }

@@ -538,11 +538,15 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 		Metal->CurveBuffer[ResourceIndex] = [Metal->Device newBufferWithLength:MegaBytes(128)
 			options:MTLResourceStorageModeShared];
 
+
+		[Metal->PerTileData[ResourceIndex] setLabel:@"Tile Data"];
 		Metal->Data[ResourceIndex] = [Metal->Device newBufferWithLength:MegaBytes(128)
 			options:MTLResourceStorageModeShared];
-		
+
+
 		Metal->PerTileData[ResourceIndex] = [Metal->Device newBufferWithLength:MegaBytes(128)
 			options:MTLResourceStorageModeShared];
+		[Metal->PerTileData[ResourceIndex] setLabel:@"Per Tile Data"];
 	}
 
 	{
@@ -612,15 +616,15 @@ void ProcessAllPointsIntoComputeBuffers(render_context *R, v2i TileDimensions, v
 	// NumberOfTiles * NumberOfShapes
 	data *Data = ArenaPushArrayZero(Scratch.Arena, data, 20*TileDimensions.X*TileDimensions.Y);
 	
-	random32_state State = {0};
+	random32_state State = XorShiftInit();
 
 	data *Circles = ArenaPushArrayZero(Scratch.Arena, data, 20);
 	for(int I = 0; I < 20; I++)
 	{
-		f32 X = fmod(RandomUnilateral(&State), WindowDimensions.X);
-		f32 Y = fmod(RandomUnilateral(&State), WindowDimensions.Y);
+		f32 X = RandomUnilateral(&State) * WindowDimensions.X;
+		f32 Y = RandomUnilateral(&State) * WindowDimensions.Y;
 		Circles[I].Position = v2f(X, Y);
-		Circles[I].Radius = fmod(RandomUnilateral(&State), 50);
+		Circles[I].Radius = RandomUnilateral(&State) * 50;
 	}
 
 
@@ -635,31 +639,29 @@ void ProcessAllPointsIntoComputeBuffers(render_context *R, v2i TileDimensions, v
 			v2i(TileX*32, TileY*32),
 			v2i(TileX*32 + 32, TileY*32),
 			v2i(TileX*32 + 32, TileY*32 + 32),
-			v2i(TileX*32, TileY*32),
+			v2i(TileX*32, TileY*32 + 32),
 		};
 		PerTileData[I].At = TotalCount;
-		v2i TileTopRight = v2i(TileX*32 + 32, TileY*32);
 		for(int J = 0; J < 20; J++)
 		{
-			f32 Distance = sqrtf(Data->Position.X*Data->Position.X + Data->Position.Y*Data->Position.Y);
 			for(int C = 0; C < 4; C++)
 			{
-				v2i DistanceToCircle = {Data->Position.X, Data->Position.Y};
-				DistanceToCircle.X -= Corners[I].X;
-				DistanceToCircle.Y -= Corners[I].Y;
-				if(sqrtf(DistanceToCircle.X*DistanceToCircle.X + DistanceToCircle.Y*DistanceToCircle.Y) < Data->Radius)
+				v2i DistanceToCircle = {Circles[J].Position.X, Circles[J].Position.Y};
+				DistanceToCircle.X -= Corners[C].X;
+				DistanceToCircle.Y -= Corners[C].Y;
+				if(sqrtf(DistanceToCircle.X*DistanceToCircle.X + DistanceToCircle.Y*DistanceToCircle.Y) < Circles[J].Radius)
 				{
-					PerTileData[I].At = 
 					PerTileData[I].Count++;
-					Data[TotalCount] = Data[J];
+					Data[TotalCount] = Circles[J];
 					TotalCount++;
+					break;
 				}
 			}
 		}
 	}
 
 	MemoryCopy(Metal->Data[R->Frame % FRAMES_IN_FLIGHT].contents, Data, TotalCount*sizeof(data));
-	MemoryCopy(Metal->PerTileData[R->Frame % FRAMES_IN_FLIGHT].contents, PerTileData, 5*sizeof(per_tile_data));
+	MemoryCopy(Metal->PerTileData[R->Frame % FRAMES_IN_FLIGHT].contents, PerTileData, TileDimensions.X*TileDimensions.Y*sizeof(per_tile_data));
 
 
 
@@ -947,6 +949,18 @@ void R_Update(render_context *R, m_arena *FrameArena)
 
 	int UniformOffset = 0;
 
+	NSUInteger TileWidth = 32;
+	NSUInteger TileHeight = 32;
+
+	MTLSize TilesPerThreadgroup = MTLSizeMake(TileWidth, TileHeight, 1);
+	MTLSize ThreadsPerGrid = MTLSizeMake(Metal->Drawable.texture.width, Metal->Drawable.texture.height, 1);
+	MTLSize ThreadGroupSize = MTLSizeMake(
+		(ThreadsPerGrid.width  + TileWidth  - 1) / TileWidth,
+		(ThreadsPerGrid.height + TileHeight - 1) / TileHeight,
+		1
+	);
+
+	ProcessAllPointsIntoComputeBuffers(R, v2i(ThreadGroupSize.width, ThreadGroupSize.height), v2i(Metal->Drawable.texture.width, Metal->Drawable.texture.height));
 
 	u64 CurrentBatchOffsetInBytes = 0;
 	u64 VertexOffsetInBytes = 0;
@@ -1025,23 +1039,12 @@ void R_Update(render_context *R, m_arena *FrameArena)
 		}
 	}
 
-	NSUInteger TileWidth = 32;
-	NSUInteger TileHeight = 32;
-
-	MTLSize TilesPerThreadgroup = MTLSizeMake(TileWidth, TileHeight, 1);
-	MTLSize ThreadsPerGrid = MTLSizeMake(Metal->Drawable.texture.width, Metal->Drawable.texture.height, 1);
-	MTLSize ThreadGroupSize = MTLSizeMake(
-		(ThreadsPerGrid.width  + TileWidth  - 1) / TileWidth,
-		(ThreadsPerGrid.height + TileHeight - 1) / TileHeight,
-		1
-	);
-
 	MTLComputePassDescriptor *ComputePassDescriptor = [MTLComputePassDescriptor computePassDescriptor];
 	ComputePassDescriptor.dispatchType = MTLDispatchTypeConcurrent;
 	id<MTLComputeCommandEncoder> ComputeEncoder = [CommandBuffer computeCommandEncoderWithDescriptor:ComputePassDescriptor];
 	[ComputeEncoder setComputePipelineState: Metal->ComputeTest.PipelineState];
-	[ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:0 atIndex:0];
-	[ComputeEncoder setBuffer:Metal->PerTileData[R->Frame % FRAMES_IN_FLIGHT] offset:0 atIndex:1];
+	[ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:0 atIndex:1];
+	[ComputeEncoder setBuffer:Metal->PerTileData[R->Frame % FRAMES_IN_FLIGHT] offset:0 atIndex:0];
 	[ComputeEncoder setTexture:Metal->BaseFrameBuffer atIndex:0];
 	[ComputeEncoder dispatchThreadgroups:ThreadGroupSize threadsPerThreadgroup:TilesPerThreadgroup];
 

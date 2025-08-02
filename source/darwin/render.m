@@ -632,7 +632,9 @@ void ProcessAllPointsIntoComputeBuffers(render_context *R, v2i TileDimensions, v
 	for(int I = 0; I < TileDimensions.X*TileDimensions.Y; I++)
 	{
 		int TileX = I % TileDimensions.X;
-		int TileY = I / TileDimensions.Y;
+		int TileY = I / TileDimensions.X;
+
+		assert(TileX + TileY*TileDimensions.X == I);
 
 		v2i Corners[4] = 
 		{
@@ -642,6 +644,7 @@ void ProcessAllPointsIntoComputeBuffers(render_context *R, v2i TileDimensions, v
 			v2i(TileX*32, TileY*32 + 32),
 		};
 		PerTileData[I].At = TotalCount;
+		PerTileData[I].Count = 0;
 		for(int J = 0; J < 20; J++)
 		{
 			for(int C = 0; C < 4; C++)
@@ -1039,12 +1042,25 @@ void R_Update(render_context *R, m_arena *FrameArena)
 		}
 	}
 
+
+	// HACK(Oliver): This is dumb
+	struct uniforms2
+	{
+		int NumberOfTilesInX;
+		int NumberOfTilesInY;
+	} Uniforms = {
+		.NumberOfTilesInX = ThreadGroupSize.width,
+		.NumberOfTilesInY = ThreadGroupSize.height,
+	};
+	MemoryCopy(Metal->UniformBuffers[R->Frame % FRAMES_IN_FLIGHT].contents + UniformOffset*sizeof(uniforms), &Uniforms, sizeof(Uniforms));
+
 	MTLComputePassDescriptor *ComputePassDescriptor = [MTLComputePassDescriptor computePassDescriptor];
 	ComputePassDescriptor.dispatchType = MTLDispatchTypeConcurrent;
 	id<MTLComputeCommandEncoder> ComputeEncoder = [CommandBuffer computeCommandEncoderWithDescriptor:ComputePassDescriptor];
 	[ComputeEncoder setComputePipelineState: Metal->ComputeTest.PipelineState];
 	[ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:0 atIndex:1];
 	[ComputeEncoder setBuffer:Metal->PerTileData[R->Frame % FRAMES_IN_FLIGHT] offset:0 atIndex:0];
+	[ComputeEncoder setBuffer:Metal->UniformBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:UniformOffset atIndex:2];
 	[ComputeEncoder setTexture:Metal->BaseFrameBuffer atIndex:0];
 	[ComputeEncoder dispatchThreadgroups:ThreadGroupSize threadsPerThreadgroup:TilesPerThreadgroup];
 

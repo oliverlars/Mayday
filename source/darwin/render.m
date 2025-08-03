@@ -619,14 +619,21 @@ void ProcessAllPointsIntoComputeBuffers(render_context *R, v2i TileDimensions, v
 	
 	random32_state State = XorShiftInit();
 
-	int CircleCount = 50;
+	int CircleCount = TileDimensions.X * TileDimensions.Y;
 	data *Circles = ArenaPushArrayZero(Scratch.Arena, data, CircleCount);
 	for(int I = 0; I < CircleCount; I++)
 	{
-		f32 X = RandomUnilateral(&State) * WindowDimensions.X;
-		f32 Y = RandomUnilateral(&State) * WindowDimensions.Y;
-		Circles[I].Position = v2f(X, Y);
-		Circles[I].Radius = RandomUnilateral(&State) * 50;
+		int TileX = I % TileDimensions.X;
+		int TileY = (I / TileDimensions.X);
+
+		//v2f TileMin = v2f((f32)TileX * 32.0f, (f32)TileY * 32.0f);
+		//v2f TileMax = v2f(TileMin.X + 32.0f, TileMin.Y + 32.0f);
+
+		// f32 X = RandomUnilateral(&State) * WindowDimensions.X;
+		// f32 Y = RandomUnilateral(&State) * WindowDimensions.Y;
+		//Circles[I].Position = v2f(X, Y);
+		Circles[I].Position = v2f(TileX*32.0 + 16.0, TileY*32.0 + 16.0);
+		Circles[I].Radius = 8;
 	}
 
 
@@ -634,25 +641,23 @@ void ProcessAllPointsIntoComputeBuffers(render_context *R, v2i TileDimensions, v
 	for(int I = 0; I < TileDimensions.X*TileDimensions.Y; I++)
 	{
 		int TileX = I % TileDimensions.X;
-		int TileY = I / TileDimensions.X;
+		int TileY = (I / TileDimensions.X);
 
-		f32 TileMinX = TileX * 32.0f;
-		f32 TileMinY = TileY * 32.0f;
-		f32 TileMaxX = TileMinX + 32.0f;
-		f32 TileMaxY = TileMinY + 32.0f;
+		v2f TileMin = v2f((f32)TileX * 32.0f, (f32)TileY * 32.0f);
+		v2f TileMax = v2f(TileMin.X + 32.0f, TileMin.Y + 32.0f);
 
 		PerTileData[I].At = TotalCount;
 		PerTileData[I].Count = 0;
 		for(int J = 0; J < CircleCount; J++)
 		{
-			v2i DistanceToCircle = v2i(Circles[J].Position.X, Circles[J].Position.Y);
-			f32 ClosestX = Max(TileMinX, Min(Circles[J].Position.X, TileMaxX));
-			f32 ClosestY = Max(TileMinY, Min(Circles[J].Position.Y, TileMaxY));
+			v2f Closest;
+			Closest.X = Max(TileMin.X, Min(Circles[J].Position.X, TileMax.X));
+			Closest.Y = Max(TileMin.Y, Min(Circles[J].Position.Y, TileMax.Y));
 
-			f32 DX = ClosestX - ClosestX;
-			f32 DY = ClosestY - ClosestY;
-			f32 Distance = sqrtf(DX * DX + DY * DY);
-			if(Distance <= Circles[J].Radius)
+			f32 DX = Closest.X - Circles[J].Position.X;
+			f32 DY = Closest.Y - Circles[J].Position.Y;
+			f32 DistanceSquared = (DX * DX + DY * DY);
+			if(DistanceSquared <= Circles[J].Radius * Circles[J].Radius)
 			{
 				PerTileData[I].Count++;
 				Data[TotalCount] = Circles[J];
@@ -1060,7 +1065,8 @@ void R_Update(render_context *R, m_arena *FrameArena)
 	[ComputeEncoder setBuffer:Metal->PerTileData[R->Frame % FRAMES_IN_FLIGHT] offset:0 atIndex:0];
 	[ComputeEncoder setBuffer:Metal->UniformBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:UniformOffset atIndex:2];
 	[ComputeEncoder setTexture:Metal->BaseFrameBuffer atIndex:0];
-	[ComputeEncoder dispatchThreadgroups:ThreadGroupSize threadsPerThreadgroup:TilesPerThreadgroup];
+
+	[ComputeEncoder dispatchThreads:MTLSizeMake(Metal->Drawable.texture.width, Metal->Drawable.texture.height, 1) threadsPerThreadgroup:TilesPerThreadgroup];
 
 	[ComputeEncoder endEncoding];
 

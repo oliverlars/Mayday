@@ -1055,15 +1055,14 @@ void R_Update(render_context *R, m_arena *FrameArena)
 		.NumberOfTilesInX = ThreadGroupSize.width,
 		.NumberOfTilesInY = ThreadGroupSize.height,
 	};
-	MemoryCopy(Metal->UniformBuffers[R->Frame % FRAMES_IN_FLIGHT].contents + UniformOffset*sizeof(uniforms), &Uniforms, sizeof(Uniforms));
 
 	MTLComputePassDescriptor *ComputePassDescriptor = [MTLComputePassDescriptor computePassDescriptor];
 	ComputePassDescriptor.dispatchType = MTLDispatchTypeConcurrent;
 	id<MTLComputeCommandEncoder> ComputeEncoder = [CommandBuffer computeCommandEncoderWithDescriptor:ComputePassDescriptor];
 	[ComputeEncoder setComputePipelineState: Metal->ComputeTest.PipelineState];
+	[ComputeEncoder setBytes:&Uniforms length:sizeof(Uniforms) atIndex:2];
 	[ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:0 atIndex:1];
 	[ComputeEncoder setBuffer:Metal->PerTileData[R->Frame % FRAMES_IN_FLIGHT] offset:0 atIndex:0];
-	[ComputeEncoder setBuffer:Metal->UniformBuffers[R->Frame % FRAMES_IN_FLIGHT] offset:UniformOffset atIndex:2];
 	[ComputeEncoder setTexture:Metal->BaseFrameBuffer atIndex:0];
 
 	[ComputeEncoder dispatchThreads:MTLSizeMake(Metal->Drawable.texture.width, Metal->Drawable.texture.height, 1) threadsPerThreadgroup:TilesPerThreadgroup];

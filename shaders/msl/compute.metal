@@ -19,7 +19,7 @@ struct data
 struct uniforms
 {
 	int NumberOfTilesInX;
-	int NumberOfTilesinY;
+	int NumberOfTilesInY;
 };
 
 float DistanceToCircle(float2 Position, float2 Centre, float Radius)
@@ -31,7 +31,8 @@ kernel void ComputeMain(texture2d<float, access::write> Texture [[ texture(0) ]]
 						device per_tile_data *DataView [[buffer(0)]],
 						device data *Data [[buffer(1)]],
 						constant uniforms &Uniforms [[buffer(2)]],
-				   		uint2 ThreadPositionInGrid [[thread_position_in_grid]],
+						uint2 ThreadPositionInGrid [[thread_position_in_grid]],
+						uint2 ThreadGroupPositionInGrid [[threadgroup_position_in_grid]],
 						uint2 ThreadGroupSize [[threads_per_threadgroup]])
 {
 
@@ -39,7 +40,7 @@ kernel void ComputeMain(texture2d<float, access::write> Texture [[ texture(0) ]]
 		return;
 	}
 	uint2 TileCoordinate = ThreadPositionInGrid / 32;
-	int TileIndex = TileCoordinate.x + TileCoordinate.y*ThreadGroupSize.x;
+	int TileIndex = ThreadGroupPositionInGrid.x + ThreadGroupPositionInGrid.y * Uniforms.NumberOfTilesInX;
 	int Count = DataView[TileIndex].Count;
 
 	float X = pow((float)TileCoordinate.x/(float)ThreadGroupSize.x, 2.2);

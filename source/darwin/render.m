@@ -605,21 +605,23 @@ void ProcessAllPointsIntoComputeBuffers(render_context *R, v2i TileDimensions, v
 	{
 		v2f Position;
 		f32 Radius;
+		f32 Padding;
 	} data;
 
 	m_scratch_arena Scratch = ScratchBegin(0, 0);
 
 	per_tile_data *PerTileData = ArenaPushArrayZero(Scratch.Arena, per_tile_data, TileDimensions.X*TileDimensions.Y);
 	
-	// The most amount per tile we can have is 20 and that's a super edge case
+	// The most amount per tile we can have is 50 and that's a super edge case
 	// that i probably should never handle. That ends up being:
 	// NumberOfTiles * NumberOfShapes
-	data *Data = ArenaPushArrayZero(Scratch.Arena, data, 20*TileDimensions.X*TileDimensions.Y);
+	data *Data = ArenaPushArrayZero(Scratch.Arena, data, 50*TileDimensions.X*TileDimensions.Y);
 	
 	random32_state State = XorShiftInit();
 
-	data *Circles = ArenaPushArrayZero(Scratch.Arena, data, 20);
-	for(int I = 0; I < 20; I++)
+	int CircleCount = 50;
+	data *Circles = ArenaPushArrayZero(Scratch.Arena, data, CircleCount);
+	for(int I = 0; I < CircleCount; I++)
 	{
 		f32 X = RandomUnilateral(&State) * WindowDimensions.X;
 		f32 Y = RandomUnilateral(&State) * WindowDimensions.Y;
@@ -634,31 +636,27 @@ void ProcessAllPointsIntoComputeBuffers(render_context *R, v2i TileDimensions, v
 		int TileX = I % TileDimensions.X;
 		int TileY = I / TileDimensions.X;
 
-		assert(TileX + TileY*TileDimensions.X == I);
+		f32 TileMinX = TileX * 32.0f;
+		f32 TileMinY = TileY * 32.0f;
+		f32 TileMaxX = TileMinX + 32.0f;
+		f32 TileMaxY = TileMinY + 32.0f;
 
-		v2i Corners[4] = 
-		{
-			v2i(TileX*32, TileY*32),
-			v2i(TileX*32 + 32, TileY*32),
-			v2i(TileX*32 + 32, TileY*32 + 32),
-			v2i(TileX*32, TileY*32 + 32),
-		};
 		PerTileData[I].At = TotalCount;
 		PerTileData[I].Count = 0;
-		for(int J = 0; J < 20; J++)
+		for(int J = 0; J < CircleCount; J++)
 		{
-			for(int C = 0; C < 4; C++)
+			v2i DistanceToCircle = v2i(Circles[J].Position.X, Circles[J].Position.Y);
+			f32 ClosestX = Max(TileMinX, Min(Circles[J].Position.X, TileMaxX));
+			f32 ClosestY = Max(TileMinY, Min(Circles[J].Position.Y, TileMaxY));
+
+			f32 DX = ClosestX - ClosestX;
+			f32 DY = ClosestY - ClosestY;
+			f32 Distance = sqrtf(DX * DX + DY * DY);
+			if(Distance <= Circles[J].Radius)
 			{
-				v2i DistanceToCircle = {Circles[J].Position.X, Circles[J].Position.Y};
-				DistanceToCircle.X -= Corners[C].X;
-				DistanceToCircle.Y -= Corners[C].Y;
-				if(sqrtf(DistanceToCircle.X*DistanceToCircle.X + DistanceToCircle.Y*DistanceToCircle.Y) < Circles[J].Radius)
-				{
-					PerTileData[I].Count++;
-					Data[TotalCount] = Circles[J];
-					TotalCount++;
-					break;
-				}
+				PerTileData[I].Count++;
+				Data[TotalCount] = Circles[J];
+				TotalCount++;
 			}
 		}
 	}

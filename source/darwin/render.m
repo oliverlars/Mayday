@@ -633,41 +633,14 @@ void ProcessAllPointsIntoComputeBuffers(render_context *R, v2i TileDimensions, v
 
 	int TotalCount = 0;
 	int TileCount = TileDimensions.X*TileDimensions.Y;
-	// for(int I = 0; I < TileCount; I++)
-	// {
-	// 	int TileX = I % TileDimensions.X;
-	// 	int TileY = (I / TileDimensions.X);
 
-	// 	v2f TileMin = v2f((f32)TileX * 32.0f, (f32)TileY * 32.0f);
-	// 	v2f TileMax = v2f(TileMin.X + 32.0f, TileMin.Y + 32.0f);
-
-	// 	PerTileData[I].At = TotalCount;
-	// 	PerTileData[I].Count = 0;
-	// 	for(int J = 0; J < CircleCount; J++)
-	// 	{
-	// 		v2f Closest;
-	// 		Closest.X = Max(TileMin.X, Min(Circles[J].Position.X, TileMax.X));
-	// 		Closest.Y = Max(TileMin.Y, Min(Circles[J].Position.Y, TileMax.Y));
-
-	// 		f32 DX = Closest.X - Circles[J].Position.X;
-	// 		f32 DY = Closest.Y - Circles[J].Position.Y;
-	// 		f32 DistanceSquared = (DX * DX + DY * DY);
-	// 		if(DistanceSquared <= Circles[J].Radius * Circles[J].Radius)
-	// 		{
-	// 			PerTileData[I].Count++;
-	// 			Data[TotalCount] = Circles[J];
-	// 			TotalCount++;
-	// 		}
-	// 	}
-	// }
-
-	for(int J = 0; J < CircleCount; J++)
+	for(int I = 0; I < CircleCount; I++)
 	{
-		v2f TileMin = Sub(Circles[J].Position, v2f(Circles[J].Radius, Circles[J].Radius));
+		v2f TileMin = Sub(Circles[I].Position, v2f(Circles[I].Radius, Circles[I].Radius));
 		int TileMinX = (int)(floorf(TileMin.X / 32.0f));
 		int TileMinY = (int)(floorf(TileMin.Y / 32.0f));
 
-		v2f TileMax = Add(Circles[J].Position, v2f(Circles[J].Radius, Circles[J].Radius));
+		v2f TileMax = Add(Circles[I].Position, v2f(Circles[I].Radius, Circles[I].Radius));
 		int TileMaxX = (int)(ceilf(TileMax.X / 32.0f));
 		int TileMaxY = (int)(ceilf(TileMax.Y / 32.0f));
 
@@ -677,8 +650,12 @@ void ProcessAllPointsIntoComputeBuffers(render_context *R, v2i TileDimensions, v
 			for(int Y = TileMinY; Y < TileMaxY; Y++)
 			{
 				int TileIndex = X + Y * TileDimensions.X;
+				if(PerTileData[TileIndex].Count == 0)
+				{
+					PerTileData[TileIndex].At = TotalCount;	
+				}
 				PerTileData[TileIndex].Count++;
-				Data[TotalCount] = Circles[J];
+				Data[TotalCount] = Circles[I];
 				TotalCount++;
 			}
 		}

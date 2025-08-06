@@ -684,7 +684,6 @@ void ProcessAllPointsIntoComputeBuffers(render_context *R, v2i TileDimensions, v
 
 	u64 End = OS_TimeStampNow();
 	f32 MilliSeconds = OS_MilliSecondsFromTimeStamp(End - Start);
-	LogInfo("IT TOOK THIS LONG: ?f32", MilliSeconds);
 }
 
 void R_RenderPoints(render_context *R, id<MTLCommandBuffer> CommandBuffer, v4i Scissor, int VertexCount, int VertexOffset, int UniformOffset)

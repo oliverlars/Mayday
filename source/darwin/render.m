@@ -18,6 +18,9 @@
 #include "log.h"
 
 
+#include <simd/simd.h>
+
+
 #include <stdalign.h>
 
 #include "darwin/metal_render.h"
@@ -594,6 +597,7 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 
 void ProcessAllPointsIntoComputeBuffers(render_context *R, v2i TileDimensions, v2i WindowDimensions)
 {
+	u64 Start = OS_TimeStampNow();
 	metal_context *Metal = R->Backend;
 
 	typedef struct per_tile_data
@@ -603,9 +607,9 @@ void ProcessAllPointsIntoComputeBuffers(render_context *R, v2i TileDimensions, v
 	} per_tile_data;
 	typedef struct data
 	{
-		v2f Position;
-		f32 Radius;
-		f32 Padding;
+		simd_float2 Position;
+		simd_float4 Colour;
+		float Radius;
 	} data;
 
 	m_scratch_arena Scratch = ScratchBegin(0, 0);
@@ -617,7 +621,7 @@ void ProcessAllPointsIntoComputeBuffers(render_context *R, v2i TileDimensions, v
 	// NumberOfTiles * NumberOfShapes
 	data *Data = ArenaPushArrayZero(Scratch.Arena, data, 50*TileDimensions.X*TileDimensions.Y);
 	
-	//random32_state State = XorShiftInit();
+	random32_state State = XorShiftInit();
 
 	int CircleCount = TileDimensions.X * TileDimensions.Y;
 	data *Circles = ArenaPushArrayZero(Scratch.Arena, data, CircleCount);
@@ -626,7 +630,13 @@ void ProcessAllPointsIntoComputeBuffers(render_context *R, v2i TileDimensions, v
 		int TileX = I % TileDimensions.X;
 		int TileY = (I / TileDimensions.X);
 
-		Circles[I].Position = v2f(TileX*32.0 + 16.0, TileY*32.0 + 16.0);
+		Circles[I].Position = (simd_float2){TileX*32.0 + 16.0, TileY*32.0 + 16.0};
+		Circles[I].Colour = (simd_float4){
+			RandomUnilateral(&State),
+			RandomUnilateral(&State),
+			RandomUnilateral(&State),
+			RandomUnilateral(&State)
+		};
 		Circles[I].Radius = 8;
 	}
 
@@ -636,11 +646,17 @@ void ProcessAllPointsIntoComputeBuffers(render_context *R, v2i TileDimensions, v
 
 	for(int I = 0; I < CircleCount; I++)
 	{
-		v2f TileMin = Sub(Circles[I].Position, v2f(Circles[I].Radius, Circles[I].Radius));
+		simd_float2 P = Circles[I].Position;
+		float R = Circles[I].Radius;
+		v2f TileMin;
+		TileMin.X = P.x - R;
+		TileMin.Y = P.y - R;
 		int TileMinX = (int)(floorf(TileMin.X / 32.0f));
 		int TileMinY = (int)(floorf(TileMin.Y / 32.0f));
 
-		v2f TileMax = Add(Circles[I].Position, v2f(Circles[I].Radius, Circles[I].Radius));
+		v2f TileMax;
+		TileMax.X = P.x + R;
+		TileMax.Y = P.y + R;
 		int TileMaxX = (int)(ceilf(TileMax.X / 32.0f));
 		int TileMaxY = (int)(ceilf(TileMax.Y / 32.0f));
 
@@ -664,9 +680,11 @@ void ProcessAllPointsIntoComputeBuffers(render_context *R, v2i TileDimensions, v
 	MemoryCopy(Metal->Data[R->Frame % FRAMES_IN_FLIGHT].contents, Data, TotalCount*sizeof(data));
 	MemoryCopy(Metal->PerTileData[R->Frame % FRAMES_IN_FLIGHT].contents, PerTileData, TileDimensions.X*TileDimensions.Y*sizeof(per_tile_data));
 
-
-
 	ScratchEnd(Scratch);
+
+	u64 End = OS_TimeStampNow();
+	f32 MilliSeconds = OS_MilliSecondsFromTimeStamp(End - Start);
+	LogInfo("IT TOOK THIS LONG: ?f32", MilliSeconds);
 }
 
 void R_RenderPoints(render_context *R, id<MTLCommandBuffer> CommandBuffer, v4i Scissor, int VertexCount, int VertexOffset, int UniformOffset)
@@ -1076,7 +1094,6 @@ void R_Update(render_context *R, m_arena *FrameArena)
 	}];
 
 	[CommandBuffer commit];
-	[CommandBuffer waitUntilCompleted];
 
 
 	R->CommandsFirst = Null;

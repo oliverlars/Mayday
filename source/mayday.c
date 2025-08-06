@@ -110,6 +110,7 @@ void OS_Update_(void *Data)
 {
 	mayday_context *M = Data;
 
+	
 	M->Draw->ViewportSize = v2f(sapp_widthf(), sapp_heightf());
 	UI_Begin(M->UI);
 	R_PushScissor(M->Render, v4i(0, 0, sapp_width(), sapp_height()));
@@ -150,7 +151,7 @@ void OS_Update(void *Data)
 {
 	mayday_context *M = Data;
 
-	if(M->UnFocused) return;
+	//if(M->UnFocused) return;
 
 	R_PushScissor(M->Render, v4i(0, 0, sapp_width(), sapp_height()));
 	M->Draw->ViewportSize = v2f(sapp_widthf(), sapp_heightf());

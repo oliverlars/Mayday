@@ -13,6 +13,7 @@ struct per_tile_data
 struct data
 {
 	float2 Position;
+	float4 Colour;
 	float Radius;
 };
 
@@ -45,7 +46,7 @@ kernel void ComputeMain(texture2d<float, access::read_write> Texture [[ texture(
 		float Distance = DistanceToCircle(Position, Data[DataIndex].Position, Data[DataIndex].Radius);
 		float AA = smoothstep(-1, 1, -Distance);
 		float4 CurrentColour = Texture.read(ThreadPositionInGrid);
-		float3 Colour = mix(CurrentColour.rgb, float3(1, 1, 0), AA);
+		float3 Colour = mix(CurrentColour.rgb, Data[DataIndex].Colour.rgb, AA);
 		Texture.write(float4(Colour, 1.0), ThreadPositionInGrid);
 	}
 }

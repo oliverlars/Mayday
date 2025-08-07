@@ -632,8 +632,8 @@ void ProcessAllPointsIntoComputeBuffers(render_context *R, v2i TileDimensions, v
 
 		Circles[I].Position = (simd_float2)
 		{
-			TileX*32.0 + 16.0,
-			TileY*32.0 + 16.0
+			RandomUnilateral(&State) * WindowDimensions.X,
+			RandomUnilateral(&State) * WindowDimensions.Y
 		};
 
 		Circles[I].Colour = (simd_float4)
@@ -643,7 +643,7 @@ void ProcessAllPointsIntoComputeBuffers(render_context *R, v2i TileDimensions, v
 			RandomUnilateral(&State),
 			RandomUnilateral(&State)
 		};
-		Circles[I].Radius = 25;
+		Circles[I].Radius = RandomUnilateral(&State)*5;
 	}
 
 	int TileCount = TileDimensions.X*TileDimensions.Y;
@@ -1117,8 +1117,13 @@ void R_Update(render_context *R, m_arena *FrameArena)
 	ComputePassDescriptor.dispatchType = MTLDispatchTypeConcurrent;
 	id<MTLComputeCommandEncoder> ComputeEncoder = [CommandBuffer computeCommandEncoderWithDescriptor:ComputePassDescriptor];
 	[ComputeEncoder setComputePipelineState: Metal->ComputeTest.PipelineState];
-	[ComputeEncoder setBytes:&Uniforms length:sizeof(Uniforms) atIndex:2];
-	[ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:0 atIndex:1];
+	[ComputeEncoder setBytes:&Uniforms length:sizeof(Uniforms) atIndex:5];
+
+	// These offsets are just temporary
+	[ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:MegaBytes(0) atIndex:1];
+	[ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:MegaBytes(1) atIndex:2];
+	[ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:MegaBytes(2) atIndex:3];
+	[ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:MegaBytes(3) atIndex:4];
 	[ComputeEncoder setBuffer:Metal->PerTileData[R->Frame % FRAMES_IN_FLIGHT] offset:0 atIndex:0];
 	[ComputeEncoder setTexture:Metal->BaseFrameBuffer atIndex:0];
 

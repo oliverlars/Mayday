@@ -1,6 +1,4 @@
-#include <metal_stdlib>
-
-using namespace metal;
+#include <metal_stdlib>1
 
 
 struct per_tile_data
@@ -9,12 +7,40 @@ struct per_tile_data
 	int Count;
 };
 
-// Just doing to do points for now and see how that goes
-struct data
+struct index
 {
-	float2 Position;
-	float4 Colour;
+	int Type;
+	int At;
+};
+
+struct circle
+{
+	metal::float2 Position;
+	metal::float4 Colour;
 	float Radius;
+};
+
+struct line
+{
+	metal::float2 Start;
+	metal::float2 End;
+	float4 Colour;
+};
+
+struct bezier
+{
+	metal::float2 Start;
+	metal::float2 Middle;
+	metal::float2 End;
+	float4 Colour;
+};
+
+struct glyph
+{
+	metal::float2 Position;
+	metal::float2 Colour;
+	uint CurveStart;
+	uint CurveCount;
 };
 
 struct uniforms
@@ -25,13 +51,16 @@ struct uniforms
 
 float DistanceToCircle(float2 Position, float2 Centre, float Radius)
 {
-	return length(Position - Centre) - Radius; 
+	return metal::length(Position - Centre) - Radius; 
 }
 
-kernel void ComputeMain(texture2d<float, access::read_write> Texture [[ texture(0) ]],
+kernel void ComputeMain(metal::texture2d<float, metal::access::read_write> Texture [[ texture(0) ]],
 						device per_tile_data *DataView [[buffer(0)]],
-						device data *Data [[buffer(1)]],
-						constant uniforms &Uniforms [[buffer(2)]],
+						device circle *Circles [[buffer(1)]],
+						device line *Lines [[buffer(2)]],
+						device bezier *Beziers [[buffer(3)]],
+						device glyph *Glyphs [[buffer(4)]],
+						constant uniforms &Uniforms [[buffer(5)]],
 						uint2 ThreadPositionInGrid [[thread_position_in_grid]],
 						uint2 ThreadGroupPositionInGrid [[threadgroup_position_in_grid]],
 						uint2 ThreadGroupSize [[threads_per_threadgroup]])
@@ -40,15 +69,15 @@ kernel void ComputeMain(texture2d<float, access::read_write> Texture [[ texture(
 	int Count = DataView[TileIndex].Count;
 
 
-	float3 Colour = Texture.read(ThreadPositionInGrid).rgb;
+	metal::float3 Colour = Texture.read(ThreadPositionInGrid).rgb;
 	float Normalise = 1.0/(float)Count;
 	for(int I = 0; I < Count; I++)
 	{
 		int DataIndex = DataView[TileIndex].At + I;
-		float2 Position = float2(ThreadPositionInGrid.x, ThreadPositionInGrid.y);
-		float Distance = DistanceToCircle(Position, Data[DataIndex].Position, Data[DataIndex].Radius);
-		float AA = smoothstep(-1, 1, -Distance) * Data[DataIndex].Colour.a;
-		Colour = mix(Colour.rgb, Data[DataIndex].Colour.rgb * Normalise, AA);
+		metal::float2 Position = float2(ThreadPositionInGrid.x, ThreadPositionInGrid.y);
+		float Distance = DistanceToCircle(Position, Circles[DataIndex].Position, Circles[DataIndex].Radius);
+		float AA = metal::smoothstep(-1, 1, -Distance) * Circles[DataIndex].Colour.a;
+		Colour = metal::mix(Colour.rgb, Circles[DataIndex].Colour.rgb * Normalise, AA);
 		Texture.write(float4(Colour, 1.0), ThreadPositionInGrid);
 	}
 }

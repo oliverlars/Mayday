@@ -5,12 +5,7 @@ struct per_tile_data
 {
 	int At;
 	int Count;
-};
-
-struct index
-{
 	int Type;
-	int At;
 };
 
 struct circle

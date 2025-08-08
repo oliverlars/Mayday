@@ -604,13 +604,15 @@ void ProcessAllPointsIntoComputeBuffers(render_context *R, v2i TileDimensions, v
 	{
 		int At;
 		int Count;
+		int Type;
 	} per_tile_data;
-	typedef struct data
+
+	typedef struct circle
 	{
 		simd_float2 Position;
 		simd_float4 Colour;
 		float Radius;
-	} data;
+	} circle;
 
 	m_scratch_arena Scratch = ScratchBegin(0, 0);
 
@@ -619,13 +621,29 @@ void ProcessAllPointsIntoComputeBuffers(render_context *R, v2i TileDimensions, v
 	// The most amount per tile we can have is 50 and that's a super edge case
 	// that i probably should never handle. That ends up being:
 	// NumberOfTiles * NumberOfShapes
-	data *Data = ArenaPushArrayZero(Scratch.Arena, data, 50*TileDimensions.X*TileDimensions.Y);
+	circle *Data = ArenaPushArrayZero(Scratch.Arena, circle, 50*TileDimensions.X*TileDimensions.Y);
 	
 	random32_state State = XorShiftInit();
 
-	int CircleCount = TileDimensions.X * TileDimensions.Y;
-	data *Circles = ArenaPushArrayZero(Scratch.Arena, data, CircleCount);
-	for(int I = 0; I < CircleCount; I++)
+	int SDFCount = TileDimensions.X * TileDimensions.Y;
+	if(Metal->SDFs == Null)
+	{
+		Metal->SDFs = ArenaPushArrayZero(R->Arena, u8, MegaBytes(5));
+	}
+
+
+	int Offsets[] = 
+	{
+		MegaBytes(0),
+		MegaBytes(1),
+		MegaBytes(2),
+		MegaBytes(3),
+		MegaBytes(4),
+	};
+
+	circle *Circles = (circle*)(Metal->SDFs + Offsets[0]);
+
+	for(int I = 0; I < SDFCount; I++)
 	{
 		int TileX = I % TileDimensions.X;
 		int TileY = (I / TileDimensions.X);
@@ -648,7 +666,7 @@ void ProcessAllPointsIntoComputeBuffers(render_context *R, v2i TileDimensions, v
 
 	int TileCount = TileDimensions.X*TileDimensions.Y;
 
-	for(int I = 0; I < CircleCount; I++)
+	for(int I = 0; I < SDFCount; I++)
 	{
 		simd_float2 P = Circles[I].Position;
 		float R = Circles[I].Radius;
@@ -688,7 +706,7 @@ void ProcessAllPointsIntoComputeBuffers(render_context *R, v2i TileDimensions, v
 	}
 
 	int *TileOffsets = ArenaPushArrayZero(Scratch.Arena, int, TileCount);
-	for(int I = 0; I < CircleCount; I++)
+	for(int I = 0; I < SDFCount; I++)
 	{
 		simd_float2 P = Circles[I].Position;
 		float R = Circles[I].Radius;
@@ -722,7 +740,7 @@ void ProcessAllPointsIntoComputeBuffers(render_context *R, v2i TileDimensions, v
 		}
 	}
 
-	MemoryCopy(Metal->Data[R->Frame % FRAMES_IN_FLIGHT].contents, Data, CountSoFar*sizeof(data));
+	MemoryCopy(Metal->Data[R->Frame % FRAMES_IN_FLIGHT].contents, Data, CountSoFar*sizeof(circle));
 	MemoryCopy(Metal->PerTileData[R->Frame % FRAMES_IN_FLIGHT].contents, PerTileData, TileDimensions.X*TileDimensions.Y*sizeof(per_tile_data));
 
 	ScratchEnd(Scratch);

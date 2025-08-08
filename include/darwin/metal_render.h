@@ -35,6 +35,7 @@ typedef struct metal_context
 	metal_shader               BezierShader;
 
 
+	u8                         *SDFs;
 	id<MTLBuffer>              Data[FRAMES_IN_FLIGHT];
 	id<MTLBuffer>              PerTileData[FRAMES_IN_FLIGHT];
 	metal_compute_shader       ComputeTest;

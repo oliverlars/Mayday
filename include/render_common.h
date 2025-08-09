@@ -78,6 +78,11 @@ typedef struct r_command
 	m44f Transform;
 	v4i Scissor;
 
+
+	// Shape specific information for tile calculations
+	v3f Position;
+	f32 Radius;
+
 	r_vertex_attributes Attributes;
 
 	struct r_command *Next;

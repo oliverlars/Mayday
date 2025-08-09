@@ -594,6 +594,50 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 	Metal->InFlightSemaphore = dispatch_semaphore_create(FRAMES_IN_FLIGHT);
 }
 
+typedef struct tile_range
+{
+	v2i TileMin;
+	v2i TileMax;
+} tile_range;
+
+
+tile_range TileRangeFromCommand(render_context *R, r_command *Command, v2i TileDimensions, v2i WindowDimensions)
+{
+	tile_range Result = {0};
+	v2f TileMin, TileMax;
+	switch(Command->Type)
+	{
+	case R_COMMAND_POINTS:
+	{
+		v2f P = v2f(Command->Position.X, Command->Position.Y);
+		f32 R = Command->Radius;
+		TileMin.X = P.X - R;
+		TileMin.Y = P.Y - R;
+		int TileMinX = (int)(floorf(TileMin.X / 32.0f));
+		int TileMinY = (int)(floorf(TileMin.Y / 32.0f));
+
+		TileMax.X = P.X + R;
+		TileMax.Y = P.Y + R;
+		int TileMaxX = (int)(ceilf(TileMax.X / 32.0f));
+		int TileMaxY = (int)(ceilf(TileMax.Y / 32.0f));
+	}
+	break;
+	case R_COMMAND_LINES:
+	{
+
+	}
+	break;
+	}
+
+
+	TileMin.X = Max(TileMin.X, 0);
+	TileMin.Y = Max(TileMin.Y, 0);
+
+	TileMax.X = Min(TileMax.X, TileDimensions.X - 1);
+	TileMax.Y = Min(TileMax.Y, TileDimensions.Y - 1);
+
+	return Result;
+}
 
 void ProcessAllPointsIntoComputeBuffers(render_context *R, v2i TileDimensions, v2i WindowDimensions)
 {

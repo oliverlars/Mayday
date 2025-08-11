@@ -1085,7 +1085,7 @@ void R_Update(render_context *R, m_arena *FrameArena)
 		1
 	);
 
-	ProcessAllPointsIntoComputeBuffers(R, v2i(ThreadGroupSize.width, ThreadGroupSize.height), v2i(Metal->Drawable.texture.width, Metal->Drawable.texture.height));
+	//ProcessAllPointsIntoComputeBuffers(R, v2i(ThreadGroupSize.width, ThreadGroupSize.height), v2i(Metal->Drawable.texture.width, Metal->Drawable.texture.height));
 
 	u64 CurrentBatchOffsetInBytes = 0;
 	u64 VertexOffsetInBytes = 0;
@@ -1127,6 +1127,10 @@ void R_Update(render_context *R, m_arena *FrameArena)
 		MemoryCopy(Metal->VertexBuffers[ResourceIndex].contents + CurrentBatchOffsetInBytes + VertexOffsetInBytes,
 					GPUVertices, Offset);
 		CurrentBatchOffsetInBytes += Offset;
+
+
+
+		int PointOffset = 0;
 
 		if((Command->Next && Command->Next->Type != Command->Type) ||
 		   (Command->Next && !MemoryEqual(&Command->Transform, &Command->Next->Transform, sizeof(m44f))) ||
@@ -1183,7 +1187,7 @@ void R_Update(render_context *R, m_arena *FrameArena)
 				};
 
 
-				circle *Circles = ((circle *) Metal->SDFs + Offsets[0]);
+				circle *Circles = ((circle *) Metal->SDFs + Offsets[0] + PointOffset);
 
 				circle *Data = ArenaPushArrayZero(Scratch.Arena, circle, 50*TileDimensions.X*TileDimensions.Y);
 
@@ -1210,8 +1214,6 @@ void R_Update(render_context *R, m_arena *FrameArena)
 
 				for(int I = 0; I < Command->VerticesCount; I++)
 				{
-				
-					circle *Circles = (circle*)(Metal->SDFs + Offsets[0]);
 
 					int TileCount = TileDimensions.X*TileDimensions.Y;
 
@@ -1289,9 +1291,9 @@ void R_Update(render_context *R, m_arena *FrameArena)
 						}
 					}
 
-					MemoryCopy(Metal->Data[R->Frame % FRAMES_IN_FLIGHT].contents, Data, CountSoFar*sizeof(circle));
+					MemoryCopy(Metal->Data[R->Frame % FRAMES_IN_FLIGHT].contents + PointOffset*sizeof(circle), Data, CountSoFar*sizeof(circle));
 					MemoryCopy(Metal->PerTileData[R->Frame % FRAMES_IN_FLIGHT].contents, PerTileData, TileDimensions.X*TileDimensions.Y*sizeof(per_tile_data));
-
+					PointOffset += CountSoFar; 
 					ScratchEnd(Scratch);
 				}
 				//R_RenderPoints(R, CommandBuffer, Command->Scissor, VertexCount, VertexOffsetInBytes, UniformOffset*sizeof(uniforms));

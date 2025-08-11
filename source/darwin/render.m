@@ -1211,91 +1211,88 @@ void R_Update(render_context *R, m_arena *FrameArena)
 					Circles[I/6].Radius = Command->Vertices[I].PointSize;
 					Circles[I/6].Colour = C;
 				}
+				
+				int TileCount = TileDimensions.X*TileDimensions.Y;
 
-				for(int I = 0; I < Command->VerticesCount; I++)
+				for(int I = 0; I < Command->VerticesCount/6; I++)
 				{
+					simd_float2 P = Circles[I].Position;
+					float R = Circles[I].Radius;
+					v2f TileMin;
+					TileMin.X = P.x - R;
+					TileMin.Y = P.y - R;
+					int TileMinX = (int)(floorf(TileMin.X / 32.0f));
+					int TileMinY = (int)(floorf(TileMin.Y / 32.0f));
 
-					int TileCount = TileDimensions.X*TileDimensions.Y;
+					v2f TileMax;
+					TileMax.X = P.x + R;
+					TileMax.Y = P.y + R;
+					int TileMaxX = (int)(ceilf(TileMax.X / 32.0f));
+					int TileMaxY = (int)(ceilf(TileMax.Y / 32.0f));
 
-					for(int I = 0; I < Command->VerticesCount/6; I++)
+					TileMinX = Max(TileMinX, 0);
+					TileMinY = Max(TileMinY, 0);
+
+					TileMaxX = Min(TileMaxX, TileDimensions.X - 1);
+					TileMaxY = Min(TileMaxY, TileDimensions.Y - 1);
+
+					for(int X = TileMinX; X < TileMaxX; X++)
 					{
-						simd_float2 P = Circles[I].Position;
-						float R = Circles[I].Radius;
-						v2f TileMin;
-						TileMin.X = P.x - R;
-						TileMin.Y = P.y - R;
-						int TileMinX = (int)(floorf(TileMin.X / 32.0f));
-						int TileMinY = (int)(floorf(TileMin.Y / 32.0f));
-
-						v2f TileMax;
-						TileMax.X = P.x + R;
-						TileMax.Y = P.y + R;
-						int TileMaxX = (int)(ceilf(TileMax.X / 32.0f));
-						int TileMaxY = (int)(ceilf(TileMax.Y / 32.0f));
-
-						TileMinX = Max(TileMinX, 0);
-						TileMinY = Max(TileMinY, 0);
-
-						TileMaxX = Min(TileMaxX, TileDimensions.X - 1);
-						TileMaxY = Min(TileMaxY, TileDimensions.Y - 1);
-
-						for(int X = TileMinX; X < TileMaxX; X++)
+						for(int Y = TileMinY; Y < TileMaxY; Y++)
 						{
-							for(int Y = TileMinY; Y < TileMaxY; Y++)
-							{
-								int TileIndex = X + Y * TileDimensions.X;
-								PerTileData[TileIndex].Count++;
-							}
+							int TileIndex = X + Y * TileDimensions.X;
+							PerTileData[TileIndex].Count++;
 						}
 					}
-
-					int CountSoFar = 0;
-					for(int I = 0; I < TileCount; I++)
-					{
-						PerTileData[I].At = CountSoFar;
-						CountSoFar += PerTileData[I].Count;
-					}
-
-					int *TileOffsets = ArenaPushArrayZero(Scratch.Arena, int, TileCount);
-					for(int I = 0; I < CircleCount; I++)
-					{
-						simd_float2 P = Circles[I].Position;
-						float R = Circles[I].Radius;
-						v2f TileMin;
-						TileMin.X = P.x - R;
-						TileMin.Y = P.y - R;
-						int TileMinX = (int)(floorf(TileMin.X / 32.0f));
-						int TileMinY = (int)(floorf(TileMin.Y / 32.0f));
-
-						v2f TileMax;
-						TileMax.X = P.x + R;
-						TileMax.Y = P.y + R;
-						int TileMaxX = (int)(ceilf(TileMax.X / 32.0f));
-						int TileMaxY = (int)(ceilf(TileMax.Y / 32.0f));
-
-						TileMinX = Max(TileMinX, 0);
-						TileMinY = Max(TileMinY, 0);
-
-						TileMaxX = Min(TileMaxX, TileDimensions.X - 1);
-						TileMaxY = Min(TileMaxY, TileDimensions.Y - 1);
-
-						for(int X = TileMinX; X < TileMaxX; X++)
-						{
-							for(int Y = TileMinY; Y < TileMaxY; Y++)
-							{
-								int TileIndex = X + Y * TileDimensions.X;
-								int At = PerTileData[TileIndex].At;
-								Data[At + TileOffsets[TileIndex]] = Circles[I];
-								TileOffsets[TileIndex] += 1;
-							}
-						}
-					}
-
-					MemoryCopy(Metal->Data[R->Frame % FRAMES_IN_FLIGHT].contents + PointOffset*sizeof(circle), Data, CountSoFar*sizeof(circle));
-					MemoryCopy(Metal->PerTileData[R->Frame % FRAMES_IN_FLIGHT].contents, PerTileData, TileDimensions.X*TileDimensions.Y*sizeof(per_tile_data));
-					PointOffset += CountSoFar; 
-					ScratchEnd(Scratch);
 				}
+
+				int CountSoFar = 0;
+				for(int I = 0; I < TileCount; I++)
+				{
+					PerTileData[I].At = CountSoFar;
+					CountSoFar += PerTileData[I].Count;
+				}
+
+				int *TileOffsets = ArenaPushArrayZero(Scratch.Arena, int, TileCount);
+				for(int I = 0; I < CircleCount; I++)
+				{
+					simd_float2 P = Circles[I].Position;
+					float R = Circles[I].Radius;
+					v2f TileMin;
+					TileMin.X = P.x - R;
+					TileMin.Y = P.y - R;
+					int TileMinX = (int)(floorf(TileMin.X / 32.0f));
+					int TileMinY = (int)(floorf(TileMin.Y / 32.0f));
+
+					v2f TileMax;
+					TileMax.X = P.x + R;
+					TileMax.Y = P.y + R;
+					int TileMaxX = (int)(ceilf(TileMax.X / 32.0f));
+					int TileMaxY = (int)(ceilf(TileMax.Y / 32.0f));
+
+					TileMinX = Max(TileMinX, 0);
+					TileMinY = Max(TileMinY, 0);
+
+					TileMaxX = Min(TileMaxX, TileDimensions.X - 1);
+					TileMaxY = Min(TileMaxY, TileDimensions.Y - 1);
+
+					for(int X = TileMinX; X < TileMaxX; X++)
+					{
+						for(int Y = TileMinY; Y < TileMaxY; Y++)
+						{
+							int TileIndex = X + Y * TileDimensions.X;
+							int At = PerTileData[TileIndex].At;
+							Data[At + TileOffsets[TileIndex]] = Circles[I];
+							TileOffsets[TileIndex] += 1;
+						}
+					}
+				}
+
+				MemoryCopy(Metal->Data[R->Frame % FRAMES_IN_FLIGHT].contents + PointOffset*sizeof(circle), Data, CountSoFar*sizeof(circle));
+				MemoryCopy(Metal->PerTileData[R->Frame % FRAMES_IN_FLIGHT].contents, PerTileData, TileDimensions.X*TileDimensions.Y*sizeof(per_tile_data));
+				PointOffset += CountSoFar; 
+				ScratchEnd(Scratch);
+				
 				//R_RenderPoints(R, CommandBuffer, Command->Scissor, VertexCount, VertexOffsetInBytes, UniformOffset*sizeof(uniforms));
 			}
 			else if(Command->Type == R_COMMAND_LINES)

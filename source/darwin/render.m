@@ -1146,7 +1146,155 @@ void R_Update(render_context *R, m_arena *FrameArena)
 			}
 			else if(Command->Type == R_COMMAND_POINTS)
 			{
-				R_RenderPoints(R, CommandBuffer, Command->Scissor, VertexCount, VertexOffsetInBytes, UniformOffset*sizeof(uniforms));
+				v2i TileDimensions = v2i(ThreadGroupSize.width, ThreadGroupSize.height);
+				v2i WindowDimensions = v2i(Metal->Drawable.texture.width, Metal->Drawable.texture.height);
+
+				metal_context *Metal = R->Backend;
+
+				typedef struct per_tile_data
+				{
+					int At;
+					int Count;
+					int Type;
+				} per_tile_data;
+
+				typedef struct circle
+				{
+					simd_float2 Position;
+					simd_float4 Colour;
+					float Radius;
+				} circle;
+
+				m_scratch_arena Scratch = ScratchBegin(0, 0);
+
+				per_tile_data *PerTileData = ArenaPushArrayZero(Scratch.Arena, per_tile_data, TileDimensions.X*TileDimensions.Y);
+				if(Metal->SDFs == Null)
+				{
+					Metal->SDFs = ArenaPushArrayZero(R->Arena, u8, MegaBytes(5));
+				}
+
+				int Offsets[] = 
+				{
+					MegaBytes(0),
+					MegaBytes(1),
+					MegaBytes(2),
+					MegaBytes(3),
+					MegaBytes(4),
+				};
+
+
+				circle *Circles = ((circle *) Metal->SDFs + Offsets[0]);
+
+				circle *Data = ArenaPushArrayZero(Scratch.Arena, circle, 50*TileDimensions.X*TileDimensions.Y);
+
+
+				int CircleCount = Command->VerticesCount/6;
+				for(int I = 0; I < Command->VerticesCount; I += 6)
+				{
+					simd_float2 P =
+					{
+						Command->Vertices[I].Position.X,
+						Command->Vertices[I].Position.Y
+					};
+					simd_float4 C =
+					{
+						Command->Vertices[I].Colour.X,
+						Command->Vertices[I].Colour.Y,
+						Command->Vertices[I].Colour.Z,
+						Command->Vertices[I].Colour.W
+					};
+					Circles[I/6].Position = P;
+					Circles[I/6].Radius = Command->Vertices[I].PointSize;
+					Circles[I/6].Colour = C;
+				}
+
+				for(int I = 0; I < Command->VerticesCount; I++)
+				{
+				
+					circle *Circles = (circle*)(Metal->SDFs + Offsets[0]);
+
+					int TileCount = TileDimensions.X*TileDimensions.Y;
+
+					for(int I = 0; I < Command->VerticesCount/6; I++)
+					{
+						simd_float2 P = Circles[I].Position;
+						float R = Circles[I].Radius;
+						v2f TileMin;
+						TileMin.X = P.x - R;
+						TileMin.Y = P.y - R;
+						int TileMinX = (int)(floorf(TileMin.X / 32.0f));
+						int TileMinY = (int)(floorf(TileMin.Y / 32.0f));
+
+						v2f TileMax;
+						TileMax.X = P.x + R;
+						TileMax.Y = P.y + R;
+						int TileMaxX = (int)(ceilf(TileMax.X / 32.0f));
+						int TileMaxY = (int)(ceilf(TileMax.Y / 32.0f));
+
+						TileMinX = Max(TileMinX, 0);
+						TileMinY = Max(TileMinY, 0);
+
+						TileMaxX = Min(TileMaxX, TileDimensions.X - 1);
+						TileMaxY = Min(TileMaxY, TileDimensions.Y - 1);
+
+						for(int X = TileMinX; X < TileMaxX; X++)
+						{
+							for(int Y = TileMinY; Y < TileMaxY; Y++)
+							{
+								int TileIndex = X + Y * TileDimensions.X;
+								PerTileData[TileIndex].Count++;
+							}
+						}
+					}
+
+					int CountSoFar = 0;
+					for(int I = 0; I < TileCount; I++)
+					{
+						PerTileData[I].At = CountSoFar;
+						CountSoFar += PerTileData[I].Count;
+					}
+
+					int *TileOffsets = ArenaPushArrayZero(Scratch.Arena, int, TileCount);
+					for(int I = 0; I < CircleCount; I++)
+					{
+						simd_float2 P = Circles[I].Position;
+						float R = Circles[I].Radius;
+						v2f TileMin;
+						TileMin.X = P.x - R;
+						TileMin.Y = P.y - R;
+						int TileMinX = (int)(floorf(TileMin.X / 32.0f));
+						int TileMinY = (int)(floorf(TileMin.Y / 32.0f));
+
+						v2f TileMax;
+						TileMax.X = P.x + R;
+						TileMax.Y = P.y + R;
+						int TileMaxX = (int)(ceilf(TileMax.X / 32.0f));
+						int TileMaxY = (int)(ceilf(TileMax.Y / 32.0f));
+
+						TileMinX = Max(TileMinX, 0);
+						TileMinY = Max(TileMinY, 0);
+
+						TileMaxX = Min(TileMaxX, TileDimensions.X - 1);
+						TileMaxY = Min(TileMaxY, TileDimensions.Y - 1);
+
+						for(int X = TileMinX; X < TileMaxX; X++)
+						{
+							for(int Y = TileMinY; Y < TileMaxY; Y++)
+							{
+								int TileIndex = X + Y * TileDimensions.X;
+								int At = PerTileData[TileIndex].At;
+								Data[At + TileOffsets[TileIndex]] = Circles[I];
+								TileOffsets[TileIndex] += 1;
+							}
+						}
+					}
+
+					MemoryCopy(Metal->Data[R->Frame % FRAMES_IN_FLIGHT].contents, Data, CountSoFar*sizeof(circle));
+					MemoryCopy(Metal->PerTileData[R->Frame % FRAMES_IN_FLIGHT].contents, PerTileData, TileDimensions.X*TileDimensions.Y*sizeof(per_tile_data));
+
+					ScratchEnd(Scratch);
+				}
+				//R_RenderPoints(R, CommandBuffer, Command->Scissor, VertexCount, VertexOffsetInBytes, UniformOffset*sizeof(uniforms));
 			}
 			else if(Command->Type == R_COMMAND_LINES)
 			{

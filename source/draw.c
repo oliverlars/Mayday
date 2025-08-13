@@ -580,7 +580,7 @@ void D_DrawPointsArray(draw_context *D,
 	render_context *R = D->Render;
 	r_command Command = {0};
 	Command.Vertices = (r_vertex*)ArenaPushArrayZero(Arena, r_vertex, PositionsCount*6);
-	Command.VerticesCount = PositionsCount*6;
+	Command.VerticesCount = PositionsCount;
 
 	r_vertex *R_Vertices = Command.Vertices;
 
@@ -612,36 +612,14 @@ void D_DrawPointsArray(draw_context *D,
 
 		A.Y = D->ViewportSize.Y * (A.Y*0.5 + 0.5);
 
-
-		v2f BL = v2f(A.X - PointSize/2.0, A.Y - PointSize/2.0);
-		v2f TR = v2f(A.X + PointSize/2.0, A.Y + PointSize/2.0);
-		BL.X -= 5;
-		BL.Y -= 5;
-		TR.X += 5;
-		TR.Y += 5;
-		v2f Vertices[6] =
-		{
-			v2f(BL.X, BL.Y),
-			v2f(TR.X, BL.Y),
-			v2f(TR.X, TR.Y),
-
-			v2f(BL.X, BL.Y),
-			v2f(BL.X, TR.Y),
-			v2f(TR.X, TR.Y),
+		r_vertex Vertex = {
+			.Position = v4f(A.X, A.Y, 0.0, 1),
+			.Colour = Colour,
+			.PointSize = PointSize,
+			.Centre = v2f(A.X, A.Y),
 		};
 
-		v2f Centre = v2f((BL.X + TR.X)/2.0, (BL.Y + TR.Y)/2.0);
-
-		for(int V = 0; V < 6; V++)
-		{
-			r_vertex Vertex = {
-				.Position = v4f(Vertices[V].X, Vertices[V].Y, 0.0, 1),
-				.Colour = Colour,
-				.PointSize = PointSize,
-				.Centre = Centre,
-			};
-			*R_Vertices++ = Vertex;
-		}
+		*R_Vertices++ = Vertex;
 	}
 	Command.Type = R_COMMAND_POINTS;
 	Command.Attributes = R_AttributesFromCommandType(Command.Type);

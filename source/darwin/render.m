@@ -1192,8 +1192,8 @@ void R_Update(render_context *R, m_arena *FrameArena)
 				circle *Data = ArenaPushArrayZero(Scratch.Arena, circle, 50*TileDimensions.X*TileDimensions.Y);
 
 
-				int CircleCount = Command->VerticesCount/6;
-				for(int I = 0; I < Command->VerticesCount; I += 6)
+				int CircleCount = Command->VerticesCount;
+				for(int I = 0; I < CircleCount; I++)
 				{
 					simd_float2 P =
 					{
@@ -1207,14 +1207,14 @@ void R_Update(render_context *R, m_arena *FrameArena)
 						Command->Vertices[I].Colour.Z,
 						Command->Vertices[I].Colour.W
 					};
-					Circles[I/6].Position = P;
-					Circles[I/6].Radius = Command->Vertices[I].PointSize;
-					Circles[I/6].Colour = C;
+					Circles[I].Position = P;
+					Circles[I].Radius = Command->Vertices[I].PointSize;
+					Circles[I].Colour = C;
 				}
 				
 				int TileCount = TileDimensions.X*TileDimensions.Y;
 
-				for(int I = 0; I < Command->VerticesCount/6; I++)
+				for(int I = 0; I < CircleCount; I++)
 				{
 					simd_float2 P = Circles[I].Position;
 					float R = Circles[I].Radius;
@@ -1292,6 +1292,34 @@ void R_Update(render_context *R, m_arena *FrameArena)
 				MemoryCopy(Metal->PerTileData[R->Frame % FRAMES_IN_FLIGHT].contents, PerTileData, TileDimensions.X*TileDimensions.Y*sizeof(per_tile_data));
 				PointOffset += CountSoFar; 
 				ScratchEnd(Scratch);
+
+
+				struct uniforms2
+				{
+					int NumberOfTilesInX;
+					int NumberOfTilesInY;
+				} Uniforms = {
+					.NumberOfTilesInX = ThreadGroupSize.width,
+					.NumberOfTilesInY = ThreadGroupSize.height,
+				};
+
+				MTLComputePassDescriptor *ComputePassDescriptor = [MTLComputePassDescriptor computePassDescriptor];
+				ComputePassDescriptor.dispatchType = MTLDispatchTypeConcurrent;
+				id<MTLComputeCommandEncoder> ComputeEncoder = [CommandBuffer computeCommandEncoderWithDescriptor:ComputePassDescriptor];
+				[ComputeEncoder setComputePipelineState: Metal->ComputeTest.PipelineState];
+				[ComputeEncoder setBytes:&Uniforms length:sizeof(Uniforms) atIndex:5];
+
+				// These offsets are just temporary
+				[ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:MegaBytes(0) atIndex:1];
+				[ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:MegaBytes(1) atIndex:2];
+				[ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:MegaBytes(2) atIndex:3];
+				[ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:MegaBytes(3) atIndex:4];
+				[ComputeEncoder setBuffer:Metal->PerTileData[R->Frame % FRAMES_IN_FLIGHT] offset:0 atIndex:0];
+				[ComputeEncoder setTexture:Metal->BaseFrameBuffer atIndex:0];
+
+				[ComputeEncoder dispatchThreads:MTLSizeMake(Metal->Drawable.texture.width, Metal->Drawable.texture.height, 1) threadsPerThreadgroup:TilesPerThreadgroup];
+
+				[ComputeEncoder endEncoding];
 				
 				//R_RenderPoints(R, CommandBuffer, Command->Scissor, VertexCount, VertexOffsetInBytes, UniformOffset*sizeof(uniforms));
 			}
@@ -1311,34 +1339,6 @@ void R_Update(render_context *R, m_arena *FrameArena)
 		}
 	}
 
-
-	// HACK(Oliver): This is dumb
-	struct uniforms2
-	{
-		int NumberOfTilesInX;
-		int NumberOfTilesInY;
-	} Uniforms = {
-		.NumberOfTilesInX = ThreadGroupSize.width,
-		.NumberOfTilesInY = ThreadGroupSize.height,
-	};
-
-	MTLComputePassDescriptor *ComputePassDescriptor = [MTLComputePassDescriptor computePassDescriptor];
-	ComputePassDescriptor.dispatchType = MTLDispatchTypeConcurrent;
-	id<MTLComputeCommandEncoder> ComputeEncoder = [CommandBuffer computeCommandEncoderWithDescriptor:ComputePassDescriptor];
-	[ComputeEncoder setComputePipelineState: Metal->ComputeTest.PipelineState];
-	[ComputeEncoder setBytes:&Uniforms length:sizeof(Uniforms) atIndex:5];
-
-	// These offsets are just temporary
-	[ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:MegaBytes(0) atIndex:1];
-	[ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:MegaBytes(1) atIndex:2];
-	[ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:MegaBytes(2) atIndex:3];
-	[ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:MegaBytes(3) atIndex:4];
-	[ComputeEncoder setBuffer:Metal->PerTileData[R->Frame % FRAMES_IN_FLIGHT] offset:0 atIndex:0];
-	[ComputeEncoder setTexture:Metal->BaseFrameBuffer atIndex:0];
-
-	[ComputeEncoder dispatchThreads:MTLSizeMake(Metal->Drawable.texture.width, Metal->Drawable.texture.height, 1) threadsPerThreadgroup:TilesPerThreadgroup];
-
-	[ComputeEncoder endEncoding];
 
 	R_RenderFullscreenBloom(R, CommandBuffer);
 	[CommandBuffer presentDrawable:Metal->Drawable];

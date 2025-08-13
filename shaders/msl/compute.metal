@@ -64,15 +64,20 @@ kernel void ComputeMain(metal::texture2d<float, metal::access::read_write> Textu
 	int Count = DataView[TileIndex].Count;
 
 
-	metal::float3 Colour = Texture.read(ThreadPositionInGrid).rgb;
-	float Normalise = 1.0/(float)Count;
+	metal::float3 ColourSoFar = Texture.read(ThreadPositionInGrid).rgb;
+	float AlphaSoFar = 0.0;
 	for(int I = 0; I < Count; I++)
 	{
 		int DataIndex = DataView[TileIndex].At + I;
 		metal::float2 Position = float2(ThreadPositionInGrid.x, ThreadPositionInGrid.y);
 		float Distance = DistanceToCircle(Position, Circles[DataIndex].Position, Circles[DataIndex].Radius);
 		float AA = metal::smoothstep(-1, 1, -Distance) * Circles[DataIndex].Colour.a;
-		Colour = metal::mix(Colour.rgb, Circles[DataIndex].Colour.rgb * Normalise, AA);
-		Texture.write(float4(Colour, 1.0), ThreadPositionInGrid);
+
+		// Equivalent to ONE_MINUS_SRC_ALPHA
+		// Framebuffer stores premultiplied alpha
+		ColourSoFar += (1.0 - AlphaSoFar) * Circles[DataIndex].Colour.rgb*AA;
+		AlphaSoFar += AA*(1.0 - AlphaSoFar);
 	}
+
+	Texture.write(float4(ColourSoFar, 1.0), ThreadPositionInGrid);
 }

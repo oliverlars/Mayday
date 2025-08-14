@@ -320,6 +320,48 @@ void ParallelForceDisplacement(wave_info *WaveInfo, void* Input)
 
 	}
 
+	typedef struct link_info
+	{
+		f32 AttractiveForce;
+		v3f Norm;
+	}
+	link_info;
+
+	link_info *LinkInfos = NULL;
+	if(WaveIsFirstLane(WaveInfo))
+	{
+		LinkInfos = ArenaPushArrayZero(WaveInfo->Shared->Arena, link_info, P->LinkCount);
+	}
+
+	BroadcastToAllLanes(WaveInfo, LinkInfos);
+
+	WaveBarrier(WaveInfo->Shared->Barrier);
+
+	for(int I = LinkIndex; I < LinkIndex + LinkCount; I++)
+	{
+		int *Froms = P->Froms + LinkIndex;
+		int *Tos = P->Tos + LinkIndex;
+		v4f *NodePositions = P->NodePositions;
+		int A = Froms[I];
+		int B = Tos[I];
+
+		f32 DX = NodePositions[A].X - NodePositions[B].X;
+		f32 DY = NodePositions[A].Y - NodePositions[B].Y;
+		f32 DZ = NodePositions[A].Z - NodePositions[B].Z;
+		f32 DistanceSquared = DX*DX + DY*DY + DZ*DZ;
+		f32 Distance = sqrtf(DistanceSquared);
+
+		f32 ReciprocalDistance = 1.0 / (Distance + 0.01);
+		f32 NormDX = DX * ReciprocalDistance;
+		f32 NormDY = DY * ReciprocalDistance;
+		f32 NormDZ = DZ * ReciprocalDistance;
+
+		f32 AttractiveForce = (DistanceSquared) / P->K;
+
+		LinkInfos[I].AttractiveForce = AttractiveForce;
+		LinkInfos[I].Norm = v3f(NormDX, NormDY, NormDZ);
+	}
+
 	WaveBarrier(WaveInfo->Shared->Barrier);
 
 	if(WaveIsFirstLane(WaveInfo))
@@ -332,27 +374,15 @@ void ParallelForceDisplacement(wave_info *WaveInfo, void* Input)
 			int A = Froms[I];
 			int B = Tos[I];
 
-			f32 DX = NodePositions[A].X - NodePositions[B].X;
-			f32 DY = NodePositions[A].Y - NodePositions[B].Y;
-			f32 DZ = NodePositions[A].Z - NodePositions[B].Z;
-			f32 DistanceSquared = DX*DX + DY*DY + DZ*DZ;
-			f32 Distance = sqrtf(DistanceSquared);
+			link_info LinkInfo = LinkInfos[I];
 
-			f32 ReciprocalDistance = 1.0 / (Distance + 0.01);
-			f32 NormDX = DX * ReciprocalDistance;
-			f32 NormDY = DY * ReciprocalDistance;
-			f32 NormDZ = DZ * ReciprocalDistance;
+			P->DisplacementsMerged[A].X -= LinkInfo.Norm.X * LinkInfo.AttractiveForce;
+			P->DisplacementsMerged[A].Y -= LinkInfo.Norm.Y * LinkInfo.AttractiveForce;
+			P->DisplacementsMerged[A].Z -= LinkInfo.Norm.Z * LinkInfo.AttractiveForce;
 
-			f32 AttractiveForce = (DistanceSquared) / P->K;
-
-			P->DisplacementsMerged[A].X -= NormDX * AttractiveForce;
-			P->DisplacementsMerged[A].Y -= NormDY * AttractiveForce;
-			P->DisplacementsMerged[A].Z -= NormDZ * AttractiveForce;
-
-			P->DisplacementsMerged[B].X += NormDX * AttractiveForce;
-			P->DisplacementsMerged[B].Y += NormDY * AttractiveForce;
-			P->DisplacementsMerged[B].Z += NormDZ * AttractiveForce;
-
+			P->DisplacementsMerged[B].X += LinkInfo.Norm.X * LinkInfo.AttractiveForce;
+			P->DisplacementsMerged[B].Y += LinkInfo.Norm.Y * LinkInfo.AttractiveForce;
+			P->DisplacementsMerged[B].Z += LinkInfo.Norm.Z * LinkInfo.AttractiveForce;
 		}
 	}
 

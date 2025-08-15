@@ -205,11 +205,10 @@ u64 InclusiveWavePrefixSum(wave_info *WaveInfo, u64 Value)
 
 u64 WaveSum(wave_info *WaveInfo, u64 Value)
 {
-	LogInfo("Lane: ?u32", WaveInfo->Lane);
 	WaveBarrier(WaveInfo->Shared->Barrier);
 	atomic_store_explicit(WaveInfo->Shared->Data + 0, 0, memory_order_release);
 	WaveBarrier(WaveInfo->Shared->Barrier);
-	atomic_fetch_add_explicit(WaveInfo->Shared->Data + 0, 1, memory_order_seq_cst);
+	atomic_fetch_add_explicit(WaveInfo->Shared->Data + 0, Value, memory_order_seq_cst);
 	WaveBarrier(WaveInfo->Shared->Barrier);
 	return atomic_load_explicit(WaveInfo->Shared->Data + 0, memory_order_acquire);
 }

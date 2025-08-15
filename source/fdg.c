@@ -327,15 +327,20 @@ void ParallelForceDisplacement(wave_info *WaveInfo, void* Input)
 	}
 	link_info;
 
+	typedef struct link_infos
+	{
+		link_info *Infos;
+	}
+	link_infos;
+
 	link_info *LinkInfos = NULL;
 	if(WaveIsFirstLane(WaveInfo))
 	{
 		LinkInfos = ArenaPushArrayZero(WaveInfo->Shared->Arena, link_info, P->LinkCount);
 	}
 
-	BroadcastToAllLanes(WaveInfo, LinkInfos);
 
-	WaveBarrier(WaveInfo->Shared->Barrier);
+	BroadcastToAllLanes(WaveInfo, LinkInfos);
 
 	for(int I = LinkIndex; I < LinkIndex + LinkCount; I++)
 	{

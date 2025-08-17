@@ -342,13 +342,14 @@ void ParallelForceDisplacement(wave_info *WaveInfo, void* Input)
 
 	BroadcastToAllLanes(WaveInfo, LinkInfos);
 
+
+	WaveBarrier(WaveInfo->Shared->Barrier);
+
 	for(int I = LinkIndex; I < LinkIndex + LinkCount; I++)
 	{
-		int *Froms = P->Froms + LinkIndex;
-		int *Tos = P->Tos + LinkIndex;
 		v4f *NodePositions = P->NodePositions;
-		int A = Froms[I];
-		int B = Tos[I];
+		int A = P->Froms[I];
+		int B = P->Tos[I];
 
 		f32 DX = NodePositions[A].X - NodePositions[B].X;
 		f32 DY = NodePositions[A].Y - NodePositions[B].Y;
@@ -373,11 +374,9 @@ void ParallelForceDisplacement(wave_info *WaveInfo, void* Input)
 	{
 		for(int I = 0; I < P->LinkCount; I++)
 		{
-			int *Froms = P->Froms + LinkIndex;
-			int *Tos = P->Tos + LinkIndex;
 			v4f *NodePositions = P->NodePositions;
-			int A = Froms[I];
-			int B = Tos[I];
+			int A = P->Froms[I];
+			int B = P->Tos[I];
 
 			link_info LinkInfo = LinkInfos[I];
 

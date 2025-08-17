@@ -156,7 +156,7 @@ void UI_TreeView(ui_context *UI, draw_context *Draw, shared_wave_info *Shared,
 	bounds TotalBounds = GetBoundsV4F(TreeView->Info.NodeTargetPositions, TreeView->Info.NodeCount);
 	v3f Centre = DivV3F(AddV3F(TotalBounds.Min, TotalBounds.Max), v3f(2.0, 2.0, 2.0));
 
-	DrawQuadTree(Draw, Arena, QuadTree, 0);
+	//DrawQuadTree(Draw, Arena, QuadTree, 0);
 
 	for(int I = 0; I < TreeView->Info.NodeCount; I++)
 	{

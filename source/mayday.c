@@ -59,6 +59,10 @@ typedef struct mayday_context
 	cursor Cursor;
 
 
+	str8 FileListPath;
+	b32 ShowFileList;
+
+
 	editable_buffer TextBoxBuffer;
 
 	f32 ViewSize;
@@ -288,13 +292,37 @@ void OS_Update(void *Data)
 
 			R_PushTransform(M->Render, Orthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
 			ui_tree_view_signal TreeViewSignal = UI_TreeViewFolderLabels(M->UI, M->Draw, M->Edit, M->CodeFont, M->FrameArena, 0, &M->TreeView, PV, M->Folder, &M->TextBoxBuffer);
-			if(TreeViewSignal.Hovered)
+			if(M->ShowFileList)
+			{
+				os_directory_tree ActiveTree = OS_DirectoryTreeFromPath(M->FrameArena, M->FileListPath, (os_directory_tree_options){});
+				
+				f32 Height = 100.0;
+				v2f Position = v2f(500, 500);
+				for(
+					os_directory_tree_iterator Iter = {0};
+					OS_DirectoryTreeIterate(ActiveTree, &Iter);
+				)
+				{
+					str8 FileName = Str8FromLastCharacter(M->FrameArena, Iter.Current->PathAndName, '/');
+					UI_TextButton(M->UI, M->Draw, M->FrameArena, FileName, Height, Position, v4f(1, 1, 1, 1));
+					Position.Y -= Height;
+					Height *= 0.8;
+				}
+
+			}
+			else if(TreeViewSignal.Hovered)
 			{
 				Angle2 += 0.001;
 			}
 			else
 			{
 				Angle2 += 0.005;
+			}
+
+			if(TreeViewSignal.Clicked)
+			{
+				M->FileListPath = Str8Copy(M->PermanentArena, TreeViewSignal.NewPath);
+				M->ShowFileList = True;
 			}
 			R_PopTransform(M->Render);
 		}

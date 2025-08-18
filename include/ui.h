@@ -175,6 +175,8 @@ typedef struct ui_tree_view_signal
 	int NewPathIndex;
 	str8 FileToLoad;
 
+	b32 Hovered;
+
 	int NodeDepth;
 	int NodeIndex;
 } ui_tree_view_signal;

@@ -106,12 +106,25 @@ void D_DrawCubePoints(draw_context *D,
 					  v3f Size,
 					  v4f Colour);
 
-void D_DrawPointsArray(draw_context *D,
-					  m_arena *Arena,
-					  v3f *Positions,
-					  int PositionsCount,
-					  f32 PointSize,
-					  v4f Colour);
+void D_DrawPointsArray
+(
+	draw_context *D,
+	m_arena *Arena,
+	v3f *Positions,
+	int PositionsCount,
+	f32 PointSize,
+	v4f Colour
+);
+
+void D_DrawPointsArrayWithColours
+(
+	draw_context *D,
+	m_arena *Arena,
+	v3f *Positions,
+	int PositionsCount,
+	f32 PointSize,
+	v4f *Colours
+);
 
 void D_DrawLinesArray(draw_context *D,
 					  m_arena *Arena,

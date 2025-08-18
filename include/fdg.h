@@ -12,6 +12,7 @@ typedef struct fdg_node_info
 	str8 Name;
 	b32 IsFolder;
 	f32 Radius;
+	int Depth;
 } fdg_node_info;
 
 typedef struct bounds

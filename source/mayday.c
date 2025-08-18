@@ -271,13 +271,13 @@ void OS_Update(void *Data)
 			// HACK(Oliver): This is annoying i have to do this twice
 			R_PopTransform(M->Render);
 
-			static float Angle = 0.0f;
-			Angle += 0.005;
+			static float Angle2 = 0.0f;
+			//Angle += 0.005;
 			m44f P = Perspective(sapp_widthf()/sapp_heightf(), 35, 0.01, 10000.0);
 			m44f V =  M44FLookAt(v3f(0, 0, -250), v3f(0, 0, 0), v3f(0, 1, 0));
 			m44f RotateAroundOrigin =
 				Mul(M44FTranslate(v3f(0, 0, 250)),
-				Mul(M44FromYAngle(Angle),
+				Mul(M44FromYAngle(Angle2),
 				M44FTranslate(v3f(0, 0, -250))));
 			V = Mul(V, RotateAroundOrigin);
 			m44f PV = Mul(V, P);

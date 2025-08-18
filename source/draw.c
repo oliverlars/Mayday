@@ -570,12 +570,35 @@ int SortPointsByZ(const void *S, const void *T)
 	return 0;
 }
 
-void D_DrawPointsArray(draw_context *D,
-					  m_arena *Arena,
-					  v3f *Positions,
-					  int PositionsCount,
-					  f32 PointSize,
-					  v4f Colour)
+void D_DrawPointsArray
+(
+	draw_context *D,
+	m_arena *Arena,
+	v3f *Positions,
+	int PositionsCount,
+	f32 PointSize,
+	v4f Colour
+)
+{
+	m_scratch_arena Scratch = ScratchBegin(0, 0);
+	v4f *Colours = ArenaPushArray(Scratch.Arena, v4f, PositionsCount);
+	for(int I = 0; I < PositionsCount; I++)
+	{
+		Colours[I] = Colour;
+	}
+	D_DrawPointsArrayWithColours(D, Arena, Positions, PositionsCount, PointSize, Colours);
+	ScratchEnd(Scratch);
+}
+
+void D_DrawPointsArrayWithColours
+(
+	draw_context *D,
+	m_arena *Arena,
+	v3f *Positions,
+	int PositionsCount,
+	f32 PointSize,
+	v4f *Colours
+)
 {
 	render_context *R = D->Render;
 	r_command Command = {0};
@@ -614,7 +637,7 @@ void D_DrawPointsArray(draw_context *D,
 
 		r_vertex Vertex = {
 			.Position = v4f(A.X, A.Y, 0.0, 1),
-			.Colour = Colour,
+			.Colour = Colours[P],
 			.PointSize = PointSize,
 			.Centre = v2f(A.X, A.Y),
 		};

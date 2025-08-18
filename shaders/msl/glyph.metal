@@ -75,12 +75,12 @@ float ComputeCoverage(float InverseDiameter, float2 p0, float2 p1, float2 p2) {
 
 	float alpha = 0;
 	
-	if (t0 >= 0 && t0 < 1) {
+	if (t0 > 0 && t0 < 1) {
 		float x = (a.x*t0 - 2.0*b.x)*t0 + c.x;
 		alpha += clamp(x * InverseDiameter + 0.5, 0.0f, 1.0f);
 	}
 
-	if (t1 >= 0 && t1 < 1) {
+	if (t1 > 0 && t1 < 1) {
 		float x = (a.x*t1 - 2.0*b.x)*t1 + c.x;
 		alpha -= clamp(x * InverseDiameter + 0.5, 0.0f, 1.0f);
 	}
@@ -139,6 +139,5 @@ fragment float4 FragmentMain(vertex_output Input [[stage_in]],
 		}
 	}
 
-	//return float4(mix(float3(0, 1, 0), float3(0, 0, 1), Alpha/3.0), 1.0);
 	return float4(Input.Colour.rgb, Input.Colour.a * Alpha / 3.0);
 }

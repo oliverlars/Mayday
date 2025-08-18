@@ -36,7 +36,9 @@ ui_tree_info TreeInfoFromPath(m_arena *Arena, str8 Path, v3f Size)
 		Info.NodeTargetPositions[It.Index] = v4f(X, Y, Z, 0);
 		Info.NodePositions[It.Index] = Info.NodeTargetPositions[It.Index];
 		Info.NodeInfos[It.Index].Name = It.Current->PathAndName;
+		assert(It.Current->Type == OS_DIR_ENTRY_FOLDER);
 		Info.NodeInfos[It.Index].IsFolder = It.Current->Type == OS_DIR_ENTRY_FOLDER;
+		Info.NodeInfos[It.Index].Depth = It.Depth;
 
 		Info.NodeInfos[It.Index].Radius = 0*Str8UpToLastCharacter(Scratch.Arena, It.Current->PathAndName, '/').Size;
 
@@ -130,15 +132,20 @@ void UI_TreeView(ui_context *UI, draw_context *Draw, shared_wave_info *Shared,
 									   QuadTree,
 									   Shared);
 
-	v3f *Positions = (v3f*)ArenaPushArrayZero(Arena, v3f, TreeView->Info.NodeCount);
+	v3f *Positions = ArenaPushArray(Arena, v3f, TreeView->Info.NodeCount);
+	v4f *Colours = ArenaPushArray(Arena, v4f, TreeView->Info.NodeCount);
 	for(int I = 0; I < TreeView->Info.NodeCount; I++)
 	{
 		Positions[I].X = TreeView->Info.NodePositions[I].X;
 		Positions[I].Y = TreeView->Info.NodePositions[I].Y;
 		Positions[I].Z = TreeView->Info.NodePositions[I].Z;
+		f32 Depth = Max(1.0, (f32)TreeView->Info.NodeInfos[I].Depth);
+		f32 Red = 1.0/(Depth*Depth*Depth);
+		Colours[I] = v4f(Red, 0, 0, 1);
+
 	}
 
-	v3f *LinePositions = ArenaPushArrayZero(Arena, v3f, TreeView->Info.LinkCount*2);
+	v3f *LinePositions = ArenaPushArray(Arena, v3f, TreeView->Info.LinkCount*2);
 	int LineIndex = 0;
 	for(int I = 0; I < TreeView->Info.LinkCount; I++)
 	{
@@ -150,7 +157,7 @@ void UI_TreeView(ui_context *UI, draw_context *Draw, shared_wave_info *Shared,
 	}
 
 
-	D_DrawPointsArray(Draw, Arena, Positions, TreeView->Info.NodeCount, 5.0, v4f(1, 0, 0, 1));
+	D_DrawPointsArrayWithColours(Draw, Arena, Positions, TreeView->Info.NodeCount, 5.0, Colours);
 	D_DrawLinesArray(Draw, Arena, LinePositions, TreeView->Info.LinkCount*2, 1.0, v4f(0.5, 0.1, 0, 0.1));
 
 	bounds TotalBounds = GetBoundsV4F(TreeView->Info.NodeTargetPositions, TreeView->Info.NodeCount);

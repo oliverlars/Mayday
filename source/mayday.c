@@ -272,19 +272,23 @@ void OS_Update(void *Data)
 			R_PopTransform(M->Render);
 
 			static float Angle2 = 0.0f;
-			//Angle += 0.005;
+			Angle2 += 0.005;
 			m44f P = Perspective(sapp_widthf()/sapp_heightf(), 35, 0.01, 10000.0);
-			m44f V =  M44FLookAt(v3f(0, 0, -250), v3f(0, 0, 0), v3f(0, 1, 0));
+			m44f V =  M44FLookAt(v3f(0, 0, -150), v3f(0, 0, 0), v3f(0, 1, 0));
 			m44f RotateAroundOrigin =
-				Mul(M44FTranslate(v3f(0, 0, 250)),
+				Mul(M44FTranslate(v3f(0, 0, 150)),
 				Mul(M44FromYAngle(Angle2),
-				M44FTranslate(v3f(0, 0, -250))));
+				M44FTranslate(v3f(0, 0, -150))));
 			V = Mul(V, RotateAroundOrigin);
 			m44f PV = Mul(V, P);
 			R_PushTransform(M->Render, PV);
 			
 			UI_TreeView(M->UI, M->Draw, &M->Shared, M->FrameArena, &M->TreeView, M->Folder, v3f(0.1, 0.1, 0.1));
 
+			R_PopTransform(M->Render);
+
+			R_PushTransform(M->Render, Orthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
+			UI_TreeViewFolderLabels(M->UI, M->Draw, M->Edit, M->CodeFont, M->FrameArena, 0, &M->TreeView, PV, M->Folder, &M->TextBoxBuffer);
 			R_PopTransform(M->Render);
 		}
 		else

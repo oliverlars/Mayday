@@ -140,7 +140,7 @@ void UI_TreeView(ui_context *UI, draw_context *Draw, shared_wave_info *Shared,
 		Positions[I].Y = TreeView->Info.NodePositions[I].Y;
 		Positions[I].Z = TreeView->Info.NodePositions[I].Z;
 		f32 Depth = Max(1.0, (f32)TreeView->Info.NodeInfos[I].Depth);
-		f32 Red = 1.0/(Depth*Depth*Depth);
+		f32 Red = 1.0/(Depth);
 		Colours[I] = v4f(Red, 0, 0, 1);
 
 	}
@@ -205,14 +205,13 @@ ui_tree_view_signal UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw, 
 		TransformedPoint.X *= sapp_widthf();
 		TransformedPoint.Y *= sapp_heightf();
 
-		v4f Colour = v4f(0.8, 0.3, 0.0, 1);
+		v4f Colour = v4f(0.8, 0.3, 0.0, 0.2);
 		if(It.Index == ActiveNodeIndex)
 		{
 			Colour = v4f(0.8, 0.6, 0.4, 1.0);
 			FontSize = 40;
 		}
-
-		if(TreeView->Info.NodeInfos[It.Index].IsFolder)
+		
 		{
 			str8 FolderName = Str8FromLastCharacter(Arena, TreeView->Info.NodeInfos[It.Index].Name, '/');
 			if(Filter.Size == 0 || Str8FuzzyMatch(FolderName, Filter))

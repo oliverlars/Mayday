@@ -253,7 +253,7 @@ void OS_Update(void *Data)
 		if(FolderHash != M->FolderHash && M->Folder.Size > 0)
 		{
 			LogInfo("?S", M->Folder);
-			M->FolderTree = OS_DirectoryTreeFromPath(M->PermanentArena, M->Folder);
+			M->FolderTree = OS_DirectoryTreeFromPath(M->PermanentArena, M->Folder, (os_directory_tree_options){.FoldersOnly = True});
 			M->FolderHash = FolderHash;
 		}
 

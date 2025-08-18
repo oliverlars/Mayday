@@ -122,7 +122,11 @@ b32 OS_IsPathDirectory(str8 Path)
 	return Result;
 }
 
-s64 OS_DirectoryTreeFromPathHelper(m_arena *Arena, str8 Path, DIR *Directory, os_directory_entry *Entries)
+s64 OS_DirectoryTreeFromPathHelper(
+	m_arena *Arena,str8 Path,
+	DIR *Directory,
+	os_directory_entry *Entries,
+	os_directory_tree_options Options)
 {
 	m_scratch_arena Scratch = ScratchBegin(&Arena, 1);
 	struct dirent *Entry;
@@ -139,26 +143,26 @@ s64 OS_DirectoryTreeFromPathHelper(m_arena *Arena, str8 Path, DIR *Directory, os
 				DirectoryEntry.Type = OS_DIR_ENTRY_FOLDER;
 				InsertDirectoryEntryAsChild(Arena, Entries, DirectoryEntry);
 				DIR *NextDirectory = opendir(CStrFromStr8(Scratch.Arena, FullPath));
-				Count += OS_DirectoryTreeFromPathHelper(Arena, FullPath, NextDirectory, Entries->Last);
+				Count += OS_DirectoryTreeFromPathHelper(Arena, FullPath, NextDirectory, Entries->Last, Options);
 				closedir(NextDirectory);
+				Count += 1;
 			}
-			else
+			else if(!Options.FoldersOnly)
 			{
 				DirectoryEntry.Type = OS_DIR_ENTRY_FILE;
 				DirectoryEntry.PathAndName = FullPath;
 				InsertDirectoryEntryAsChild(Arena, Entries, DirectoryEntry);
+				Count += 1;
 			}
-			Count += 1;
 		}
 	}
 	ScratchEnd(Scratch);
 	return Count;
 }
 
-os_directory_tree OS_DirectoryTreeFromPath(m_arena *Arena, str8 Path)
+os_directory_tree OS_DirectoryTreeFromPath(m_arena *Arena, str8 Path, os_directory_tree_options Options)
 {
 	m_scratch_arena Scratch = ScratchBegin(&Arena, 1);
-
 
 	os_directory_entry *EntryRoot = ArenaPushArrayZero(Arena, os_directory_entry, 1);
 	EntryRoot->PathAndName = Str8Copy(Arena, Path);
@@ -171,7 +175,7 @@ os_directory_tree OS_DirectoryTreeFromPath(m_arena *Arena, str8 Path)
 	}
 	else
 	{
-		s64 Count = OS_DirectoryTreeFromPathHelper(Arena, Path, Directory, EntryRoot);
+		s64 Count = OS_DirectoryTreeFromPathHelper(Arena, Path, Directory, EntryRoot, Options);
 		closedir(Directory);
 		Result.Count = Count + 1;
 		Result.Root = EntryRoot;

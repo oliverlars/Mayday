@@ -90,6 +90,12 @@ operating_system;
 operating_system OS_GetOperatingSystem();
 
 
+typedef struct os_directory_tree_options
+{
+	b32 FoldersOnly;
+} os_directory_tree_options;
+
+
 str8 OS_LoadEntireFileIntoMemory(m_arena *Arena, str8 Filename);
 void OS_WriteStringToDisk(m_arena *Arena, str8 DestinationPath, str8 StringToWrite);
 
@@ -98,4 +104,4 @@ b32 OS_ValidPath(str8 Path);
 b32 OS_DirectoryTreeIterate(os_directory_tree Tree, os_directory_tree_iterator *Iterator);
 b32 OS_DirectoryTreeIterateWithStack(m_arena *Arena, os_directory_tree Tree, os_directory_tree_iterator *Iterator);
 int OS_CountAllEntriesInDirectoryTree(os_directory_tree Tree);
-os_directory_tree OS_DirectoryTreeFromPath(m_arena *Arena, str8 Path);
+os_directory_tree OS_DirectoryTreeFromPath(m_arena *Arena, str8 Path, os_directory_tree_options Options);

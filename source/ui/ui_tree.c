@@ -14,7 +14,7 @@
 ui_tree_info TreeInfoFromPath(m_arena *Arena, str8 Path, v3f Size)
 {
 	ui_tree_info Info = {0};
-	Info.Tree = OS_DirectoryTreeFromPath(Arena, Str8Copy(Arena, Path));
+	Info.Tree = OS_DirectoryTreeFromPath(Arena, Str8Copy(Arena, Path), (os_directory_tree_options){ .FoldersOnly = True});
 
 	Info.NodePositions = ArenaPushArrayZero(Arena, v4f, Info.Tree.Count);
 	Info.NodeTargetPositions = ArenaPushArrayZero(Arena, v4f, Info.Tree.Count);
@@ -29,7 +29,7 @@ ui_tree_info TreeInfoFromPath(m_arena *Arena, str8 Path, v3f Size)
 	for(os_directory_tree_iterator It = {0};
 		OS_DirectoryTreeIterate(Info.Tree, &It);)
 	{
-
+		if(It.Current->Type != OS_DIR_ENTRY_FOLDER) continue;
 		f32 X = RandomBilateral(&RandomState);
 		f32 Y = RandomBilateral(&RandomState);
 		f32 Z = RandomBilateral(&RandomState);

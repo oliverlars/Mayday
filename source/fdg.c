@@ -148,8 +148,12 @@ void QuadTreeBuild(m_arena *Arena, quadtree_header *QuadTree, QuadTree_index Qua
 	}
 	else
 	{
-		if(QuadTree->Nodes[ChildIndex] && ((Depth >= 64) ||
-		   (fabs(Max.X - Min.X) < 0.01 || fabs(Max.Y - Min.Y) < 0.01) || fabs(Max.Z - Min.Z) < 0.01))
+		bounds CB = QuadTree->Bounds[ChildIndex];
+		if(QuadTree->Nodes[ChildIndex] && (
+		  (Depth >= 64) ||
+		  (fabsf(CB.Max.X - CB.Min.X) < 0.01f) ||
+		  (fabsf(CB.Max.Y - CB.Min.Y) < 0.01f) ||
+		  (fabsf(CB.Max.Z - CB.Min.Z) < 0.01f)))
 		{
 			quadrant_node *LastNode = QuadTree->Nodes[ChildIndex];
 			for(;LastNode->Next; LastNode = LastNode->Next);
@@ -183,7 +187,6 @@ v4f QuadTreeCalculateAttributes(quadtree_header *QuadTree, int QuadrantIndex)
 	{
 		if(QuadTree->Nodes[QuadrantIndex])
 		{
-			QuadTree->ChildrenCounts[QuadrantIndex] = 1;
 			quadrant_node *Node = QuadTree->Nodes[QuadrantIndex];
 			int Count = 0;
 			for(;Node; Node = Node->Next)
@@ -191,6 +194,7 @@ v4f QuadTreeCalculateAttributes(quadtree_header *QuadTree, int QuadrantIndex)
 				CentreOfMass = AddV4F(Node->NodePosition, CentreOfMass);
 				Count++;
 			}
+			QuadTree->ChildrenCounts[QuadrantIndex] = Count;
 			CentreOfMass = DivV4F(CentreOfMass, v4f((f32)Count, (f32)Count, (f32)Count, (f32)Count));
 		}
 		else
@@ -238,31 +242,64 @@ v4f ForceDisplacementFromPosition(quadtree_header *QuadTree, v4f NodePosition, f
 	for(;StackTop > 0;)
 	{
 		QuadrantIndex = QuadrantStack[--StackTop];
-		v4f Centre = QuadTree->Masses[QuadrantIndex];
-		v3f PositionToCentre = v3f(NodePosition.X - Centre.X, NodePosition.Y - Centre.Y, NodePosition.Z - Centre.Z);
-		f64 DistanceSquared = DotV3F(PositionToCentre, PositionToCentre);
-		f64 Distance = sqrt(DistanceSquared);
-		f32 TemporaryRadius = 0.0;
-		f64 EffectiveDistance = Max((f32)Distance - TemporaryRadius, 0.1);
-		if(QuadTree->ChildrenCounts[QuadrantIndex] == 1)
-		{
-			f64 ForceMagnitude = (K) / (EffectiveDistance*EffectiveDistance + 0.01);
 
-			Result.X += ForceMagnitude * PositionToCentre.X;
-			Result.Y += ForceMagnitude * PositionToCentre.Y;
-			Result.Z += ForceMagnitude * PositionToCentre.Z;
+		v4f Centre = QuadTree->Masses[QuadrantIndex];
+
+		v3f PositionToCentre = v3f(NodePosition.X - Centre.X,
+		                           NodePosition.Y - Centre.Y,
+		                           NodePosition.Z - Centre.Z);
+
+		f32 DistanceSquared = (f32)DotV3F(PositionToCentre, PositionToCentre);
+		f32 Distance = sqrtf(DistanceSquared);
+		f32 EffectiveDistance = Max(Distance - 0.0f, 0.1f); // keep your softening
+
+		int ChildCount = QuadTree->ChildrenCounts[QuadrantIndex];
+
+		// CHANGED: explicitly handle "leaf with multiple nodes and no children"
+		int HasChildren = 0;
+		for(int I = 0; I < 8; I++) { if(QuadTree->Quadrants[QuadrantIndex].Children[I]) { HasChildren = 1; break; } }
+
+		if(!HasChildren && QuadTree->Nodes[QuadrantIndex])
+		{
+			for(quadrant_node *N = QuadTree->Nodes[QuadrantIndex]; N; N = N->Next)
+			{
+				v3f Distance = v3f(
+					NodePosition.X - N->NodePosition.X,
+					NodePosition.Y - N->NodePosition.Y,
+					NodePosition.Z - N->NodePosition.Z
+				);
+
+				f32 RadiusSquared = (f32)DotV3F(Distance, Distance) + 0.01;
+				f32 Radius  = sqrtf(RadiusSquared);
+				f32 ForceMagnitude = (K*K) / Radius;
+
+				Result.X += ForceMagnitude * Distance.X / Radius;
+				Result.Y += ForceMagnitude * Distance.Y / Radius;
+				Result.Z += ForceMagnitude * Distance.Z / Radius;
+			}
+			continue;
+		}
+
+		if(ChildCount == 1)
+		{
+			f32 ForceMagnitude  = (K*K) / EffectiveDistance;
+			Result.X += ForceMagnitude * PositionToCentre.X / EffectiveDistance;
+			Result.Y += ForceMagnitude * PositionToCentre.Y / EffectiveDistance;
+			Result.Z += ForceMagnitude * PositionToCentre.Z / EffectiveDistance;
 		}
 		else
 		{
-			v3f MaxSubMin = SubV3F(QuadTree->Bounds[QuadrantIndex].Max, QuadTree->Bounds[QuadrantIndex].Min);
-			f32 QuadrantRadiusSquared = DotV3F(MaxSubMin, MaxSubMin);
-			if(QuadrantRadiusSquared/(EffectiveDistance*EffectiveDistance + 0.01) < 0.5)
-			{
-				f32 ForceMagnitude = QuadTree->ChildrenCounts[QuadrantIndex] * (K) / (EffectiveDistance*EffectiveDistance + 0.01);
+			v3f Extents = SubV3F(QuadTree->Bounds[QuadrantIndex].Max, QuadTree->Bounds[QuadrantIndex].Min);
+			f32 HalfDiagonal = 0.5f * sqrtf(DotV3F(Extents, Extents));
+			f32 Theta = 0.7f;
 
-				Result.X += ForceMagnitude * PositionToCentre.X;
-				Result.Y += ForceMagnitude * PositionToCentre.Y;
-				Result.Z += ForceMagnitude * PositionToCentre.Z;
+			if((HalfDiagonal / EffectiveDistance) < Theta)
+			{
+				f32 InverseDistance = 1.0f / EffectiveDistance;
+				f32 ForceMagnitude  = (K*K) * InverseDistance * (f32)ChildCount;
+				Result.X += ForceMagnitude * PositionToCentre.X / EffectiveDistance;
+				Result.Y += ForceMagnitude * PositionToCentre.Y / EffectiveDistance;
+				Result.Z += ForceMagnitude * PositionToCentre.Z / EffectiveDistance;
 			}
 			else
 			{
@@ -279,6 +316,7 @@ v4f ForceDisplacementFromPosition(quadtree_header *QuadTree, v4f NodePosition, f
 
 	return Result;
 }
+
 
 #define CACHE_LINE_SIZE (128)
 

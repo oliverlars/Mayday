@@ -298,12 +298,16 @@ void OS_Update(void *Data)
 				
 				f32 Height = 100.0;
 				v2f Position = v2f(500, 500);
+				static float Scroll = 0;
 				for(
 					os_directory_tree_iterator Iter = {0};
 					OS_DirectoryTreeIterate(ActiveTree, &Iter);
 				)
 				{
 					str8 FileName = Str8FromLastCharacter(M->FrameArena, Iter.Current->PathAndName, '/');
+					
+
+
 					UI_TextButton(M->UI, M->Draw, M->FrameArena, FileName, Height, Position, v4f(1, 1, 1, 1));
 					Position.Y -= Height;
 					Height *= 0.8;

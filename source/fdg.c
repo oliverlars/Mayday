@@ -245,17 +245,18 @@ v4f ForceDisplacementFromPosition(quadtree_header *QuadTree, v4f NodePosition, f
 
 		v4f Centre = QuadTree->Masses[QuadrantIndex];
 
-		v3f PositionToCentre = v3f(NodePosition.X - Centre.X,
-		                           NodePosition.Y - Centre.Y,
-		                           NodePosition.Z - Centre.Z);
+		v3f PositionToCentre = v3f(
+			NodePosition.X - Centre.X,
+			NodePosition.Y - Centre.Y,
+			NodePosition.Z - Centre.Z
+		);
 
 		f32 DistanceSquared = (f32)DotV3F(PositionToCentre, PositionToCentre);
 		f32 Distance = sqrtf(DistanceSquared);
-		f32 EffectiveDistance = Max(Distance - 0.0f, 0.1f); // keep your softening
+		f32 EffectiveDistance = Max(Distance - 0.0f, 0.1f);
 
 		int ChildCount = QuadTree->ChildrenCounts[QuadrantIndex];
 
-		// CHANGED: explicitly handle "leaf with multiple nodes and no children"
 		int HasChildren = 0;
 		for(int I = 0; I < 8; I++) { if(QuadTree->Quadrants[QuadrantIndex].Children[I]) { HasChildren = 1; break; } }
 
@@ -271,7 +272,7 @@ v4f ForceDisplacementFromPosition(quadtree_header *QuadTree, v4f NodePosition, f
 
 				f32 RadiusSquared = (f32)DotV3F(Distance, Distance) + 0.01;
 				f32 Radius  = sqrtf(RadiusSquared);
-				f32 ForceMagnitude = (K*K) / Radius;
+				f32 ForceMagnitude = (K*K) / RadiusSquared;
 
 				Result.X += ForceMagnitude * Distance.X / Radius;
 				Result.Y += ForceMagnitude * Distance.Y / Radius;

@@ -61,6 +61,7 @@ typedef struct mayday_context
 
 	str8 FileListPath;
 	b32 ShowFileList;
+	f32 FileListScroll;
 
 
 	editable_buffer TextBoxBuffer;
@@ -297,20 +298,24 @@ void OS_Update(void *Data)
 				os_directory_tree ActiveTree = OS_DirectoryTreeFromPath(M->FrameArena, M->FileListPath, (os_directory_tree_options){});
 				
 				f32 Height = 100.0;
+				M->FileListScroll += UI_Scroll(M->UI).Y;
 				v2f Position = v2f(500, 500);
-				static float Scroll = 0;
+				int Index = 0;
 				for(
 					os_directory_tree_iterator Iter = {0};
 					OS_DirectoryTreeIterate(ActiveTree, &Iter);
 				)
 				{
 					str8 FileName = Str8FromLastCharacter(M->FrameArena, Iter.Current->PathAndName, '/');
-					
+					f32 DistanceFromActiveItem = (f32)Index - M->FileListScroll;
+					Index++;
+					if(DistanceFromActiveItem < -5.0) continue;
+					if(DistanceFromActiveItem > 5.0) break;
+					f32 Scale = Max(Min(1.2, fabs((f32)Index - M->FileListScroll)), 0.8);
 
-
-					UI_TextButton(M->UI, M->Draw, M->FrameArena, FileName, Height, Position, v4f(1, 1, 1, 1));
-					Position.Y -= Height;
-					Height *= 0.8;
+					UI_TextButton(M->UI, M->Draw, M->FrameArena, FileName, Height/Scale, Position, v4f(1, 1, 1, 1));
+					Position.Y -= Height/Scale;
+					//Height *= 0.8;
 				}
 
 			}

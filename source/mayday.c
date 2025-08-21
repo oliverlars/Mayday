@@ -62,6 +62,8 @@ typedef struct mayday_context
 	str8 FileListPath;
 	b32 ShowFileList;
 	f32 FileListScroll;
+	f32 FileListScrollTarget;
+	v2f FileListPosition;
 
 
 	editable_buffer TextBoxBuffer;
@@ -298,8 +300,13 @@ void OS_Update(void *Data)
 				os_directory_tree ActiveTree = OS_DirectoryTreeFromPath(M->FrameArena, M->FileListPath, (os_directory_tree_options){});
 				
 				f32 Height = 100.0;
-				M->FileListScroll += UI_Scroll(M->UI).Y;
-				v2f Position = v2f(500, 500);
+				M->FileListScrollTarget += UI_Scroll(M->UI).Y*0.4;
+				M->FileListScroll = Lerp(M->FileListScroll, M->FileListScrollTarget, 0.2);
+				v2f Position = M->FileListPosition;
+				f32 VisibleRadius = 5.0f;
+				f32 MinScale = 0.8f;
+				f32 MaxScale = 1.35f;
+				f32 ScrollSpeed = 0.3f;
 				int Index = 0;
 				for(
 					os_directory_tree_iterator Iter = {0};
@@ -308,14 +315,15 @@ void OS_Update(void *Data)
 				{
 					str8 FileName = Str8FromLastCharacter(M->FrameArena, Iter.Current->PathAndName, '/');
 					f32 DistanceFromActiveItem = (f32)Index - M->FileListScroll;
-					Index++;
-					if(DistanceFromActiveItem < -5.0) continue;
-					if(DistanceFromActiveItem > 5.0) break;
-					f32 Scale = Max(Min(1.2, fabs((f32)Index - M->FileListScroll)), 0.8);
+					// if(DistanceFromActiveItem < -5.0) {Index++; continue; }
+					// if(DistanceFromActiveItem > 5.0) break;
+					f32 Value = fabsf(DistanceFromActiveItem)/VisibleRadius;
+					f32 W = 1.0f - SmoothStep(Value);
+					f32 Scale = MinScale  + (MaxScale - MinScale)*W;
 
 					UI_TextButton(M->UI, M->Draw, M->FrameArena, FileName, Height/Scale, Position, v4f(1, 1, 1, 1));
 					Position.Y -= Height/Scale;
-					//Height *= 0.8;
+					Index++;
 				}
 
 			}
@@ -332,6 +340,7 @@ void OS_Update(void *Data)
 			{
 				M->FileListPath = Str8Copy(M->PermanentArena, TreeViewSignal.NewPath);
 				M->ShowFileList = True;
+				M->FileListPosition = TreeViewSignal.ClickedPosition;
 			}
 			R_PopTransform(M->Render);
 		}

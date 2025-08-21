@@ -171,6 +171,8 @@ void UI_TreeView(ui_context *UI, draw_context *Draw, shared_wave_info *Shared,
 typedef struct ui_tree_view_signal
 {
 	b32 Clicked;
+	v2f ClickedPosition;
+	
 	str8 NewPath;
 	int NewPathIndex;
 	str8 FileToLoad;

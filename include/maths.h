@@ -14,6 +14,8 @@ f32 LerpF32(f32 Source, f32 Target, float T);
 f32 ClampF32(f32 Value, f32 Low, f32 High);
 s32 ClampS32(s32 Value, s32 Low, s32 High);
 
+#define SmoothStep(Value) Clamp(Value, 0.0, 1.0)*Clamp(Value, 0.0, 1.0)*(3.0f - 2.0f*Clamp(Value, 0.0, 1.0))
+
 typedef struct range_s32
 {
 	s32 Start;

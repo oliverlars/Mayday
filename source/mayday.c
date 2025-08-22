@@ -591,6 +591,22 @@ void OS_Exit(void *Data)
 
 	str8 RecentlyOpened = Str8ListJoinBy(M->PermanentArena, &FinalList, '\n');
 
+
+	int TotalCount = 0;
+	for(int I = 0; I < 26; I++)
+	{
+		d_atlas_glyph *Glyph = D_GlyphFromCodePoint(M->Draw, M->CodeFont, 65 + I);
+		TotalCount += Glyph->CurveCount;
+	}
+
+	for(int I = 0; I < 10; I++)
+	{
+		d_atlas_glyph *Glyph = D_GlyphFromCodePoint(M->Draw, M->CodeFont, 48 + I);
+		TotalCount += Glyph->CurveCount;
+	}
+
+	LogInfo("Total point count for ascii A-Z and 0-9: ?u32", TotalCount);
+
 #if defined(OS_DARWIN)
 	OS_WriteStringToDisk(M->PermanentArena, Str8("/users/olivercruickshank/nomoretext/recent.txt"), RecentlyOpened);
 #elif defined(OS_WINDOWS)

@@ -405,26 +405,28 @@ void D_Draw3DStr8(draw_context *D,
 			continue;
 		}
 
-		// for(int CurveIndex = 0; CurveIndex < Glyph->CurveCount; CurveIndex += 3)
-		// {
-		// 	v2f Start = Glyph->Curves[CurveIndex + 0];
-		// 	v2f Control = Glyph->Curves[CurveIndex + 1];
-		// 	v2f End = Glyph->Curves[CurveIndex + 2];
-		// 	v3f Line[3] = 
-		// 	{
-		// 		v3f(Position.X + Start.X*Scale, Position.Y - Start.Y*Scale, 0.0),
-		// 		v3f(Position.X + Control.X*Scale, Position.Y - Control.Y*Scale, 0.0),
-		// 		v3f(Position.X + End.X*Scale, Position.Y - End.Y*Scale, 0.0)
-		// 	};
-		// 	//D_DrawBezierArray(D, Arena, Line, 3, 2.0, Colour);
-		// }
+		for(int CurveIndex = 0; CurveIndex < Glyph->CurveCount; CurveIndex += 3)
+		{
+			f32 GlyphWidth = ((f32)(Glyph->Box.Z - Glyph->Box.X));
+			f32 GlyphHeight = ((f32)(Glyph->Box.W - Glyph->Box.Y));
+			v2f Start = Glyph->Curves[CurveIndex + 0];
+			v2f Control = Glyph->Curves[CurveIndex + 1];
+			v2f End = Glyph->Curves[CurveIndex + 2];
+			v3f Line[2] = 
+			{
+				v3f(Position.X + Start.X*Scale*GlyphWidth, Position.Y - Start.Y*Scale*GlyphHeight, 0.0),
+				v3f(Position.X + End.X*Scale*GlyphWidth, Position.Y - End.Y*Scale*GlyphHeight, 0.0)
+			};
+			//v3f(Position.X + Control.X*Scale, Position.Y - Control.Y*Scale, 0.0),
+			D_DrawLinesArray(D, Arena, Line, 2, 1.0, Colour);
+		}
 
 		Position.X += AdvanceX;
 	}
 
-	Command.Type = R_COMMAND_GLYPH;
-	Command.Attributes = R_AttributesFromCommandType(Command.Type);
-	R_PushCommand(R, Arena, Command);
+	// Command.Type = R_COMMAND_GLYPH;
+	// Command.Attributes = R_AttributesFromCommandType(Command.Type);
+	// R_PushCommand(R, Arena, Command);
 }
 
 void D_DrawStr8(draw_context *D,

@@ -188,6 +188,9 @@ ui_tree_view_signal UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw, 
 
 	str8 Filter = SearchSignal.String;
 
+	ui_style Style = UI_GetStyle(UI);
+	Style.Font = Font;
+	UI_PushStyle(UI, Style);
 	m_scratch_arena Scratch = ScratchBegin(0, 0);
 	for(os_directory_tree_iterator It = {0};
 		OS_DirectoryTreeIterateWithStack(Scratch.Arena, TreeView->Info.Tree, &It);)
@@ -270,6 +273,8 @@ ui_tree_view_signal UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw, 
 	}
 
 	ScratchEnd(Scratch);
+
+	UI_PopStyle(UI);
 
 	return Result;
 }

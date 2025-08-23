@@ -241,7 +241,7 @@ ui_orbit_signal UI_OrbitLabels(ui_context *UI, draw_context *Draw, edit_context 
 					FontSize *= (1.0 + UI->HotAnimation);
 					Result.AnyHovering |= Button.Hover;
 					str8 LastModified = OS_GetLastModifiedTime(Arena, It.Current->PathAndName);
-					UI_PushStyle(UI, (ui_style){.Font = LogoFont});
+					UI_PushStyle(UI, (ui_style){.Font = Font});
 					UI_Label(UI, Draw,
 						Arena, Str8PushF(Arena, "?S##FolderHover ?u32", FolderName, It.Index),
 						200,
@@ -289,7 +289,7 @@ ui_orbit_signal UI_OrbitLabels(ui_context *UI, draw_context *Draw, edit_context 
 					{
 						Result.AnyHovering |= Button.Hover;
 						str8 LastModified = OS_GetLastModifiedTime(Arena, It.Current->PathAndName);
-						UI_PushStyle(UI, (ui_style){.Font = LogoFont});
+						UI_PushStyle(UI, (ui_style){.Font = Font});
 						UI_Label(UI, Draw,
 							Arena, Str8PushF(Arena, "?S##Hover ?u32", FileName, It.Index),
 							200,

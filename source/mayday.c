@@ -44,6 +44,8 @@ typedef struct mayday_context
 
 	os_window Window;
 
+	d_font Rajdhani;
+	d_font Orbitron;
 	d_font CodeFont;
 	d_font LogoFont;
 	d_font StatusFont;
@@ -294,7 +296,7 @@ void OS_Update(void *Data)
 			R_PopTransform(M->Render);
 
 			R_PushTransform(M->Render, Orthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
-			ui_tree_view_signal TreeViewSignal = UI_TreeViewFolderLabels(M->UI, M->Draw, M->Edit, M->CodeFont, M->FrameArena, 0, &M->TreeView, PV, M->Folder, &M->TextBoxBuffer);
+			ui_tree_view_signal TreeViewSignal = UI_TreeViewFolderLabels(M->UI, M->Draw, M->Edit, M->Orbitron, M->FrameArena, 0, &M->TreeView, PV, M->Folder, &M->TextBoxBuffer);
 			if(M->ShowFileList)
 			{
 				os_directory_tree ActiveTree = OS_DirectoryTreeFromPath(M->FrameArena, M->FileListPath, (os_directory_tree_options){});
@@ -396,10 +398,10 @@ void OS_Update(void *Data)
 
 				str8 Folder = Str8PushF(M->FrameArena, "?S##f32", Node->String, Pos.Y);
 
-				UI_PushStyle(M->UI, (ui_style){.Font = M->CodeFont });
+				UI_PushStyle(M->UI, (ui_style){.Font = M->Rajdhani });
 				str8 LastModified = OS_GetLastModifiedTime(M->FrameArena, Node->String);
-				UI_Label(M->UI, M->Draw, M->FrameArena, LastModified, 60, Add(Pos, v2f(0, 20)), v4f(0.2, 0.01, 0.0, 0.1));
-				ui_signal Button = UI_TextButton(M->UI, M->Draw, M->FrameArena, Folder, 30, Pos, v4f(0.3, 0.3, 0.3, 1));
+				UI_Label(M->UI, M->Draw, M->FrameArena, LastModified, 120, Add(Pos, v2f(0, 20)), v4f(0.2, 0.01, 0.0, 0.1));
+				ui_signal Button = UI_TextButton(M->UI, M->Draw, M->FrameArena, Folder, 60, Pos, v4f(0.3, 0.3, 0.3, 1));
 				UI_PopStyle(M->UI);
 				if(Button.Clicked)
 				{
@@ -656,6 +658,8 @@ int main()
 	M.LogoFont = D_LoadFontFromTTF(M.Draw, G_BerkeleyMonoRegular.Data);
 	M.GradientFont = D_LoadFontFromTTF(M.Draw,G_BerkeleyMonoRegular.Data);
 	M.StatusFont = D_LoadFontFromTTF(M.Draw, G_Doto.Data);
+	M.Orbitron = D_LoadFontFromTTF(M.Draw, G_OrbitronRegular.Data);
+	M.Rajdhani = D_LoadFontFromTTF(M.Draw, G_RajdhaniMedium.Data);
 
 	M.UI->Font = M.CodeFont;
 	M.LookFrom.Z = 500;

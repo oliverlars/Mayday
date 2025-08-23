@@ -335,8 +335,10 @@ void UI_Label(ui_context *UI, draw_context *Draw, m_arena *Arena,
 	f32 Scale = stbtt_ScaleForPixelHeight(&UI->Font.Info, HeightInPixels);
 	str8 DisplayString = UI_DisplayString(Arena, String);
 
-	f32 Height = D_LineHeightFromFont(UI->Font, HeightInPixels);
-	f32 Width = UI_GetTextWidth(UI->Font, Draw, DisplayString, HeightInPixels);
+	ui_style Style = UI_GetStyle(UI);
+
+	f32 Height = D_LineHeightFromFont(Style.Font, HeightInPixels);
+	f32 Width = UI_GetTextWidth(Style.Font, Draw, DisplayString, HeightInPixels);
 
 	v2f Min = Add(Position, v2f(0, UI->Font.Descent * Scale));
 	v2f Max = v2f(Min.X + Width, Min.Y + Height);
@@ -348,7 +350,6 @@ void UI_Label(ui_context *UI, draw_context *Draw, m_arena *Arena,
 	v4f MouseWorld = Mul(M44FTranspose(R_CurrentInverseTransform(Draw->Render)), MouseNDC);
 	v2f MousePosition = v2f(MouseWorld.X / MouseWorld.W, MouseWorld.Y / MouseWorld.W);
 
-	ui_style Style = UI_GetStyle(UI);
 
 	D_DrawStr8(Draw, Arena, Style.Font, Position, Colour, HeightInPixels, DisplayString);
 }
@@ -361,9 +362,11 @@ ui_signal UI_TextButton(ui_context *UI, draw_context *Draw, m_arena *Arena,
 	u64 Hash = Widget->Hash;
 	f32 Scale = stbtt_ScaleForPixelHeight(&UI->Font.Info, HeightInPixels);
 	str8 DisplayString = UI_DisplayString(Arena, String);
+	ui_style Style = UI_GetStyle(UI);
 
-	f32 Height = D_LineHeightFromFont(UI->Font, HeightInPixels);
-	f32 Width = UI_GetTextWidth(UI->Font, Draw, DisplayString, HeightInPixels);
+
+	f32 Height = D_LineHeightFromFont(Style.Font, HeightInPixels);
+	f32 Width = UI_GetTextWidth(Style.Font, Draw, DisplayString, HeightInPixels);
 
 	v2f Min = Add(Position, v2f(0, UI->Font.Descent * Scale));
 	v2f Max = v2f(Min.X + Width, Min.Y + Height);
@@ -381,7 +384,6 @@ ui_signal UI_TextButton(ui_context *UI, draw_context *Draw, m_arena *Arena,
 		UI->Hot = Hash;
 	}
 
-	ui_style Style = UI_GetStyle(UI);
 
 	if(UI->Hot == Hash)
 	{

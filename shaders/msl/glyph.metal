@@ -38,54 +38,73 @@ vertex vertex_output VertexMain(constant vertex_input *Vertices [[buffer(0)]],
 	return Output;
 }
 
-// https://github.com/GreenLightning/gpu-font-rendering/tree/master
-float ComputeCoverage(float InverseDiameter, float2 p0, float2 p1, float2 p2) {
-	if (p0.y > 0 && p1.y > 0 && p2.y > 0) return 0.0;
-	if (p0.y < 0 && p1.y < 0 && p2.y < 0) return 0.0;
+float2 CalculateQuadraticRoots(float a, float b, float c)
+{
+	const float epsilon = 1e-5;
+	float2 roots = -99999;
 
-	// Note: Simplified from abc formula by extracting a factor of (-2) from b.
-	float2 a = p0 - 2*p1 + p2;
-	float2 b = p0 - p1;
-	float2 c = p0;
+	// For a straight line, solve: b×t + c = 0; therefore t = -c/b
+	if (abs(a) < epsilon)
+	{
+		if (b != 0) roots[0] = -c / b;
+	}
+	else
+	{
+		// Solve using quadratic formula: t = (-b ± sqrt(b^2 - 4ac)) / (2a)
+		// If the value under the sqrt is negative, the equation has no real roots
+		float discriminant = b * b - 4 * a * c;
 
-	float t0, t1;
-	if (abs(a.y) >= 1e-5) {
-		// Quadratic segment, solve abc formula to find roots.
-		float radicand = b.y*b.y - a.y*c.y;
-		if (radicand <= 0) return 0.0;
-	
-		float s = sqrt(radicand);
-		t0 = (b.y - s) / a.y;
-		t1 = (b.y + s) / a.y;
-	} else {
-		// Linear segment, avoid division by a.y, which is near zero.
-		// There is only one root, so we have to decide which variable to
-		// assign it to based on the direction of the segment, to ensure that
-		// the ray always exits the shape at t0 and enters at t1. For a
-		// quadratic segment this works 'automatically', see readme.
-		float t = p0.y / (p0.y - p2.y);
-		if (p0.y < p2.y) {
-			t0 = -1.0;
-			t1 = t;
-		} else {
-			t0 = t;
-			t1 = -1.0;
+		// Allow discriminant to be slightly negative to avoid a curve being missed due
+		// to precision limitations. Must be clamped to zero before it's used in sqrt though!
+		if (discriminant > -epsilon)
+		{
+			float s = sqrt(max(0.0, discriminant));
+			roots[0] = (-b + s) / (2 * a);
+			roots[1] = (-b - s) / (2 * a);
 		}
 	}
 
-	float alpha = 0;
+	return roots;
+}
+
+// https://github.com/GreenLightning/gpu-font-rendering/tree/master
+https://github.com/SebLague/Text-Rendering/blob/main/Assets/Scripts/SebText/Renderer/Resources/TextShader.shader
+float ComputeCoverage(float InverseDiameter, float2 P0, float2 P1, float2 P2, float PixelSize) {
+
+	float InvPixelSize = 1.0 / PixelSize;
+	bool IsDownwardCurve = P0.y > 0 || P2.y < 0;
+
+	if (IsDownwardCurve)
+	{
+		if (P0.y < 0 && P2.y <= 0) return 0.0;
+		if (P0.y > 0 && P2.y >= 0) return 0.0;
+	}
+	else
+	{
+		if (P0.y <= 0 && P2.y < 0) return 0.0;
+		if (P0.y >= 0 && P2.y > 0) return 0.0;
+	}
+
+	float2 A = P0 - 2 * P1 + P2;
+	float2 B = 2 * (P1 - P0);
+	float2 C = P0;
 	
-	if (t0 > 0 && t0 < 1) {
-		float x = (a.x*t0 - 2.0*b.x)*t0 + c.x;
-		alpha += clamp(x * InverseDiameter + 0.5, 0.0f, 1.0f);
-	}
+	float Epsilon = 1e-4;
+	float2 Roots = CalculateQuadraticRoots(A.y, B.y, C.y);
+	bool OnSeg0 = Roots[0] >= -Epsilon && Roots[0] <= 1 + Epsilon;
+	bool OnSeg1 = Roots[1] >= -Epsilon && Roots[1] <= 1 + Epsilon;
 
-	if (t1 > 0 && t1 < 1) {
-		float x = (a.x*t1 - 2.0*b.x)*t1 + c.x;
-		alpha -= clamp(x * InverseDiameter + 0.5, 0.0f, 1.0f);
-	}
+	float T0 = saturate(Roots[0]);
+	float T1 = saturate(Roots[1]);
+	float Intersect0 = A.x * T0 * T0 + B.x * T0 + C.x;
+	float Intersect1 = A.x * T1 * T1 + B.x * T1 + C.x;
 
-	return alpha;
+	float Coverage = float(0.0);
+	int Sign = IsDownwardCurve ? 1 : -1;
+	if (OnSeg0) Coverage += saturate(0.5 + Intersect0 * InvPixelSize) * Sign;
+	if (OnSeg1) Coverage += saturate(0.5 + Intersect1 * InvPixelSize) * Sign;
+
+	return saturate(Coverage);
 }
 
 fragment float4 FragmentMain(vertex_output Input [[stage_in]],
@@ -103,16 +122,16 @@ fragment float4 FragmentMain(vertex_output Input [[stage_in]],
 	float2 InverseDiameter = 1.0 / (abs(dfdx(Size)) + abs(dfdy(Size)));
 	for(int offset = -1; offset <= 1; offset += 1) {
 		Size = Size + float2(0, offset) * dfdx(Size) / 3.0;
-		for (int i = 0; i < Input.CurveCount; i += 3) {
-			float2 p0 = Curves[(Input.CurveStart + i) + 0];
-			float2 p1 = Curves[(Input.CurveStart + i) + 1];
-			float2 p2 = Curves[(Input.CurveStart + i) + 2];
+		for (int I = 0; I < Input.CurveCount; I += 3) {
+			float2 P0 = Curves[(Input.CurveStart + I) + 0];
+			float2 P1 = Curves[(Input.CurveStart + I) + 1];
+			float2 P2 = Curves[(Input.CurveStart + I) + 2];
 
-			p0 -= Size;
-			p1 -= Size;
-			p2 -= Size;
+			P0 -= Size;
+			P1 -= Size;
+			P2 -= Size;
 
-			Alpha += ComputeCoverage(InverseDiameter.y, p0, p1, p2);
+			Alpha += ComputeCoverage(InverseDiameter.y, P0, P1, P2, dfdx(Size.x));
 		}
 	}
 

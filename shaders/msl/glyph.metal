@@ -68,10 +68,11 @@ float2 CalculateQuadraticRoots(float a, float b, float c)
 }
 
 // https://github.com/GreenLightning/gpu-font-rendering/tree/master
-https://github.com/SebLague/Text-Rendering/blob/main/Assets/Scripts/SebText/Renderer/Resources/TextShader.shader
-float ComputeCoverage(float InverseDiameter, float2 P0, float2 P1, float2 P2, float PixelSize) {
+//https://github.com/SebLague/Text-Rendering/blob/main/Assets/Scripts/SebText/Renderer/Resources/TextShader.shader
+float ComputeCoverage(float InverseDiameter, float2 P0, float2 P1, float2 P2, float2 PixelSize)
+{
 
-	float InvPixelSize = 1.0 / PixelSize;
+	float InvPixelSize = 1.0 / max(PixelSize.x, PixelSize.y);
 	bool IsDownwardCurve = P0.y > 0 || P2.y < 0;
 
 	if (IsDownwardCurve)
@@ -118,6 +119,8 @@ fragment float4 FragmentMain(vertex_output Input [[stage_in]],
 	float2 Size = Input.UV;
 
 	//Size.y = 1.0 - Size.y;
+
+	float2 PixelSize = abs(dfdx(Input.UV)) + abs(dfdy(Input.UV));
 	
 	float2 InverseDiameter = 1.0 / (abs(dfdx(Size)) + abs(dfdy(Size)));
 	for(int offset = -1; offset <= 1; offset += 1) {
@@ -131,7 +134,7 @@ fragment float4 FragmentMain(vertex_output Input [[stage_in]],
 			P1 -= Size;
 			P2 -= Size;
 
-			Alpha += ComputeCoverage(InverseDiameter.y, P0, P1, P2, dfdx(Size.x));
+			Alpha += ComputeCoverage(InverseDiameter.y, P0, P1, P2, PixelSize);
 		}
 	}
 

@@ -41,49 +41,43 @@ vertex vertex_output VertexMain(constant vertex_input *Vertices [[buffer(0)]],
 float2 CalculateQuadraticRoots(float a, float b, float c)
 {
 	const float epsilon = 1e-5;
-	float2 roots = -99999;
+	float2 roots = float2(-99999.0);
 
-	// For a straight line, solve: b×t + c = 0; therefore t = -c/b
 	if (abs(a) < epsilon)
 	{
-		if (b != 0) roots[0] = -c / b;
+		if (b != 0.0) roots[0] = -c / b;
 	}
 	else
 	{
-		// Solve using quadratic formula: t = (-b ± sqrt(b^2 - 4ac)) / (2a)
-		// If the value under the sqrt is negative, the equation has no real roots
-		float discriminant = b * b - 4 * a * c;
-
-		// Allow discriminant to be slightly negative to avoid a curve being missed due
-		// to precision limitations. Must be clamped to zero before it's used in sqrt though!
+		float discriminant = b * b - 4.0 * a * c;
 		if (discriminant > -epsilon)
 		{
 			float s = sqrt(max(0.0, discriminant));
-			roots[0] = (-b + s) / (2 * a);
-			roots[1] = (-b - s) / (2 * a);
+			roots[0] = (-b + s) / (2.0 * a);
+			roots[1] = (-b - s) / (2.0 * a);
 		}
 	}
-
 	return roots;
 }
+
 
 // https://github.com/GreenLightning/gpu-font-rendering/tree/master
 //https://github.com/SebLague/Text-Rendering/blob/main/Assets/Scripts/SebText/Renderer/Resources/TextShader.shader
 float ComputeCoverage(float InverseDiameter, float2 P0, float2 P1, float2 P2, float2 PixelSize)
 {
 
-	float InvPixelSize = 1.0 / max(PixelSize.x, PixelSize.y);
+	float InvPixelSize = (1.0 / PixelSize.x);
 	bool IsDownwardCurve = P0.y > 0 || P2.y < 0;
 
 	if (IsDownwardCurve)
 	{
-		if (P0.y < 0 && P2.y <= 0) return 0.0;
-		if (P0.y > 0 && P2.y >= 0) return 0.0;
+		if (P0.y < 0 && P2.y <= 0) return -1.0;
+		if (P0.y > 0 && P2.y >= 0) return -1.0;
 	}
 	else
 	{
-		if (P0.y <= 0 && P2.y < 0) return 0.0;
-		if (P0.y >= 0 && P2.y > 0) return 0.0;
+		if (P0.y <= 0 && P2.y < 0) return -1.0;
+		if (P0.y >= 0 && P2.y > 0) return -1.0;
 	}
 
 	float2 A = P0 - 2 * P1 + P2;
@@ -123,8 +117,10 @@ fragment float4 FragmentMain(vertex_output Input [[stage_in]],
 	float2 PixelSize = abs(dfdx(Input.UV)) + abs(dfdy(Input.UV));
 	
 	float2 InverseDiameter = 1.0 / (abs(dfdx(Size)) + abs(dfdy(Size)));
-	for(int offset = -1; offset <= 1; offset += 1) {
-		Size = Size + float2(0, offset) * dfdx(Size) / 3.0;
+	for(int Offset = -1; Offset <= 1; Offset += 1)
+	{
+		float2 SampleUV = Size + float2(0.0, Offset) * (dfdy(Size) / 3.0);
+		float SampleCov = 0.0;
 		for (int I = 0; I < Input.CurveCount; I += 3) {
 			float2 P0 = Curves[(Input.CurveStart + I) + 0];
 			float2 P1 = Curves[(Input.CurveStart + I) + 1];
@@ -134,8 +130,11 @@ fragment float4 FragmentMain(vertex_output Input [[stage_in]],
 			P1 -= Size;
 			P2 -= Size;
 
-			Alpha += ComputeCoverage(InverseDiameter.y, P0, P1, P2, PixelSize);
+			float Coverage = ComputeCoverage(InverseDiameter.y, P0, P1, P2, PixelSize);
+			if(Coverage < 0.0) continue;
+			SampleCov += Coverage;
 		}
+		Alpha += saturate(SampleCov);
 	}
 
 	if(0){

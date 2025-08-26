@@ -91,9 +91,9 @@ void CurvesFromCodePoint(draw_context *Draw, m_arena *Arena, d_atlas_glyph *Glyp
 		{
 			v2f Control = Sub(v2f(V->cx, V->cy), Shift);
 			v2f End = Sub(v2f(V->x, V->y), Shift);
-			Curves[0][CurveCount[0]++] = v2f(First.X, First.Y);
-			Curves[0][CurveCount[0]++] = v2f(Control.X, Control.Y);
 			Curves[0][CurveCount[0]++] = v2f(End.X, End.Y);
+			Curves[0][CurveCount[0]++] = v2f(Control.X, Control.Y);
+			Curves[0][CurveCount[0]++] = v2f(First.X, First.Y);
 			First = End;
 		}
 		break;
@@ -101,9 +101,9 @@ void CurvesFromCodePoint(draw_context *Draw, m_arena *Arena, d_atlas_glyph *Glyp
 		{
 			v2f End = Sub(v2f(V->x, V->y), Shift);
 			v2f Control = v2f((First.X + End.X)*0.5, (First.Y + End.Y)*0.5);
-			Curves[0][CurveCount[0]++] = v2f(First.X, First.Y);
-			Curves[0][CurveCount[0]++] = v2f(Control.X, Control.Y);
 			Curves[0][CurveCount[0]++] = v2f(End.X, End.Y);
+			Curves[0][CurveCount[0]++] = v2f(Control.X, Control.Y);
+			Curves[0][CurveCount[0]++] = v2f(First.X, First.Y);
 			First = End;
 		}
 		break;

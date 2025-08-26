@@ -364,15 +364,15 @@ void OS_Update(void *Data)
 			{
 				if(Count == Middle)
 				{
-					D_DrawStr8(M->Draw, M->FrameArena, M->RegularFont,
+					D_DrawOutlineStr8(M->Draw, M->FrameArena, M->RegularFont,
 					   v2f(sapp_widthf()/2.0 + 200.0, Y),
-					   v4f(1.0, 0.0, 0.0, 0.1), LogoHeight, Str8("MAYDAY!"));
+					   v4f(1.0, 0.0, 0.0, 0.1), LogoHeight, 1.0, Str8("MAYDAY!"));
 				}
 				else
 				{
-					D_DrawStr8(M->Draw, M->FrameArena, M->OutlineFont,
+					D_DrawOutlineStr8(M->Draw, M->FrameArena, M->OutlineFont,
 					   v2f(sapp_widthf()/2.0 + 200.0, Y),
-					   v4f(1.0, 0.0, 0.0, 0.1), LogoHeight, Str8("MAYDAY!"));
+					   v4f(1.0, 0.0, 0.0, 0.1), LogoHeight, 1.0, Str8("MAYDAY!"));
 				}
 				Count += 1;
 			}

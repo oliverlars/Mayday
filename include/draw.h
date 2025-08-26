@@ -70,31 +70,56 @@ void D_EvictGlyphFromTable(draw_context *D_Context, d_atlas_glyph *Glyph);
 d_font D_LoadFontFromFile(draw_context *D_Context, str8 FileName);
 d_font D_LoadFontFromTTF(draw_context *D_Context, u8 *Data);
 void D_DrawGlyph(draw_context *D_Context, d_atlas_glyph *Glyph);
-void D_Draw3DStr8(draw_context *D_Context,
-				  m_arena *Arena,
-				  d_font Font,
-				  v3f Position,
-				  v4f Colour,
-				  f32 HeightInPixels,
-				  str8 String);
-void D_DrawStr8(draw_context *D_Context,
-				m_arena *Arena,
-				d_font Font,
-				v2f Position,
-				v4f Colour,
-				f32 HeightInPixels,
-				str8 String);
 
-void D_DrawSelectionRange(draw_context *D,
-						  m_arena *Arena,
-						  d_font Font,
-						  v2f Position,
-						  v4f Colour,
-						  f32 HeightInPixels,
-						  str8 String,
-						  v2i Range,
-						  s32 Start,
-						  s32 End);
+void D_DrawBaseStr8
+(
+	draw_context *D_Context,
+	m_arena *Arena,
+	d_font Font,
+	v3f Position,
+	v4f Colour,
+	f32 HeightInPixels,
+	b32 Outline,
+	f32 OutlineThickness,
+	str8 String
+);
+
+void D_DrawStr8
+(
+	draw_context *D_Context,
+	m_arena *Arena,
+	d_font Font,
+	v2f Position,
+	v4f Colour,
+	f32 HeightInPixels,
+	str8 String
+);
+
+void D_DrawOutlineStr8
+(
+	draw_context *D_Context,
+	m_arena *Arena,
+	d_font Font,
+	v2f Position,
+	v4f Colour,
+	f32 HeightInPixels,
+	f32 OutlineThickness,
+	str8 String
+);
+
+void D_DrawSelectionRange
+(
+	draw_context *D,
+	m_arena *Arena,
+	d_font Font,
+	v2f Position,
+	v4f Colour,
+	f32 HeightInPixels,
+	str8 String,
+	v2i Range,
+	s32 Start,
+	s32 End
+);
 
 void D_DrawQuad(draw_context *D_Context,
 				m_arena *Arena, v2f Position,

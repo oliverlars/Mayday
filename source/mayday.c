@@ -377,9 +377,27 @@ void OS_Update(void *Data)
 				Count += 1;
 			}
 
-			D_DrawQuad(M->Draw, M->FrameArena, v2f(100.0, sapp_heightf()-300), 500, 200, v4f(0.2, 0.0, 0.0, 1.0));
-			D_DrawStr8(M->Draw, M->FrameArena, M->OutlineFont, v2f(100.0, sapp_heightf()-300), v4f(0.3, 0.3, 0.3, 1.0), 150, Str8("RECENT"));
 
+			// Vertical text
+			{
+				ui_style Style = UI_GetStyle(M->UI);
+				UI_PushStyle(M->UI, Style);
+				m44f T = R_CurrentTransform(M->Render);
+				T = Mul(Mul
+					(
+					M44FTranslate(v3f(-150, -150, 0)), 
+					Mul(M44FromZAngle(-M_PI/2.0),
+						M44FTranslate(v3f(150, 150, 0))
+					)
+					), T);
+				R_PushTransform(M->Render, T);
+				D_DrawStr8(M->Draw, M->FrameArena, M->Rajdhani, v2f(0, 0), v4f(0.2, 0.1, 0.0, 1.0), 500, Str8("MAYDAY!"));
+				UI_PopStyle(M->UI);
+				R_PopTransform(M->Render);
+			}
+
+#if 0
+			D_DrawQuad(M->Draw, M->FrameArena, v2f(100.0, sapp_heightf()-300), 500, 200, v4f(0.2, 0.0, 0.0, 1.0));
 			ui_textbox_signal SearchSignal = UI_TextBox(M->FrameArena, M->LogoFont, v2f(100.0, sapp_heightf() - 400), 500,
 														M->UI, M->Draw, M->Edit, 30, Str8("FolderTextBox"), &M->TextBoxBuffer);
 			if(SearchSignal.Submitted)
@@ -410,6 +428,7 @@ void OS_Update(void *Data)
 				}
 				Pos.Y -= 100;
 			}
+#endif
 		}
 
 		//D_DrawStr8(M->Draw, M->FrameArena, M->LogoFont, v2f(50, 50), v4f(1.0, 0.05, 0.0, 1), 100, Str8("MAYDAY!"));

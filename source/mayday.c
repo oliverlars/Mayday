@@ -385,13 +385,13 @@ void OS_Update(void *Data)
 				m44f T = R_CurrentTransform(M->Render);
 				T = Mul(Mul
 					(
-					M44FTranslate(v3f(-150, -150, 0)), 
+					M44FTranslate(v3f(-150, -300, 0)), 
 					Mul(M44FromZAngle(-M_PI/2.0),
-						M44FTranslate(v3f(150, 150, 0))
+						M44FTranslate(v3f(150, 300, 0))
 					)
 					), T);
 				R_PushTransform(M->Render, T);
-				D_DrawStr8(M->Draw, M->FrameArena, M->Rajdhani, v2f(0, 0), v4f(0.2, 0.1, 0.0, 1.0), 500, Str8("MAYDAY!"));
+				D_DrawOutlineStr8(M->Draw, M->FrameArena, M->Rajdhani, v2f(0, 0), v4f(0.2, 0.1, 0.0, 1.0), 500, 1.0, Str8("MAYDAY!"));
 				UI_PopStyle(M->UI);
 				R_PopTransform(M->Render);
 			}

@@ -805,8 +805,8 @@ void D_DrawLinesArray(draw_context *D,
 {
 	render_context *R = D->Render;
 	r_command Command = {0};
-	Command.Vertices = (r_vertex*)ArenaPushArrayZero(Arena, r_vertex, PositionsCount/2*6);
-	Command.VerticesCount = 6*PositionsCount/2;
+	Command.Vertices = (r_vertex*)ArenaPushArrayZero(Arena, r_vertex, PositionsCount);
+	Command.VerticesCount = PositionsCount;
 	r_vertex *R_Vertices = Command.Vertices;
 
 	m44f Transform = R_CurrentTransform(D->Render);
@@ -864,10 +864,9 @@ void D_DrawLinesArray(draw_context *D,
 			v2f(TR.X, TR.Y),
 		};
 
-		for(int V = 0; V < 6; V++)
 		{
 			r_vertex Vertex = {
-				.Position = v4f(Vertices[V].X, Vertices[V].Y, 0.0, 1),
+				.Position = v4f(A.X, A.Y, 0.0, 1),
 				.Colour = Colour,
 				.Start = v2f(A.X, A.Y),
 				.End = v2f(B.X, B.Y),

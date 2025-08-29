@@ -1325,7 +1325,187 @@ void R_Update(render_context *R, m_arena *FrameArena)
 			}
 			else if(Command->Type == R_COMMAND_LINES)
 			{
-				R_RenderLines(R, CommandBuffer, Command->Scissor, VertexCount, VertexOffsetInBytes, UniformOffset*sizeof(uniforms));
+v2i TileDimensions = v2i(ThreadGroupSize.width, ThreadGroupSize.height);
+				v2i WindowDimensions = v2i(Metal->Drawable.texture.width, Metal->Drawable.texture.height);
+
+				metal_context *Metal = R->Backend;
+
+				typedef struct per_tile_data
+				{
+					int At;
+					int Count;
+					int Type;
+				} per_tile_data;
+
+				typedef struct line
+				{
+					simd_float2 Start;
+					simd_float2 End;
+					float Thickness;
+					simd_float4 Colour;
+				} line;
+
+				m_scratch_arena Scratch = ScratchBegin(0, 0);
+
+				per_tile_data *PerTileData = ArenaPushArrayZero(Scratch.Arena, per_tile_data, TileDimensions.X*TileDimensions.Y);
+				if(Metal->SDFs == Null)
+				{
+					Metal->SDFs = ArenaPushArrayZero(R->Arena, u8, MegaBytes(5));
+				}
+
+				int Offsets[] = 
+				{
+					MegaBytes(0),
+					MegaBytes(1),
+					MegaBytes(2),
+					MegaBytes(3),
+					MegaBytes(4),
+				};
+
+
+				line *Lines = ((line *) Metal->SDFs + Offsets[0] + PointOffset);
+
+				line *Data = ArenaPushArrayZero(Scratch.Arena, line, 50*TileDimensions.X*TileDimensions.Y);
+
+
+				int LineCount = Command->VerticesCount;
+				for(int I = 0; I < LineCount; I++)
+				{
+					simd_float2 Start =
+					{
+						Command->Vertices[I].Start.X,
+						Command->Vertices[I].Start.Y
+					};
+
+					simd_float2 End =
+					{
+						Command->Vertices[I].End.X,
+						Command->Vertices[I].End.Y
+					};
+
+					simd_float4 C =
+					{
+						Command->Vertices[I].Colour.X,
+						Command->Vertices[I].Colour.Y,
+						Command->Vertices[I].Colour.Z,
+						Command->Vertices[I].Colour.W
+					};
+					Lines[I].Start = Start;
+					Lines[I].End = End;
+					Lines[I].Thickness = Command->Vertices[I].Thickness;
+					Lines[I].Colour = C;
+				}
+				
+				int TileCount = TileDimensions.X*TileDimensions.Y;
+
+				for(int I = 0; I < LineCount; I++)
+				{
+					simd_float2 Start = Lines[I].Start;
+					simd_float2 End = Lines[I].End;
+					float Thickness = Lines[I].Thickness;
+					v2f TileMin;
+					TileMin.X = Start.x;
+					TileMin.Y = Start.y;
+					int TileMinX = (int)(floorf(TileMin.X / 32.0f));
+					int TileMinY = (int)(floorf(TileMin.Y / 32.0f));
+
+					v2f TileMax;
+					TileMax.X = End.x;
+					TileMax.Y = End.y;
+					int TileMaxX = (int)(ceilf(TileMax.X / 32.0f));
+					int TileMaxY = (int)(ceilf(TileMax.Y / 32.0f));
+
+					TileMinX = Max(TileMinX, 0);
+					TileMinY = Max(TileMinY, 0);
+
+					TileMaxX = Min(TileMaxX, TileDimensions.X - 1);
+					TileMaxY = Min(TileMaxY, TileDimensions.Y - 1);
+
+					for(int X = TileMinX; X < TileMaxX; X++)
+					{
+						for(int Y = TileMinY; Y < TileMaxY; Y++)
+						{
+							int TileIndex = X + Y * TileDimensions.X;
+							PerTileData[TileIndex].Count++;
+						}
+					}
+				}
+
+				int CountSoFar = 0;
+				for(int I = 0; I < TileCount; I++)
+				{
+					PerTileData[I].At = CountSoFar;
+					CountSoFar += PerTileData[I].Count;
+				}
+
+				int *TileOffsets = ArenaPushArrayZero(Scratch.Arena, int, TileCount);
+				for(int I = 0; I < LineCount; I++)
+				{
+					simd_float2 Start = Lines[I].Start;
+					simd_float2 End = Lines[I].End;
+					float Thickness = Lines[I].Thickness;
+					v2f TileMin;
+					TileMin.X = Start.x;
+					TileMin.Y = Start.y;
+					int TileMinX = (int)(floorf(TileMin.X / 32.0f));
+					int TileMinY = (int)(floorf(TileMin.Y / 32.0f));
+
+					v2f TileMax;
+					TileMax.X = End.x;
+					TileMax.Y = End.y;
+					int TileMaxX = (int)(ceilf(TileMax.X / 32.0f));
+					int TileMaxY = (int)(ceilf(TileMax.Y / 32.0f));
+
+					TileMinX = Max(TileMinX, 0);
+					TileMinY = Max(TileMinY, 0);
+
+					TileMaxX = Min(TileMaxX, TileDimensions.X - 1);
+					TileMaxY = Min(TileMaxY, TileDimensions.Y - 1);
+
+					for(int X = TileMinX; X < TileMaxX; X++)
+					{
+						for(int Y = TileMinY; Y < TileMaxY; Y++)
+						{
+							int TileIndex = X + Y * TileDimensions.X;
+							int At = PerTileData[TileIndex].At;
+							Data[At + TileOffsets[TileIndex]] = Lines[I];
+							TileOffsets[TileIndex] += 1;
+						}
+					}
+				}
+
+				MemoryCopy(Metal->Data[R->Frame % FRAMES_IN_FLIGHT].contents + PointOffset*sizeof(line), Data, CountSoFar*sizeof(line));
+				MemoryCopy(Metal->PerTileData[R->Frame % FRAMES_IN_FLIGHT].contents, PerTileData, TileDimensions.X*TileDimensions.Y*sizeof(per_tile_data));
+				PointOffset += CountSoFar; 
+				ScratchEnd(Scratch);
+
+
+				struct uniforms2
+				{
+					int NumberOfTilesInX;
+					int NumberOfTilesInY;
+				} Uniforms = {
+					.NumberOfTilesInX = ThreadGroupSize.width,
+					.NumberOfTilesInY = ThreadGroupSize.height,
+				};
+
+				MTLComputePassDescriptor *ComputePassDescriptor = [MTLComputePassDescriptor computePassDescriptor];
+				ComputePassDescriptor.dispatchType = MTLDispatchTypeConcurrent;
+				id<MTLComputeCommandEncoder> ComputeEncoder = [CommandBuffer computeCommandEncoderWithDescriptor:ComputePassDescriptor];
+				[ComputeEncoder setComputePipelineState: Metal->ComputeTest.PipelineState];
+				[ComputeEncoder setBytes:&Uniforms length:sizeof(Uniforms) atIndex:5];
+
+				// These offsets are just temporary
+				[ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:MegaBytes(0) atIndex:1];
+				[ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:MegaBytes(1) atIndex:2];
+				[ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:MegaBytes(2) atIndex:3];
+				[ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:MegaBytes(3) atIndex:4];
+				[ComputeEncoder setBuffer:Metal->PerTileData[R->Frame % FRAMES_IN_FLIGHT] offset:0 atIndex:0];
+				[ComputeEncoder setTexture:Metal->BaseFrameBuffer atIndex:0];
+
+				[ComputeEncoder dispatchThreads:MTLSizeMake(Metal->Drawable.texture.width, Metal->Drawable.texture.height, 1) threadsPerThreadgroup:TilesPerThreadgroup];
+
+				[ComputeEncoder endEncoding];
 			}
 			else if(Command->Type == R_COMMAND_BEZIER)
 			{

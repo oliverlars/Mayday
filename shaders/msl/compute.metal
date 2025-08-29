@@ -19,6 +19,7 @@ struct line
 {
 	metal::float2 Start;
 	metal::float2 End;
+	float Thickness;
 	float4 Colour;
 };
 
@@ -49,6 +50,14 @@ float DistanceToCircle(float2 Position, float2 Centre, float Radius)
 	return metal::length(Position - Centre) - Radius; 
 }
 
+float DistanceToLine(float2 Position, float2 Start, float2 End)
+{
+	float2 EndToStart = End - Start;
+	float2 PositionToStart = Position - Start;
+	float H = metal::clamp(metal::dot(PositionToStart, EndToStart)/metal::dot(EndToStart,EndToStart), 0.0, 1.0);
+	return metal::length(PositionToStart - H*EndToStart);
+}
+
 kernel void ComputeMain(metal::texture2d<float, metal::access::read_write> Texture [[ texture(0) ]],
 						device per_tile_data *DataView [[buffer(0)]],
 						device circle *Circles [[buffer(1)]],
@@ -69,14 +78,33 @@ kernel void ComputeMain(metal::texture2d<float, metal::access::read_write> Textu
 	for(int I = 0; I < Count; I++)
 	{
 		int DataIndex = DataView[TileIndex].At + I;
-		metal::float2 Position = float2(ThreadPositionInGrid.x, ThreadPositionInGrid.y);
-		float Distance = DistanceToCircle(Position, Circles[DataIndex].Position, Circles[DataIndex].Radius);
-		float AA = metal::smoothstep(-1, 1, -Distance) * Circles[DataIndex].Colour.a;
+		int Type = DataView[TileIndex].Type;
+		if(0) {}
+		else if(Type == 0)
+		{
 
-		// Equivalent to ONE_MINUS_SRC_ALPHA
-		// Framebuffer stores premultiplied alpha
-		ColourSoFar += (1.0 - AlphaSoFar) * Circles[DataIndex].Colour.rgb*AA;
-		AlphaSoFar += AA*(1.0 - AlphaSoFar);
+			metal::float2 Position = float2(ThreadPositionInGrid.x, ThreadPositionInGrid.y);
+			float Distance = DistanceToCircle(Position, Circles[DataIndex].Position, Circles[DataIndex].Radius);
+			float AA = metal::smoothstep(-1, 1, -Distance) * Circles[DataIndex].Colour.a;
+
+			// Equivalent to ONE_MINUS_SRC_ALPHA
+			// Framebuffer stores premultiplied alpha
+			ColourSoFar += (1.0 - AlphaSoFar) * Circles[DataIndex].Colour.rgb*AA;
+			AlphaSoFar += AA*(1.0 - AlphaSoFar);
+		}
+		else if(Type == 1)
+		{
+			metal::float2 Position = float2(ThreadPositionInGrid.x, ThreadPositionInGrid.y);
+			float Thickness = Lines[DataIndex].Thickness;
+			float Distance = DistanceToLine(Position, Lines[DataIndex].Start, Lines[DataIndex].End) - Thickness*0.5;
+			float AA = metal::smoothstep(-1, 1, -Distance) * Lines[DataIndex].Colour.a;
+
+			// Equivalent to ONE_MINUS_SRC_ALPHA
+			// Framebuffer stores premultiplied alpha
+			ColourSoFar += (1.0 - AlphaSoFar) * Lines[DataIndex].Colour.rgb*AA;
+			AlphaSoFar += AA*(1.0 - AlphaSoFar);
+		}
+
 	}
 
 	Texture.write(float4(ColourSoFar, 1.0), ThreadPositionInGrid);

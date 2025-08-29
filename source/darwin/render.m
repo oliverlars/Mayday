@@ -1250,6 +1250,7 @@ void R_Update(render_context *R, m_arena *FrameArena)
 				for(int I = 0; I < TileCount; I++)
 				{
 					PerTileData[I].At = CountSoFar;
+					PerTileData[I].Type = 0; // Circle
 					CountSoFar += PerTileData[I].Count;
 				}
 
@@ -1435,6 +1436,8 @@ v2i TileDimensions = v2i(ThreadGroupSize.width, ThreadGroupSize.height);
 				for(int I = 0; I < TileCount; I++)
 				{
 					PerTileData[I].At = CountSoFar;
+					// HACK(Oliver): Improve this
+					PerTileData[I].Type = 1; // Line
 					CountSoFar += PerTileData[I].Count;
 				}
 
@@ -1474,7 +1477,7 @@ v2i TileDimensions = v2i(ThreadGroupSize.width, ThreadGroupSize.height);
 					}
 				}
 
-				MemoryCopy(Metal->Data[R->Frame % FRAMES_IN_FLIGHT].contents + PointOffset*sizeof(line), Data, CountSoFar*sizeof(line));
+				MemoryCopy(Metal->Data[R->Frame % FRAMES_IN_FLIGHT].contents + PointOffset*sizeof(line) + MegaBytes(1), Data, CountSoFar*sizeof(line));
 				MemoryCopy(Metal->PerTileData[R->Frame % FRAMES_IN_FLIGHT].contents, PerTileData, TileDimensions.X*TileDimensions.Y*sizeof(per_tile_data));
 				PointOffset += CountSoFar; 
 				ScratchEnd(Scratch);

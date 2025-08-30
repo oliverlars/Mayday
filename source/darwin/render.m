@@ -1326,7 +1326,7 @@ void R_Update(render_context *R, m_arena *FrameArena)
 			}
 			else if(Command->Type == R_COMMAND_LINES)
 			{
-v2i TileDimensions = v2i(ThreadGroupSize.width, ThreadGroupSize.height);
+				v2i TileDimensions = v2i(ThreadGroupSize.width, ThreadGroupSize.height);
 				v2i WindowDimensions = v2i(Metal->Drawable.texture.width, Metal->Drawable.texture.height);
 
 				metal_context *Metal = R->Backend;
@@ -1405,14 +1405,14 @@ v2i TileDimensions = v2i(ThreadGroupSize.width, ThreadGroupSize.height);
 					simd_float2 End = Lines[I].End;
 					float Thickness = Lines[I].Thickness;
 					v2f TileMin;
-					TileMin.X = Start.x;
-					TileMin.Y = Start.y;
+					TileMin.X = Min(Start.x, End.x);
+					TileMin.Y = Min(Start.y, End.y);
 					int TileMinX = (int)(floorf(TileMin.X / 32.0f));
 					int TileMinY = (int)(floorf(TileMin.Y / 32.0f));
 
 					v2f TileMax;
-					TileMax.X = End.x;
-					TileMax.Y = End.y;
+					TileMax.X = Max(Start.x, End.x);
+					TileMax.Y = Max(Start.y, End.y);
 					int TileMaxX = (int)(ceilf(TileMax.X / 32.0f));
 					int TileMaxY = (int)(ceilf(TileMax.Y / 32.0f));
 
@@ -1448,14 +1448,14 @@ v2i TileDimensions = v2i(ThreadGroupSize.width, ThreadGroupSize.height);
 					simd_float2 End = Lines[I].End;
 					float Thickness = Lines[I].Thickness;
 					v2f TileMin;
-					TileMin.X = Start.x;
-					TileMin.Y = Start.y;
+					TileMin.X = Min(Start.x, End.x);
+					TileMin.Y = Min(Start.y, End.y);
 					int TileMinX = (int)(floorf(TileMin.X / 32.0f));
 					int TileMinY = (int)(floorf(TileMin.Y / 32.0f));
 
 					v2f TileMax;
-					TileMax.X = End.x;
-					TileMax.Y = End.y;
+					TileMax.X = Max(Start.x, End.x);
+					TileMax.Y = Max(Start.y, End.y);
 					int TileMaxX = (int)(ceilf(TileMax.X / 32.0f));
 					int TileMaxY = (int)(ceilf(TileMax.Y / 32.0f));
 

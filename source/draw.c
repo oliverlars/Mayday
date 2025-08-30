@@ -447,9 +447,10 @@ void D_DrawBaseStr8(
 
 		Position.X += AdvanceX;
 	}
+	
 	if(Outline)
 	{
-		D_DrawLinesArray(D, Arena, OutlineData, OutlineCount/2, 1.0, Colour);
+		D_DrawLinesArray(D, Arena, OutlineData, OutlineOffset, 1.0, Colour);
 	}
 	else
 	{
@@ -805,8 +806,9 @@ void D_DrawLinesArray(draw_context *D,
 {
 	render_context *R = D->Render;
 	r_command Command = {0};
-	Command.Vertices = (r_vertex*)ArenaPushArrayZero(Arena, r_vertex, PositionsCount);
-	Command.VerticesCount = PositionsCount;
+	assert(PositionsCount % 2 == 0);
+	Command.Vertices = (r_vertex*)ArenaPushArrayZero(Arena, r_vertex, PositionsCount/2);
+	Command.VerticesCount = PositionsCount/2;
 	r_vertex *R_Vertices = Command.Vertices;
 
 	m44f Transform = R_CurrentTransform(D->Render);
@@ -842,38 +844,14 @@ void D_DrawLinesArray(draw_context *D,
 		A.Y = D->ViewportSize.Y * (A.Y*0.5 + 0.5);
 		B.Y = D->ViewportSize.Y * (B.Y*0.5 + 0.5);
 
-		
-
-
-		v2f BL = v2f(Min(A.X, B.X), Min(A.Y, B.Y));
-		v2f TR = v2f(Max(A.X, B.X), Max(A.Y, B.Y));
-		BL.X -= Thickness + 5;
-		BL.Y -= Thickness + 5;
-		TR.X += Thickness + 5;
-		TR.Y += Thickness + 5;
-		f32 Width = fabs(TR.X - BL.X);
-		f32 Height = fabs(TR.Y - BL.Y);
-		v2f Vertices[6] =
-		{
-			v2f(BL.X, BL.Y),
-			v2f(TR.X, BL.Y),
-			v2f(TR.X, TR.Y),
-
-			v2f(BL.X, BL.Y),
-			v2f(BL.X, TR.Y),
-			v2f(TR.X, TR.Y),
+		r_vertex Vertex = {
+			.Position = v4f(A.X, A.Y, 0.0, 1),
+			.Colour = Colour,
+			.Start = v2f(A.X, A.Y),
+			.End = v2f(B.X, B.Y),
+			.Thickness = Thickness
 		};
-
-		{
-			r_vertex Vertex = {
-				.Position = v4f(A.X, A.Y, 0.0, 1),
-				.Colour = Colour,
-				.Start = v2f(A.X, A.Y),
-				.End = v2f(B.X, B.Y),
-				.Thickness = Thickness
-			};
-			*R_Vertices++ = Vertex;
-		}
+		*R_Vertices++ = Vertex;
 
 	}
 	Command.Type = R_COMMAND_LINES;

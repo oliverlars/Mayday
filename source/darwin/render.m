@@ -1299,9 +1299,14 @@ void R_Update(render_context *R, m_arena *FrameArena)
 				{
 					int NumberOfTilesInX;
 					int NumberOfTilesInY;
+					simd_float4 Scissor;
 				} Uniforms = {
 					.NumberOfTilesInX = ThreadGroupSize.width,
 					.NumberOfTilesInY = ThreadGroupSize.height,
+					.Scissor = {
+							Command->Scissor.X, Command->Scissor.Y,
+							Command->Scissor.Z, Command->Scissor.W
+						}
 				};
 
 				MTLComputePassDescriptor *ComputePassDescriptor = [MTLComputePassDescriptor computePassDescriptor];
@@ -1487,9 +1492,14 @@ void R_Update(render_context *R, m_arena *FrameArena)
 				{
 					int NumberOfTilesInX;
 					int NumberOfTilesInY;
+					simd_float4 Scissor;
 				} Uniforms = {
 					.NumberOfTilesInX = ThreadGroupSize.width,
 					.NumberOfTilesInY = ThreadGroupSize.height,
+					.Scissor = {
+							Command->Scissor.X, Command->Scissor.Y,
+							Command->Scissor.Z, Command->Scissor.W
+						}
 				};
 
 				MTLComputePassDescriptor *ComputePassDescriptor = [MTLComputePassDescriptor computePassDescriptor];

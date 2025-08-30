@@ -43,6 +43,7 @@ struct uniforms
 {
 	int NumberOfTilesInX;
 	int NumberOfTilesInY;
+	metal::float4 Scissor;
 };
 
 float DistanceToCircle(float2 Position, float2 Centre, float Radius)
@@ -75,6 +76,17 @@ kernel void ComputeMain(metal::texture2d<float, metal::access::read_write> Textu
 
 	metal::float3 ColourSoFar = Texture.read(ThreadPositionInGrid).rgb;
 	float AlphaSoFar = 0.0;
+
+
+	if(ThreadPositionInGrid.x < Uniforms.Scissor.x ||
+	   ThreadPositionInGrid.x >= Uniforms.Scissor.x + Uniforms.Scissor.z ||
+	   ThreadPositionInGrid.y > Uniforms.Scissor.y ||
+	   ThreadPositionInGrid.y <= Uniforms.Scissor.y - Uniforms.Scissor.w)
+	{
+		Texture.write(float4(float3(1, 1, 0), 1.0), ThreadPositionInGrid);
+		return;
+	}
+	
 	for(int I = 0; I < Count; I++)
 	{
 		int DataIndex = DataView[TileIndex].At + I;

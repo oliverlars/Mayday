@@ -370,6 +370,7 @@ void OS_Update(void *Data)
 				}
 				else
 				{
+
 					D_DrawOutlineStr8(M->Draw, M->FrameArena, M->OutlineFont,
 					   v2f(sapp_widthf()/2.0 + 200.0, Y),
 					   v4f(1.0, 0.0, 0.0, 0.1), LogoHeight, 1.0, Str8("MAYDAY!"));
@@ -383,17 +384,25 @@ void OS_Update(void *Data)
 				ui_style Style = UI_GetStyle(M->UI);
 				UI_PushStyle(M->UI, Style);
 				m44f T = R_CurrentTransform(M->Render);
-				T = Mul(Mul
-					(
+				m44f TextTransform = Mul(
 					M44FTranslate(v3f(-150, -300, 0)), 
-					Mul(M44FromZAngle(-M_PI/2.0),
-						M44FTranslate(v3f(150, 300, 0))
-					)
-					), T);
-				R_PushTransform(M->Render, T);
-				D_DrawOutlineStr8(M->Draw, M->FrameArena, M->Rajdhani, v2f(0, 0), v4f(0.2, 0.1, 0.0, 1.0), 500, 1.0, Str8("MAYDAY!"));
+					Mul(M44FromZAngle(-M_PI/2.0), M44FTranslate(v3f(150, 300, 0)))
+				);
+				//R_PushTransform(M->Render, Mul(TextTransform, T));
+
+				v4f ScissorCorners = v4f(150, 300, sapp_widthf(), 550);
+
+				ScissorCorners = Mul(TextTransform, ScissorCorners);
+				v4i Scissor = v4i(
+					ScissorCorners.X, ScissorCorners.Y,
+					ScissorCorners.Z - ScissorCorners.X,
+					ScissorCorners.W - ScissorCorners.Y
+				);
+				R_PushScissor(M->Render, Scissor);
+				D_DrawOutlineStr8(M->Draw, M->FrameArena, M->Rajdhani, v2f(0, 0), v4f(0.2, 0.1, 0.0, 1.0), 500, 5.0, Str8("MAYDAY!"));
+				R_PopScissor(M->Render);
 				UI_PopStyle(M->UI);
-				R_PopTransform(M->Render);
+				//R_PopTransform(M->Render);
 			}
 
 #if 0

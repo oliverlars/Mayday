@@ -450,7 +450,7 @@ void D_DrawBaseStr8(
 	
 	if(Outline)
 	{
-		D_DrawLinesArray(D, Arena, OutlineData, OutlineOffset, 1.0, Colour);
+		D_DrawLinesArray(D, Arena, OutlineData, OutlineOffset, OutlineThickness, Colour);
 	}
 	else
 	{

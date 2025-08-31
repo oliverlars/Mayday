@@ -115,7 +115,7 @@ mayday_context;
 #define SOKOL_LOG_IMPL
 #include "sokol_log.h"
 
-#define RenderTest 1
+#define RenderTest 0
 
 #if RenderTest
 void OS_Update(void *Data)
@@ -159,7 +159,7 @@ void OS_Update_(void *Data)
 	};
 	D_DrawPointsArray(M->Draw, M->FrameArena, Points, 1, 200.0, v4f(0, 1, 1, 1));
 	//D_DrawOutlineStr8(M->Draw, M->FrameArena, M->Rajdhani, v2f(100, 0), v4f(0.2, 0.1, 0.0, 1.0), 500, 5.0, Str8("MAYDAY!2"));
-	//D_DrawPointsArray(M->Draw, M->FrameArena, Points, 1, 70.0, v4f(1, 0, 1, 1));
+	D_DrawPointsArray(M->Draw, M->FrameArena, Points + 1, 1, 70.0, v4f(1, 0, 1, 1));
 	
 	R_PopTransform(M->Render);
 	R_PopScissor(M->Render);
@@ -508,7 +508,7 @@ void OS_Update(void *Data)
 	f32 MillisecondsSinceLastClick = OS_MilliSecondsFromTimeStamp(OS_TimeStampNow() - M->UI->TimeStampWhenLeftMousePressed);
 	if(MillisecondsSinceLastClick >= 400)
 	{
-		M->UI->MultiLeftClickCount = 0;
+	M->UI->MultiLeftClickCount = 0;
 	}
 
 }

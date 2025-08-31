@@ -919,9 +919,22 @@ void R_Update(render_context *R, m_arena *FrameArena)
 	} circle;
 
 	// NOTE(Oliver): Some kind of an upper limit
-	circle *CirclesForThisDispatch = ArenaPushArray(Scratch.Arena, circle, 8192);
+	int MAX_SHAPE_COUNT = 8192;
+	circle *CirclesForThisDispatch = ArenaPushArray(Scratch.Arena, circle, MAX_SHAPE_COUNT);
 	int TotalCircleCount = 0;
 	int CircleCountSoFar = 0;
+
+	typedef struct line
+	{
+		simd_float2 Start;
+		simd_float2 End;
+		float Thickness;
+		simd_float4 Colour;
+	} line;
+
+	line *LinesForThisDispatch = ArenaPushArray(Scratch.Arena, line, MAX_SHAPE_COUNT);
+	int TotalLineCount = 0;
+	int LineCountSoFar = 0;
 
 	for(r_command *Command = R->CommandsFirst; Command != Null; Command = Command->Next)
 	{
@@ -971,22 +984,37 @@ void R_Update(render_context *R, m_arena *FrameArena)
 		// NOTE(Oliver): This is for the compute SDF renderer
 		case R_COMMAND_LINES:
 		{
+			int LineCount = Command->VerticesCount;
+			for(int I = 0; I < LineCount; I++)
+			{
+				simd_float2 Start =
+				{
+					Command->Vertices[I].Start.X,
+					Command->Vertices[I].Start.Y
+				};
+				simd_float2 End =
+				{
+					Command->Vertices[I].End.X,
+					Command->Vertices[I].End.Y
+				};
+
+				simd_float4 C =
+				{
+					Command->Vertices[I].Colour.X,
+					Command->Vertices[I].Colour.Y,
+					Command->Vertices[I].Colour.Z,
+					Command->Vertices[I].Colour.W
+				};
+				LinesForThisDispatch[LineCountSoFar + I].Start = Start;
+				LinesForThisDispatch[LineCountSoFar + I].End = End;
+				LinesForThisDispatch[LineCountSoFar + I].Thickness = Command->Vertices[I].Thickness;
+				LinesForThisDispatch[LineCountSoFar + I].Colour = C;
+			}
 			
+			LineCountSoFar += LineCount;
 		}break;
 		case R_COMMAND_POINTS:
-		{
-			// tile_range TileRange = TileRangeFromCommand(R, Command, TileDimensions, WindowDimensions);
-
-			// for(int X = TileRange.TileMin.X; X < TileRange.TileMax.X; X++)
-			// {
-			// 	for(int Y = TileRange.TileMin.Y; Y < TilRange.TileMax.Y; Y++)
-			// 	{
-			// 		int TileIndex = X + Y * TileDimensions.X;
-			// 		PerTileData[TileIndex].Count++;
-			// 	}
-			// }
-
-			
+		{			
 			int CircleCount = Command->VerticesCount;
 			for(int I = 0; I < CircleCount; I++)
 			{
@@ -1029,13 +1057,7 @@ void R_Update(render_context *R, m_arena *FrameArena)
 			}
 			else if(Command->Type == R_COMMAND_POINTS)
 			{	
-				TimesPointsWereFlushed += 1;
-
-				metal_context *Metal = R->Backend;
-
 				per_tile_data *PerTileData = ArenaPushArrayZero(Scratch.Arena, per_tile_data, TileCount);
-
-				int TileCount = TileDimensions.X*TileDimensions.Y;
 
 				for(int I = 0; I < CircleCountSoFar; I++)
 				{
@@ -1117,7 +1139,7 @@ void R_Update(render_context *R, m_arena *FrameArena)
 				}
 
 				MemoryCopy(Metal->PerTileData[R->Frame % FRAMES_IN_FLIGHT].contents + PerTileOffset*TileCount*sizeof(per_tile_data), PerTileData, TileCount*sizeof(per_tile_data));
-				MemoryCopy(Metal->Data[R->Frame % FRAMES_IN_FLIGHT].contents + TotalCircleCount*sizeof(circle), CirclesInEachTile, Count*sizeof(circle));
+				MemoryCopy(Metal->Data[R->Frame % FRAMES_IN_FLIGHT].contents + MegaBytes(0) + TotalCircleCount*sizeof(circle), CirclesInEachTile, Count*sizeof(circle));
 
 				struct uniforms2
 				{
@@ -1140,8 +1162,8 @@ void R_Update(render_context *R, m_arena *FrameArena)
 				[ComputeEncoder setBytes:&Uniforms length:sizeof(Uniforms) atIndex:5];
 
 				// These offsets are just temporary
-				[ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:MegaBytes(0) atIndex:1];
-				[ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:MegaBytes(1) + sizeof(circle) * TotalCircleCount atIndex:2];
+				[ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:MegaBytes(0) + TotalCircleCount*sizeof(circle) atIndex:1];
+				[ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:MegaBytes(1) /* HACK(Oliver) */ atIndex:2];
 				[ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:MegaBytes(2) atIndex:3];
 				[ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:MegaBytes(3) atIndex:4];
 				[ComputeEncoder setBuffer:Metal->PerTileData[R->Frame % FRAMES_IN_FLIGHT] offset:PerTileOffset*TileCount*sizeof(per_tile_data) atIndex:0];
@@ -1160,176 +1182,130 @@ void R_Update(render_context *R, m_arena *FrameArena)
 			}
 			else if(Command->Type == R_COMMAND_LINES)
 			{
-				// v2i TileDimensions = v2i(ThreadGroupSize.width, ThreadGroupSize.height);
-				// v2i WindowDimensions = v2i(Metal->Drawable.texture.width, Metal->Drawable.texture.height);
+				per_tile_data *PerTileData = ArenaPushArrayZero(Scratch.Arena, per_tile_data, TileCount);
 
-				// metal_context *Metal = R->Backend;
+				for(int I = 0; I < LineCountSoFar; I++)
+				{
+					simd_float2 Start = LinesForThisDispatch[I].Start;
+					simd_float2 End = LinesForThisDispatch[I].End;
+					float Thickness = LinesForThisDispatch[I].Thickness;
+					v2f TileMin;
+					TileMin.X = Min(Start.x, End.x);
+					TileMin.Y = Min(Start.y, End.y);
+					int TileMinX = (int)(floorf(TileMin.X / 32.0f));
+					int TileMinY = (int)(floorf(TileMin.Y / 32.0f));
 
-				// typedef struct per_tile_data
-				// {
-				// 	int At;
-				// 	int Count;
-				// 	int Type;
-				// } per_tile_data;
+					v2f TileMax;
+					TileMax.X = Max(Start.x, End.x);
+					TileMax.Y = Max(Start.y, End.y);
+					int TileMaxX = (int)(ceilf(TileMax.X / 32.0f));
+					int TileMaxY = (int)(ceilf(TileMax.Y / 32.0f));
 
-				// typedef struct line
-				// {
-				// 	simd_float2 Start;
-				// 	simd_float2 End;
-				// 	float Thickness;
-				// 	simd_float4 Colour;
-				// } line;
+					TileMinX = Max(TileMinX, 0);
+					TileMinY = Max(TileMinY, 0);
 
-				// line *Lines = ((line *)(Metal->SDFs + MegaBytes(1)) + LineOffset);
+					TileMaxX = Min(TileMaxX, TileDimensions.X - 1);
+					TileMaxY = Min(TileMaxY, TileDimensions.Y - 1);
 
-				// line *Data = ArenaPushArrayZero(Scratch.Arena, line, 50*TileDimensions.X*TileDimensions.Y);
+					for(int X = TileMinX; X < TileMaxX; X++)
+					{
+						for(int Y = TileMinY; Y < TileMaxY; Y++)
+						{
+							int TileIndex = X + Y * TileDimensions.X;
+							PerTileData[TileIndex].Count++;
+						}
+					}
+				}
 
-				// int LineCount = Command->VerticesCount;
-				// for(int I = 0; I < LineCount; I++)
-				// {
-				// 	simd_float2 Start =
-				// 	{
-				// 		Command->Vertices[I].Start.X,
-				// 		Command->Vertices[I].Start.Y
-				// 	};
+				int CountSoFar = 0;
+				for(int I = 0; I < TileCount; I++)
+				{
+					PerTileData[I].At = CountSoFar;
+					// HACK(Oliver): Improve this
+					PerTileData[I].Type = 1; // Line
+					CountSoFar += PerTileData[I].Count;
+				}
 
-				// 	simd_float2 End =
-				// 	{
-				// 		Command->Vertices[I].End.X,
-				// 		Command->Vertices[I].End.Y
-				// 	};
+				int *TileOffsets = ArenaPushArrayZero(Scratch.Arena, int, TileCount);
 
-				// 	simd_float4 C =
-				// 	{
-				// 		Command->Vertices[I].Colour.X,
-				// 		Command->Vertices[I].Colour.Y,
-				// 		Command->Vertices[I].Colour.Z,
-				// 		Command->Vertices[I].Colour.W
-				// 	};
-				// 	Lines[I].Start = Start;
-				// 	Lines[I].End = End;
-				// 	Lines[I].Thickness = Command->Vertices[I].Thickness;
-				// 	Lines[I].Colour = C;
-				// }
-				
-				// int TileCount = TileDimensions.X*TileDimensions.Y;
+				//TODO(Oliver): Find a better upper limit for this
+				line *LinesInEachTile = ArenaPushArray(Scratch.Arena, line, 50*TileCount);
 
-				// per_tile_data *PerTileData = ArenaPushArrayZero(Scratch.Arena, per_tile_data, TileCount);
+				for(int I = 0; I < LineCountSoFar; I++)
+				{
+					simd_float2 Start = LinesForThisDispatch[I].Start;
+					simd_float2 End = LinesForThisDispatch[I].End;
+					float Thickness = LinesForThisDispatch[I].Thickness;
+					v2f TileMin;
+					TileMin.X = Min(Start.x, End.x);
+					TileMin.Y = Min(Start.y, End.y);
+					int TileMinX = (int)(floorf(TileMin.X / 32.0f));
+					int TileMinY = (int)(floorf(TileMin.Y / 32.0f));
 
-				// for(int I = 0; I < LineCount; I++)
-				// {
-				// 	simd_float2 Start = Lines[I].Start;
-				// 	simd_float2 End = Lines[I].End;
-				// 	float Thickness = Lines[I].Thickness;
-				// 	v2f TileMin;
-				// 	TileMin.X = Min(Start.x, End.x);
-				// 	TileMin.Y = Min(Start.y, End.y);
-				// 	int TileMinX = (int)(floorf(TileMin.X / 32.0f));
-				// 	int TileMinY = (int)(floorf(TileMin.Y / 32.0f));
+					v2f TileMax;
+					TileMax.X = Max(Start.x, End.x);
+					TileMax.Y = Max(Start.y, End.y);
+					int TileMaxX = (int)(ceilf(TileMax.X / 32.0f));
+					int TileMaxY = (int)(ceilf(TileMax.Y / 32.0f));
 
-				// 	v2f TileMax;
-				// 	TileMax.X = Max(Start.x, End.x);
-				// 	TileMax.Y = Max(Start.y, End.y);
-				// 	int TileMaxX = (int)(ceilf(TileMax.X / 32.0f));
-				// 	int TileMaxY = (int)(ceilf(TileMax.Y / 32.0f));
+					TileMinX = Max(TileMinX, 0);
+					TileMinY = Max(TileMinY, 0);
 
-				// 	TileMinX = Max(TileMinX, 0);
-				// 	TileMinY = Max(TileMinY, 0);
+					TileMaxX = Min(TileMaxX, TileDimensions.X - 1);
+					TileMaxY = Min(TileMaxY, TileDimensions.Y - 1);
 
-				// 	TileMaxX = Min(TileMaxX, TileDimensions.X - 1);
-				// 	TileMaxY = Min(TileMaxY, TileDimensions.Y - 1);
+					for(int X = TileMinX; X < TileMaxX; X++)
+					{
+						for(int Y = TileMinY; Y < TileMaxY; Y++)
+						{
+							int TileIndex = X + Y * TileDimensions.X;
+							int At = PerTileData[TileIndex].At;
+							LinesInEachTile[At + TileOffsets[TileIndex]] = LinesForThisDispatch[I];
+							TileOffsets[TileIndex] += 1;
+						}
+					}
+				}
 
-				// 	for(int X = TileMinX; X < TileMaxX; X++)
-				// 	{
-				// 		for(int Y = TileMinY; Y < TileMaxY; Y++)
-				// 		{
-				// 			int TileIndex = X + Y * TileDimensions.X;
-				// 			PerTileData[TileIndex].Count++;
-				// 		}
-				// 	}
-				// }
-
-				// int CountSoFar = 0;
-				// for(int I = 0; I < TileCount; I++)
-				// {
-				// 	PerTileData[I].At = CountSoFar;
-				// 	// HACK(Oliver): Improve this
-				// 	PerTileData[I].Type = 1; // Line
-				// 	CountSoFar += PerTileData[I].Count;
-				// }
-
-				// int *TileOffsets = ArenaPushArrayZero(Scratch.Arena, int, TileCount);
-				// for(int I = 0; I < LineCount; I++)
-				// {
-				// 	simd_float2 Start = Lines[I].Start;
-				// 	simd_float2 End = Lines[I].End;
-				// 	float Thickness = Lines[I].Thickness;
-				// 	v2f TileMin;
-				// 	TileMin.X = Min(Start.x, End.x);
-				// 	TileMin.Y = Min(Start.y, End.y);
-				// 	int TileMinX = (int)(floorf(TileMin.X / 32.0f));
-				// 	int TileMinY = (int)(floorf(TileMin.Y / 32.0f));
-
-				// 	v2f TileMax;
-				// 	TileMax.X = Max(Start.x, End.x);
-				// 	TileMax.Y = Max(Start.y, End.y);
-				// 	int TileMaxX = (int)(ceilf(TileMax.X / 32.0f));
-				// 	int TileMaxY = (int)(ceilf(TileMax.Y / 32.0f));
-
-				// 	TileMinX = Max(TileMinX, 0);
-				// 	TileMinY = Max(TileMinY, 0);
-
-				// 	TileMaxX = Min(TileMaxX, TileDimensions.X - 1);
-				// 	TileMaxY = Min(TileMaxY, TileDimensions.Y - 1);
-
-				// 	for(int X = TileMinX; X < TileMaxX; X++)
-				// 	{
-				// 		for(int Y = TileMinY; Y < TileMaxY; Y++)
-				// 		{
-				// 			int TileIndex = X + Y * TileDimensions.X;
-				// 			int At = PerTileData[TileIndex].At;
-				// 			Data[At + TileOffsets[TileIndex]] = Lines[I];
-				// 			TileOffsets[TileIndex] += 1;
-				// 		}
-				// 	}
-				// }
-
-				// MemoryCopy(Metal->Data[R->Frame % FRAMES_IN_FLIGHT].contents + LineOffset*sizeof(line) + MegaBytes(1), Data, CountSoFar*sizeof(line));
-				// MemoryCopy(Metal->PerTileData[R->Frame % FRAMES_IN_FLIGHT].contents, PerTileData, TileDimensions.X*TileDimensions.Y*sizeof(per_tile_data));
-				// LineOffset += CountSoFar;
+				MemoryCopy(Metal->PerTileData[R->Frame % FRAMES_IN_FLIGHT].contents + PerTileOffset*TileCount*sizeof(per_tile_data), PerTileData, TileCount*sizeof(per_tile_data));
+				MemoryCopy(Metal->Data[R->Frame % FRAMES_IN_FLIGHT].contents + MegaBytes(1) + TotalLineCount*sizeof(line), LinesInEachTile, CountSoFar*sizeof(line));
 
 
-				// struct uniforms2
-				// {
-				// 	int NumberOfTilesInX;
-				// 	int NumberOfTilesInY;
-				// 	simd_float4 Scissor;
-				// } Uniforms = {
-				// 	.NumberOfTilesInX = ThreadGroupSize.width,
-				// 	.NumberOfTilesInY = ThreadGroupSize.height,
-				// 	.Scissor = {
-				// 			Command->Scissor.X, sapp_heightf() - Command->Scissor.Y,
-				// 			Command->Scissor.Z, Command->Scissor.W
-				// 		}
-				// };
+				struct uniforms2
+				{
+					int NumberOfTilesInX;
+					int NumberOfTilesInY;
+					simd_float4 Scissor;
+				} Uniforms = {
+					.NumberOfTilesInX = ThreadGroupSize.width,
+					.NumberOfTilesInY = ThreadGroupSize.height,
+					.Scissor = {
+							Command->Scissor.X, sapp_heightf() - Command->Scissor.Y,
+							Command->Scissor.Z, Command->Scissor.W
+						}
+				};
 
-				// MTLComputePassDescriptor *ComputePassDescriptor = [MTLComputePassDescriptor computePassDescriptor];
-				// ComputePassDescriptor.dispatchType = MTLDispatchTypeConcurrent;
-				// id<MTLComputeCommandEncoder> ComputeEncoder = [CommandBuffer computeCommandEncoderWithDescriptor:ComputePassDescriptor];
-				// [ComputeEncoder setComputePipelineState: Metal->ComputeTest.PipelineState];
-				// [ComputeEncoder setBytes:&Uniforms length:sizeof(Uniforms) atIndex:5];
+				MTLComputePassDescriptor *ComputePassDescriptor = [MTLComputePassDescriptor computePassDescriptor];
+				ComputePassDescriptor.dispatchType = MTLDispatchTypeConcurrent;
+				id<MTLComputeCommandEncoder> ComputeEncoder = [CommandBuffer computeCommandEncoderWithDescriptor:ComputePassDescriptor];
+				[ComputeEncoder setComputePipelineState: Metal->ComputeTest.PipelineState];
+				[ComputeEncoder setBytes:&Uniforms length:sizeof(Uniforms) atIndex:5];
 
-				// // These offsets are just temporary
-				// [ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:MegaBytes(0) atIndex:1];
-				// [ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:MegaBytes(1) atIndex:2];
-				// [ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:MegaBytes(2) atIndex:3];
-				// [ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:MegaBytes(3) atIndex:4];
-				// [ComputeEncoder setBuffer:Metal->PerTileData[R->Frame % FRAMES_IN_FLIGHT] offset:0 atIndex:0];
-				// [ComputeEncoder setTexture:Metal->BaseFrameBuffer atIndex:0];
+				// These offsets are just temporary
+				[ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:MegaBytes(0) atIndex:1];
+				[ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:MegaBytes(1) + TotalLineCount*sizeof(line) atIndex:2];
+				[ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:MegaBytes(2) atIndex:3];
+				[ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:MegaBytes(3) atIndex:4];
+				[ComputeEncoder setBuffer:Metal->PerTileData[R->Frame % FRAMES_IN_FLIGHT] offset:0 atIndex:0];
+				[ComputeEncoder setTexture:Metal->BaseFrameBuffer atIndex:0];
+				[ComputeEncoder setLabel:@"Render Lines"];
 
-				// [ComputeEncoder dispatchThreads:MTLSizeMake(Metal->Drawable.texture.width, Metal->Drawable.texture.height, 1) threadsPerThreadgroup:TilesPerThreadgroup];
+				[ComputeEncoder dispatchThreads:MTLSizeMake(Metal->Drawable.texture.width, Metal->Drawable.texture.height, 1) threadsPerThreadgroup:TilesPerThreadgroup];
 
-				// [ComputeEncoder endEncoding];
+				[ComputeEncoder endEncoding];
+
+				PerTileOffset++;
+				TotalLineCount += LineCountSoFar;
+				LineCountSoFar = 0;
 			}
 			else if(Command->Type == R_COMMAND_BEZIER)
 			{

@@ -594,51 +594,6 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 	Metal->InFlightSemaphore = dispatch_semaphore_create(FRAMES_IN_FLIGHT);
 }
 
-typedef struct tile_range
-{
-	v2i TileMin;
-	v2i TileMax;
-} tile_range;
-
-
-tile_range TileRangeFromCommand(render_context *R, r_command *Command, v2i TileDimensions, v2i WindowDimensions)
-{
-	tile_range Result = {0};
-	v2f TileMin, TileMax;
-	switch(Command->Type)
-	{
-	case R_COMMAND_POINTS:
-	{
-		v2f P = v2f(Command->Position.X, Command->Position.Y);
-		f32 R = Command->Radius;
-		TileMin.X = P.X - R;
-		TileMin.Y = P.Y - R;
-		int TileMinX = (int)(floorf(TileMin.X / 32.0f));
-		int TileMinY = (int)(floorf(TileMin.Y / 32.0f));
-
-		TileMax.X = P.X + R;
-		TileMax.Y = P.Y + R;
-		int TileMaxX = (int)(ceilf(TileMax.X / 32.0f));
-		int TileMaxY = (int)(ceilf(TileMax.Y / 32.0f));
-	}
-	break;
-	case R_COMMAND_LINES:
-	{
-
-	}
-	break;
-	}
-
-
-	TileMin.X = Max(TileMin.X, 0);
-	TileMin.Y = Max(TileMin.Y, 0);
-
-	TileMax.X = Min(TileMax.X, TileDimensions.X - 1);
-	TileMax.Y = Min(TileMax.Y, TileDimensions.Y - 1);
-
-	return Result;
-}
-
 void R_RenderPoints(render_context *R, id<MTLCommandBuffer> CommandBuffer, v4i Scissor, int VertexCount, int VertexOffset, int UniformOffset)
 {
 	metal_context *Metal = R->Backend;
@@ -965,6 +920,7 @@ void R_Update(render_context *R, m_arena *FrameArena)
 
 	// NOTE(Oliver): Some kind of an upper limit
 	circle *CirclesForThisDispatch = ArenaPushArray(Scratch.Arena, circle, 8192);
+	int TotalCircleCount = 0;
 	int CircleCountSoFar = 0;
 
 	for(r_command *Command = R->CommandsFirst; Command != Null; Command = Command->Next)
@@ -1032,7 +988,7 @@ void R_Update(render_context *R, m_arena *FrameArena)
 
 			
 			int CircleCount = Command->VerticesCount;
-			for(int I = CircleCountSoFar; I < CircleCountSoFar + CircleCount; I++)
+			for(int I = 0; I < CircleCount; I++)
 			{
 				simd_float2 P =
 				{
@@ -1046,9 +1002,9 @@ void R_Update(render_context *R, m_arena *FrameArena)
 					Command->Vertices[I].Colour.Z,
 					Command->Vertices[I].Colour.W
 				};
-				CirclesForThisDispatch[I].Position = P;
-				CirclesForThisDispatch[I].Radius = Command->Vertices[I].PointSize;
-				CirclesForThisDispatch[I].Colour = C;
+				CirclesForThisDispatch[CircleCountSoFar + I].Position = P;
+				CirclesForThisDispatch[CircleCountSoFar + I].Radius = Command->Vertices[I].PointSize;
+				CirclesForThisDispatch[CircleCountSoFar + I].Colour = C;
 			}
 			
 			CircleCountSoFar += CircleCount;
@@ -1072,14 +1028,46 @@ void R_Update(render_context *R, m_arena *FrameArena)
 				R_RenderTriangles(R, CommandBuffer, Command->Scissor, VertexCount, VertexOffsetInBytes, UniformOffset*sizeof(uniforms));
 			}
 			else if(Command->Type == R_COMMAND_POINTS)
-			{
-				MemoryCopy(Metal->Data[R->Frame % FRAMES_IN_FLIGHT].contents + CircleCountSoFar*sizeof(circle), CirclesForThisDispatch, CircleCountSoFar*sizeof(circle));
-				
+			{	
 				TimesPointsWereFlushed += 1;
 
 				metal_context *Metal = R->Backend;
 
 				per_tile_data *PerTileData = ArenaPushArrayZero(Scratch.Arena, per_tile_data, TileCount);
+
+				int TileCount = TileDimensions.X*TileDimensions.Y;
+
+				for(int I = 0; I < CircleCountSoFar; I++)
+				{
+					simd_float2 P = CirclesForThisDispatch[I].Position;
+					float R = CirclesForThisDispatch[I].Radius;
+					v2f TileMin;
+					TileMin.X = P.x - R;
+					TileMin.Y = P.y - R;
+					int TileMinX = (int)(floorf(TileMin.X / 32.0f));
+					int TileMinY = (int)(floorf(TileMin.Y / 32.0f));
+
+					v2f TileMax;
+					TileMax.X = P.x + R;
+					TileMax.Y = P.y + R;
+					int TileMaxX = (int)(ceilf(TileMax.X / 32.0f));
+					int TileMaxY = (int)(ceilf(TileMax.Y / 32.0f));
+
+					TileMinX = Max(TileMinX, 0);
+					TileMinY = Max(TileMinY, 0);
+
+					TileMaxX = Min(TileMaxX, TileDimensions.X - 1);
+					TileMaxY = Min(TileMaxY, TileDimensions.Y - 1);
+
+					for(int X = TileMinX; X < TileMaxX; X++)
+					{
+						for(int Y = TileMinY; Y < TileMaxY; Y++)
+						{
+							int TileIndex = X + Y * TileDimensions.X;
+							PerTileData[TileIndex].Count++;
+						}
+					}
+				}
 
 				int Count = 0;
 				for(int I = 0; I < TileCount; I++)
@@ -1090,7 +1078,6 @@ void R_Update(render_context *R, m_arena *FrameArena)
 				}
 
 				int *TileOffsets = ArenaPushArrayZero(Scratch.Arena, int, TileCount);
-				tile_range TileRange = TileRangeFromCommand(R, Command, TileDimensions, WindowDimensions);
 
 				//TODO(Oliver): Find a better upper limit for this
 				circle *CirclesInEachTile = ArenaPushArray(Scratch.Arena, circle, 50*TileCount);
@@ -1130,7 +1117,7 @@ void R_Update(render_context *R, m_arena *FrameArena)
 				}
 
 				MemoryCopy(Metal->PerTileData[R->Frame % FRAMES_IN_FLIGHT].contents + PerTileOffset*TileCount*sizeof(per_tile_data), PerTileData, TileCount*sizeof(per_tile_data));
-				MemoryCopy(Metal->Data[R->Frame % FRAMES_IN_FLIGHT].contents, CirclesInEachTile, CircleCountSoFar*sizeof(circle));
+				MemoryCopy(Metal->Data[R->Frame % FRAMES_IN_FLIGHT].contents + TotalCircleCount*sizeof(circle), CirclesInEachTile, Count*sizeof(circle));
 
 				struct uniforms2
 				{
@@ -1154,17 +1141,19 @@ void R_Update(render_context *R, m_arena *FrameArena)
 
 				// These offsets are just temporary
 				[ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:MegaBytes(0) atIndex:1];
-				[ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:MegaBytes(1) atIndex:2];
+				[ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:MegaBytes(1) + sizeof(circle) * TotalCircleCount atIndex:2];
 				[ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:MegaBytes(2) atIndex:3];
 				[ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:MegaBytes(3) atIndex:4];
 				[ComputeEncoder setBuffer:Metal->PerTileData[R->Frame % FRAMES_IN_FLIGHT] offset:PerTileOffset*TileCount*sizeof(per_tile_data) atIndex:0];
 				[ComputeEncoder setTexture:Metal->BaseFrameBuffer atIndex:0];
+				[ComputeEncoder setLabel:@"Render Points"];
 
 				[ComputeEncoder dispatchThreads:MTLSizeMake(Metal->Drawable.texture.width, Metal->Drawable.texture.height, 1) threadsPerThreadgroup:TilesPerThreadgroup];
 
 				[ComputeEncoder endEncoding];
 
 				PerTileOffset++;
+				TotalCircleCount += CircleCountSoFar;
 				CircleCountSoFar = 0;
 				
 				//R_RenderPoints(R, CommandBuffer, Command->Scissor, VertexCount, VertexOffsetInBytes, UniformOffset*sizeof(uniforms));

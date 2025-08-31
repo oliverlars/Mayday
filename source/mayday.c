@@ -115,7 +115,13 @@ mayday_context;
 #define SOKOL_LOG_IMPL
 #include "sokol_log.h"
 
+#define RenderTest 1
+
+#if RenderTest
 void OS_Update(void *Data)
+#else
+void OS_Update_(void *Data)
+#endif
 {
 	mayday_context *M = Data;
 
@@ -168,7 +174,11 @@ void OS_Update(void *Data)
 	M->UI->EventFirst = Null;
 }
 
+#if RenderTest
 void OS_Update_(void *Data)
+#else
+void OS_Update(void *Data)
+#endif
 {
 	mayday_context *M = Data;
 

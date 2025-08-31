@@ -84,8 +84,9 @@ kernel void ComputeMain(metal::texture2d<float, metal::access::read_write> Textu
 	   ThreadPositionInGrid.y > Uniforms.Scissor.y ||
 	   ThreadPositionInGrid.y < Uniforms.Scissor.y - Uniforms.Scissor.w)
 	{
-		//Texture.write(float4(float3(1, 1, 0), 1.0), ThreadPositionInGrid);
-		return;
+		//FIXME(Oliver): No clue why this isn't working now
+
+		//return;
 	}
 	
 	for(int I = 0; I < Count; I++)
@@ -99,7 +100,7 @@ kernel void ComputeMain(metal::texture2d<float, metal::access::read_write> Textu
 			metal::float2 Position = float2(ThreadPositionInGrid.x, ThreadPositionInGrid.y);
 			float Distance = DistanceToCircle(Position, Circles[DataIndex].Position, Circles[DataIndex].Radius);
 			float AA = metal::smoothstep(-1, 1, -Distance) * Circles[DataIndex].Colour.a;
-
+	
 			// Equivalent to ONE_MINUS_SRC_ALPHA
 			// Framebuffer stores premultiplied alpha
 			ColourSoFar += (1.0 - AlphaSoFar) * Circles[DataIndex].Colour.rgb*AA;

@@ -78,12 +78,13 @@ kernel void ComputeMain(metal::texture2d<float, metal::access::read_write> Textu
 	float AlphaSoFar = 0.0;
 
 
+	// HACK(Oliver): I just made this kind of work but too tired to fix it now
 	if(ThreadPositionInGrid.x < Uniforms.Scissor.x ||
-	   ThreadPositionInGrid.x >= Uniforms.Scissor.x + Uniforms.Scissor.z ||
+	   ThreadPositionInGrid.x > Uniforms.Scissor.x + Uniforms.Scissor.z ||
 	   ThreadPositionInGrid.y > Uniforms.Scissor.y ||
-	   ThreadPositionInGrid.y <= Uniforms.Scissor.y - Uniforms.Scissor.w)
+	   ThreadPositionInGrid.y < Uniforms.Scissor.y - Uniforms.Scissor.w)
 	{
-		Texture.write(float4(float3(1, 1, 0), 1.0), ThreadPositionInGrid);
+		//Texture.write(float4(float3(1, 1, 0), 1.0), ThreadPositionInGrid);
 		return;
 	}
 	

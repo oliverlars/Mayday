@@ -115,7 +115,7 @@ mayday_context;
 #define SOKOL_LOG_IMPL
 #include "sokol_log.h"
 
-void OS_Update_(void *Data)
+void OS_Update(void *Data)
 {
 	mayday_context *M = Data;
 
@@ -125,7 +125,7 @@ void OS_Update_(void *Data)
 	R_PushScissor(M->Render, v4i(0, 0, sapp_width(), sapp_height()));
 	R_PushTransform(M->Render, Orthographic(0.0, sapp_widthf()/2.0, sapp_heightf()/2.0, 0.0, -1000.0, 1000.0));
 
-	D_DrawStr8(M->Draw, M->FrameArena, M->CodeFont, v2f(200, 500), v4f(0, 1, 0, 1), 100, Str8("This text is upside down"));
+	//D_DrawStr8(M->Draw, M->FrameArena, M->CodeFont, v2f(200, 500), v4f(0, 1, 0, 1), 100, Str8("This text is upside down"));
 	v3f Line[2] = 
 	{
 		v3f(100, 100, 0),
@@ -137,13 +137,24 @@ void OS_Update_(void *Data)
 	m44f PV = Mul( M44FLookAt(v3f(0, 0, -10), v3f(0, 0, 0), v3f(0, 1, 0)), P);
 	R_PushTransform(M->Render, PV);
 	//D_DrawLinesArray(M->Draw, M->FrameArena, Line, 2, 5.0, v4f(1, 1, 1, 1));
-	D_DrawPointsArray(M->Draw, M->FrameArena, Line, 1, 50, v4f(1, 1, 1, 1));
+	//D_DrawPointsArray(M->Draw, M->FrameArena, Line, 1, 50, v4f(1, 1, 1, 1));
 	R_PopTransform(M->Render);
 
-	D_DrawPointsArray(M->Draw, M->FrameArena, Line, 2, 50, v4f(1, 1, 1, 0.2));
+	//D_DrawPointsArray(M->Draw, M->FrameArena, Line, 2, 50, v4f(1, 1, 1, 0.2));
 	//D_DrawQuad(M->Draw, M->FrameArena, v2f(200, 200), 200, 200, v4f(1, 1, 1, 1));
 	//D_DrawQuad(M->Draw, M->FrameArena, v2f(600, 600), 100, 200, v4f(1, 0, 1, 1));
 	//D_DrawStr8(M->Draw, M->FrameArena, M->CodeFont, v2f(300, 200), v4f(0, 1, 0, 1), 100, Str8("This text is upside "));
+	//D_DrawOutlineStr8(M->Draw, M->FrameArena, M->Rajdhani, v2f(0, 0), v4f(0.2, 0.1, 0.0, 1.0), 500, 5.0, Str8("MAYDAY!"));
+				
+	v3f Points[] =
+	{
+		v3f(100, 100, 0),
+		v3f(200, 200, 0)
+	};
+	D_DrawPointsArray(M->Draw, M->FrameArena, Points, 1, 200.0, v4f(0, 1, 1, 1));
+	//D_DrawOutlineStr8(M->Draw, M->FrameArena, M->Rajdhani, v2f(100, 0), v4f(0.2, 0.1, 0.0, 1.0), 500, 5.0, Str8("MAYDAY!2"));
+	//D_DrawPointsArray(M->Draw, M->FrameArena, Points, 1, 70.0, v4f(1, 0, 1, 1));
+	
 	R_PopTransform(M->Render);
 	R_PopScissor(M->Render);
 
@@ -157,7 +168,7 @@ void OS_Update_(void *Data)
 	M->UI->EventFirst = Null;
 }
 
-void OS_Update(void *Data)
+void OS_Update_(void *Data)
 {
 	mayday_context *M = Data;
 
@@ -380,17 +391,21 @@ void OS_Update(void *Data)
 
 
 			// Vertical text
+
+			f32 Offset = 0;
+			
+			for(int I = 0; I < 2; I++)
 			{
 				ui_style Style = UI_GetStyle(M->UI);
 				UI_PushStyle(M->UI, Style);
 				m44f T = R_CurrentTransform(M->Render);
 				m44f TextTransform = Mul(
-					M44FTranslate(v3f(-150, -300, 0)), 
-					Mul(M44FromZAngle(-M_PI/2.0), M44FTranslate(v3f(150, 300, 0)))
+					M44FTranslate(v3f(-150 - Offset, -300, 0)), 
+					Mul(M44FromZAngle(-M_PI/2.0), M44FTranslate(v3f(150 + Offset, 300, 0)))
 				);
-				//R_PushTransform(M->Render, Mul(TextTransform, T));
+				R_PushTransform(M->Render, Mul(TextTransform, T));
 
-				v4f ScissorCorners = v4f(150, 300, sapp_widthf(), 550);
+				v4f ScissorCorners = v4f(200 + Offset, 300, 600, 550);
 
 				ScissorCorners = Mul(TextTransform, ScissorCorners);
 				v4i Scissor = v4i(
@@ -398,11 +413,23 @@ void OS_Update(void *Data)
 					ScissorCorners.Z - ScissorCorners.X,
 					ScissorCorners.W - ScissorCorners.Y
 				);
-				R_PushScissor(M->Render, Scissor);
+				//R_PushScissor(M->Render, Scissor);
+
+				// TODO(Oliver): WHY IS TEXT NOT ALIGNED TO BASELINE???
 				D_DrawOutlineStr8(M->Draw, M->FrameArena, M->Rajdhani, v2f(0, 0), v4f(0.2, 0.1, 0.0, 1.0), 500, 5.0, Str8("MAYDAY!"));
-				R_PopScissor(M->Render);
+				
+				v3f Points[] =
+				{
+					v3f(100, 100, 0),
+					v3f(200, 200, 0)
+				};
+				D_DrawPointsArray(M->Draw, M->FrameArena, Points, 1, 50.0, v4f(0, 1, 1, 1));
+				D_DrawOutlineStr8(M->Draw, M->FrameArena, M->Rajdhani, v2f(100, 0), v4f(0.2, 0.1, 0.0, 1.0), 500, 5.0, Str8("MAYDAY!2"));
+				D_DrawPointsArray(M->Draw, M->FrameArena, Points, 1, 70.0, v4f(1, 0, 1, 1));
+				//R_PopScissor(M->Render);
 				UI_PopStyle(M->UI);
-				//R_PopTransform(M->Render);
+				R_PopTransform(M->Render);
+				Offset += 100.0f;
 			}
 
 #if 0

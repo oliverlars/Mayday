@@ -893,11 +893,6 @@ void R_Update(render_context *R, m_arena *FrameArena)
 
 	v2i WindowDimensions = v2i(Metal->Drawable.texture.width, Metal->Drawable.texture.height);
 
-	if(Metal->SDFs == Null)
-	{
-		Metal->SDFs = ArenaPushArrayZero(R->Arena, u8, MegaBytes(5));
-	}
-
 	typedef struct per_tile_data
 	{
 		int At;
@@ -908,7 +903,6 @@ void R_Update(render_context *R, m_arena *FrameArena)
 
 	u64 CurrentBatchOffsetInBytes = 0;
 	u64 VertexOffsetInBytes = 0;
-	int TimesPointsWereFlushed = 0;
 	int PerTileOffset = 0;
 
 	typedef struct circle
@@ -919,7 +913,7 @@ void R_Update(render_context *R, m_arena *FrameArena)
 	} circle;
 
 	// NOTE(Oliver): Some kind of an upper limit
-	int MAX_SHAPE_COUNT = 8192;
+	int MAX_SHAPE_COUNT = 8192*2;
 	circle *CirclesForThisDispatch = ArenaPushArray(Scratch.Arena, circle, MAX_SHAPE_COUNT);
 	int TotalCircleCount = 0;
 	int CircleCountSoFar = 0;
@@ -1163,7 +1157,7 @@ void R_Update(render_context *R, m_arena *FrameArena)
 
 				// These offsets are just temporary
 				[ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:MegaBytes(0) + TotalCircleCount*sizeof(circle) atIndex:1];
-				[ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:MegaBytes(1) /* HACK(Oliver) */ atIndex:2];
+				[ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:MegaBytes(1) atIndex:2];
 				[ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:MegaBytes(2) atIndex:3];
 				[ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:MegaBytes(3) atIndex:4];
 				[ComputeEncoder setBuffer:Metal->PerTileData[R->Frame % FRAMES_IN_FLIGHT] offset:PerTileOffset*TileCount*sizeof(per_tile_data) atIndex:0];
@@ -1295,7 +1289,7 @@ void R_Update(render_context *R, m_arena *FrameArena)
 				[ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:MegaBytes(1) + TotalLineCount*sizeof(line) atIndex:2];
 				[ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:MegaBytes(2) atIndex:3];
 				[ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:MegaBytes(3) atIndex:4];
-				[ComputeEncoder setBuffer:Metal->PerTileData[R->Frame % FRAMES_IN_FLIGHT] offset:0 atIndex:0];
+				[ComputeEncoder setBuffer:Metal->PerTileData[R->Frame % FRAMES_IN_FLIGHT] offset:PerTileOffset*TileCount*sizeof(per_tile_data) atIndex:0];
 				[ComputeEncoder setTexture:Metal->BaseFrameBuffer atIndex:0];
 				[ComputeEncoder setLabel:@"Render Lines"];
 

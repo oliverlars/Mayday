@@ -118,8 +118,6 @@ kernel void ComputeMain(metal::texture2d<float, metal::access::read_write> Textu
 			ColourSoFar += (1.0 - AlphaSoFar) * Lines[DataIndex].Colour.rgb*AA;
 			AlphaSoFar += AA*(1.0 - AlphaSoFar);
 		}
-
 	}
-
 	Texture.write(float4(ColourSoFar, 1.0), ThreadPositionInGrid);
 }

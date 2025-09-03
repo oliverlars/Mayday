@@ -1096,7 +1096,7 @@ void R_Update(render_context *R, m_arena *FrameArena)
 				int *TileOffsets = ArenaPushArrayZero(Scratch.Arena, int, TileCount);
 
 				//TODO(Oliver): Find a better upper limit for this
-				circle *CirclesInEachTile = ArenaPushArray(Scratch.Arena, circle, 50*TileCount);
+				circle *CirclesInEachTile = ArenaPushArray(Scratch.Arena, circle, Count*TileCount);
 
 				for(int I = 0; I < CircleCountSoFar; I++)
 				{
@@ -1206,6 +1206,8 @@ void R_Update(render_context *R, m_arena *FrameArena)
 						for(int Y = TileMinY; Y < TileMaxY; Y++)
 						{
 							int TileIndex = X + Y * TileDimensions.X;
+
+							//if(X == 14 && Y == 27) assert(false);
 							PerTileData[TileIndex].Count++;
 						}
 					}
@@ -1223,7 +1225,7 @@ void R_Update(render_context *R, m_arena *FrameArena)
 				int *TileOffsets = ArenaPushArrayZero(Scratch.Arena, int, TileCount);
 
 				//TODO(Oliver): Find a better upper limit for this
-				line *LinesInEachTile = ArenaPushArray(Scratch.Arena, line, 50*TileCount);
+				line *LinesInEachTile = ArenaPushArray(Scratch.Arena, line, CountSoFar*TileCount);
 
 				for(int I = 0; I < LineCountSoFar; I++)
 				{
@@ -1231,14 +1233,14 @@ void R_Update(render_context *R, m_arena *FrameArena)
 					simd_float2 End = LinesForThisDispatch[I].End;
 					float Thickness = LinesForThisDispatch[I].Thickness;
 					v2f TileMin;
-					TileMin.X = Min(Start.x, End.x);
-					TileMin.Y = Min(Start.y, End.y);
+					TileMin.X = Min(Start.x, End.x) - Thickness*0.5;
+					TileMin.Y = Min(Start.y, End.y) - Thickness*0.5;
 					int TileMinX = (int)(floorf(TileMin.X / 32.0f));
 					int TileMinY = (int)(floorf(TileMin.Y / 32.0f));
 
 					v2f TileMax;
-					TileMax.X = Max(Start.x, End.x);
-					TileMax.Y = Max(Start.y, End.y);
+					TileMax.X = Max(Start.x, End.x) + Thickness*0.5;
+					TileMax.Y = Max(Start.y, End.y) + Thickness*0.5;
 					int TileMaxX = (int)(ceilf(TileMax.X / 32.0f));
 					int TileMaxY = (int)(ceilf(TileMax.Y / 32.0f));
 
@@ -1262,7 +1264,6 @@ void R_Update(render_context *R, m_arena *FrameArena)
 
 				MemoryCopy(Metal->PerTileData[R->Frame % FRAMES_IN_FLIGHT].contents + PerTileOffset*TileCount*sizeof(per_tile_data), PerTileData, TileCount*sizeof(per_tile_data));
 				MemoryCopy(Metal->Data[R->Frame % FRAMES_IN_FLIGHT].contents + MegaBytes(1) + TotalLineCount*sizeof(line), LinesInEachTile, CountSoFar*sizeof(line));
-
 
 				struct uniforms2
 				{

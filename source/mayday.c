@@ -431,7 +431,7 @@ void OS_Update(void *Data)
 				//R_PushScissor(M->Render, Scissor);
 
 				// TODO(Oliver): WHY IS TEXT NOT ALIGNED TO BASELINE???
-				D_DrawOutlineStr8(M->Draw, M->FrameArena, M->Rajdhani, v2f(0, 0), v4f(0.2, 0.1, 0.0, 1.0), 500, 5.0, Str8("MAYDAY!"));
+				//D_DrawOutlineStr8(M->Draw, M->FrameArena, M->Rajdhani, v2f(0, 0), v4f(0.2, 0.1, 0.0, 1.0), 500, 5.0, Str8("MAYDAY!"));
 				
 				v3f Points[] =
 				{
@@ -439,8 +439,8 @@ void OS_Update(void *Data)
 					v3f(200, 200, 0)
 				};
 				D_DrawPointsArray(M->Draw, M->FrameArena, Points, 1, 50.0, v4f(0, 1, 1, 1));
-				D_DrawOutlineStr8(M->Draw, M->FrameArena, M->Rajdhani, v2f(100, 0), v4f(0.2, 0.1, 0.0, 1.0), 500, 5.0, Str8("MAYDAY!2"));
 				D_DrawPointsArray(M->Draw, M->FrameArena, Points, 1, 70.0, v4f(1, 0, 1, 1));
+				D_DrawOutlineStr8(M->Draw, M->FrameArena, M->Rajdhani, v2f(100, 0), v4f(0.2, 0.1, 0.0, 1.0), 500, 5.0, Str8("MAYDAY!2"));
 				//R_PopScissor(M->Render);
 				UI_PopStyle(M->UI);
 				R_PopTransform(M->Render);

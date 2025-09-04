@@ -1072,8 +1072,8 @@ void R_Update(render_context *R, m_arena *FrameArena)
 					TileMinX = Max(TileMinX, 0);
 					TileMinY = Max(TileMinY, 0);
 
-					TileMaxX = Min(TileMaxX, TileDimensions.X - 1);
-					TileMaxY = Min(TileMaxY, TileDimensions.Y - 1);
+					TileMaxX = Min(TileMaxX, TileDimensions.X);
+					TileMaxY = Min(TileMaxY, TileDimensions.Y);
 
 					for(int X = TileMinX; X < TileMaxX; X++)
 					{
@@ -1095,7 +1095,6 @@ void R_Update(render_context *R, m_arena *FrameArena)
 
 				int *TileOffsets = ArenaPushArrayZero(Scratch.Arena, int, TileCount);
 
-				//TODO(Oliver): Find a better upper limit for this
 				circle *CirclesInEachTile = ArenaPushArray(Scratch.Arena, circle, Count*TileCount);
 
 				for(int I = 0; I < CircleCountSoFar; I++)
@@ -1117,8 +1116,8 @@ void R_Update(render_context *R, m_arena *FrameArena)
 					TileMinX = Max(TileMinX, 0);
 					TileMinY = Max(TileMinY, 0);
 
-					TileMaxX = Min(TileMaxX, TileDimensions.X - 1);
-					TileMaxY = Min(TileMaxY, TileDimensions.Y - 1);
+					TileMaxX = Min(TileMaxX, TileDimensions.X);
+					TileMaxY = Min(TileMaxY, TileDimensions.Y);
 
 					for(int X = TileMinX; X < TileMaxX; X++)
 					{
@@ -1132,8 +1131,10 @@ void R_Update(render_context *R, m_arena *FrameArena)
 					}
 				}
 
-				MemoryCopy(Metal->PerTileData[R->Frame % FRAMES_IN_FLIGHT].contents + PerTileOffset*TileCount*sizeof(per_tile_data), PerTileData, TileCount*sizeof(per_tile_data));
-				MemoryCopy(Metal->Data[R->Frame % FRAMES_IN_FLIGHT].contents + MegaBytes(0) + TotalCircleCount*sizeof(circle), CirclesInEachTile, Count*sizeof(circle));
+				int AlignedTileOffset = Align(PerTileOffset*TileCount*sizeof(per_tile_data), 256);
+				MemoryCopy((u8*)Metal->PerTileData[R->Frame % FRAMES_IN_FLIGHT].contents + AlignedTileOffset, PerTileData, TileCount*sizeof(per_tile_data));
+				int AlignedCircleOffset = Align(TotalCircleCount*sizeof(circle), 256);
+				MemoryCopy((u8*)Metal->Data[R->Frame % FRAMES_IN_FLIGHT].contents + MegaBytes(0) + AlignedCircleOffset, CirclesInEachTile, Count*sizeof(circle));
 
 				struct uniforms2
 				{
@@ -1156,11 +1157,11 @@ void R_Update(render_context *R, m_arena *FrameArena)
 				[ComputeEncoder setBytes:&Uniforms length:sizeof(Uniforms) atIndex:5];
 
 				// These offsets are just temporary
-				[ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:MegaBytes(0) + TotalCircleCount*sizeof(circle) atIndex:1];
-				[ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:MegaBytes(1) atIndex:2];
+				[ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:MegaBytes(0) + AlignedCircleOffset atIndex:1];
+				//[ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:MegaBytes(1) atIndex:2];
 				[ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:MegaBytes(2) atIndex:3];
 				[ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:MegaBytes(3) atIndex:4];
-				[ComputeEncoder setBuffer:Metal->PerTileData[R->Frame % FRAMES_IN_FLIGHT] offset:PerTileOffset*TileCount*sizeof(per_tile_data) atIndex:0];
+				[ComputeEncoder setBuffer:Metal->PerTileData[R->Frame % FRAMES_IN_FLIGHT] offset:AlignedTileOffset atIndex:0];
 				[ComputeEncoder setTexture:Metal->BaseFrameBuffer atIndex:0];
 				[ComputeEncoder setLabel:@"Render Points"];
 
@@ -1184,22 +1185,22 @@ void R_Update(render_context *R, m_arena *FrameArena)
 					simd_float2 End = LinesForThisDispatch[I].End;
 					float Thickness = LinesForThisDispatch[I].Thickness;
 					v2f TileMin;
-					TileMin.X = Min(Start.x, End.x);
-					TileMin.Y = Min(Start.y, End.y);
+					TileMin.X = Min(Start.x, End.x) - Thickness*0.5;
+					TileMin.Y = Min(Start.y, End.y) - Thickness*0.5;
 					int TileMinX = (int)(floorf(TileMin.X / 32.0f));
 					int TileMinY = (int)(floorf(TileMin.Y / 32.0f));
 
 					v2f TileMax;
-					TileMax.X = Max(Start.x, End.x);
-					TileMax.Y = Max(Start.y, End.y);
+					TileMax.X = Max(Start.x, End.x) + Thickness*0.5;
+					TileMax.Y = Max(Start.y, End.y) + Thickness*0.5;
 					int TileMaxX = (int)(ceilf(TileMax.X / 32.0f));
 					int TileMaxY = (int)(ceilf(TileMax.Y / 32.0f));
 
 					TileMinX = Max(TileMinX, 0);
 					TileMinY = Max(TileMinY, 0);
 
-					TileMaxX = Min(TileMaxX, TileDimensions.X - 1);
-					TileMaxY = Min(TileMaxY, TileDimensions.Y - 1);
+					TileMaxX = Min(TileMaxX, TileDimensions.X);
+					TileMaxY = Min(TileMaxY, TileDimensions.Y);
 
 					for(int X = TileMinX; X < TileMaxX; X++)
 					{
@@ -1262,8 +1263,10 @@ void R_Update(render_context *R, m_arena *FrameArena)
 					}
 				}
 
-				MemoryCopy(Metal->PerTileData[R->Frame % FRAMES_IN_FLIGHT].contents + PerTileOffset*TileCount*sizeof(per_tile_data), PerTileData, TileCount*sizeof(per_tile_data));
-				MemoryCopy(Metal->Data[R->Frame % FRAMES_IN_FLIGHT].contents + MegaBytes(1) + TotalLineCount*sizeof(line), LinesInEachTile, CountSoFar*sizeof(line));
+				int AlignedTileOffset = Align(PerTileOffset*TileCount*sizeof(per_tile_data), 256);
+				MemoryCopy(Metal->PerTileData[R->Frame % FRAMES_IN_FLIGHT].contents + AlignedTileOffset, PerTileData, TileCount*sizeof(per_tile_data));
+				int AlignedLineOffset = Align(TotalLineCount*sizeof(line), 256);
+				MemoryCopy(Metal->Data[R->Frame % FRAMES_IN_FLIGHT].contents + MegaBytes(1) + AlignedLineOffset, LinesInEachTile, CountSoFar*sizeof(line));
 
 				struct uniforms2
 				{
@@ -1286,11 +1289,12 @@ void R_Update(render_context *R, m_arena *FrameArena)
 				[ComputeEncoder setBytes:&Uniforms length:sizeof(Uniforms) atIndex:5];
 
 				// These offsets are just temporary
-				[ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:MegaBytes(0) atIndex:1];
-				[ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:MegaBytes(1) + TotalLineCount*sizeof(line) atIndex:2];
+				//[ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:MegaBytes(0) atIndex:1];
+				[ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:MegaBytes(1) + AlignedLineOffset atIndex:2];
 				[ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:MegaBytes(2) atIndex:3];
 				[ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:MegaBytes(3) atIndex:4];
-				[ComputeEncoder setBuffer:Metal->PerTileData[R->Frame % FRAMES_IN_FLIGHT] offset:PerTileOffset*TileCount*sizeof(per_tile_data) atIndex:0];
+
+				[ComputeEncoder setBuffer:Metal->PerTileData[R->Frame % FRAMES_IN_FLIGHT] offset:AlignedTileOffset atIndex:0];
 				[ComputeEncoder setTexture:Metal->BaseFrameBuffer atIndex:0];
 				[ComputeEncoder setLabel:@"Render Lines"];
 

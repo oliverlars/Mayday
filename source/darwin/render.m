@@ -1170,7 +1170,7 @@ void R_Update(render_context *R, m_arena *FrameArena)
 				[ComputeEncoder endEncoding];
 
 				PerTileOffset++;
-				TotalCircleCount += CircleCountSoFar;
+				TotalCircleCount = Align(TotalCircleCount + CircleCountSoFar, 256);
 				CircleCountSoFar = 0;
 				
 				//R_RenderPoints(R, CommandBuffer, Command->Scissor, VertexCount, VertexOffsetInBytes, UniformOffset*sizeof(uniforms));
@@ -1303,7 +1303,7 @@ void R_Update(render_context *R, m_arena *FrameArena)
 				[ComputeEncoder endEncoding];
 
 				PerTileOffset++;
-				TotalLineCount += LineCountSoFar;
+				TotalLineCount = Align(TotalLineCount + LineCountSoFar, 256);
 				LineCountSoFar = 0;
 			}
 			else if(Command->Type == R_COMMAND_BEZIER)

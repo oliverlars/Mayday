@@ -653,7 +653,7 @@ void D_DrawPointsArrayWithColours
 {
 	render_context *R = D->Render;
 	r_command Command = {0};
-	Command.Vertices = (r_vertex*)ArenaPushArrayZero(Arena, r_vertex, PositionsCount*6);
+	Command.Vertices = (r_vertex*)ArenaPushArrayZero(Arena, r_vertex, PositionsCount);
 	Command.VerticesCount = PositionsCount;
 
 	r_vertex *R_Vertices = Command.Vertices;

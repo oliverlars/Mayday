@@ -86,7 +86,7 @@ kernel void ComputeMain(metal::texture2d<float, metal::access::read_write> Textu
 	{
 		//FIXME(Oliver): No clue why this isn't working now
 
-		//return;
+		return;
 	}
 	
 	for(int I = 0; I < Count; I++)

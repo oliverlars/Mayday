@@ -698,6 +698,8 @@ void D_DrawPointsArrayWithColours
 	Command.Type = R_COMMAND_POINTS;
 	Command.Attributes = R_AttributesFromCommandType(Command.Type);
 	R_PushCommand(R, Arena, Command);
+	
+	assert(PositionsCount == 1);
 
 	R_PopTransform(D->Render);
 }

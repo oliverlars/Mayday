@@ -115,6 +115,9 @@ mayday_context;
 #define SOKOL_LOG_IMPL
 #include "sokol_log.h"
 
+
+#define COLOUR_BACKGROUND v4f(0.008, 0.00, 0, 1.0)
+
 #define RenderTest 0
 
 #if RenderTest
@@ -148,7 +151,6 @@ void OS_Update_(void *Data)
 	//D_DrawPointsArray(M->Draw, M->FrameArena, Line, 1, 50, v4f(1, 1, 1, 1));
 	R_PopTransform(M->Render);
 
-	//D_DrawPointsArray(M->Draw, M->FrameArena, Line, 2, 50, v4f(1, 1, 1, 0.2));
 	//D_DrawQuad(M->Draw, M->FrameArena, v2f(200, 200), 200, 200, v4f(1, 1, 1, 1));
 	//D_DrawQuad(M->Draw, M->FrameArena, v2f(600, 600), 100, 200, v4f(1, 0, 1, 1));
 	//D_DrawStr8(M->Draw, M->FrameArena, M->CodeFont, v2f(300, 200), v4f(0, 1, 0, 1), 100, Str8("ABC DEF"));
@@ -156,6 +158,7 @@ void OS_Update_(void *Data)
 
 	D_DrawStr8(M->Draw, M->FrameArena, M->CodeFont, v2f(300, 200), v4f(0, 1, 0, 1), 100, Str8("ABC DEF"));
 	D_DrawLinesArray(M->Draw, M->FrameArena, Line, 2, 5.0, v4f(1, 1, 1, 1));
+	D_DrawPointsArray(M->Draw, M->FrameArena, Line, 1, 50, v4f(1, 1, 1, 0.2));
 	D_DrawLinesArray(M->Draw, M->FrameArena, Line + 2, 2, 10.0, v4f(1, 1, 1, 1));
 	v3f Points[] =
 	{
@@ -418,33 +421,23 @@ void OS_Update(void *Data)
 					M44FTranslate(v3f(-150 - Offset, -300, 0)), 
 					Mul(M44FromZAngle(-M_PI/2.0), M44FTranslate(v3f(150 + Offset, 300, 0)))
 				);
-				R_PushTransform(M->Render, Mul(TextTransform, T));
-
-				v4f ScissorCorners = v4f(200 + Offset, 300, 600, 550);
-
-				ScissorCorners = Mul(TextTransform, ScissorCorners);
-				v4i Scissor = v4i(
-					ScissorCorners.X, ScissorCorners.Y,
-					ScissorCorners.Z - ScissorCorners.X,
-					ScissorCorners.W - ScissorCorners.Y
-				);
-				//R_PushScissor(M->Render, Scissor);
+				//R_PushTransform(M->Render, Mul(TextTransform, T));
 
 				// TODO(Oliver): WHY IS TEXT NOT ALIGNED TO BASELINE???
-				//D_DrawOutlineStr8(M->Draw, M->FrameArena, M->Rajdhani, v2f(0, 0), v4f(0.2, 0.1, 0.0, 1.0), 500, 5.0, Str8("MAYDAY!"));
-				
+				D_DrawOutlineStr8(M->Draw, M->FrameArena, M->Rajdhani, v2f(0, 500), v4f(0.2, 0.1, 0.0, 1.0), 500, 5.0, Str8("MAYDAY!"));
+				D_DrawQuad(M->Draw, M->FrameArena, v2f(0, 100), 1500, 300, COLOUR_BACKGROUND);
+				D_DrawOutlineStr8(M->Draw, M->FrameArena, M->Rajdhani, v2f(0, 400), v4f(0.2, 0.1, 0.0, 1.0), 500, 5.0, Str8("MAYDAY!"));
+				D_DrawQuad(M->Draw, M->FrameArena, v2f(0, 100), 1500, 200, COLOUR_BACKGROUND);
+				D_DrawStr8(M->Draw, M->FrameArena, M->Rajdhani, v2f(0, 50), v4f(0.2, 0.1, 0.0, 1.0), 500, Str8("MAYDAY!"));
 				v3f Points[] =
 				{
 					v3f(100, 100, 0),
-					v3f(200, 200, 0)
+					v3f(500, 500, 0)
 				};
 				//D_DrawPointsArray(M->Draw, M->FrameArena, Points, 1, 50.0, v4f(0, 1, 1, 1));
-
-				D_DrawPointsArray(M->Draw, M->FrameArena, Points + 1, 1, 70.0, v4f(1, 0, 1, 1));
 				D_DrawOutlineStr8(M->Draw, M->FrameArena, M->Rajdhani, v2f(100, 0), v4f(0.2, 0.1, 0.0, 1.0), 500, 5.0, Str8("MAYDAY!2"));
-				//R_PopScissor(M->Render);
 				UI_PopStyle(M->UI);
-				R_PopTransform(M->Render);
+				//R_PopTransform(M->Render);
 				Offset += 100.0f;
 			}
 

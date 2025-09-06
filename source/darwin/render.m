@@ -1172,8 +1172,6 @@ void R_Update(render_context *R, m_arena *FrameArena)
 				PerTileOffset++;
 				TotalCircleCount += Count;
 				CircleCountSoFar = 0;
-				
-				//R_RenderPoints(R, CommandBuffer, Command->Scissor, VertexCount, VertexOffsetInBytes, UniformOffset*sizeof(uniforms));
 			}
 			else if(Command->Type == R_COMMAND_LINES)
 			{
@@ -1207,8 +1205,6 @@ void R_Update(render_context *R, m_arena *FrameArena)
 						for(int Y = TileMinY; Y < TileMaxY; Y++)
 						{
 							int TileIndex = X + Y * TileDimensions.X;
-
-							//if(X == 14 && Y == 27) assert(false);
 							PerTileData[TileIndex].Count++;
 						}
 					}

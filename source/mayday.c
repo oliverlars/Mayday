@@ -424,18 +424,18 @@ void OS_Update(void *Data)
 				);
 				//R_PushTransform(M->Render, Mul(TextTransform, T));
 
-				D_DrawOutlineStr8(M->Draw, M->FrameArena, M->Rajdhani, v2f(0, 500), v4f(0.2, 0.1, 0.0, 1.0), 500, 5.0, Str8("MAYDAY!"));
-				D_DrawQuad(M->Draw, M->FrameArena, v2f(0, 100), 1500, 300, COLOUR_BACKGROUND);
-				D_DrawOutlineStr8(M->Draw, M->FrameArena, M->Rajdhani, v2f(0, 400), v4f(0.2, 0.1, 0.0, 1.0), 500, 5.0, Str8("MAYDAY!"));
-				D_DrawQuad(M->Draw, M->FrameArena, v2f(0, 100), 1500, 200, COLOUR_BACKGROUND);
-				D_DrawStr8(M->Draw, M->FrameArena, M->Rajdhani, v2f(0, 50), v4f(0.2, 0.1, 0.0, 1.0), 500, Str8("MAYDAY!"));
+				D_DrawOutlineStr8(M->Draw, M->FrameArena, M->Rajdhani, v2f(0, 200), v4f(0.2, 0.1, 0.0, 1.0), 500, 5.0, Str8("MAYDAY!"));
+				D_DrawQuad(M->Draw, M->FrameArena, v2f(0, 100), 1500, 250, COLOUR_BACKGROUND);
+				D_DrawOutlineStr8(M->Draw, M->FrameArena, M->Rajdhani, v2f(0, 100), v4f(0.2, 0.1, 0.0, 1.0), 500, 5.0, Str8("MAYDAY!"));
+				D_DrawQuad(M->Draw, M->FrameArena, v2f(0, 0), 1500, 250, COLOUR_BACKGROUND);
+				D_DrawStr8(M->Draw, M->FrameArena, M->Rajdhani, v2f(0, 0), v4f(0.2, 0.1, 0.0, 1.0), 500, Str8("MAYDAY!"));
 				v3f Points[] =
 				{
 					v3f(100, 100, 0),
 					v3f(500, 500, 0)
 				};
 				//D_DrawPointsArray(M->Draw, M->FrameArena, Points, 1, 50.0, v4f(0, 1, 1, 1));
-				D_DrawOutlineStr8(M->Draw, M->FrameArena, M->Rajdhani, v2f(100, 0), v4f(0.2, 0.1, 0.0, 1.0), 500, 5.0, Str8("MAYDAY!2"));
+				//D_DrawOutlineStr8(M->Draw, M->FrameArena, M->Rajdhani, v2f(100, 0), v4f(0.2, 0.1, 0.0, 1.0), 500, 5.0, Str8("MAYDAY!2"));
 				UI_PopStyle(M->UI);
 				//R_PopTransform(M->Render);
 				Offset += 100.0f;

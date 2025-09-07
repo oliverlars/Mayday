@@ -391,6 +391,7 @@ void OS_Update(void *Data)
 			int Middle = sapp_heightf()/(LogoHeight*0.8)/2;
 			for(f32 Y = sapp_heightf(); Y >= 0; Y -= LogoHeight*0.8)
 			{
+				break;
 				if(Count == Middle)
 				{
 					D_DrawOutlineStr8(M->Draw, M->FrameArena, M->RegularFont,
@@ -423,7 +424,6 @@ void OS_Update(void *Data)
 				);
 				//R_PushTransform(M->Render, Mul(TextTransform, T));
 
-				// TODO(Oliver): WHY IS TEXT NOT ALIGNED TO BASELINE???
 				D_DrawOutlineStr8(M->Draw, M->FrameArena, M->Rajdhani, v2f(0, 500), v4f(0.2, 0.1, 0.0, 1.0), 500, 5.0, Str8("MAYDAY!"));
 				D_DrawQuad(M->Draw, M->FrameArena, v2f(0, 100), 1500, 300, COLOUR_BACKGROUND);
 				D_DrawOutlineStr8(M->Draw, M->FrameArena, M->Rajdhani, v2f(0, 400), v4f(0.2, 0.1, 0.0, 1.0), 500, 5.0, Str8("MAYDAY!"));

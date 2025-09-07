@@ -436,8 +436,8 @@ void D_DrawBaseStr8(
 				v2f End = Glyph->Curves[CurveIndex + 2];
 				v3f Line[2] = 
 				{
-					v3f(Position.X + Start.X*Scale*GlyphWidth, Position.Y - Start.Y*Scale*GlyphHeight, 0.0),
-					v3f(Position.X + End.X*Scale*GlyphWidth, Position.Y - End.Y*Scale*GlyphHeight, 0.0)
+					v3f(Position.X + Start.X*Scale*GlyphWidth, Position.Y + Scale*GlyphHeight - Start.Y*Scale*GlyphHeight, 0.0),
+					v3f(Position.X + End.X*Scale*GlyphWidth, Position.Y + Scale*GlyphHeight - End.Y*Scale*GlyphHeight, 0.0)
 				};
 				//v3f(Position.X + Control.X*Scale, Position.Y - Control.Y*Scale, 0.0),
 				OutlineData[OutlineOffset++] = Line[0];

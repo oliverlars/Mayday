@@ -840,6 +840,17 @@ void R_ClearAllTextures(render_context *R, id<MTLCommandBuffer> CommandBuffer)
 	[Encoder endEncoding];
 }
 
+// void RenderCompute
+// (
+// 	render_context *R,
+// 	m_arena *Arena,
+// 	per_tile_data *PerTileData,
+
+// )
+// {
+
+// }
+
 void R_Update(render_context *R, m_arena *FrameArena)
 {
 	metal_context *Metal = R->Backend;

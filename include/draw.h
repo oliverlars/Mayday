@@ -95,6 +95,17 @@ void D_DrawStr8
 	str8 String
 );
 
+void D_DrawWidthStr8
+(
+	draw_context *D,
+	m_arena *Arena,
+	d_font Font,
+	v2f Position,
+	v4f Colour,
+	f32 WidthInPixels,
+	str8 String
+);
+
 void D_DrawOutlineStr8
 (
 	draw_context *D_Context,

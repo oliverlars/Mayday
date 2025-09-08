@@ -474,6 +474,38 @@ void D_DrawStr8
 	D_DrawBaseStr8(D, Arena, Font, v3f(Position.X, Position.Y, 0.0), Colour, HeightInPixels, False, 0.0, String);
 }
 
+void D_DrawWidthStr8
+(
+	draw_context *D,
+	m_arena *Arena,
+	d_font Font,
+	v2f Position,
+	v4f Colour,
+	f32 WidthInPixels,
+	str8 String
+)
+{
+	int TestHeight = WidthInPixels;
+	f32 Scale = stbtt_ScaleForPixelHeight(&Font.Info, TestHeight);
+	f32 Width = 0.0f;
+	for(u32 I = 0; I < String.Size; I++)
+	{
+		int CodePoint = String.Bytes[I];
+		int NextCodePoint = String.Bytes[I+1];
+		int GlyphIndex = stbtt_FindGlyphIndex(&Font.Info, CodePoint);
+		int Advance, LSB;
+		stbtt_GetGlyphHMetrics(&Font.Info, GlyphIndex, &Advance, &LSB);
+
+		int NextGlyphIndex = stbtt_FindGlyphIndex(&Font.Info, NextCodePoint);
+		int Kern = stbtt_GetGlyphKernAdvance(&Font.Info, GlyphIndex, NextGlyphIndex);
+		Width += Kern * Scale;
+		Width += Advance * Scale;
+	}
+	f32 WidthHeightRatio = TestHeight/Width;
+	f32 ActualHeight = WidthHeightRatio*WidthInPixels;
+	D_DrawBaseStr8(D, Arena, Font, v3f(Position.X, Position.Y, 0.0), Colour, ActualHeight, False, 0.0, String);
+}
+
 void D_DrawOutlineStr8
 (
 	draw_context *D,

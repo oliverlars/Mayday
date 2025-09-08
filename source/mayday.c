@@ -428,7 +428,8 @@ void OS_Update(void *Data)
 				D_DrawQuad(M->Draw, M->FrameArena, v2f(0, 100), 1500, 250, COLOUR_BACKGROUND);
 				D_DrawOutlineStr8(M->Draw, M->FrameArena, M->Rajdhani, v2f(0, 100), v4f(0.2, 0.1, 0.0, 1.0), 500, 5.0, Str8("MAYDAY!"));
 				D_DrawQuad(M->Draw, M->FrameArena, v2f(0, 0), 1500, 250, COLOUR_BACKGROUND);
-				D_DrawStr8(M->Draw, M->FrameArena, M->Rajdhani, v2f(0, 0), v4f(0.2, 0.1, 0.0, 1.0), 500, Str8("MAYDAY!"));
+				D_DrawWidthStr8(M->Draw, M->FrameArena, M->Rajdhani, v2f(0, 0), v4f(0.2, 0.1, 0.0, 1.0), sapp_widthf()/2.0, Str8("MAYDAY!"));
+				D_DrawWidthStr8(M->Draw, M->FrameArena, M->Rajdhani, v2f(sapp_widthf()/2.0, 0), v4f(0.2, 0.1, 0.0, 1.0), sapp_widthf()/2.0, Str8("MAYDAY!"));
 				v3f Points[] =
 				{
 					v3f(100, 100, 0),

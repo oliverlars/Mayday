@@ -277,8 +277,6 @@ void D_BaseStr8(
 )
 {
 	render_context *R = D->Render;
-
-	f32 Scale = stbtt_ScaleForPixelHeight(&Options.Font.Info, Options.HeightInPixels);
 	int TotalTriangleCount = String.Size*6;
 	r_command Command = {0};
 	Command.Vertices = (r_vertex*)ArenaPushZero(Arena, TotalTriangleCount*sizeof(r_vertex));
@@ -328,6 +326,8 @@ void D_BaseStr8(
 		f32 WidthHeightRatio = TestHeight/Width;
 		Options.HeightInPixels = WidthHeightRatio*Options.WidthInPixels;
 	}
+
+	f32 Scale = stbtt_ScaleForPixelHeight(&Options.Font.Info, Options.HeightInPixels);
 
 
 	for(int I = 0; I < String.Size; I++)

@@ -430,7 +430,7 @@ void OS_Update(void *Data)
 				D_Quad(M->Draw, M->FrameArena, v2f(0, 100), 1500, 250, COLOUR_BACKGROUND);
 				D_Str8(M->Draw, M->FrameArena, Str8("MAYDAY!"), .Font = M->Rajdhani, .Position = v3f(0, 100, 0), .Colour = v4f(0.2, 0.1, 0.0, 1.0), .HeightInPixels = 500, .OutlineThickness = 5.0);
 				D_Quad(M->Draw, M->FrameArena, v2f(0, 0), 1500, 250, COLOUR_BACKGROUND); 
-				D_Str8(M->Draw, M->FrameArena, Str8("MAYDAY!"), .Font = M->Rajdhani, .Position = v3f(0, 0, 0), .Colour = v4f(0.2, 0.1, 0.0, 1.0), .WidthInPixels = 500, .OutlineThickness = 5.0);
+				D_Str8(M->Draw, M->FrameArena, Str8("MAYDAY!"), .Font = M->Rajdhani, .Position = v3f(0, 0, 0), .Colour = v4f(0.2, 0.1, 0.0, 1.0), .WidthInPixels = sapp_widthf()/2.0);
 				v3f Points[] =
 				{
 					v3f(100, 100, 0),

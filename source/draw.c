@@ -232,7 +232,7 @@ d_atlas_glyph *D_GlyphFromCodePoint2(draw_context *D, u64 FontHash, d_font Font,
 	return ResultGlyph;
 }
 
-void D_DrawQuad(draw_context *D,
+void D_Quad(draw_context *D,
 				m_arena *Arena, v2f Position,
 				f32 Width, f32 Height,
 				v4f Colour)
@@ -269,46 +269,64 @@ void D_DrawQuad(draw_context *D,
 	R_PushCommand(R, Arena, Command);
 }
 
-void D_DrawBaseStr8(
+void D_BaseStr8(
 	draw_context *D,
 	m_arena *Arena,
-	d_font Font,
-	v3f Position,
-	v4f Colour,
-	f32 HeightInPixels,
-	b32 Outline,
-	f32 OutlineThickness,
-	str8 String
+	str8 String,
+	d_str8_options Options
 )
 {
 	render_context *R = D->Render;
 
-	f32 Scale = stbtt_ScaleForPixelHeight(&Font.Info, HeightInPixels);
+	f32 Scale = stbtt_ScaleForPixelHeight(&Options.Font.Info, Options.HeightInPixels);
 	int TotalTriangleCount = String.Size*6;
 	r_command Command = {0};
 	Command.Vertices = (r_vertex*)ArenaPushZero(Arena, TotalTriangleCount*sizeof(r_vertex));
 	Command.VerticesCount = TotalTriangleCount;
 
-	u64 Hash = M_FNVHashBytes(M_FNV_HASH_START, (u8*)&Font, sizeof(d_font));
+	u64 Hash = M_FNVHashBytes(M_FNV_HASH_START, (u8*)&Options.Font, sizeof(d_font));
 
-	f32 StartX = Position.X;
+	f32 StartX = Options.Position.X;
 	r_vertex *R_Vertices = Command.Vertices;
 
 	b32 NewLine = False;
-	v4f Colours[2] = {Colour, v4f(0, 0, 1, 1) };
+	v4f Colours[2] = {Options.Colour, v4f(0, 0, 1, 1) };
 
 	int OutlineCount = 0;
 	v3f *OutlineData = Null;
 	int OutlineOffset = 0;
 	m_scratch_arena Scratch = ScratchBegin(0, 0);
-	if(Outline)
+	if(Options.OutlineThickness > 0.0f)
 	{
 		for(int I = 0; I < String.Size; I++)
 		{
-			d_atlas_glyph *Glyph = D_GlyphFromCodePoint2(D, Hash, Font, String.Bytes[I]);
+			d_atlas_glyph *Glyph = D_GlyphFromCodePoint2(D, Hash, Options.Font, String.Bytes[I]);
 			OutlineCount += Glyph->CurveCount;
 		}
 		OutlineData = ArenaPushArray(Scratch.Arena, v3f, OutlineCount);
+	}
+	assert(Options.WidthInPixels == 0.0 ^ Options.HeightInPixels == 0.0f);
+
+	if(Options.WidthInPixels > 0.0)
+	{
+		int TestHeight = Options.WidthInPixels;
+		f32 Scale = stbtt_ScaleForPixelHeight(&Options.Font.Info, TestHeight);
+		f32 Width = 0.0f;
+		for(u32 I = 0; I < String.Size; I++)
+		{
+			int CodePoint = String.Bytes[I];
+			int NextCodePoint = String.Bytes[I+1];
+			int GlyphIndex = stbtt_FindGlyphIndex(&Options.Font.Info, CodePoint);
+			int Advance, LSB;
+			stbtt_GetGlyphHMetrics(&Options.Font.Info, GlyphIndex, &Advance, &LSB);
+
+			int NextGlyphIndex = stbtt_FindGlyphIndex(&Options.Font.Info, NextCodePoint);
+			int Kern = stbtt_GetGlyphKernAdvance(&Options.Font.Info, GlyphIndex, NextGlyphIndex);
+			Width += Kern * Scale;
+			Width += Advance * Scale;
+		}
+		f32 WidthHeightRatio = TestHeight/Width;
+		Options.HeightInPixels = WidthHeightRatio*Options.WidthInPixels;
 	}
 
 
@@ -331,8 +349,8 @@ void D_DrawBaseStr8(
 		if(CodePoint == '\n')
 		{
 			NewLine = True;
-			Position.Y -= (Font.Ascent - Font.Descent + Font.LineGap)*Scale;
-			Position.X = StartX;
+			Options.Position.Y -= (Options.Font.Ascent - Options.Font.Descent + Options.Font.LineGap)*Scale;
+			Options.Position.X = StartX;
 			if(NextCodePoint == '\r')
 			{
 				I += 1;
@@ -344,25 +362,25 @@ void D_DrawBaseStr8(
 			NewLine = False;
 		}
 
-		f32 LineHeight = (Font.Ascent - Font.Descent + Font.LineGap)*Scale;
+		f32 LineHeight = (Options.Font.Ascent - Options.Font.Descent + Options.Font.LineGap)*Scale;
 
-		d_atlas_glyph *Glyph  = D_GlyphFromCodePoint2(D, Hash, Font, CodePoint);
-		int Kern = stbtt_GetCodepointKernAdvance(&Font.Info, CodePoint, NextCodePoint);
+		d_atlas_glyph *Glyph  = D_GlyphFromCodePoint2(D, Hash, Options.Font, CodePoint);
+		int Kern = stbtt_GetCodepointKernAdvance(&Options.Font.Info, CodePoint, NextCodePoint);
 		f32 AdvanceX = (Kern + Glyph->AdvanceX) * Scale * TabMultiplier;
 
 		if(CodePoint == ' ')
 		{
-			v3f P = v3f(Position.X + 5.0, Position.Y + LineHeight/2.0 - 10.0, 0.0);
-			D_DrawPointsArray(D, Arena, &P, 1, 10, v4f(0.1, 0.02, 0.0, 0.25));
+			v3f P = v3f(Options.Position.X + 5.0, Options.Position.Y + LineHeight/2.0 - 10.0, 0.0);
+			D_PointsArray(D, Arena, &P, 1, 10, v4f(0.1, 0.02, 0.0, 0.25));
 		}
 
 		if(String.Bytes[I] == '\t')
 		{
 			v3f P[2];
-			P[0] = v3f(Position.X, Position.Y + LineHeight/2.0 - 10.0, 0.0);
+			P[0] = v3f(Options.Position.X, Options.Position.Y + LineHeight/2.0 - 10.0, 0.0);
 			P[1] = P[0];
 			P[1].X += (Kern + Glyph->AdvanceX) * Scale * TabMultiplier;
-			D_DrawLinesArray(D, Arena, P, 2, 1.0, v4f(0.1, 0.02, 0.0, 0.25));
+			D_LinesArray(D, Arena, P, 2, 1.0, v4f(0.1, 0.02, 0.0, 0.25));
 		}
 
 		f32 GlyphWidth = ((f32)(Glyph->Box.Z - Glyph->Box.X)*Scale);
@@ -370,13 +388,13 @@ void D_DrawBaseStr8(
 
 		v2f Vertices[6] =
 		{
-			v2f(Position.X, Position.Y),
-			v2f(Position.X + GlyphWidth, Position.Y),
-			v2f(Position.X + GlyphWidth, Position.Y + GlyphHeight),
+			v2f(Options.Position.X, Options.Position.Y),
+			v2f(Options.Position.X + GlyphWidth, Options.Position.Y),
+			v2f(Options.Position.X + GlyphWidth, Options.Position.Y + GlyphHeight),
 
-			v2f(Position.X, Position.Y),
-			v2f(Position.X, Position.Y + GlyphHeight),
-			v2f(Position.X + GlyphWidth, Position.Y + GlyphHeight),
+			v2f(Options.Position.X, Options.Position.Y),
+			v2f(Options.Position.X, Options.Position.Y + GlyphHeight),
+			v2f(Options.Position.X + GlyphWidth, Options.Position.Y + GlyphHeight),
 		};
 
 		// v2f UVs[6] =
@@ -420,12 +438,12 @@ void D_DrawBaseStr8(
 
 		if(NewLine)
 		{
-			Position.Y -= (Font.Ascent - Font.Descent + Font.LineGap)*Scale;
-			Position.X = StartX;
+			Options.Position.Y -= (Options.Font.Ascent - Options.Font.Descent + Options.Font.LineGap)*Scale;
+			Options.Position.X = StartX;
 			continue;
 		}
 
-		if(Outline)
+		if(Options.OutlineThickness > 0.0f)
 		{
 			for(int CurveIndex = 0; CurveIndex < Glyph->CurveCount; CurveIndex += 3)
 			{
@@ -436,8 +454,8 @@ void D_DrawBaseStr8(
 				v2f End = Glyph->Curves[CurveIndex + 2];
 				v3f Line[2] = 
 				{
-					v3f(Position.X + Start.X*Scale*GlyphWidth, Position.Y + Scale*GlyphHeight - Start.Y*Scale*GlyphHeight, 0.0),
-					v3f(Position.X + End.X*Scale*GlyphWidth, Position.Y + Scale*GlyphHeight - End.Y*Scale*GlyphHeight, 0.0)
+					v3f(Options.Position.X + Start.X*Scale*GlyphWidth, Options.Position.Y + Scale*GlyphHeight - Start.Y*Scale*GlyphHeight, 0.0),
+					v3f(Options.Position.X + End.X*Scale*GlyphWidth, Options.Position.Y + Scale*GlyphHeight - End.Y*Scale*GlyphHeight, 0.0)
 				};
 				//v3f(Position.X + Control.X*Scale, Position.Y - Control.Y*Scale, 0.0),
 				OutlineData[OutlineOffset++] = Line[0];
@@ -445,12 +463,12 @@ void D_DrawBaseStr8(
 			}
 		}
 
-		Position.X += AdvanceX;
+		Options.Position.X += AdvanceX;
 	}
 	
-	if(Outline)
+	if(Options.OutlineThickness > 0.0)
 	{
-		D_DrawLinesArray(D, Arena, OutlineData, OutlineOffset, OutlineThickness, Colour);
+		D_LinesArray(D, Arena, OutlineData, OutlineOffset, Options.OutlineThickness, Options.Colour);
 	}
 	else
 	{
@@ -460,21 +478,7 @@ void D_DrawBaseStr8(
 	}
 }
 
-void D_DrawStr8
-(
-	draw_context *D,
-	m_arena *Arena,
-	d_font Font,
-	v2f Position,
-	v4f Colour,
-	f32 HeightInPixels,
-	str8 String
-)
-{
-	D_DrawBaseStr8(D, Arena, Font, v3f(Position.X, Position.Y, 0.0), Colour, HeightInPixels, False, 0.0, String);
-}
-
-void D_DrawWidthStr8
+void D_WidthStr8
 (
 	draw_context *D,
 	m_arena *Arena,
@@ -503,10 +507,10 @@ void D_DrawWidthStr8
 	}
 	f32 WidthHeightRatio = TestHeight/Width;
 	f32 ActualHeight = WidthHeightRatio*WidthInPixels;
-	D_DrawBaseStr8(D, Arena, Font, v3f(Position.X, Position.Y, 0.0), Colour, ActualHeight, False, 0.0, String);
+	D_BaseStr8(D, Arena, Font, v3f(Position.X, Position.Y, 0.0), Colour, ActualHeight, False, 0.0, String);
 }
 
-void D_DrawOutlineStr8
+void D_OutlineStr8
 (
 	draw_context *D,
 	m_arena *Arena,
@@ -518,10 +522,10 @@ void D_DrawOutlineStr8
 	str8 String
 )
 {
-	D_DrawBaseStr8(D, Arena, Font, v3f(Position.X, Position.Y, 0.0), Colour, HeightInPixels, True, OutlineThickness, String);
+	D_BaseStr8(D, Arena, Font, v3f(Position.X, Position.Y, 0.0), Colour, HeightInPixels, True, OutlineThickness, String);
 }
 
-void D_DrawSelectionRange(draw_context *D,
+void D_SelectionRange(draw_context *D,
 						  m_arena *Arena,
 						  d_font Font,
 						  v2f Position,
@@ -570,7 +574,7 @@ void D_DrawSelectionRange(draw_context *D,
 				d_atlas_glyph *Space  = D_GlyphFromCodePoint2(D, Hash, Font, ' ');
 				Position.X += Space->AdvanceX * Scale * TabMultiplier;
 			}
-			D_DrawQuad(D, Arena, v2f(SelectionStartX, Position.Y + Font.Descent*Scale), Position.X - SelectionStartX, (Font.Ascent - Font.Descent + Font.LineGap)*Scale, Colour);
+			D_Quad(D, Arena, v2f(SelectionStartX, Position.Y + Font.Descent*Scale), Position.X - SelectionStartX, (Font.Ascent - Font.Descent + Font.LineGap)*Scale, Colour);
 		}
 
 		if(CodePoint == '\n')
@@ -595,7 +599,7 @@ f32 D_LineHeightFromFont(d_font Font, f32 HeightInPixels)
 	return (Font.Ascent - Font.Descent + Font.LineGap)*Scale;
 }
 
-void D_DrawCubePoints(draw_context *D,
+void D_CubePoints(draw_context *D,
 					  m_arena *Arena, v3f Position,
 					  v3f Size,
 					  v4f Colour)
@@ -653,7 +657,7 @@ int SortPointsByZ(const void *S, const void *T)
 	return 0;
 }
 
-void D_DrawPointsArray
+void D_PointsArray
 (
 	draw_context *D,
 	m_arena *Arena,
@@ -669,11 +673,11 @@ void D_DrawPointsArray
 	{
 		Colours[I] = Colour;
 	}
-	D_DrawPointsArrayWithColours(D, Arena, Positions, PositionsCount, PointSize, Colours);
+	D_PointsArrayWithColours(D, Arena, Positions, PositionsCount, PointSize, Colours);
 	ScratchEnd(Scratch);
 }
 
-void D_DrawPointsArrayWithColours
+void D_PointsArrayWithColours
 (
 	draw_context *D,
 	m_arena *Arena,
@@ -736,7 +740,7 @@ void D_DrawPointsArrayWithColours
 	R_PopTransform(D->Render);
 }
 
-void D_DrawBezierArray(draw_context *D,
+void D_BezierArray(draw_context *D,
 					  m_arena *Arena,
 					  v3f *Positions,
 					  int PositionsCount,
@@ -831,7 +835,7 @@ void D_DrawBezierArray(draw_context *D,
 	R_PopTransform(D->Render);
 }
 
-void D_DrawLinesArray(draw_context *D,
+void D_LinesArray(draw_context *D,
 					  m_arena *Arena,
 					  v3f *Positions,
 					  int PositionsCount,
@@ -896,7 +900,7 @@ void D_DrawLinesArray(draw_context *D,
 }
 
 
-void D_DrawGrid(draw_context *Draw, m_arena *Arena, f32 Size, s32 Count)
+void D_Grid(draw_context *Draw, m_arena *Arena, f32 Size, s32 Count)
 {
 	s32 LineCount = (Count + 1) * 2;
 	v3f *Lines = (v3f*)ArenaPushArrayZero(Arena, v3f, LineCount * 2); // Each line has 2 vertices
@@ -919,10 +923,10 @@ void D_DrawGrid(draw_context *Draw, m_arena *Arena, f32 Size, s32 Count)
 		Lines[Index++] = v3f(X, -2, HalfSize);
 	}
 
-	D_DrawLinesArray(Draw, Arena, Lines, LineCount * 2, 1.0, v4f(1.0, .05, 0, 1));
+	D_LinesArray(Draw, Arena, Lines, LineCount * 2, 1.0, v4f(1.0, .05, 0, 1));
 }
 
-void D_DrawGrid2D(draw_context *Draw, m_arena *Arena, f32 Size, s32 Count)
+void D_Grid2D(draw_context *Draw, m_arena *Arena, f32 Size, s32 Count)
 {
 	s32 LineCount = (Count + 1) * 2;
 	v3f *Lines = (v3f*)ArenaPushArrayZero(Arena, v3f, LineCount * 2); // Each line has 2 vertices
@@ -945,5 +949,5 @@ void D_DrawGrid2D(draw_context *Draw, m_arena *Arena, f32 Size, s32 Count)
 		Lines[Index++] = v3f(X, HalfSize, 0);
 	}
 
-	D_DrawLinesArray(Draw, Arena, Lines, LineCount * 2, 1.0, v4f(0.05, .0, 0, 1));
+	D_LinesArray(Draw, Arena, Lines, LineCount * 2, 1.0, v4f(0.05, .0, 0, 1));
 }

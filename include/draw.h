@@ -69,56 +69,32 @@ void D_EvictGlyphFromTable(draw_context *D_Context, d_atlas_glyph *Glyph);
 
 d_font D_LoadFontFromFile(draw_context *D_Context, str8 FileName);
 d_font D_LoadFontFromTTF(draw_context *D_Context, u8 *Data);
-void D_DrawGlyph(draw_context *D_Context, d_atlas_glyph *Glyph);
+void D_Glyph(draw_context *D_Context, d_atlas_glyph *Glyph);
 
-void D_DrawBaseStr8
+typedef struct d_str8_options
+{
+	d_font Font;
+	v3f Position;
+	f32 WidthInPixels;
+	f32 HeightInPixels;
+	f32 OutlineThickness;
+	v4f Colour;
+}
+d_str8_options;
+
+
+#define D_Str8(Draw, Arena, String, ...) \ 
+	D_BaseStr8(Draw, Arena, String, (d_str8_options) { __VA_ARGS__ } )
+
+void D_BaseStr8
 (
 	draw_context *D_Context,
 	m_arena *Arena,
-	d_font Font,
-	v3f Position,
-	v4f Colour,
-	f32 HeightInPixels,
-	b32 Outline,
-	f32 OutlineThickness,
-	str8 String
+	str8 String,
+	d_str8_options Options
 );
 
-void D_DrawStr8
-(
-	draw_context *D_Context,
-	m_arena *Arena,
-	d_font Font,
-	v2f Position,
-	v4f Colour,
-	f32 HeightInPixels,
-	str8 String
-);
-
-void D_DrawWidthStr8
-(
-	draw_context *D,
-	m_arena *Arena,
-	d_font Font,
-	v2f Position,
-	v4f Colour,
-	f32 WidthInPixels,
-	str8 String
-);
-
-void D_DrawOutlineStr8
-(
-	draw_context *D_Context,
-	m_arena *Arena,
-	d_font Font,
-	v2f Position,
-	v4f Colour,
-	f32 HeightInPixels,
-	f32 OutlineThickness,
-	str8 String
-);
-
-void D_DrawSelectionRange
+void D_SelectionRange
 (
 	draw_context *D,
 	m_arena *Arena,
@@ -132,17 +108,17 @@ void D_DrawSelectionRange
 	s32 End
 );
 
-void D_DrawQuad(draw_context *D_Context,
+void D_Quad(draw_context *D_Context,
 				m_arena *Arena, v2f Position,
 				f32 Width, f32 Height,
 				v4f Colour);
 
-void D_DrawCubePoints(draw_context *D,
+void D_CubePoints(draw_context *D,
 					  m_arena *Arena, v3f Position,
 					  v3f Size,
 					  v4f Colour);
 
-void D_DrawPointsArray
+void D_PointsArray
 (
 	draw_context *D,
 	m_arena *Arena,
@@ -152,7 +128,7 @@ void D_DrawPointsArray
 	v4f Colour
 );
 
-void D_DrawPointsArrayWithColours
+void D_PointsArrayWithColours
 (
 	draw_context *D,
 	m_arena *Arena,
@@ -162,36 +138,36 @@ void D_DrawPointsArrayWithColours
 	v4f *Colours
 );
 
-void D_DrawLinesArray(draw_context *D,
+void D_LinesArray(draw_context *D,
 					  m_arena *Arena,
 					  v3f *Positions,
 					  int PositionsCount,
 					  f32 Thickness,
 					  v4f Colour);
 
-void D_DrawLine(draw_context *D,
+void D_Line(draw_context *D,
 				m_arena *Arena,
 				v3f Start,
 				v3f End,
 				f32 Thickness,
 				v4f Colour);
 
-void D_DrawBezierArray(draw_context *D,
+void D_BezierArray(draw_context *D,
 					  m_arena *Arena,
 					  v3f *Positions,
 					  int PositionsCount,
 					  f32 Thickness,
 					  v4f Colour);
 
-void D_DrawBezier(draw_context *D,
+void D_Bezier(draw_context *D,
 				  m_arena *Arena,
 				  v3f Start,
 				  v3f Control,
 				  v3f End,
 				  v4f Colour);
 
-void D_DrawGrid(draw_context *Draw, m_arena *Arena, f32 Size, s32 Count);
+void D_Grid(draw_context *Draw, m_arena *Arena, f32 Size, s32 Count);
 
-void D_DrawGrid2D(draw_context *Draw, m_arena *Arena, f32 Size, s32 Count);
+void D_Grid2D(draw_context *Draw, m_arena *Arena, f32 Size, s32 Count);
 
 f32 D_LineHeightFromFont(d_font Font, f32 HeightInPixels);

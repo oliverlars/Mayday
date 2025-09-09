@@ -55,7 +55,7 @@ void DrawBounds(draw_context *Draw, m_arena *Arena, bounds Bounds)
 	Lines[22] = v3f(Min.X, Min.Y, Max.Z);
 	Lines[23] = v3f(Max.X, Min.Y, Max.Z);
 
-	D_DrawLinesArray(Draw, Arena, Lines, 24, 1.0, v4f(0, 0.1, 0, 1));
+	D_LinesArray(Draw, Arena, Lines, 24, 1.0, v4f(0, 0.1, 0, 1));
 }
 
 void DrawQuadTree(draw_context *Draw, m_arena *Arena, quadtree_header *QuadTree, int QuadTreeIndex)

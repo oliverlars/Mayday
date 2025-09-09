@@ -134,7 +134,7 @@ void OS_Update_(void *Data)
 	R_PushScissor(M->Render, v4i(0, 0, sapp_width(), sapp_height()));
 	R_PushTransform(M->Render, Orthographic(0.0, sapp_widthf()/2.0, sapp_heightf()/2.0, 0.0, -1000.0, 1000.0));
 
-	//D_DrawStr8(M->Draw, M->FrameArena, M->CodeFont, v2f(200, 500), v4f(0, 1, 0, 1), 100, Str8("This text is upside down"));
+	//D_Str8(M->Draw, M->FrameArena, M->CodeFont, v2f(200, 500), v4f(0, 1, 0, 1), 100, Str8("This text is upside down"));
 	v3f Line[4] = 
 	{
 		v3f(500, 700, 0),
@@ -143,31 +143,31 @@ void OS_Update_(void *Data)
 		v3f(500, 400,  0),
 	};
 
-	//D_DrawLinesArray(M->Draw, M->FrameArena, Line, 2, v4f(0, 1, 0, 1));	
+	//D_LinesArray(M->Draw, M->FrameArena, Line, 2, v4f(0, 1, 0, 1));	
 	m44f P = Perspective(sapp_widthf()/sapp_heightf(), 35, 0.01, 10000.0);
 	m44f PV = Mul( M44FLookAt(v3f(0, 0, -10), v3f(0, 0, 0), v3f(0, 1, 0)), P);
 	R_PushTransform(M->Render, PV);
-	//D_DrawLinesArray(M->Draw, M->FrameArena, Line, 2, 5.0, v4f(1, 1, 1, 1));
-	//D_DrawPointsArray(M->Draw, M->FrameArena, Line, 1, 50, v4f(1, 1, 1, 1));
+	//D_LinesArray(M->Draw, M->FrameArena, Line, 2, 5.0, v4f(1, 1, 1, 1));
+	//D_PointsArray(M->Draw, M->FrameArena, Line, 1, 50, v4f(1, 1, 1, 1));
 	R_PopTransform(M->Render);
 
-	//D_DrawQuad(M->Draw, M->FrameArena, v2f(200, 200), 200, 200, v4f(1, 1, 1, 1));
-	//D_DrawQuad(M->Draw, M->FrameArena, v2f(600, 600), 100, 200, v4f(1, 0, 1, 1));
-	//D_DrawStr8(M->Draw, M->FrameArena, M->CodeFont, v2f(300, 200), v4f(0, 1, 0, 1), 100, Str8("ABC DEF"));
-	//D_DrawOutlineStr8(M->Draw, M->FrameArena, M->Rajdhani, v2f(500, 600), v4f(0.2, 0.1, 0.0, 1.0), 200, 10.0, Str8("RUNGALO BUNGALO!"));
+	//D_Quad(M->Draw, M->FrameArena, v2f(200, 200), 200, 200, v4f(1, 1, 1, 1));
+	//D_Quad(M->Draw, M->FrameArena, v2f(600, 600), 100, 200, v4f(1, 0, 1, 1));
+	//D_Str8(M->Draw, M->FrameArena, M->CodeFont, v2f(300, 200), v4f(0, 1, 0, 1), 100, Str8("ABC DEF"));
+	//D_OutlineStr8(M->Draw, M->FrameArena, M->Rajdhani, v2f(500, 600), v4f(0.2, 0.1, 0.0, 1.0), 200, 10.0, Str8("RUNGALO BUNGALO!"));
 
-	D_DrawStr8(M->Draw, M->FrameArena, M->CodeFont, v2f(300, 200), v4f(0, 1, 0, 1), 100, Str8("ABC DEF"));
-	D_DrawLinesArray(M->Draw, M->FrameArena, Line, 2, 5.0, v4f(1, 1, 1, 1));
-	D_DrawPointsArray(M->Draw, M->FrameArena, Line, 1, 50, v4f(1, 1, 1, 0.2));
-	D_DrawLinesArray(M->Draw, M->FrameArena, Line + 2, 2, 10.0, v4f(1, 1, 1, 1));
+	D_Str8(M->Draw, M->FrameArena, M->CodeFont, v2f(300, 200), v4f(0, 1, 0, 1), 100, Str8("ABC DEF"));
+	D_LinesArray(M->Draw, M->FrameArena, Line, 2, 5.0, v4f(1, 1, 1, 1));
+	D_PointsArray(M->Draw, M->FrameArena, Line, 1, 50, v4f(1, 1, 1, 0.2));
+	D_LinesArray(M->Draw, M->FrameArena, Line + 2, 2, 10.0, v4f(1, 1, 1, 1));
 	v3f Points[] =
 	{
 		v3f(100, 100, 0),
 		v3f(200, 200, 0)
 	};
-	//D_DrawPointsArray(M->Draw, M->FrameArena, Points, 1, 200.0, v4f(0, 1, 1, 1));
-	//D_DrawOutlineStr8(M->Draw, M->FrameArena, M->Rajdhani, v2f(100, 0), v4f(0.2, 0.1, 0.0, 1.0), 500, 5.0, Str8("MAYDAY!2"));
-	//D_DrawPointsArray(M->Draw, M->FrameArena, Points + 1, 1, 70.0, v4f(1, 0, 1, 1));
+	//D_PointsArray(M->Draw, M->FrameArena, Points, 1, 200.0, v4f(0, 1, 1, 1));
+	//D_OutlineStr8(M->Draw, M->FrameArena, M->Rajdhani, v2f(100, 0), v4f(0.2, 0.1, 0.0, 1.0), 500, 5.0, Str8("MAYDAY!2"));
+	//D_PointsArray(M->Draw, M->FrameArena, Points + 1, 1, 70.0, v4f(1, 0, 1, 1));
 	
 	R_PopTransform(M->Render);
 	R_PopScissor(M->Render);
@@ -250,7 +250,7 @@ void OS_Update(void *Data)
 
 	R_PushTransform(M->Render, Transform);
 	
-	D_DrawQuad(M->Draw, M->FrameArena, v2f(0, 0), 100, 200, v4f(0, 1, 0, 1));
+	D_Quad(M->Draw, M->FrameArena, v2f(0, 0), 100, 200, v4f(0, 1, 0, 1));
 
 
 	if(UI_KeyDown(M->UI, SAPP_KEYCODE_EQUAL, SAPP_MODIFIER_SUPER))
@@ -269,8 +269,8 @@ void OS_Update(void *Data)
 	{
 		u64 Start = OS_TimeStampNow();
 		R_PushTransform(M->Render, Orthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
-		D_DrawQuad(M->Draw, M->FrameArena, v2f(0, 0),  WindowWidth, WindowHeight, v4f(0.008, 0.00, 0, 1.0));
-		D_DrawGrid2D(M->Draw, M->FrameArena, M->Buffer.HeightInPixels, 5*sapp_widthf() / M->Buffer.HeightInPixels);
+		D_Quad(M->Draw, M->FrameArena, v2f(0, 0),  WindowWidth, WindowHeight, v4f(0.008, 0.00, 0, 1.0));
+		D_Grid2D(M->Draw, M->FrameArena, M->Buffer.HeightInPixels, 5*sapp_widthf() / M->Buffer.HeightInPixels);
 	
 		UI_Buffer(M->UI, M->Draw, M->Edit,
 			   M->FrameArena, M->CodeFont,
@@ -297,8 +297,8 @@ void OS_Update(void *Data)
 
 		v2f Centre = {0};
 		R_PushTransform(M->Render, Orthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
-		D_DrawQuad(M->Draw, M->FrameArena, v2f(0, 0),  WindowWidth, WindowHeight, v4f(0.008, 0.00, 0, 1.0));
-		//D_DrawGrid2D(M->Draw, M->FrameArena, M->Buffer.HeightInPixels, M->Buffer.HeightInPixels*5);
+		D_Quad(M->Draw, M->FrameArena, v2f(0, 0),  WindowWidth, WindowHeight, v4f(0.008, 0.00, 0, 1.0));
+		//D_Grid2D(M->Draw, M->FrameArena, M->Buffer.HeightInPixels, M->Buffer.HeightInPixels*5);
 		
 
 		ui_orbit Orbit = {0};
@@ -394,14 +394,14 @@ void OS_Update(void *Data)
 				break;
 				if(Count == Middle)
 				{
-					D_DrawOutlineStr8(M->Draw, M->FrameArena, M->RegularFont,
+					D_OutlineStr8(M->Draw, M->FrameArena, M->RegularFont,
 					   v2f(sapp_widthf()/2.0 + 200.0, Y),
 					   v4f(1.0, 0.0, 0.0, 0.1), LogoHeight, 1.0, Str8("MAYDAY!"));
 				}
 				else
 				{
 
-					D_DrawOutlineStr8(M->Draw, M->FrameArena, M->OutlineFont,
+					D_OutlineStr8(M->Draw, M->FrameArena, M->OutlineFont,
 					   v2f(sapp_widthf()/2.0 + 200.0, Y),
 					   v4f(1.0, 0.0, 0.0, 0.1), LogoHeight, 1.0, Str8("MAYDAY!"));
 				}
@@ -424,26 +424,25 @@ void OS_Update(void *Data)
 				);
 				//R_PushTransform(M->Render, Mul(TextTransform, T));
 
-				D_DrawOutlineStr8(M->Draw, M->FrameArena, M->Rajdhani, v2f(0, 200), v4f(0.2, 0.1, 0.0, 1.0), 500, 5.0, Str8("MAYDAY!"));
-				D_DrawQuad(M->Draw, M->FrameArena, v2f(0, 100), 1500, 250, COLOUR_BACKGROUND);
-				D_DrawOutlineStr8(M->Draw, M->FrameArena, M->Rajdhani, v2f(0, 100), v4f(0.2, 0.1, 0.0, 1.0), 500, 5.0, Str8("MAYDAY!"));
-				D_DrawQuad(M->Draw, M->FrameArena, v2f(0, 0), 1500, 250, COLOUR_BACKGROUND);
-				D_DrawWidthStr8(M->Draw, M->FrameArena, M->Rajdhani, v2f(0, 0), v4f(0.2, 0.1, 0.0, 1.0), sapp_widthf()/2.0, Str8("MAYDAY!"));
-				D_DrawWidthStr8(M->Draw, M->FrameArena, M->Rajdhani, v2f(sapp_widthf()/2.0, 0), v4f(0.2, 0.1, 0.0, 1.0), sapp_widthf()/2.0, Str8("MAYDAY!"));
+				D_Str8(M->Draw, M->FrameArena, Str8("MAYDAY!"), .Font = M->Rajdhani,.Position = v3f(0, 200, 0), .Colour = v4f(0.2, 0.1, 0.0, 1.0), .HeightInPixels = 500, .OutlineThickness = 5.0);
+				D_Quad(M->Draw, M->FrameArena, v2f(0, 100), 1500, 250, COLOUR_BACKGROUND);
+				D_Str8(M->Draw, M->FrameArena, Str8("MAYDAY!"), .Font = M->Rajdhani, .Position = v3f(0, 100, 0), .Colour = v4f(0.2, 0.1, 0.0, 1.0), .HeightInPixels = 500, .OutlineThickness = 5.0);
+				D_Quad(M->Draw, M->FrameArena, v2f(0, 0), 1500, 250, COLOUR_BACKGROUND); 
+				D_Str8(M->Draw, M->FrameArena, Str8("MAYDAY!"), .Font = M->Rajdhani, .Position = v3f(0, 0, 0), .Colour = v4f(0.2, 0.1, 0.0, 1.0), .WidthInPixels = 500, .OutlineThickness = 5.0);
 				v3f Points[] =
 				{
 					v3f(100, 100, 0),
 					v3f(500, 500, 0)
 				};
-				//D_DrawPointsArray(M->Draw, M->FrameArena, Points, 1, 50.0, v4f(0, 1, 1, 1));
-				//D_DrawOutlineStr8(M->Draw, M->FrameArena, M->Rajdhani, v2f(100, 0), v4f(0.2, 0.1, 0.0, 1.0), 500, 5.0, Str8("MAYDAY!2"));
+				//D_PointsArray(M->Draw, M->FrameArena, Points, 1, 50.0, v4f(0, 1, 1, 1));
+				//D_OutlineStr8(M->Draw, M->FrameArena, M->Rajdhani, v2f(100, 0), v4f(0.2, 0.1, 0.0, 1.0), 500, 5.0, Str8("MAYDAY!2"));
 				UI_PopStyle(M->UI);
 				//R_PopTransform(M->Render);
 				Offset += 100.0f;
 			}
 
 #if 0
-			D_DrawQuad(M->Draw, M->FrameArena, v2f(100.0, sapp_heightf()-300), 500, 200, v4f(0.2, 0.0, 0.0, 1.0));
+			D_Quad(M->Draw, M->FrameArena, v2f(100.0, sapp_heightf()-300), 500, 200, v4f(0.2, 0.0, 0.0, 1.0));
 			ui_textbox_signal SearchSignal = UI_TextBox(M->FrameArena, M->LogoFont, v2f(100.0, sapp_heightf() - 400), 500,
 														M->UI, M->Draw, M->Edit, 30, Str8("FolderTextBox"), &M->TextBoxBuffer);
 			if(SearchSignal.Submitted)
@@ -477,7 +476,7 @@ void OS_Update(void *Data)
 #endif
 		}
 
-		//D_DrawStr8(M->Draw, M->FrameArena, M->LogoFont, v2f(50, 50), v4f(1.0, 0.05, 0.0, 1), 100, Str8("MAYDAY!"));
+		//D_Str8(M->Draw, M->FrameArena, M->LogoFont, v2f(50, 50), v4f(1.0, 0.05, 0.0, 1), 100, Str8("MAYDAY!"));
 		R_PopTransform(M->Render);
 	}
 

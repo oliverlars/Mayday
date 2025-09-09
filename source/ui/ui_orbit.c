@@ -107,7 +107,7 @@ ui_orbit UI_OrbitView(ui_context *UI, draw_context *Draw, m_arena *Arena,
 		Positions[I] = OrbitNodes.Items[I].Position;
 	}
 
-	//D_DrawPointsArray(Draw, Arena, Positions, OrbitNodes.Count, 20, v4f(1, 0, 0, 1));
+	//D_PointsArray(Draw, Arena, Positions, OrbitNodes.Count, 20, v4f(1, 0, 0, 1));
 
 	Result.Positions = Positions;
 	Result.Count = OrbitNodes.Count;
@@ -143,12 +143,12 @@ void UI_Slider(ui_context *UI, draw_context *Draw, m_arena *Arena, str8 String,
 	if(UI->Hot == Hash)
 	{
 		f32 Offset = (MP.X - Min.X)/(Max.X - Min.X);
-		D_DrawQuad(Draw, Arena, v2f(Position.X + Offset*Width, Position.Y - Height*0.8), 1, Height*0.8, v4f(1, 1, 1, 1));
+		D_Quad(Draw, Arena, v2f(Position.X + Offset*Width, Position.Y - Height*0.8), 1, Height*0.8, v4f(1, 1, 1, 1));
 	}
 	else
 	{
 		f32 Offset = Value[0];
-		D_DrawQuad(Draw, Arena, v2f(Position.X + Offset*Width, Position.Y - Height*0.8), 1, Height*0.8, v4f(0.3, 0.3, .3, 1.0));
+		D_Quad(Draw, Arena, v2f(Position.X + Offset*Width, Position.Y - Height*0.8), 1, Height*0.8, v4f(0.3, 0.3, .3, 1.0));
 	}
 
 	if(UI->Active && UI->MouseIsDragging)
@@ -156,14 +156,14 @@ void UI_Slider(ui_context *UI, draw_context *Draw, m_arena *Arena, str8 String,
 		Value[0] = Clamp((MP.X - Min.X)/(Max.X - Min.X), 0, 1);
 	}
 
-	D_DrawQuad(Draw, Arena, Position, Width, 1, Colour);
-	D_DrawQuad(Draw, Arena, v2f(Position.X, Position.Y - Height), 1, Height, Colour);
-	D_DrawQuad(Draw, Arena, v2f(Position.X + Width, Position.Y - Height), 1, Height, Colour);
+	D_Quad(Draw, Arena, Position, Width, 1, Colour);
+	D_Quad(Draw, Arena, v2f(Position.X, Position.Y - Height), 1, Height, Colour);
+	D_Quad(Draw, Arena, v2f(Position.X + Width, Position.Y - Height), 1, Height, Colour);
 
-	D_DrawQuad(Draw, Arena, v2f(Position.X + Width/2.0, Position.Y - Height/2.0), 1, Height/2.0, Colour);
+	D_Quad(Draw, Arena, v2f(Position.X + Width/2.0, Position.Y - Height/2.0), 1, Height/2.0, Colour);
 
-	D_DrawQuad(Draw, Arena, v2f(Position.X + 3*Width/4.0, Position.Y - Height/2.0), 1, Height/2.0, Colour);
-	D_DrawQuad(Draw, Arena, v2f(Position.X + Width/4.0, Position.Y - Height/2.0), 1, Height/2.0, Colour);
+	D_Quad(Draw, Arena, v2f(Position.X + 3*Width/4.0, Position.Y - Height/2.0), 1, Height/2.0, Colour);
+	D_Quad(Draw, Arena, v2f(Position.X + Width/4.0, Position.Y - Height/2.0), 1, Height/2.0, Colour);
 
 
 }

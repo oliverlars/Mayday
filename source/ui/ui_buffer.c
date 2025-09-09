@@ -120,10 +120,10 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 	SubString.Size = EndIndex - StartIndex;
 	v2i Range = {StartIndex, EndIndex};
 
-	// D_DrawStr8(Draw, Arena, Font, v2f(800, 400),
+	// D_Str8(Draw, Arena, Font, v2f(800, 400),
 	// 		   v4f(1.0, 1.0, 1, 1), LineHeight, Str8PushF(Arena, "FirstVsibleLine: ?u32 LastVisibleLine: ?u32", FirstVisibleLine, LastVisibleLine));
 
-	// D_DrawStr8(Draw, Arena, Font, v2f(900, 300),
+	// D_Str8(Draw, Arena, Font, v2f(900, 300),
 	// 		   v4f(1.0, 1.0, 1, 1), LineHeight, Str8PushF(Arena, "StartIndex: ?u32 EndIndex: ?u32", StartIndex, EndIndex));
 
 	int MainCursorLine = E_LineFromBufferIndex(Edit, Edit->Cursors[0].Selection.Y, Buffer);
@@ -131,12 +131,12 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 	{
 		if(MainCursorLine == I)
 		{
-			D_DrawStr8(Draw, Arena, Font, NumbersPosition,
+			D_Str8(Draw, Arena, Font, NumbersPosition,
 				v4f(0.8, 0.3, 0, 1), LineHeight, Str8PushF(Arena, "?u32", I + 1));
 		}
 		else
 		{
-			D_DrawStr8(Draw, Arena, Font, NumbersPosition,
+			D_Str8(Draw, Arena, Font, NumbersPosition,
 					   v4f(0.1, 0.05, 0, 1), LineHeight, Str8PushF(Arena, "?u32", I + 1));
 		}
 		NumbersPosition.Y -= LineHeight;
@@ -146,7 +146,7 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 	{
 		v2i Selection = E_GetSortedSelection(Cursor->Selection);
 		str8 SelectedString = Buffer->String;
-		D_DrawSelectionRange(Draw,
+		D_SelectionRange(Draw,
 							 Arena,
 							 Font,
 							 BufferPosition,
@@ -162,13 +162,13 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 		int CursorEndLine = E_LineFromBufferIndex(Edit, EndIndex, Buffer);
 		// HACK(Oliver): The start position should be for the buffer, 0 isn't necessarily always the start...
 		// Also the colours are just random guesses, need a better way of formalising these.
-		D_DrawQuad(Draw, Arena, v2f(0, Cursor->TargetPosition.Y),
+		D_Quad(Draw, Arena, v2f(0, Cursor->TargetPosition.Y),
 					sapp_widthf(), (Font.Ascent - Font.Descent + Font.LineGap)*Scale, v4f(0.04, 0.01, 0, 0.25));
 	}
 
 
 
-	D_DrawStr8(Draw,
+	D_Str8(Draw,
 			   Arena, Font,
 			   BufferPosition, v4f(0.8, 0.3, 0, 1),
 			   Buffer->HeightInPixels, SubString);
@@ -199,7 +199,7 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 																	Range,
 																	BufferPosition);
 		Edit->Cursors[0].Position = Edit->Cursors[0].TargetPosition;
-		D_DrawQuad(Draw, Arena, Edit->Cursors[0].Position, Min(LineHeight/10.0, 2), LineHeight, v4f(0.3, 0.7, 0, 1));
+		D_Quad(Draw, Arena, Edit->Cursors[0].Position, Min(LineHeight/10.0, 2), LineHeight, v4f(0.3, 0.7, 0, 1));
 	}
 	else
 	{
@@ -226,7 +226,7 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 			int CursorLine = E_LineFromBufferIndex(Edit, Cursor->Selection.Y, Buffer);
 			if(FirstVisibleLine < CursorLine && CursorLine < LastVisibleLine)
 			{
-				D_DrawQuad(Draw, Arena, Cursor->Position, Min(LineHeight/10.0, 2), LineHeight, v4f(0.3, 0.7, 0, 1));
+				D_Quad(Draw, Arena, Cursor->Position, Min(LineHeight/10.0, 2), LineHeight, v4f(0.3, 0.7, 0, 1));
 			}
 
 		}
@@ -562,9 +562,9 @@ void UI_StatusBar(ui_context *UI, draw_context *Draw, edit_context *Edit,
 
 	f32 TextPosY  = (StatusBarHeight * 0.5f) - CentreOffset;
 
-	D_DrawQuad(Draw, Arena, v2f(0, 0), (f32)Size.X, StatusBarHeight, v4f(0.3, 0.08, 0, 1));
+	D_Quad(Draw, Arena, v2f(0, 0), (f32)Size.X, StatusBarHeight, v4f(0.3, 0.08, 0, 1));
 
-	D_DrawStr8(Draw, Arena, Font, v2f((f32)Size.X - 200, TextPosY), v4f(0.009, 0.00, 0, 1.0), TextHeight, Str8("LF"));
+	D_Str8(Draw, Arena, Font, v2f((f32)Size.X - 200, TextPosY), v4f(0.009, 0.00, 0, 1.0), TextHeight, Str8("LF"));
 
 	cursor *Cursor = Cursors;
 	if(!Cursor->Next)
@@ -573,7 +573,7 @@ void UI_StatusBar(ui_context *UI, draw_context *Draw, edit_context *Edit,
 		int LineStart = E_LineStartFromIndex(Edit, Cursor->Selection.Y, Buffer);
 		int Index = IndexFromLine(Buffer->String, Line);
 		int Column = Cursor->Selection.Y - LineStart;
-		D_DrawStr8(Draw, Arena,
+		D_Str8(Draw, Arena,
 				   Font, v2f((f32)Size.X - 1500, TextPosY),
 				   v4f(0.009, 0.00, 0, 1.0),
 				   TextHeight, Str8PushF(Arena, "?u32:?u32 | Index: ?u32:?u32 | ?v2f", Line, Column, Cursor->Selection.Y, Index, Cursor->Position));
@@ -585,7 +585,7 @@ void UI_StatusBar(ui_context *UI, draw_context *Draw, edit_context *Edit,
 		{
 			Count += 1;
 		}
-		D_DrawStr8(Draw, Arena, Font, v2f((f32)Size.X - 1000, TextPosY),
+		D_Str8(Draw, Arena, Font, v2f((f32)Size.X - 1000, TextPosY),
 				   v4f(0.009, 0.00, 0, 1.0), TextHeight,
 				   Str8PushF(Arena, "?u32 SELECTIONS", Count));
 	}
@@ -595,11 +595,11 @@ void UI_StatusBar(ui_context *UI, draw_context *Draw, edit_context *Edit,
 	v3f Position = v3f(Size.X - 100, PointPosY, 0.0);
 	if(!Buffer->EditedSinceLastSave)
 	{
-		D_DrawPointsArray(Draw, Arena, &Position, 1, 20, v4f(0.0, 0.6, 0, 1));
+		D_PointsArray(Draw, Arena, &Position, 1, 20, v4f(0.0, 0.6, 0, 1));
 	}
 	else
 	{
-		D_DrawPointsArray(Draw, Arena, &Position, 1, 20, v4f(1, 0.2, 0, 1));
+		D_PointsArray(Draw, Arena, &Position, 1, 20, v4f(1, 0.2, 0, 1));
 	}
 
 }

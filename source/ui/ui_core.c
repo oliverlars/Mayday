@@ -242,17 +242,17 @@ void UI_DrawBoxCorners(ui_context *UI, draw_context *Draw, m_arena *Arena, v2f P
 	};
 
 
-	D_DrawQuad(Draw, Arena, Corners[0], LengthOfCornersInPixels, 2, Colour);
-	D_DrawQuad(Draw, Arena, Corners[0], 2, LengthOfCornersInPixels, Colour);
+	D_Quad(Draw, Arena, Corners[0], LengthOfCornersInPixels, 2, Colour);
+	D_Quad(Draw, Arena, Corners[0], 2, LengthOfCornersInPixels, Colour);
 
-	D_DrawQuad(Draw, Arena, Sub(Corners[1], v2f(LengthOfCornersInPixels, 0)), LengthOfCornersInPixels, 2, Colour);
-	D_DrawQuad(Draw, Arena, Corners[1], 2, LengthOfCornersInPixels, Colour);
+	D_Quad(Draw, Arena, Sub(Corners[1], v2f(LengthOfCornersInPixels, 0)), LengthOfCornersInPixels, 2, Colour);
+	D_Quad(Draw, Arena, Corners[1], 2, LengthOfCornersInPixels, Colour);
 
-	D_DrawQuad(Draw, Arena, Corners[2], LengthOfCornersInPixels, 2, Colour);
-	D_DrawQuad(Draw, Arena, Sub(Corners[2], v2f(0, LengthOfCornersInPixels)), 2, LengthOfCornersInPixels, Colour);
+	D_Quad(Draw, Arena, Corners[2], LengthOfCornersInPixels, 2, Colour);
+	D_Quad(Draw, Arena, Sub(Corners[2], v2f(0, LengthOfCornersInPixels)), 2, LengthOfCornersInPixels, Colour);
 
-	D_DrawQuad(Draw, Arena, Sub(Corners[3], v2f(LengthOfCornersInPixels, 0)), LengthOfCornersInPixels, 2, Colour);
-	D_DrawQuad(Draw, Arena, Sub(Corners[3], v2f(0, LengthOfCornersInPixels)), 2, LengthOfCornersInPixels, Colour);
+	D_Quad(Draw, Arena, Sub(Corners[3], v2f(LengthOfCornersInPixels, 0)), LengthOfCornersInPixels, 2, Colour);
+	D_Quad(Draw, Arena, Sub(Corners[3], v2f(0, LengthOfCornersInPixels)), 2, LengthOfCornersInPixels, Colour);
 }
 
 void UI_DrawBoxOutline(ui_context *UI, draw_context *Draw, m_arena *Arena, v2f Position, v2f Size, v4f Colour)
@@ -269,11 +269,11 @@ void UI_DrawBoxOutline(ui_context *UI, draw_context *Draw, m_arena *Arena, v2f P
 	};
 
 
-	D_DrawQuad(Draw, Arena, Corners[0], Width, 2, Colour);
-	D_DrawQuad(Draw, Arena, Corners[0], 2, Height, Colour);
+	D_Quad(Draw, Arena, Corners[0], Width, 2, Colour);
+	D_Quad(Draw, Arena, Corners[0], 2, Height, Colour);
 
-	D_DrawQuad(Draw, Arena, Corners[1], 2, Height, Colour);
-	D_DrawQuad(Draw, Arena, Corners[2], Width, 2, Colour);
+	D_Quad(Draw, Arena, Corners[1], 2, Height, Colour);
+	D_Quad(Draw, Arena, Corners[2], Width, 2, Colour);
 }
 
 ui_style UI_GetStyle(ui_context *UI)
@@ -351,7 +351,7 @@ void UI_Label(ui_context *UI, draw_context *Draw, m_arena *Arena,
 	v2f MousePosition = v2f(MouseWorld.X / MouseWorld.W, MouseWorld.Y / MouseWorld.W);
 
 
-	D_DrawStr8(Draw, Arena, Style.Font, Position, Colour, HeightInPixels, DisplayString);
+	D_Str8(Draw, Arena, Style.Font, Position, Colour, HeightInPixels, DisplayString);
 }
 
 ui_signal UI_TextButton(ui_context *UI, draw_context *Draw, m_arena *Arena,
@@ -394,12 +394,12 @@ ui_signal UI_TextButton(ui_context *UI, draw_context *Draw, m_arena *Arena,
 		Result.Hover = True;
 
 		Widget->HotAnimation = Lerp(Widget->HotAnimation, 1.0, 0.1);
-		D_DrawStr8(Draw, Arena, Style.Font, Position, v4f(1, 1, 1, 1), HeightInPixels, DisplayString);
+		D_Str8(Draw, Arena, Style.Font, Position, v4f(1, 1, 1, 1), HeightInPixels, DisplayString);
 	}
 	else
 	{
-		//D_DrawQuad(Draw, Arena, BoxPosition, Width, Height, v4f(0, 0, 0, 1));
-		D_DrawStr8(Draw, Arena, Style.Font, Position, Colour, HeightInPixels, DisplayString);
+		//D_Quad(Draw, Arena, BoxPosition, Width, Height, v4f(0, 0, 0, 1));
+		D_Str8(Draw, Arena, Style.Font, Position, Colour, HeightInPixels, DisplayString);
 		Widget->HotAnimation = Lerp(Widget->HotAnimation, 0.0, 0.1);
 	}
 
@@ -463,26 +463,26 @@ b32 UI_TextButtonWrapping(ui_context *UI, draw_context *Draw, m_arena *Arena,
 		UI->HotAnimation = Lerp(UI->HotAnimation, 1.0, 0.1);
 		if(LineCount == 2)
 		{
-			D_DrawStr8(Draw, Arena, UI->Font, Position, v4f(1, 1, 1, 1), HeightInPixels, FirstLine);
+			D_Str8(Draw, Arena, UI->Font, Position, v4f(1, 1, 1, 1), HeightInPixels, FirstLine);
 			//Position.Y -= HeightInPixels;
-			//D_DrawStr8(Draw, Arena, UI->Font, Position, v4f(1, 1, 1, 1), HeightInPixels, SecondLine);
+			//D_Str8(Draw, Arena, UI->Font, Position, v4f(1, 1, 1, 1), HeightInPixels, SecondLine);
 		}
 		else
 		{
-			D_DrawStr8(Draw, Arena, UI->Font, Position, v4f(1, 1, 1, 1), HeightInPixels, DisplayString);
+			D_Str8(Draw, Arena, UI->Font, Position, v4f(1, 1, 1, 1), HeightInPixels, DisplayString);
 		}
 	}
 	else
 	{
 		if(LineCount == 2)
 		{
-			D_DrawStr8(Draw, Arena, UI->Font, Position, v4f(0.2, 0.5, 0.0, 1.0), HeightInPixels, FirstLine);
+			D_Str8(Draw, Arena, UI->Font, Position, v4f(0.2, 0.5, 0.0, 1.0), HeightInPixels, FirstLine);
 			//Position.Y -= HeightInPixels;
-			//D_DrawStr8(Draw, Arena, UI->Font, Position, v4f(0.2, 0.5, 0.0, 1.0), HeightInPixels, SecondLine);
+			//D_Str8(Draw, Arena, UI->Font, Position, v4f(0.2, 0.5, 0.0, 1.0), HeightInPixels, SecondLine);
 		}
 		else
 		{
-			D_DrawStr8(Draw, Arena, UI->Font, Position, v4f(0.2, 0.5, 0.0, 1.0), HeightInPixels, DisplayString);
+			D_Str8(Draw, Arena, UI->Font, Position, v4f(0.2, 0.5, 0.0, 1.0), HeightInPixels, DisplayString);
 		}
 	}
 
@@ -704,7 +704,7 @@ ui_textbox_signal UI_TextBox(m_arena *Arena,
 	StringPosition.X -= CursorXOffset;
 	StringPosition.Y -= UI->Font.Descent * Scale;
 	R_PushScissor(Draw->Render, v4i(Position.X, sapp_height() - Position.Y - Height, Width, Height));
-	D_DrawStr8(Draw,
+	D_Str8(Draw,
 			   Arena, Font,
 			   StringPosition, v4f(0.8, 0.3, 0, 1),
 			   Height, Buffer->String);
@@ -715,7 +715,7 @@ ui_textbox_signal UI_TextBox(m_arena *Arena,
 	if(UI->Active == Hash)
 	{
 		v2i Selection = E_GetSortedSelection(Edit->Cursors[0].Selection);
-		D_DrawSelectionRange(Draw,
+		D_SelectionRange(Draw,
 							 Arena,
 							 Font,
 							 StringPosition,
@@ -743,7 +743,7 @@ ui_textbox_signal UI_TextBox(m_arena *Arena,
 			v2f CursorPosition = Edit->Cursors[0].Position;
 			CursorPosition.X -= CursorXOffset;
 			CursorPosition.Y -= UI->Font.Descent * Scale;
-			D_DrawQuad(Draw, Arena, CursorPosition, 2, Height, v4f(0.3, 0.7, 0, 1));
+			D_Quad(Draw, Arena, CursorPosition, 2, Height, v4f(0.3, 0.7, 0, 1));
 		}
 		else
 		{
@@ -760,7 +760,7 @@ ui_textbox_signal UI_TextBox(m_arena *Arena,
 			v2f CursorPosition = Edit->Cursors[0].Position;
 			CursorPosition.X -= CursorXOffset;
 			CursorPosition.Y -= UI->Font.Descent * Scale;
-			D_DrawQuad(Draw, Arena, CursorPosition, 2, Height, v4f(0.3, 0.7, 0, 1));
+			D_Quad(Draw, Arena, CursorPosition, 2, Height, v4f(0.3, 0.7, 0, 1));
 
 		}
 

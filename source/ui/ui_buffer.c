@@ -131,13 +131,15 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 	{
 		if(MainCursorLine == I)
 		{
-			D_Str8(Draw, Arena, Font, NumbersPosition,
-				v4f(0.8, 0.3, 0, 1), LineHeight, Str8PushF(Arena, "?u32", I + 1));
+			D_Str8(Draw, Arena, Str8PushF(Arena, "?u32", I + 1), .Font = Font, 
+			.Position = V3FromV2(NumbersPosition),
+				.Colour = v4f(0.8, 0.3, 0, 1), .HeightInPixels = LineHeight);
 		}
 		else
 		{
-			D_Str8(Draw, Arena, Font, NumbersPosition,
-					   v4f(0.1, 0.05, 0, 1), LineHeight, Str8PushF(Arena, "?u32", I + 1));
+			D_Str8(Draw, Arena, Str8PushF(Arena, "?u32", I + 1), .Font = Font, 
+			.Position = V3FromV2(NumbersPosition),
+				.Colour = v4f(0.1, 0.05, 0, 1), .HeightInPixels = LineHeight);
 		}
 		NumbersPosition.Y -= LineHeight;
 	}
@@ -169,9 +171,9 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 
 
 	D_Str8(Draw,
-			   Arena, Font,
-			   BufferPosition, v4f(0.8, 0.3, 0, 1),
-			   Buffer->HeightInPixels, SubString);
+			   Arena, SubString, .Font = Font,
+			   .Position = V3FromV2(BufferPosition), .Colour = v4f(0.8, 0.3, 0, 1),
+			   .HeightInPixels = Buffer->HeightInPixels);
 
 	v2f ScrollOffset = UI_Scroll(UI);
 
@@ -564,7 +566,7 @@ void UI_StatusBar(ui_context *UI, draw_context *Draw, edit_context *Edit,
 
 	D_Quad(Draw, Arena, v2f(0, 0), (f32)Size.X, StatusBarHeight, v4f(0.3, 0.08, 0, 1));
 
-	D_Str8(Draw, Arena, Font, v2f((f32)Size.X - 200, TextPosY), v4f(0.009, 0.00, 0, 1.0), TextHeight, Str8("LF"));
+	D_Str8(Draw, Arena, Str8("LF"), .Font = Font, .Position = v3f((f32)Size.X - 200, TextPosY), .Colour = v4f(0.009, 0.00, 0, 1.0), .HeightInPixels = TextHeight);
 
 	cursor *Cursor = Cursors;
 	if(!Cursor->Next)
@@ -573,10 +575,10 @@ void UI_StatusBar(ui_context *UI, draw_context *Draw, edit_context *Edit,
 		int LineStart = E_LineStartFromIndex(Edit, Cursor->Selection.Y, Buffer);
 		int Index = IndexFromLine(Buffer->String, Line);
 		int Column = Cursor->Selection.Y - LineStart;
-		D_Str8(Draw, Arena,
-				   Font, v2f((f32)Size.X - 1500, TextPosY),
-				   v4f(0.009, 0.00, 0, 1.0),
-				   TextHeight, Str8PushF(Arena, "?u32:?u32 | Index: ?u32:?u32 | ?v2f", Line, Column, Cursor->Selection.Y, Index, Cursor->Position));
+		D_Str8(Draw, Arena, Str8PushF(Arena, "?u32:?u32 | Index: ?u32:?u32 | ?v2f", Line, Column, Cursor->Selection.Y, Index, Cursor->Position),
+				   .Font = Font, .Position = v3f((f32)Size.X - 1500, TextPosY),
+				   .Colour = v4f(0.009, 0.00, 0, 1.0),
+				   .HeightInPixels = TextHeight);
 	}
 	else
 	{
@@ -585,9 +587,9 @@ void UI_StatusBar(ui_context *UI, draw_context *Draw, edit_context *Edit,
 		{
 			Count += 1;
 		}
-		D_Str8(Draw, Arena, Font, v2f((f32)Size.X - 1000, TextPosY),
-				   v4f(0.009, 0.00, 0, 1.0), TextHeight,
-				   Str8PushF(Arena, "?u32 SELECTIONS", Count));
+		D_Str8(Draw, Arena, Str8PushF(Arena, "?u32 SELECTIONS", Count), 
+					.Font = Font, .Position = v3f((f32)Size.X - 1000, TextPosY),
+				   .Colour = v4f(0.009, 0.00, 0, 1.0), .HeightInPixels = TextHeight);
 	}
 
 	f32 PointSize = 20.0f;

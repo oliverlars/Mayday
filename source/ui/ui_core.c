@@ -351,7 +351,13 @@ void UI_Label(ui_context *UI, draw_context *Draw, m_arena *Arena,
 	v2f MousePosition = v2f(MouseWorld.X / MouseWorld.W, MouseWorld.Y / MouseWorld.W);
 
 
-	D_Str8(Draw, Arena, Style.Font, Position, Colour, HeightInPixels, DisplayString);
+	D_Str8(
+		Draw, Arena, DisplayString,
+		.Font = Style.Font,
+		.Position = V3FromV2(Position),
+		.Colour = Colour,
+		.HeightInPixels = HeightInPixels
+	);
 }
 
 ui_signal UI_TextButton(ui_context *UI, draw_context *Draw, m_arena *Arena,
@@ -394,12 +400,12 @@ ui_signal UI_TextButton(ui_context *UI, draw_context *Draw, m_arena *Arena,
 		Result.Hover = True;
 
 		Widget->HotAnimation = Lerp(Widget->HotAnimation, 1.0, 0.1);
-		D_Str8(Draw, Arena, Style.Font, Position, v4f(1, 1, 1, 1), HeightInPixels, DisplayString);
+		D_Str8(Draw, Arena, DisplayString, .Font = Style.Font, .Position = V3FromV2(Position), .Colour = v4f(1, 1, 1, 1), .HeightInPixels = HeightInPixels);
 	}
 	else
 	{
 		//D_Quad(Draw, Arena, BoxPosition, Width, Height, v4f(0, 0, 0, 1));
-		D_Str8(Draw, Arena, Style.Font, Position, Colour, HeightInPixels, DisplayString);
+		D_Str8(Draw, Arena, DisplayString, .Font = Style.Font, .Position = V3FromV2(Position), .Colour = v4f(1, 1, 1, 1), .HeightInPixels = HeightInPixels);
 		Widget->HotAnimation = Lerp(Widget->HotAnimation, 0.0, 0.1);
 	}
 
@@ -463,26 +469,26 @@ b32 UI_TextButtonWrapping(ui_context *UI, draw_context *Draw, m_arena *Arena,
 		UI->HotAnimation = Lerp(UI->HotAnimation, 1.0, 0.1);
 		if(LineCount == 2)
 		{
-			D_Str8(Draw, Arena, UI->Font, Position, v4f(1, 1, 1, 1), HeightInPixels, FirstLine);
+			D_Str8(Draw, Arena, FirstLine, .Font =UI->Font, .Position = V3FromV2(Position), .Colour = v4f(1, 1, 1, 1), .HeightInPixels = HeightInPixels);
 			//Position.Y -= HeightInPixels;
 			//D_Str8(Draw, Arena, UI->Font, Position, v4f(1, 1, 1, 1), HeightInPixels, SecondLine);
 		}
 		else
 		{
-			D_Str8(Draw, Arena, UI->Font, Position, v4f(1, 1, 1, 1), HeightInPixels, DisplayString);
+			D_Str8(Draw, Arena, DisplayString, .Font =UI->Font, .Position = V3FromV2(Position), .Colour = v4f(1, 1, 1, 1), .HeightInPixels = HeightInPixels);
 		}
 	}
 	else
 	{
 		if(LineCount == 2)
 		{
-			D_Str8(Draw, Arena, UI->Font, Position, v4f(0.2, 0.5, 0.0, 1.0), HeightInPixels, FirstLine);
+			D_Str8(Draw, Arena, FirstLine, .Font =UI->Font, .Position = V3FromV2(Position), .Colour = v4f(0.2, 0.5, 0.0, 1.0), .HeightInPixels = HeightInPixels);
 			//Position.Y -= HeightInPixels;
 			//D_Str8(Draw, Arena, UI->Font, Position, v4f(0.2, 0.5, 0.0, 1.0), HeightInPixels, SecondLine);
 		}
 		else
 		{
-			D_Str8(Draw, Arena, UI->Font, Position, v4f(0.2, 0.5, 0.0, 1.0), HeightInPixels, DisplayString);
+			D_Str8(Draw, Arena, DisplayString, .Font =UI->Font, .Position = V3FromV2(Position), .Colour = v4f(0.2, 0.5, 0.0, 1.0), .HeightInPixels = HeightInPixels);
 		}
 	}
 
@@ -705,9 +711,10 @@ ui_textbox_signal UI_TextBox(m_arena *Arena,
 	StringPosition.Y -= UI->Font.Descent * Scale;
 	R_PushScissor(Draw->Render, v4i(Position.X, sapp_height() - Position.Y - Height, Width, Height));
 	D_Str8(Draw,
-			   Arena, Font,
-			   StringPosition, v4f(0.8, 0.3, 0, 1),
-			   Height, Buffer->String);
+			   Arena, Buffer->String,
+			   .Font =Font,
+			   .Position = V3FromV2(StringPosition), .Colour = v4f(0.8, 0.3, 0, 1),
+			   .HeightInPixels = Height);
 	R_PopScissor(Draw->Render);
 
 	//LogInfo("Cursor pos: ?u32", Edit->Cursors[0].Selection.X);

@@ -424,7 +424,7 @@ void D_BaseStr8(
 		for(int V = 0; V < 6; V++)
 		{
 			r_vertex Vertex = {
-				.Position = v4f(Vertices[V].X, Vertices[V].Y + Glyph->Box.Y*Scale, Position.Z, 1),
+				.Position = v4f(Vertices[V].X, Vertices[V].Y + Glyph->Box.Y*Scale, Options.Position.Z, 1),
 				.UV = UVs[V],
 				.Colour = Colours[NewLine],
 				.CurveStart = Glyph->CurveStart,
@@ -476,53 +476,6 @@ void D_BaseStr8(
 		Command.Attributes = R_AttributesFromCommandType(Command.Type);
 		R_PushCommand(R, Arena, Command);
 	}
-}
-
-void D_WidthStr8
-(
-	draw_context *D,
-	m_arena *Arena,
-	d_font Font,
-	v2f Position,
-	v4f Colour,
-	f32 WidthInPixels,
-	str8 String
-)
-{
-	int TestHeight = WidthInPixels;
-	f32 Scale = stbtt_ScaleForPixelHeight(&Font.Info, TestHeight);
-	f32 Width = 0.0f;
-	for(u32 I = 0; I < String.Size; I++)
-	{
-		int CodePoint = String.Bytes[I];
-		int NextCodePoint = String.Bytes[I+1];
-		int GlyphIndex = stbtt_FindGlyphIndex(&Font.Info, CodePoint);
-		int Advance, LSB;
-		stbtt_GetGlyphHMetrics(&Font.Info, GlyphIndex, &Advance, &LSB);
-
-		int NextGlyphIndex = stbtt_FindGlyphIndex(&Font.Info, NextCodePoint);
-		int Kern = stbtt_GetGlyphKernAdvance(&Font.Info, GlyphIndex, NextGlyphIndex);
-		Width += Kern * Scale;
-		Width += Advance * Scale;
-	}
-	f32 WidthHeightRatio = TestHeight/Width;
-	f32 ActualHeight = WidthHeightRatio*WidthInPixels;
-	D_BaseStr8(D, Arena, Font, v3f(Position.X, Position.Y, 0.0), Colour, ActualHeight, False, 0.0, String);
-}
-
-void D_OutlineStr8
-(
-	draw_context *D,
-	m_arena *Arena,
-	d_font Font,
-	v2f Position,
-	v4f Colour,
-	f32 HeightInPixels,
-	f32 OutlineThickness,
-	str8 String
-)
-{
-	D_BaseStr8(D, Arena, Font, v3f(Position.X, Position.Y, 0.0), Colour, HeightInPixels, True, OutlineThickness, String);
 }
 
 void D_SelectionRange(draw_context *D,

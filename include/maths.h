@@ -63,6 +63,8 @@ v2i DivV2I(v2i A, v2i B);
 v2f V2FromF32(f32 X);
 v2i V2FromS32(s32 X);
 
+#define V3FromV2(A) v3f(A.X, A.Y, 0.0)
+#define V3FromV4(A) v3f(A.X, A.Y, A.Z)
 /*
 
 V3

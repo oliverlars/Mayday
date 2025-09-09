@@ -156,7 +156,7 @@ void OS_Update_(void *Data)
 	//D_Str8(M->Draw, M->FrameArena, M->CodeFont, v2f(300, 200), v4f(0, 1, 0, 1), 100, Str8("ABC DEF"));
 	//D_OutlineStr8(M->Draw, M->FrameArena, M->Rajdhani, v2f(500, 600), v4f(0.2, 0.1, 0.0, 1.0), 200, 10.0, Str8("RUNGALO BUNGALO!"));
 
-	D_Str8(M->Draw, M->FrameArena, M->CodeFont, v2f(300, 200), v4f(0, 1, 0, 1), 100, Str8("ABC DEF"));
+	D_Str8(M->Draw, M->FrameArena,  Str8("ABC DEF"), .Font = M->CodeFont, .Position = v3f(300, 200, 0), .Colour = v4f(0, 1, 0, 1), .HeightInPixels = 100);
 	D_LinesArray(M->Draw, M->FrameArena, Line, 2, 5.0, v4f(1, 1, 1, 1));
 	D_PointsArray(M->Draw, M->FrameArena, Line, 1, 50, v4f(1, 1, 1, 0.2));
 	D_LinesArray(M->Draw, M->FrameArena, Line + 2, 2, 10.0, v4f(1, 1, 1, 1));
@@ -394,16 +394,18 @@ void OS_Update(void *Data)
 				break;
 				if(Count == Middle)
 				{
-					D_OutlineStr8(M->Draw, M->FrameArena, M->RegularFont,
-					   v2f(sapp_widthf()/2.0 + 200.0, Y),
-					   v4f(1.0, 0.0, 0.0, 0.1), LogoHeight, 1.0, Str8("MAYDAY!"));
+					D_Str8(M->Draw, M->FrameArena, Str8("MAYDAY!"),
+					   .Font = M->RegularFont,
+					   .Position = v3f(sapp_widthf()/2.0 + 200.0, Y),
+					   .Colour = v4f(1.0, 0.0, 0.0, 0.1), .HeightInPixels = LogoHeight, .OutlineThickness = 1.0);
 				}
 				else
 				{
 
-					D_OutlineStr8(M->Draw, M->FrameArena, M->OutlineFont,
-					   v2f(sapp_widthf()/2.0 + 200.0, Y),
-					   v4f(1.0, 0.0, 0.0, 0.1), LogoHeight, 1.0, Str8("MAYDAY!"));
+					D_Str8(M->Draw, M->FrameArena, Str8("MAYDAY!"),
+					   .Font = M->OutlineFont,
+					   .Position = v3f(sapp_widthf()/2.0 + 200.0, Y),
+					   .Colour = v4f(1.0, 0.0, 0.0, 0.1), .HeightInPixels = LogoHeight, .OutlineThickness = 1.0);
 				}
 				Count += 1;
 			}

@@ -82,9 +82,13 @@ typedef struct d_str8_options
 }
 d_str8_options;
 
-
-#define D_Str8(Draw, Arena, String, ...) \ 
+#define D_Str8(Draw, Arena, String, ...) \
 	D_BaseStr8(Draw, Arena, String, (d_str8_options) { __VA_ARGS__ } )
+
+f32 D_Str8HeightFromWidth(d_font Font, str8 String, f32 WidthInPixels);
+f32 D_Str8WidthFromHeight(d_font Font, str8 String, f32 HeightInPixels);
+v4f D_Str8BBoxFromHeight(d_font Font, v2f Position, str8 String, f32 HeightInPixels);
+
 
 void D_BaseStr8
 (

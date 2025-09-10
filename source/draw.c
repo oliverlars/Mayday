@@ -269,6 +269,60 @@ void D_Quad(draw_context *D,
 	R_PushCommand(R, Arena, Command);
 }
 
+f32 D_Str8HeightFromWidth(d_font Font, str8 String, f32 WidthInPixels)
+{
+	f32 Height = WidthInPixels;
+	f32 Scale = stbtt_ScaleForPixelHeight(&Font.Info, Height);
+	f32 Width = 0.0f;
+	for(u32 I = 0; I < String.Size; I++)
+	{
+		int CodePoint = String.Bytes[I];
+		int NextCodePoint = String.Bytes[I+1];
+		int GlyphIndex = stbtt_FindGlyphIndex(&Font.Info, CodePoint);
+		int Advance, LSB;
+		stbtt_GetGlyphHMetrics(&Font.Info, GlyphIndex, &Advance, &LSB);
+
+		int NextGlyphIndex = stbtt_FindGlyphIndex(&Font.Info, NextCodePoint);
+		int Kern = stbtt_GetGlyphKernAdvance(&Font.Info, GlyphIndex, NextGlyphIndex);
+		Width += Kern * Scale;
+		Width += Advance * Scale;
+	}
+	f32 WidthHeightRatio = Height/Width;
+	return WidthHeightRatio*WidthInPixels;
+}
+
+f32 D_Str8WidthFromHeight(d_font Font, str8 String, f32 HeightInPixels)
+{
+	f32 Width = 0.0f;
+	f32 Scale = stbtt_ScaleForPixelHeight(&Font.Info, HeightInPixels);
+	for(u32 I = 0; I < String.Size; I++)
+	{
+		int CodePoint = String.Bytes[I];
+		int NextCodePoint = String.Bytes[I+1];
+		int GlyphIndex = stbtt_FindGlyphIndex(&Font.Info, CodePoint);
+		int Advance, LSB;
+		stbtt_GetGlyphHMetrics(&Font.Info, GlyphIndex, &Advance, &LSB);
+
+		int NextGlyphIndex = stbtt_FindGlyphIndex(&Font.Info, NextCodePoint);
+		int Kern = stbtt_GetGlyphKernAdvance(&Font.Info, GlyphIndex, NextGlyphIndex);
+		Width += Kern * Scale;
+		Width += Advance * Scale;
+	}
+	return Width;
+}
+
+v4f D_Str8BBoxFromHeight(d_font Font, v2f Position, str8 String, f32 HeightInPixels)
+{
+	f32 WidthInPixels = D_Str8WidthFromHeight(Font, String, HeightInPixels);
+
+	return v4f(
+		Position.X,
+		Position.Y,
+		Position.X + WidthInPixels,
+		Position.Y + HeightInPixels
+	);
+}
+
 void D_BaseStr8(
 	draw_context *D,
 	m_arena *Arena,

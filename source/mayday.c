@@ -412,46 +412,38 @@ void OS_Update(void *Data)
 
 
 			// Vertical text
-
-			f32 Offset = 0;
-			
-			for(int I = 0; I < 2; I++)
+			f32 Offset = 200.0f;
+			for(int I = 0; I < 3; I++)
 			{
+				f32 Width = sapp_heightf();
+				f32 Height = D_Str8HeightFromWidth(M->Rajdhani, Str8("Mayday!"), Width);
+
 				ui_style Style = UI_GetStyle(M->UI);
 				UI_PushStyle(M->UI, Style);
 				m44f T = R_CurrentTransform(M->Render);
 				m44f TextTransform = Mul(
-					M44FTranslate(v3f(-150 - Offset, -300, 0)), 
-					Mul(M44FromZAngle(-M_PI/2.0), M44FTranslate(v3f(150 + Offset, 300, 0)))
+					M44FTranslate(v3f(0, Offset - Height*0.75, 0)), 
+					Mul(M44FromZAngle(-M_PI/2.0), M44FTranslate(v3f(0, 0, 0)))
 				);
 				R_PushTransform(M->Render, Mul(TextTransform, T));
 
 				v4f BBoxes[3];
 
-				f32 Width = sapp_heightf();
-				f32 Height = D_Str8HeightFromWidth(M->Rajdhani, Str8("Mayday!"), Width);
-
-				BBoxes[0] = D_Str8BBoxFromHeight(M->Rajdhani, v2f(0, 200), Str8("MAYDAY!"), Height);
-				D_Str8(M->Draw, M->FrameArena, Str8("MAYDAY!"), .Font = M->Rajdhani,.Position = v3f(0, 200, 0), .Colour = v4f(0.2, 0.1, 0.0, 1.0), .HeightInPixels = Height, .OutlineThickness = 5.0);
-				D_Quad(M->Draw, M->FrameArena, v2f(0, 100), Width, Height/2.0, COLOUR_BACKGROUND); 
-				
-				BBoxes[1] = D_Str8BBoxFromHeight(M->Rajdhani, v2f(0, 100), Str8("MAYDAY!"), Height);
-				D_Str8(M->Draw, M->FrameArena, Str8("MAYDAY!"), .Font = M->Rajdhani, .Position = v3f(0, 100, 0), .Colour = v4f(0.2, 0.1, 0.0, 1.0), .HeightInPixels = Height, .OutlineThickness = 5.0);
-				D_Quad(M->Draw, M->FrameArena, v2f(0, 0), Width, Height/2.0, COLOUR_BACKGROUND); 
-				
-				BBoxes[2] = D_Str8BBoxFromHeight(M->Rajdhani, v2f(0, 0), Str8("MAYDAY!"), Height);
-				D_Str8(M->Draw, M->FrameArena, Str8("MAYDAY!"), .Font = M->Rajdhani, .Position = v3f(0, 0, 0), .Colour = v4f(0.2, 0.1, 0.0, 1.0), .HeightInPixels = Height);
-				
-				v3f Points[] =
+				if(I < 2)
 				{
-					v3f(100, 100, 0),
-					v3f(500, 500, 0)
-				};
-				//D_PointsArray(M->Draw, M->FrameArena, Points, 1, 50.0, v4f(0, 1, 1, 1));
-				//D_OutlineStr8(M->Draw, M->FrameArena, M->Rajdhani, v2f(100, 0), v4f(0.2, 0.1, 0.0, 1.0), 500, 5.0, Str8("MAYDAY!2"));
+					BBoxes[I] = D_Str8BBoxFromHeight(M->Rajdhani, v2f(0, 0), Str8("MAYDAY!"), Height);
+					D_Str8(M->Draw, M->FrameArena, Str8("MAYDAY!"), .Font = M->Rajdhani,.Position = v3f(0, 0, 0), .Colour = v4f(0.2, 0.1, 0.0, 1.0), .HeightInPixels = Height, 5.0);
+					D_Quad(M->Draw, M->FrameArena, v2f(0, -100.0f), Width, Height/2.0, COLOUR_BACKGROUND); 
+				}
+				else
+				{
+					BBoxes[I] = D_Str8BBoxFromHeight(M->Rajdhani, v2f(0, 0), Str8("MAYDAY!"), Height);
+					D_Str8(M->Draw, M->FrameArena, Str8("MAYDAY!"), .Font = M->Rajdhani, .Position = v3f(0, 0, 0), .Colour = v4f(0.2, 0.1, 0.0, 1.0), .HeightInPixels = Height);
+				} 
+				
 				UI_PopStyle(M->UI);
 				R_PopTransform(M->Render);
-				Offset += 100.0f;
+				Offset -= 100.0f;
 			}
 
 #if 0

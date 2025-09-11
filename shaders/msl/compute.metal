@@ -184,7 +184,7 @@ kernel void ComputeMain(metal::texture2d<float, metal::access::read_write> Textu
 			}
 			else
 			{
-				Distance = DistanceToBezier(Position, Beziers[DataIndex].Start, Beziers[DataIndex].Control, Beziers[DataIndex].End);
+				Distance = DistanceToBezier(Position, Beziers[DataIndex].Start, Beziers[DataIndex].Control, Beziers[DataIndex].End) - Thickness*0.5;
 			}
 
 			float AA = metal::smoothstep(-1, 1, -Distance) * Beziers[DataIndex].Colour.a;

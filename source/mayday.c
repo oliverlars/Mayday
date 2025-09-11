@@ -415,14 +415,14 @@ void OS_Update(void *Data)
 			f32 Offset = 200.0f;
 			for(int I = 0; I < 3; I++)
 			{
-				f32 Width = sapp_heightf();
+				f32 Width = sapp_heightf()*0.95;
 				f32 Height = D_Str8HeightFromWidth(M->Rajdhani, Str8("Mayday!"), Width);
 
 				ui_style Style = UI_GetStyle(M->UI);
 				UI_PushStyle(M->UI, Style);
 				m44f T = R_CurrentTransform(M->Render);
 				m44f TextTransform = Mul(
-					M44FTranslate(v3f(0, Offset - Height*0.75, 0)), 
+					M44FTranslate(v3f((sapp_heightf() - sapp_heightf()*0.95)/2.0, Offset - Height*0.7 - 100, 0)), 
 					Mul(M44FromZAngle(-M_PI/2.0), M44FTranslate(v3f(0, 0, 0)))
 				);
 				R_PushTransform(M->Render, Mul(TextTransform, T));
@@ -433,7 +433,7 @@ void OS_Update(void *Data)
 				{
 					BBoxes[I] = D_Str8BBoxFromHeight(M->Rajdhani, v2f(0, 0), Str8("MAYDAY!"), Height);
 					D_Str8(M->Draw, M->FrameArena, Str8("MAYDAY!"), .Font = M->Rajdhani,.Position = v3f(0, 0, 0), .Colour = v4f(0.2, 0.1, 0.0, 1.0), .HeightInPixels = Height, 5.0);
-					D_Quad(M->Draw, M->FrameArena, v2f(0, -100.0f), Width, Height/2.0, COLOUR_BACKGROUND); 
+					D_Quad(M->Draw, M->FrameArena, v2f(-10, -100.0f), sapp_heightf(), Height/2.0, COLOUR_BACKGROUND); 
 				}
 				else
 				{
@@ -443,7 +443,7 @@ void OS_Update(void *Data)
 				
 				UI_PopStyle(M->UI);
 				R_PopTransform(M->Render);
-				Offset -= 100.0f;
+				Offset -= 125.0f;
 			}
 
 #if 0

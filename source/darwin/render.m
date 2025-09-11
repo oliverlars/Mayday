@@ -840,16 +840,47 @@ void R_ClearAllTextures(render_context *R, id<MTLCommandBuffer> CommandBuffer)
 	[Encoder endEncoding];
 }
 
-// void RenderCompute
-// (
-// 	render_context *R,
-// 	m_arena *Arena,
-// 	per_tile_data *PerTileData,
+typedef struct per_tile_data
+{
+	int At;
+	int Count;
+	int Type;
+} per_tile_data;
 
-// )
-// {
+typedef struct circle
+{
+	simd_float2 Position;
+	simd_float4 Colour;
+	float Radius;
+} circle;
 
-// }
+typedef struct line
+{
+	simd_float2 Start;
+	simd_float2 End;
+	float Thickness;
+	simd_float4 Colour;
+} line;
+
+typedef struct bezier
+{
+	simd_float2 Start;
+	simd_float2 Control;
+	simd_float2 End;
+	float Thickness;
+	simd_float4 Colour;
+} bezier;
+
+void RenderCompute
+(
+	render_context *R,
+	m_arena *Arena,
+	per_tile_data *PerTileData
+
+)
+{
+
+}
 
 void R_Update(render_context *R, m_arena *FrameArena)
 {
@@ -904,24 +935,11 @@ void R_Update(render_context *R, m_arena *FrameArena)
 
 	v2i WindowDimensions = v2i(Metal->Drawable.texture.width, Metal->Drawable.texture.height);
 
-	typedef struct per_tile_data
-	{
-		int At;
-		int Count;
-		int Type;
-	} per_tile_data;
-
 
 	u64 CurrentBatchOffsetInBytes = 0;
 	u64 VertexOffsetInBytes = 0;
 	int PerTileOffset = 0;
 
-	typedef struct circle
-	{
-		simd_float2 Position;
-		simd_float4 Colour;
-		float Radius;
-	} circle;
 
 	// NOTE(Oliver): Some kind of an upper limit
 	int MAX_SHAPE_COUNT = 8192*2;
@@ -929,17 +947,13 @@ void R_Update(render_context *R, m_arena *FrameArena)
 	int TotalCircleCount = 0;
 	int CircleCountSoFar = 0;
 
-	typedef struct line
-	{
-		simd_float2 Start;
-		simd_float2 End;
-		float Thickness;
-		simd_float4 Colour;
-	} line;
-
 	line *LinesForThisDispatch = ArenaPushArray(Scratch.Arena, line, MAX_SHAPE_COUNT);
 	int TotalLineCount = 0;
 	int LineCountSoFar = 0;
+
+	bezier *BeziersForThisDispatch = ArenaPushArray(Scratch.Arena, bezier, MAX_SHAPE_COUNT);
+	int TotalBezierCount = 0;
+	int BezierCountSoFar = 0;
 
 	for(r_command *Command = R->CommandsFirst; Command != Null; Command = Command->Next)
 	{
@@ -1041,6 +1055,43 @@ void R_Update(render_context *R, m_arena *FrameArena)
 			}
 			
 			CircleCountSoFar += CircleCount;
+		}break;
+		case R_COMMAND_BEZIER:
+		{
+			int BezierCount = Command->VerticesCount;
+			for(int I = 0; I < BezierCount; I++)
+			{
+				simd_float2 Start =
+				{
+					Command->Vertices[I].Start.X,
+					Command->Vertices[I].Start.Y
+				};
+				simd_float2 Control =
+				{
+					Command->Vertices[I].Control.X,
+					Command->Vertices[I].Control.Y
+				};
+				simd_float2 End =
+				{
+					Command->Vertices[I].End.X,
+					Command->Vertices[I].End.Y
+				};
+
+				simd_float4 C =
+				{
+					Command->Vertices[I].Colour.X,
+					Command->Vertices[I].Colour.Y,
+					Command->Vertices[I].Colour.Z,
+					Command->Vertices[I].Colour.W
+				};
+				BeziersForThisDispatch[BezierCountSoFar + I].Start = Start;
+				BeziersForThisDispatch[BezierCountSoFar + I].Control = Control;
+				BeziersForThisDispatch[BezierCountSoFar + I].End = End;
+				BeziersForThisDispatch[BezierCountSoFar + I].Thickness = Command->Vertices[I].Thickness;
+				BeziersForThisDispatch[BezierCountSoFar + I].Colour = C;
+			}
+			
+			BezierCountSoFar += BezierCount;
 		}break;
 		}
 	
@@ -1315,7 +1366,133 @@ void R_Update(render_context *R, m_arena *FrameArena)
 			}
 			else if(Command->Type == R_COMMAND_BEZIER)
 			{
-				R_RenderBeziers(R, CommandBuffer, Command->Scissor, VertexCount, VertexOffsetInBytes, UniformOffset*sizeof(uniforms));;
+				per_tile_data *PerTileData = ArenaPushArrayZero(Scratch.Arena, per_tile_data, TileCount);
+
+				for(int I = 0; I < BezierCountSoFar; I++)
+				{
+					simd_float2 Start = BeziersForThisDispatch[I].Start;
+					simd_float2 Control = BeziersForThisDispatch[I].Control;
+					simd_float2 End = BeziersForThisDispatch[I].End;
+					float Thickness = BeziersForThisDispatch[I].Thickness;
+					v2f TileMin;
+					TileMin.X = Min(Start.x, Min(End.x, Control.x)) - Thickness*0.5;
+					TileMin.Y = Min(Start.y, Min(End.y, Control.y)) - Thickness*0.5;
+					int TileMinX = (int)(floorf(TileMin.X / 32.0f));
+					int TileMinY = (int)(floorf(TileMin.Y / 32.0f));
+
+					v2f TileMax;
+					TileMax.X = Max(Start.x, Max(End.x, Control.x)) + Thickness*0.5;
+					TileMax.Y = Max(Start.y, Max(End.y, Control.y)) + Thickness*0.5;
+					int TileMaxX = (int)(ceilf(TileMax.X / 32.0f));
+					int TileMaxY = (int)(ceilf(TileMax.Y / 32.0f));
+
+					TileMinX = Max(TileMinX, 0);
+					TileMinY = Max(TileMinY, 0);
+
+					TileMaxX = Min(TileMaxX, TileDimensions.X);
+					TileMaxY = Min(TileMaxY, TileDimensions.Y);
+
+					for(int X = TileMinX; X < TileMaxX; X++)
+					{
+						for(int Y = TileMinY; Y < TileMaxY; Y++)
+						{
+							int TileIndex = X + Y * TileDimensions.X;
+							PerTileData[TileIndex].Count++;
+						}
+					}
+				}
+
+				int CountSoFar = 0;
+				for(int I = 0; I < TileCount; I++)
+				{
+					PerTileData[I].At = CountSoFar;
+					// HACK(Oliver): Improve this
+					PerTileData[I].Type = 2; // Bezier
+					CountSoFar += PerTileData[I].Count;
+				}
+
+				int *TileOffsets = ArenaPushArrayZero(Scratch.Arena, int, TileCount);
+
+				bezier *BeziersInEachTile = ArenaPushArray(Scratch.Arena, bezier, CountSoFar);
+
+				for(int I = 0; I < BezierCountSoFar; I++)
+				{
+					simd_float2 Start = BeziersForThisDispatch[I].Start;
+					simd_float2 Control = BeziersForThisDispatch[I].Control;
+					simd_float2 End = BeziersForThisDispatch[I].End;
+					float Thickness = BeziersForThisDispatch[I].Thickness;
+					v2f TileMin;
+					TileMin.X = Min(Start.x, Min(End.x, Control.x)) - Thickness*0.5;
+					TileMin.Y = Min(Start.y, Min(End.y, Control.y)) - Thickness*0.5;
+					int TileMinX = (int)(floorf(TileMin.X / 32.0f));
+					int TileMinY = (int)(floorf(TileMin.Y / 32.0f));
+
+					v2f TileMax;
+					TileMax.X = Max(Start.x, Max(End.x, Control.x)) + Thickness*0.5;
+					TileMax.Y = Max(Start.y, Max(End.y, Control.y)) + Thickness*0.5;
+					int TileMaxX = (int)(ceilf(TileMax.X / 32.0f));
+					int TileMaxY = (int)(ceilf(TileMax.Y / 32.0f));
+
+					TileMinX = Max(TileMinX, 0);
+					TileMinY = Max(TileMinY, 0);
+
+					TileMaxX = Min(TileMaxX, TileDimensions.X);
+					TileMaxY = Min(TileMaxY, TileDimensions.Y);
+
+					for(int X = TileMinX; X < TileMaxX; X++)
+					{
+						for(int Y = TileMinY; Y < TileMaxY; Y++)
+						{
+							int TileIndex = X + Y * TileDimensions.X;
+							int At = PerTileData[TileIndex].At;
+							BeziersInEachTile[At + TileOffsets[TileIndex]] = BeziersForThisDispatch[I];
+							TileOffsets[TileIndex] += 1;
+						}
+					}
+				}
+
+				int AlignedTileOffset = Align(PerTileOffset*TileCount*sizeof(per_tile_data), 256);
+				MemoryCopy(Metal->PerTileData[R->Frame % FRAMES_IN_FLIGHT].contents + AlignedTileOffset, PerTileData, TileCount*sizeof(per_tile_data));
+				int AlignedBezierOffset = Align(MegaBytes(2) + TotalBezierCount*sizeof(bezier), 256);
+				MemoryCopy(Metal->Data[R->Frame % FRAMES_IN_FLIGHT].contents + AlignedBezierOffset, BeziersInEachTile, CountSoFar*sizeof(bezier));
+
+				struct uniforms2
+				{
+					int NumberOfTilesInX;
+					int NumberOfTilesInY;
+					simd_float4 Scissor;
+				} Uniforms = {
+					.NumberOfTilesInX = ThreadGroupSize.width,
+					.NumberOfTilesInY = ThreadGroupSize.height,
+					.Scissor = {
+							Command->Scissor.X, sapp_heightf() - Command->Scissor.Y,
+							Command->Scissor.Z, Command->Scissor.W
+						}
+				};
+
+				MTLComputePassDescriptor *ComputePassDescriptor = [MTLComputePassDescriptor computePassDescriptor];
+				ComputePassDescriptor.dispatchType = MTLDispatchTypeConcurrent;
+				id<MTLComputeCommandEncoder> ComputeEncoder = [CommandBuffer computeCommandEncoderWithDescriptor:ComputePassDescriptor];
+				[ComputeEncoder setComputePipelineState: Metal->ComputeTest.PipelineState];
+				[ComputeEncoder setBytes:&Uniforms length:sizeof(Uniforms) atIndex:5];
+
+				// These offsets are just temporary
+				[ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:MegaBytes(0) atIndex:1];
+				[ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:MegaBytes(1) atIndex:2];
+				[ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:AlignedBezierOffset atIndex:3];
+				[ComputeEncoder setBuffer:Metal->Data[R->Frame % FRAMES_IN_FLIGHT] offset:MegaBytes(3) atIndex:4];
+
+				[ComputeEncoder setBuffer:Metal->PerTileData[R->Frame % FRAMES_IN_FLIGHT] offset:AlignedTileOffset atIndex:0];
+				[ComputeEncoder setTexture:Metal->BaseFrameBuffer atIndex:0];
+				[ComputeEncoder setLabel:@"Render Beziers"];
+
+				[ComputeEncoder dispatchThreads:MTLSizeMake(Metal->Drawable.texture.width, Metal->Drawable.texture.height, 1) threadsPerThreadgroup:TilesPerThreadgroup];
+
+				[ComputeEncoder endEncoding];
+
+				PerTileOffset++;
+				TotalBezierCount += CountSoFar;
+				BezierCountSoFar = 0;
 			}
 
 			VertexOffsetInBytes += CurrentBatchOffsetInBytes;

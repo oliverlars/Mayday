@@ -506,14 +506,15 @@ void D_BaseStr8(
 				v2f Start = Glyph->Curves[CurveIndex + 0];
 				v2f Control = Glyph->Curves[CurveIndex + 1];
 				v2f End = Glyph->Curves[CurveIndex + 2];
-				v3f Line[2] = 
+				v3f Line[3] = 
 				{
 					v3f(Options.Position.X + Start.X*Scale*GlyphWidth, Options.Position.Y + Scale*GlyphHeight - Start.Y*Scale*GlyphHeight, 0.0),
+					v3f(Options.Position.X + Control.X*Scale*GlyphWidth, Options.Position.Y + Scale*GlyphHeight - Control.Y*Scale*GlyphHeight, 0.0),
 					v3f(Options.Position.X + End.X*Scale*GlyphWidth, Options.Position.Y + Scale*GlyphHeight - End.Y*Scale*GlyphHeight, 0.0)
 				};
-				//v3f(Position.X + Control.X*Scale, Position.Y - Control.Y*Scale, 0.0),
 				OutlineData[OutlineOffset++] = Line[0];
 				OutlineData[OutlineOffset++] = Line[1];
+				OutlineData[OutlineOffset++] = Line[2];
 			}
 		}
 
@@ -522,7 +523,7 @@ void D_BaseStr8(
 	
 	if(Options.OutlineThickness > 0.0)
 	{
-		D_LinesArray(D, Arena, OutlineData, OutlineOffset, Options.OutlineThickness, Options.Colour);
+		D_BezierArray(D, Arena, OutlineData, OutlineOffset, Options.OutlineThickness, Options.Colour);
 	}
 	else
 	{
@@ -756,8 +757,8 @@ void D_BezierArray(draw_context *D,
 {
 	render_context *R = D->Render;
 	r_command Command = {0};
-	Command.Vertices = (r_vertex*)ArenaPushArrayZero(Arena, r_vertex, PositionsCount/3*6);
-	Command.VerticesCount = 6*PositionsCount/3;
+	Command.Vertices = (r_vertex*)ArenaPushArrayZero(Arena, r_vertex, PositionsCount/3);
+	Command.VerticesCount = PositionsCount/3;
 	r_vertex *R_Vertices = Command.Vertices;
 
 	m44f Transform = R_CurrentTransform(D->Render);
@@ -799,40 +800,15 @@ void D_BezierArray(draw_context *D,
 		B.Y = D->ViewportSize.Y * (B.Y*0.5 + 0.5);
 		C.Y = D->ViewportSize.Y * (C.Y*0.5 + 0.5);
 
-		
-		
-
-		v2f BL = v2f(Min(Min(A.X, B.X), C.X), Min(Min(A.Y, B.Y), C.Y));
-		v2f TR = v2f(Max(Max(A.X, B.X), C.X), Max(Max(A.Y, B.Y), C.Y));
-		BL.X -= Thickness + 5;
-		BL.Y -= Thickness + 5;
-		TR.X += Thickness + 5;
-		TR.Y += Thickness + 5;
-		f32 Width = fabs(TR.X - BL.X);
-		f32 Height = fabs(TR.Y - BL.Y);
-		v2f Vertices[6] =
-		{
-			v2f(BL.X, BL.Y),
-			v2f(TR.X, BL.Y),
-			v2f(TR.X, TR.Y),
-
-			v2f(BL.X, BL.Y),
-			v2f(BL.X, TR.Y),
-			v2f(TR.X, TR.Y),
+		r_vertex Vertex = {
+			.Position = v4f(A.X, A.Y, A.Z, 1),
+			.Colour = Colour,
+			.Start = v2f(A.X, A.Y),
+			.Control = v2f(B.X, B.Y),
+			.End = v2f(C.X, C.Y),
+			.Thickness = Thickness,
 		};
-
-		for(int V = 0; V < 6; V++)
-		{
-			r_vertex Vertex = {
-				.Position = v4f(Vertices[V].X, Vertices[V].Y, A.Z, 1),
-				.Colour = Colour,
-				.Start = v2f(A.X, A.Y),
-				.Control = v2f(B.X, B.Y),
-				.End = v2f(C.X, C.Y),
-				.Thickness = Thickness,
-			};
-			*R_Vertices++ = Vertex;
-		}
+		*R_Vertices++ = Vertex;
 
 	}
 	Command.Type = R_COMMAND_BEZIER;

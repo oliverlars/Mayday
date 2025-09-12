@@ -64,59 +64,62 @@ fragment float4 FragmentMain(vertex_output Input [[stage_in]],
 							 sampler Sampler [[sampler(0)]])
 {
 	float PixelWidth = fabs(dfdx(Input.LocalPos.x));
-	PixelWidth = fmax(PixelWidth, 1e-6);
 	float InversePixelWidth = 1.0 / PixelWidth;
 
 	float AlphaSum = 0.0;
 
-	for (int Offset = -1; Offset <= 1; ++Offset)
+	for(int OffsetX = -1; OffsetX <= 1; OffsetX++)
 	{
-		float2 SamplePos = Input.LocalPos + float2(0.0, float(Offset) * (PixelWidth / 3.0));
-		float Coverage = 0.0;
-
-		for (uint I = 0; I < Input.CurveCount; I += 3)
+		for(int OffsetY = -1; OffsetY <= 1; OffsetY++)
 		{
-			float2 P0 = Curves[(Input.CurveStart + I) + 0] - SamplePos;
-			float2 P1 = Curves[(Input.CurveStart + I) + 1] - SamplePos;
-			float2 P2 = Curves[(Input.CurveStart + I) + 2] - SamplePos;
+			float2 SamplePos = Input.LocalPos + float2(float(OffsetX) * PixelWidth, float(OffsetY) * PixelWidth);
+			float Coverage = 0.0;
 
-			bool IsDownwardCurve = (P0.y > 0.0) || (P2.y < 0.0);
-
-			if (IsDownwardCurve)
+			for (uint I = 0; I < Input.CurveCount; I += 3)
 			{
-				if (P0.y < 0.0 && P2.y <= 0.0) continue;
-				if (P0.y > 0.0 && P2.y >= 0.0) continue;
+				float2 P0 = Curves[(Input.CurveStart + I) + 0] - SamplePos;
+				float2 P1 = Curves[(Input.CurveStart + I) + 1] - SamplePos;
+				float2 P2 = Curves[(Input.CurveStart + I) + 2] - SamplePos;
+
+				bool IsDownwardCurve = (P0.y > 0.0) || (P2.y < 0.0);
+
+				if (IsDownwardCurve)
+				{
+					if (P0.y < 0.0 && P2.y <= 0.0) continue;
+					if (P0.y > 0.0 && P2.y >= 0.0) continue;
+				}
+				else
+				{
+					if (P0.y <= 0.0 && P2.y < 0.0) continue;
+					if (P0.y >= 0.0 && P2.y > 0.0) continue;
+				}
+
+				float2 A = P0 - 2.0 * P1 + P2;
+				float2 B = 2.0 * (P1 - P0);
+				float2 C = P0;
+
+				float2 Roots = CalculateQuadraticRoots(A.y, B.y, C.y);
+				float Epsilon = 1e-4;
+
+				bool OnSeg0 = (Roots.x >= -Epsilon) && (Roots.x <= 1.0 + Epsilon);
+				bool OnSeg1 = (Roots.y >= -Epsilon) && (Roots.y <= 1.0 + Epsilon);
+
+				float T0 = clamp(Roots.x, 0.0, 1.0);
+				float T1 = clamp(Roots.y, 0.0, 1.0);
+
+				float Intersect0 = A.x * T0 * T0 + B.x * T0 + C.x;
+				float Intersect1 = A.x * T1 * T1 + B.x * T1 + C.x;
+
+				int Sign = IsDownwardCurve ? 1 : -1;
+				if (OnSeg0) Coverage += clamp(0.5 + Intersect0 * InversePixelWidth, 0.0, 1.0) * Sign;
+				if (OnSeg1) Coverage += clamp(0.5 + Intersect1 * InversePixelWidth, 0.0, 1.0) * Sign;
 			}
-			else
-			{
-				if (P0.y <= 0.0 && P2.y < 0.0) continue;
-				if (P0.y >= 0.0 && P2.y > 0.0) continue;
-			}
 
-			float2 A = P0 - 2.0 * P1 + P2;
-			float2 B = 2.0 * (P1 - P0);
-			float2 C = P0;
-
-			float2 Roots = CalculateQuadraticRoots(A.y, B.y, C.y);
-			float Epsilon = 1e-4;
-
-			bool OnSeg0 = (Roots.x >= -Epsilon) && (Roots.x <= 1.0 + Epsilon);
-			bool OnSeg1 = (Roots.y >= -Epsilon) && (Roots.y <= 1.0 + Epsilon);
-
-			float T0 = clamp(Roots.x, 0.0, 1.0);
-			float T1 = clamp(Roots.y, 0.0, 1.0);
-
-			float Intersect0 = A.x * T0 * T0 + B.x * T0 + C.x;
-			float Intersect1 = A.x * T1 * T1 + B.x * T1 + C.x;
-
-			int Sign = IsDownwardCurve ? 1 : -1;
-			if (OnSeg0) Coverage += clamp(0.5 + Intersect0 * InversePixelWidth, 0.0, 1.0) * Sign;
-			if (OnSeg1) Coverage += clamp(0.5 + Intersect1 * InversePixelWidth, 0.0, 1.0) * Sign;
+			AlphaSum += clamp(Coverage, 0.0, 1.0);
 		}
 
-		AlphaSum += clamp(Coverage, 0.0, 1.0);
 	}
 
-	float Alpha = AlphaSum / 3.0;
+	float Alpha = AlphaSum / 9.0;
 	return float4(Input.Colour.rgb, Input.Colour.a * Alpha);
 }

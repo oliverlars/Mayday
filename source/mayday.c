@@ -446,7 +446,17 @@ void OS_Update(void *Data)
 				Offset -= 125.0f;
 			}
 
-			D_Quad(M->Draw, M->FrameArena, v2f(700, 10), sapp_widthf() - 710, sapp_heightf() - 20, v4f(0.2, 0.1, 0.0, 1.0));
+			D_Quad(M->Draw, M->FrameArena, v2f(650, 40), sapp_widthf() - 650 - 40, sapp_heightf() - 80, v4f(0.2, 0.1, 0.0, 1.0));
+			D_Quad(M->Draw, M->FrameArena, v2f(655, 45), sapp_widthf() - 650 - 40 - 10, sapp_heightf() - 80 - 10 - 100, COLOUR_BACKGROUND);
+			D_Str8(
+				M->Draw, M->FrameArena,
+				Str8("RECENTLY OPENED"),
+				.Position = v3f(680, 45 + sapp_heightf() - 80 - 80, 0),
+				.Font = M->Orbitron,
+				.Colour = COLOUR_BACKGROUND,
+				.HeightInPixels = 80
+			);
+
 
 #if 0
 			D_Quad(M->Draw, M->FrameArena, v2f(100.0, sapp_heightf()-300), 500, 200, v4f(0.2, 0.0, 0.0, 1.0));

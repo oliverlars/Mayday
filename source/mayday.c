@@ -446,6 +446,8 @@ void OS_Update(void *Data)
 				Offset -= 125.0f;
 			}
 
+			D_Quad(M->Draw, M->FrameArena, v2f(700, 10), sapp_widthf() - 710, sapp_heightf() - 20, v4f(0.2, 0.1, 0.0, 1.0));
+
 #if 0
 			D_Quad(M->Draw, M->FrameArena, v2f(100.0, sapp_heightf()-300), 500, 200, v4f(0.2, 0.0, 0.0, 1.0));
 			ui_textbox_signal SearchSignal = UI_TextBox(M->FrameArena, M->LogoFont, v2f(100.0, sapp_heightf() - 400), 500,

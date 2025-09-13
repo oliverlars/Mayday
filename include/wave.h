@@ -59,7 +59,7 @@ b32 WaveIsFirstLane(wave_info *WaveInfo);
 
 void BroadcastBytes(wave_info *WaveInfo, void *Bytes, s64 ByteCount);
 
-#define BroadcastToAllLanes(WaveInfo, Variable) BroadcastBytes(WaveInfo, &Variable, sizeof(Variable))
+#define BroadcastToAllLanes(WaveInfo, Variable) BroadcastBytes(WaveInfo, &Variable, sizeof(typeof(Variable)))
 
 s64 WaveGetLaneIndex(wave_info *WaveInfo);
 

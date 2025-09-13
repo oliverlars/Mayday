@@ -504,7 +504,6 @@ void OS_Update(void *Data)
 						f32 Y = RandomBilateral(&RandomState);
 						f32 Z = RandomBilateral(&RandomState);
 						TargetPositions[I] = v4f(X, Y, Z, 0);
-						Positions[I] = v4f(X, Y, Z, 0);
 					}
 					TreeHash = CurrentHash;
 				}
@@ -565,7 +564,7 @@ void OS_Update(void *Data)
 				From.Z -= 25;
 				m44f PV = Mul( M44FLookAt(From, At, v3f(0, 1, 0)), P);
 				R_PushTransform(M->Render, PV);
-				D_PointsArray(M->Draw, M->FrameArena, PointPositions, NodeCount, 5.0, v4f(0, 1, 0, 1));
+				D_PointsArray(M->Draw, M->FrameArena, PointPositions, NodeCount, 20.0, v4f(0, 1, 0, 1));
 				D_LinesArray(M->Draw, M->FrameArena, LinePositions, LineIndex, 5.0, v4f(0.5, 0.1, 0, 0.1));
 				R_PopTransform(M->Render);
 

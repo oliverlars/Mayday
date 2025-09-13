@@ -450,13 +450,102 @@ void OS_Update(void *Data)
 			D_Quad(M->Draw, M->FrameArena, v2f(655, 45), sapp_widthf() - 650 - 40 - 10, sapp_heightf() - 80 - 10 - 100, COLOUR_BACKGROUND);
 			D_Str8(
 				M->Draw, M->FrameArena,
-				Str8("RECENTLY OPENED"),
+				Str8("WELCOME BACK, MR. WICK"),
 				.Position = v3f(680, 45 + sapp_heightf() - 80 - 80, 0),
-				.Font = M->Orbitron,
+				.Font = M->Rajdhani,
 				.Colour = COLOUR_BACKGROUND,
 				.HeightInPixels = 80
 			);
 
+			// RECENTLY OPENED
+			{
+				static u64 TreeHash = 0;
+				static v4f *TargetPositions = 0;
+				static v4f *Positions = 0;
+				static int *Froms = 0;
+				static int *Tos = 0;
+				static int LinkCount = 0;
+				static f32 Temperature = 32.0f;
+
+				// NOTE(Oliver): This wont change but it's fun to hash stuff so why not
+				// and it can change later to something that could change
+				u64 CurrentHash = M_FNV_HASH_START;
+				for(
+					str8_list_node *Node = M->RecentlyLoadedFolders.First;
+					Node != Null; Node = Node->Next
+				)
+				{
+					CurrentHash = M_FNVHashString(CurrentHash, Node->String);
+				}
+
+				int NodeCount = Str8ListCount(M->RecentlyLoadedFolders);
+				NodeCount += 1; // For the main orbit node
+				if(TreeHash != CurrentHash)
+				{
+					Positions = ArenaPushArrayZero(M->PermanentArena, v4f, NodeCount);
+					TargetPositions = ArenaPushArrayZero(M->PermanentArena, v4f, NodeCount);
+
+					Froms = ArenaPushArrayZero(M->PermanentArena, int, NodeCount*NodeCount);
+					Tos = ArenaPushArrayZero(M->PermanentArena, int, NodeCount*NodeCount);
+
+					Froms[0] = 0;
+					for(int I = 1; I < NodeCount; I++)
+					{
+						Tos[I-1] = I;
+					}
+					LinkCount = NodeCount - 1;
+				}
+				quadtree_header *QuadTree = ArenaPushArrayZero(M->FrameArena, quadtree_header, 1);
+				QuadTree->Bounds = ArenaPushArrayZero(M->FrameArena, bounds, NodeCount*4);
+				QuadTree->ChildrenCounts = ArenaPushArrayZero(M->FrameArena, int, NodeCount*4);
+				QuadTree->Nodes = ArenaPushArrayZero(M->FrameArena, quadrant_node*, NodeCount*4);
+				QuadTree->Masses = ArenaPushArrayZero(M->FrameArena, v4f, NodeCount*4);
+				QuadTree->Quadrants = ArenaPushArrayZero(M->FrameArena, Quadrant, NodeCount*4);
+				
+				QuadTree->Bounds[0] = GetBoundsV4F(TargetPositions, NodeCount);
+				QuadTree->NextQuadrantIndex = 1;	
+
+				for(int I = 0; I < NodeCount; I++)
+				{
+					QuadTreeBuild(M->FrameArena, QuadTree, 0, TargetPositions[I], 0);
+				}
+
+				QuadTree->Masses[0] = QuadTreeCalculateAttributes(QuadTree, 0);
+
+				SimulateForceDirectedGraphQuadTree(
+					M->FrameArena,
+					TargetPositions,
+					NodeCount,
+					Froms,
+					Tos,
+					LinkCount,
+					&Temperature,
+					QuadTree,
+					&M->Shared
+				);
+
+				v3f *PointPositions = ArenaPushArray(M->FrameArena, v3f, NodeCount);
+				for(int I = 0; I < NodeCount; I++)
+				{
+					PointPositions[I].X = Positions[I].X;
+					PointPositions[I].Y = Positions[I].Y;
+					PointPositions[I].Z = Positions[I].Z;
+				}
+
+				v3f *LinePositions = ArenaPushArray(M->FrameArena, v3f, LinkCount*2);
+				int LineIndex = 0;
+				for(int I = 0; I < LinkCount; I++)
+				{
+					v4f From = Positions[Froms[I]];
+					v4f To = Positions[Tos[I]];
+					LinePositions[LineIndex + 0] = v3f(From.X, From.Y, From.Z);
+					LinePositions[LineIndex + 1] = v3f(To.X, To.Y, To.Z);
+					LineIndex += 2;
+				}
+
+				//D_PointsArray(M->Draw, M->FrameArena, PointPositions, NodeCount, 5.0, v4f(1, 0, 0, 1));
+				D_LinesArray(M->Draw, M->FrameArena, LinePositions, LinkCount*2, 1.0, v4f(0.5, 0.1, 0, 0.1));
+			}
 
 #if 0
 			D_Quad(M->Draw, M->FrameArena, v2f(100.0, sapp_heightf()-300), 500, 200, v4f(0.2, 0.0, 0.0, 1.0));

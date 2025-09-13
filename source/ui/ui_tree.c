@@ -142,7 +142,6 @@ void UI_TreeView(ui_context *UI, draw_context *Draw, shared_wave_info *Shared,
 		f32 Depth = Max(1.0, (f32)TreeView->Info.NodeInfos[I].Depth);
 		f32 Red = 1.0/(Depth);
 		Colours[I] = v4f(Red, 0, 0, 1);
-
 	}
 
 	v3f *LinePositions = ArenaPushArray(Arena, v3f, TreeView->Info.LinkCount*2);

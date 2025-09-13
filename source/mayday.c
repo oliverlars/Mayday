@@ -464,8 +464,9 @@ void OS_Update(void *Data)
 				static v4f *Positions = 0;
 				static int *Froms = 0;
 				static int *Tos = 0;
+				static int FromCount = 0;
 				static int LinkCount = 0;
-				static f32 Temperature = 32.0f;
+				static f32 Temperature = 2.0f;
 
 				// NOTE(Oliver): This wont change but it's fun to hash stuff so why not
 				// and it can change later to something that could change
@@ -485,16 +486,31 @@ void OS_Update(void *Data)
 					Positions = ArenaPushArrayZero(M->PermanentArena, v4f, NodeCount);
 					TargetPositions = ArenaPushArrayZero(M->PermanentArena, v4f, NodeCount);
 
-					Froms = ArenaPushArrayZero(M->PermanentArena, int, NodeCount*NodeCount);
-					Tos = ArenaPushArrayZero(M->PermanentArena, int, NodeCount*NodeCount);
+					Froms = ArenaPushArrayZero(M->PermanentArena, int, 5);
+					Tos = ArenaPushArrayZero(M->PermanentArena, int, 5);
 
-					Froms[0] = 0;
-					for(int I = 1; I < NodeCount; I++)
+					for(int I = 0; I < NodeCount-1; I++)
 					{
-						Tos[I-1] = I;
+						Froms[I] = 0;
+						Tos[I] = I + 1;
 					}
-					LinkCount = NodeCount - 1;
+					LinkCount = NodeCount-1;
+
+					random32_state RandomState = {0};
+					RandomState.State = (u32)M_FNV_HASH_START;
+					for(int I = 0; I < NodeCount; I++)
+					{
+						f32 X = RandomBilateral(&RandomState);
+						f32 Y = RandomBilateral(&RandomState);
+						f32 Z = RandomBilateral(&RandomState);
+						TargetPositions[I] = v4f(X, Y, Z, 0);
+						Positions[I] = v4f(X, Y, Z, 0);
+					}
+					TreeHash = CurrentHash;
 				}
+
+				TargetPositions[0] = v4f(0, 0, 0, 0);
+
 				quadtree_header *QuadTree = ArenaPushArrayZero(M->FrameArena, quadtree_header, 1);
 				QuadTree->Bounds = ArenaPushArrayZero(M->FrameArena, bounds, NodeCount*4);
 				QuadTree->ChildrenCounts = ArenaPushArrayZero(M->FrameArena, int, NodeCount*4);
@@ -503,7 +519,7 @@ void OS_Update(void *Data)
 				QuadTree->Quadrants = ArenaPushArrayZero(M->FrameArena, Quadrant, NodeCount*4);
 				
 				QuadTree->Bounds[0] = GetBoundsV4F(TargetPositions, NodeCount);
-				QuadTree->NextQuadrantIndex = 1;	
+				QuadTree->NextQuadrantIndex = 1;
 
 				for(int I = 0; I < NodeCount; I++)
 				{
@@ -536,15 +552,30 @@ void OS_Update(void *Data)
 				int LineIndex = 0;
 				for(int I = 0; I < LinkCount; I++)
 				{
+					if(Froms[I] == Tos[I]) continue;
 					v4f From = Positions[Froms[I]];
 					v4f To = Positions[Tos[I]];
 					LinePositions[LineIndex + 0] = v3f(From.X, From.Y, From.Z);
 					LinePositions[LineIndex + 1] = v3f(To.X, To.Y, To.Z);
 					LineIndex += 2;
 				}
+				m44f P = Perspective(sapp_widthf()/sapp_heightf(), 35, 0.01, 10000.0);
+				v3f At = V3FromV4(Positions[0]);
+				v3f From = At;
+				From.Z -= 25;
+				m44f PV = Mul( M44FLookAt(From, At, v3f(0, 1, 0)), P);
+				R_PushTransform(M->Render, PV);
+				D_PointsArray(M->Draw, M->FrameArena, PointPositions, NodeCount, 5.0, v4f(0, 1, 0, 1));
+				D_LinesArray(M->Draw, M->FrameArena, LinePositions, LineIndex, 5.0, v4f(0.5, 0.1, 0, 0.1));
+				R_PopTransform(M->Render);
 
-				//D_PointsArray(M->Draw, M->FrameArena, PointPositions, NodeCount, 5.0, v4f(1, 0, 0, 1));
-				D_LinesArray(M->Draw, M->FrameArena, LinePositions, LinkCount*2, 1.0, v4f(0.5, 0.1, 0, 0.1));
+				for(int I = 0; I < NodeCount; I++)
+				{
+					v4f P = Positions[I];
+					v4f Target = TargetPositions[I];
+					v3f Result = LerpV3F(v3f(P.X, P.Y, P.Z), v3f(Target.X, Target.Y, Target.Z), 0.1);
+					Positions[I] = v4f(Result.X, Result.Y, Result.Z, 0.0);
+				}
 			}
 
 #if 0

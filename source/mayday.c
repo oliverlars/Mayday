@@ -603,7 +603,7 @@ void OS_Update(void *Data)
 					D_Str8(M->Draw, M->FrameArena, FileNode->String,
 					.Font = M->Orbitron,
 					.HeightInPixels = 50.0f,
-					//.OutlineThickness = 4.0f,
+					.OutlineThickness = 4.0f,
 					.Colour = v4f(0.1, 0.05, 0, 1.0),
 					.Position = v3f(TransformedPoint.X, TransformedPoint.Y, 0.0));
 					R_PopTransform(M->Render);

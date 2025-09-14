@@ -503,14 +503,27 @@ void D_BaseStr8(
 			{
 				f32 GlyphWidth = ((f32)(Glyph->Box.Z - Glyph->Box.X));
 				f32 GlyphHeight = ((f32)(Glyph->Box.W - Glyph->Box.Y));
+				f32 HeightOffset = 0.0*Options.Font.Descent*Scale;
 				v2f Start = Glyph->Curves[CurveIndex + 0];
 				v2f Control = Glyph->Curves[CurveIndex + 1];
 				v2f End = Glyph->Curves[CurveIndex + 2];
 				v3f Line[3] = 
 				{
-					v3f(Options.Position.X + Start.X*Scale*GlyphWidth, Options.Position.Y + Scale*GlyphHeight - Start.Y*Scale*GlyphHeight, 0.0),
-					v3f(Options.Position.X + Control.X*Scale*GlyphWidth, Options.Position.Y + Scale*GlyphHeight - Control.Y*Scale*GlyphHeight, 0.0),
-					v3f(Options.Position.X + End.X*Scale*GlyphWidth, Options.Position.Y + Scale*GlyphHeight - End.Y*Scale*GlyphHeight, 0.0)
+					v3f(
+						Options.Position.X + Start.X*Scale*GlyphWidth,
+						Options.Position.Y + Start.Y*Scale*GlyphHeight + HeightOffset,
+						Options.Position.Z
+					),
+					v3f(
+						Options.Position.X + Control.X*Scale*GlyphWidth,
+						Options.Position.Y + Control.Y*Scale*GlyphHeight + HeightOffset,
+						Options.Position.Z
+					),
+					v3f(
+						Options.Position.X + End.X*Scale*GlyphWidth,
+						Options.Position.Y + End.Y*Scale*GlyphHeight + HeightOffset,
+						Options.Position.Z
+					)
 				};
 				OutlineData[OutlineOffset++] = Line[0];
 				OutlineData[OutlineOffset++] = Line[1];

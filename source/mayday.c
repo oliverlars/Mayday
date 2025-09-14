@@ -567,16 +567,52 @@ void OS_Update(void *Data)
 					LinePositions[LineIndex + 1] = v3f(To.X, To.Y, To.Z);
 					LineIndex += 2;
 				}
-				m44f P = Perspective(sapp_widthf()/sapp_heightf(), 35, 0.01, 10000.0);
+				m44f P = Perspective(sapp_widthf()/sapp_heightf(), 70, 0.01, 10000.0);
 				v3f At = V3FromV4(Positions[0]);
 				v3f From = At;
-				From.Z -= 20;
-				m44f PV = Mul( M44FLookAt(From, At, v3f(0, 1, 0)), P);
+				From.Z -= 3;
+
+				m44f TranslateToOrigin = Translate(v3f(-From.X, -From.Y, -From.Z));
+
+				m44f RotationY = M44FromYAngle(Angle + 2.0f*M_PI*AngleOffset);
+				m44f RotationZ = M44FromZAngle(Angle*0.5 + 2.0 + 2.0f*M_PI*AngleOffset);
+
+				m44f TranslateBack = Translate(v3f(From.X, From.Y, From.Z));
+
+				Angle += 0.002;
+				m44f Model = Mul(TranslateToOrigin, Mul(Mul(RotationY, RotationZ), TranslateBack));
+				m44f View = M44FLookAt(From, At, v3f(0, 1, 0));
+				m44f PV = Mul(Mul(View, Model), P);
 				R_PushTransform(M->Render, PV);
-				PointPositions[0] = At;
-				D_PointsArray(M->Draw, M->FrameArena, PointPositions, NodeCount, 5.0, COLOUR_BACKGROUND);
-				D_PointsArray(M->Draw, M->FrameArena, PointPositions, NodeCount, 8.0, v4f(0.5, 0.1, 0, 0.1));
+				//PointPositions[0] = At;
+
+				str8_list_node *FileNode = M->RecentlyLoadedFolders.First;
+				for(int I = 1; I < NodeCount; I++)
+				{
+					v4f P = Positions[I];
+					v4f NodePosition4D = v4f(P.X, P.Y, P.Z, 1.0);
+					v4f TransformedPoint = Mul(M44FTranspose(PV), NodePosition4D);
+					TransformedPoint.X /= TransformedPoint.W;
+					TransformedPoint.Y /= TransformedPoint.W;
+					TransformedPoint.X = TransformedPoint.X*0.5 + 0.5;
+					TransformedPoint.Y = TransformedPoint.Y*0.5 + 0.5;
+					TransformedPoint.X *= sapp_widthf();
+					TransformedPoint.Y *= sapp_heightf();
+
+					R_PushTransform(M->Render, Orthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));					
+					D_Str8(M->Draw, M->FrameArena, FileNode->String,
+					.Font = M->Orbitron,
+					.HeightInPixels = 50.0f,
+					//.OutlineThickness = 4.0f,
+					.Colour = v4f(0.1, 0.05, 0, 1.0),
+					.Position = v3f(TransformedPoint.X, TransformedPoint.Y, 0.0));
+					R_PopTransform(M->Render);
+					FileNode = FileNode->Next;
+				}
+
 				D_LinesArray(M->Draw, M->FrameArena, LinePositions, LineIndex, 5.0, v4f(0.5, 0.1, 0, 0.1));
+				D_PointsArray(M->Draw, M->FrameArena, PointPositions, NodeCount, 5.0, COLOUR_BACKGROUND);
+				D_PointsArray(M->Draw, M->FrameArena, PointPositions, NodeCount, 10.0, v4f(0.5, 0.1, 0, 0.1));
 				R_PopTransform(M->Render);
 				v3f Points = v3f(800, 800, 0);
 

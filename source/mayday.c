@@ -118,7 +118,7 @@ mayday_context;
 
 #define COLOUR_BACKGROUND v4f(0.008, 0.00, 0, 1.0)
 
-#define RenderTest 1
+#define RenderTest 0
 
 #if RenderTest
 void OS_Update(void *Data)
@@ -570,7 +570,7 @@ void OS_Update(void *Data)
 				R_PushTransform(M->Render, PV);
 				PointPositions[0] = At;
 				D_PointsArray(M->Draw, M->FrameArena, PointPositions, NodeCount, 5.0, v4f(0, 1, 0, 1));
-				//D_LinesArray(M->Draw, M->FrameArena, LinePositions, LineIndex, 5.0, v4f(0.5, 0.1, 0, 0.1));
+				D_LinesArray(M->Draw, M->FrameArena, LinePositions, LineIndex, 5.0, v4f(0.5, 0.1, 0, 0.1));
 				R_PopTransform(M->Render);
 				v3f Points = v3f(800, 800, 0);
 				D_PointsArray(M->Draw, M->FrameArena, &Points, 1, 20.0, v4f(0, 1, 0, 1));

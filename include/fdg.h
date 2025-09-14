@@ -46,10 +46,15 @@ typedef struct quadtree_header
 	int             NextQuadrantIndex;
 } quadtree_header;
 
-void SimulateForceDirectedGraphQuadTree(m_arena *Arena, v4f *NodePositions, int NodeCount,
-								int *Froms, int *Tos, int LinkCount,
-								f32 *Temperature,
-								quadtree_header *QuadTree, shared_wave_info *Shared);
+void SimulateForceDirectedGraphQuadTree
+(
+	m_arena *Arena, v4f *NodeVelocities,
+	v4f *NodePositions, int NodeCount,
+	int *Froms, int *Tos, int LinkCount,
+	f32 *Temperature,
+	quadtree_header *QuadTree, 
+	shared_wave_info *Share
+);
 
 bounds GetBoundsV4F(v4f *Positions, int Count);
 bounds GetBoundsV3F(v3f *Positions, int Count);

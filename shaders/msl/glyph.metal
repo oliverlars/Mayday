@@ -64,6 +64,7 @@ fragment float4 FragmentMain(vertex_output Input [[stage_in]],
 							 sampler Sampler [[sampler(0)]])
 {
 	float PixelWidth = fabs(dfdx(Input.LocalPos.x));
+	float PixelHeight = fabs(dfdy(Input.LocalPos.y));
 	float InversePixelWidth = 1.0 / PixelWidth;
 
 	float AlphaSum = 0.0;
@@ -72,7 +73,7 @@ fragment float4 FragmentMain(vertex_output Input [[stage_in]],
 	{
 		for(int OffsetY = -1; OffsetY <= 1; OffsetY++)
 		{
-			float2 SamplePos = Input.LocalPos + float2(float(OffsetX) * PixelWidth, float(OffsetY) * PixelWidth);
+			float2 SamplePos = Input.LocalPos + float2(float(OffsetX) * PixelWidth / 3.0, float(OffsetY) * PixelHeight / 3.0);
 			float Coverage = 0.0;
 
 			for (uint I = 0; I < Input.CurveCount; I += 3)

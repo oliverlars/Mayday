@@ -118,7 +118,7 @@ mayday_context;
 
 #define COLOUR_BACKGROUND v4f(0.008, 0.00, 0, 1.0)
 
-#define RenderTest 0
+#define RenderTest 1
 
 #if RenderTest
 void OS_Update(void *Data)
@@ -462,11 +462,12 @@ void OS_Update(void *Data)
 				static u64 TreeHash = 0;
 				static v4f *TargetPositions = 0;
 				static v4f *Positions = 0;
+				static v4f *Velocities = 0;
 				static int *Froms = 0;
 				static int *Tos = 0;
 				static int FromCount = 0;
 				static int LinkCount = 0;
-				static f32 Temperature = 2.0f;
+				static f32 Temperature = 15.0f;
 
 				// NOTE(Oliver): This wont change but it's fun to hash stuff so why not
 				// and it can change later to something that could change
@@ -485,6 +486,7 @@ void OS_Update(void *Data)
 				{
 					Positions = ArenaPushArrayZero(M->PermanentArena, v4f, NodeCount);
 					TargetPositions = ArenaPushArrayZero(M->PermanentArena, v4f, NodeCount);
+					Velocities = ArenaPushArrayZero(M->PermanentArena, v4f, NodeCount);
 
 					Froms = ArenaPushArrayZero(M->PermanentArena, int, 5);
 					Tos = ArenaPushArrayZero(M->PermanentArena, int, 5);
@@ -504,6 +506,7 @@ void OS_Update(void *Data)
 						f32 Y = RandomBilateral(&RandomState);
 						f32 Z = RandomBilateral(&RandomState);
 						TargetPositions[I] = v4f(X, Y, Z, 0);
+						Positions[I] = v4f(X, Y, Z, 0);
 					}
 					TreeHash = CurrentHash;
 				}
@@ -530,6 +533,7 @@ void OS_Update(void *Data)
 				SimulateForceDirectedGraphQuadTree(
 					M->FrameArena,
 					TargetPositions,
+					Velocities,
 					NodeCount,
 					Froms,
 					Tos,
@@ -561,12 +565,15 @@ void OS_Update(void *Data)
 				m44f P = Perspective(sapp_widthf()/sapp_heightf(), 35, 0.01, 10000.0);
 				v3f At = V3FromV4(Positions[0]);
 				v3f From = At;
-				From.Z -= 25;
+				From.Z -= 100;
 				m44f PV = Mul( M44FLookAt(From, At, v3f(0, 1, 0)), P);
 				R_PushTransform(M->Render, PV);
-				D_PointsArray(M->Draw, M->FrameArena, PointPositions, NodeCount, 20.0, v4f(0, 1, 0, 1));
-				D_LinesArray(M->Draw, M->FrameArena, LinePositions, LineIndex, 5.0, v4f(0.5, 0.1, 0, 0.1));
+				PointPositions[0] = At;
+				D_PointsArray(M->Draw, M->FrameArena, PointPositions, NodeCount, 5.0, v4f(0, 1, 0, 1));
+				//D_LinesArray(M->Draw, M->FrameArena, LinePositions, LineIndex, 5.0, v4f(0.5, 0.1, 0, 0.1));
 				R_PopTransform(M->Render);
+				v3f Points = v3f(800, 800, 0);
+				D_PointsArray(M->Draw, M->FrameArena, &Points, 1, 20.0, v4f(0, 1, 0, 1));
 
 				for(int I = 0; I < NodeCount; I++)
 				{

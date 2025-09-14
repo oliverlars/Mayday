@@ -18,6 +18,7 @@ ui_tree_info TreeInfoFromPath(m_arena *Arena, str8 Path, v3f Size)
 
 	Info.NodePositions = ArenaPushArrayZero(Arena, v4f, Info.Tree.Count);
 	Info.NodeTargetPositions = ArenaPushArrayZero(Arena, v4f, Info.Tree.Count);
+	Info.NodeVelocities = ArenaPushArrayZero(Arena, v4f, Info.Tree.Count);
 	Info.NodeInfos = ArenaPushArrayZero(Arena, fdg_node_info, Info.Tree.Count);
 	Info.Froms = ArenaPushArrayZero(Arena, int, Info.Tree.Count);
 	Info.Tos = ArenaPushArrayZero(Arena, int, Info.Tree.Count);
@@ -122,15 +123,19 @@ void UI_TreeView(ui_context *UI, draw_context *Draw, shared_wave_info *Shared,
 
 	QuadTree->Masses[0] = QuadTreeCalculateAttributes(QuadTree, 0);
 
-	SimulateForceDirectedGraphQuadTree(Arena,
-									   TreeView->Info.NodeTargetPositions,
-									   TreeView->Info.NodeCount,
-									   TreeView->Info.Froms,
-									   TreeView->Info.Tos,
-									   TreeView->Info.LinkCount,
-									   &TreeView->Temperature,
-									   QuadTree,
-									   Shared);
+	SimulateForceDirectedGraphQuadTree
+	(
+		Arena,
+		TreeView->Info.NodeVelocities,
+		TreeView->Info.NodeTargetPositions,
+		TreeView->Info.NodeCount,
+		TreeView->Info.Froms,
+		TreeView->Info.Tos,
+		TreeView->Info.LinkCount,
+		&TreeView->Temperature,
+		QuadTree,
+		Shared
+	);
 
 	v3f *Positions = ArenaPushArray(Arena, v3f, TreeView->Info.NodeCount);
 	v4f *Colours = ArenaPushArray(Arena, v4f, TreeView->Info.NodeCount);

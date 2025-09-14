@@ -718,7 +718,7 @@ void D_PointsArrayWithColours
 		TransformedPoints[P] = A4D;
 	}
 
-	qsort(TransformedPoints, PositionsCount, sizeof(v4f), SortPointsByZ);
+	//qsort(TransformedPoints, PositionsCount, sizeof(v4f), SortPointsByZ);
 
 	for(int P = 0; P < PositionsCount; P++)
 	{

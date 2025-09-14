@@ -272,11 +272,11 @@ v4f ForceDisplacementFromPosition(quadtree_header *QuadTree, v4f NodePosition, f
 
 				f32 DistanceSquared = (f32)DotV3F(Delta, Delta);
 				f32 Distance  = sqrtf(DistanceSquared) + 0.01;
-				f32 ForceMagnitude = (K*K) / (DistanceSquared + 0.01);
+				f32 RepulsiveForce = (K*K) / (Distance + 0.01);
 
-				Result.X += ForceMagnitude * Delta.X / Distance;
-				Result.Y += ForceMagnitude * Delta.Y / Distance;
-				Result.Z += ForceMagnitude * Delta.Z / Distance;
+				Result.X += RepulsiveForce * Delta.X / Distance;
+				Result.Y += RepulsiveForce * Delta.Y / Distance;
+				Result.Z += RepulsiveForce * Delta.Z / Distance;
 			}
 			continue;
 		}
@@ -363,7 +363,10 @@ void ParallelForceDisplacement(wave_info *WaveInfo, void* Input)
 	typedef struct link_info
 	{
 		f32 AttractiveForce;
+		f32 RepulsiveForce;
+		v3f Delta;
 		v3f Norm;
+		f32 Distance;
 	}
 	link_info;
 
@@ -395,17 +398,22 @@ void ParallelForceDisplacement(wave_info *WaveInfo, void* Input)
 		f32 DY = NodePositions[A].Y - NodePositions[B].Y;
 		f32 DZ = NodePositions[A].Z - NodePositions[B].Z;
 		f32 DistanceSquared = DX*DX + DY*DY + DZ*DZ;
-		f32 Distance = sqrtf(DistanceSquared) + 1.0;
+		f32 Distance = sqrtf(DistanceSquared) + 0.1;
 
 		f32 ReciprocalDistance = 1.0 / (Distance + 0.01);
 		f32 NormDX = DX * ReciprocalDistance;
 		f32 NormDY = DY * ReciprocalDistance;
 		f32 NormDZ = DZ * ReciprocalDistance;
 
-		f32 AttractiveForce = 0.1*log(Distance);
+		f32 AttractiveForce = DistanceSquared / P->K;
+
+		f32 RepulsiveForce = P->K * P->K / Distance;
 
 		LinkInfos[I].AttractiveForce = AttractiveForce;
+		LinkInfos[I].RepulsiveForce = RepulsiveForce;
 		LinkInfos[I].Norm = v3f(NormDX, NormDY, NormDZ);
+		LinkInfos[I].Delta = v3f(DX, DY, DZ);
+		LinkInfos[I].Distance = Distance;
 	}
 
 	WaveBarrier(WaveInfo->Shared->Barrier);
@@ -414,19 +422,18 @@ void ParallelForceDisplacement(wave_info *WaveInfo, void* Input)
 	{
 		for(int I = 0; I < P->LinkCount; I++)
 		{
-			v4f *NodePositions = P->NodePositions;
 			int A = P->Froms[I];
 			int B = P->Tos[I];
 
 			link_info LinkInfo = LinkInfos[I];
 
-			P->DisplacementsMerged[A].X -= LinkInfo.Norm.X * LinkInfo.AttractiveForce;
-			P->DisplacementsMerged[A].Y -= LinkInfo.Norm.Y * LinkInfo.AttractiveForce;
-			P->DisplacementsMerged[A].Z -= LinkInfo.Norm.Z * LinkInfo.AttractiveForce;
+			P->DisplacementsMerged[A].X -= LinkInfo.Delta.X / LinkInfo.Distance * LinkInfo.AttractiveForce;
+			P->DisplacementsMerged[A].Y -= LinkInfo.Delta.Y / LinkInfo.Distance * LinkInfo.AttractiveForce;
+			P->DisplacementsMerged[A].Z -= LinkInfo.Delta.Z / LinkInfo.Distance * LinkInfo.AttractiveForce;
 
-			P->DisplacementsMerged[B].X += LinkInfo.Norm.X * LinkInfo.AttractiveForce;
-			P->DisplacementsMerged[B].Y += LinkInfo.Norm.Y * LinkInfo.AttractiveForce;
-			P->DisplacementsMerged[B].Z += LinkInfo.Norm.Z * LinkInfo.AttractiveForce;
+			P->DisplacementsMerged[B].X += LinkInfo.Delta.X / LinkInfo.Distance * LinkInfo.AttractiveForce;
+			P->DisplacementsMerged[B].Y += LinkInfo.Delta.Y / LinkInfo.Distance * LinkInfo.AttractiveForce;
+			P->DisplacementsMerged[B].Z += LinkInfo.Delta.Z / LinkInfo.Distance * LinkInfo.AttractiveForce;
 		}
 	}
 
@@ -439,20 +446,18 @@ void ParallelForceDisplacement(wave_info *WaveInfo, void* Input)
 		P->NodeVelocities[I + NodeIndex].Y += P->DisplacementsMerged[I + NodeIndex].Y;
 		P->NodeVelocities[I + NodeIndex].Z += P->DisplacementsMerged[I + NodeIndex].Z;
 
-		P->NodeVelocities[I + NodeIndex].X *= 0.9;
-		P->NodeVelocities[I + NodeIndex].Y *= 0.9;
-		P->NodeVelocities[I + NodeIndex].Z *= 0.9;
+		P->NodeVelocities[I + NodeIndex].X *= 0.4;
+		P->NodeVelocities[I + NodeIndex].Y *= 0.4;
+		P->NodeVelocities[I + NodeIndex].Z *= 0.4;
 
 		P->NodePositions[I + NodeIndex].X += P->NodeVelocities[I + NodeIndex].X;
 		P->NodePositions[I + NodeIndex].Y += P->NodeVelocities[I + NodeIndex].Y;
 		P->NodePositions[I + NodeIndex].Z += P->NodeVelocities[I + NodeIndex].Z;
-
-		// f32 Norm = sqrtf(D.X * D.X + D.Y * D.Y + D.Z * D.Z);
-		// if(Norm > 0)
+		
 		// {
-		// 	P->NodePositions[I + NodeIndex].X += (D.X / Norm) * Min(Norm, P->Temperature);
-		// 	P->NodePositions[I + NodeIndex].Y += (D.Y / Norm) * Min(Norm, P->Temperature);
-		// 	P->NodePositions[I + NodeIndex].Z += (D.Z / Norm) * Min(Norm, P->Temperature);
+		// 	P->NodePositions[I + NodeIndex].X += D.X * P->Temperature;
+		// 	P->NodePositions[I + NodeIndex].Y += D.Y * P->Temperature;
+		// 	P->NodePositions[I + NodeIndex].Z += D.Z * P->Temperature;
 		// }
 	}
 
@@ -473,7 +478,7 @@ void SimulateForceDirectedGraphQuadTree
 )
 {
 	u64 Start = OS_TimeStampNow();
-	f32 K = 5.0;
+	f32 K = 1.0f/sqrtf((f32)NodeCount);
 
 	v4f *Displacements = ArenaPushArrayZero(Arena, v4f, NodeCount);
 
@@ -530,7 +535,7 @@ void SimulateForceDirectedGraphQuadTree
 	}
 #endif
 
-	Temperature[0] *= 0.9;
+	Temperature[0] *= 0.99;
 
 	//LogInfo("Time to simulate: ?f32", OS_MilliSecondsFromTimeStamp(OS_TimeStampNow() - Start));
 }

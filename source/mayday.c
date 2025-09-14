@@ -482,6 +482,7 @@ void OS_Update(void *Data)
 
 				int NodeCount = Str8ListCount(M->RecentlyLoadedFolders);
 				NodeCount += 1; // For the main orbit node
+				
 				if(TreeHash != CurrentHash)
 				{
 					Positions = ArenaPushArrayZero(M->PermanentArena, v4f, NodeCount);
@@ -507,6 +508,10 @@ void OS_Update(void *Data)
 						f32 Z = RandomBilateral(&RandomState);
 						TargetPositions[I] = v4f(X, Y, Z, 0);
 						Positions[I] = v4f(X, Y, Z, 0);
+						X = RandomBilateral(&RandomState)*0.1;
+						Y = RandomBilateral(&RandomState)*0.1;
+						Z = RandomBilateral(&RandomState)*0.1;
+						Velocities[I] = v4f(X, Y, Z, 0);
 					}
 					TreeHash = CurrentHash;
 				}
@@ -532,8 +537,8 @@ void OS_Update(void *Data)
 
 				SimulateForceDirectedGraphQuadTree(
 					M->FrameArena,
-					TargetPositions,
 					Velocities,
+					TargetPositions,
 					NodeCount,
 					Froms,
 					Tos,
@@ -565,15 +570,15 @@ void OS_Update(void *Data)
 				m44f P = Perspective(sapp_widthf()/sapp_heightf(), 35, 0.01, 10000.0);
 				v3f At = V3FromV4(Positions[0]);
 				v3f From = At;
-				From.Z -= 100;
+				From.Z -= 20;
 				m44f PV = Mul( M44FLookAt(From, At, v3f(0, 1, 0)), P);
 				R_PushTransform(M->Render, PV);
 				PointPositions[0] = At;
-				D_PointsArray(M->Draw, M->FrameArena, PointPositions, NodeCount, 5.0, v4f(0, 1, 0, 1));
+				D_PointsArray(M->Draw, M->FrameArena, PointPositions, NodeCount, 5.0, COLOUR_BACKGROUND);
+				D_PointsArray(M->Draw, M->FrameArena, PointPositions, NodeCount, 8.0, v4f(0.5, 0.1, 0, 0.1));
 				D_LinesArray(M->Draw, M->FrameArena, LinePositions, LineIndex, 5.0, v4f(0.5, 0.1, 0, 0.1));
 				R_PopTransform(M->Render);
 				v3f Points = v3f(800, 800, 0);
-				D_PointsArray(M->Draw, M->FrameArena, &Points, 1, 20.0, v4f(0, 1, 0, 1));
 
 				for(int I = 0; I < NodeCount; I++)
 				{
@@ -879,7 +884,7 @@ int main()
 
 	DispatchInitialise(&M.Shared, 15);
 
-	//M.Folder = Str8("C:\\mayday\\");
+	//M.Folder = Str8("/");
 
 	sapp_desc *SAPPDesc = ArenaPushArrayZero(Arena, sapp_desc, 1);
 	SAPPDesc->window_title = "assdfasdfsd";

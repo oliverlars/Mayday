@@ -415,14 +415,14 @@ void OS_Update(void *Data)
 			f32 Offset = 200.0f;
 			for(int I = 0; I < 3; I++)
 			{
-				f32 Width = sapp_heightf()*0.95;
+				f32 Width = sapp_heightf() - 100;
 				f32 Height = D_Str8HeightFromWidth(M->Rajdhani, Str8("Mayday!"), Width);
 
 				ui_style Style = UI_GetStyle(M->UI);
 				UI_PushStyle(M->UI, Style);
 				m44f T = R_CurrentTransform(M->Render);
 				m44f TextTransform = Mul(
-					M44FTranslate(v3f((sapp_heightf() - sapp_heightf()*0.95)/2.0, Offset - Height*0.7 - 100, 0)), 
+					M44FTranslate(v3f((sapp_heightf() - Width)/2.0, Offset - Height, 0)), 
 					Mul(M44FromZAngle(-M_PI/2.0), M44FTranslate(v3f(0, 0, 0)))
 				);
 				R_PushTransform(M->Render, Mul(TextTransform, T));
@@ -446,12 +446,13 @@ void OS_Update(void *Data)
 				Offset -= 125.0f;
 			}
 
-			D_Quad(M->Draw, M->FrameArena, v2f(650, 40), sapp_widthf() - 650 - 40, sapp_heightf() - 80, v4f(0.2, 0.1, 0.0, 1.0));
-			D_Quad(M->Draw, M->FrameArena, v2f(655, 45), sapp_widthf() - 650 - 40 - 10, sapp_heightf() - 80 - 10 - 100, COLOUR_BACKGROUND);
+			f32 HeaderHeight = 100;
+			D_Quad(M->Draw, M->FrameArena, v2f(650, 50), sapp_widthf() - 650 - 50, sapp_heightf() - 100, v4f(0.2, 0.1, 0.0, 1.0));
+			D_Quad(M->Draw, M->FrameArena, v2f(655, 55), sapp_widthf() - 650 - 50 - 10, sapp_heightf() - 100 - 10 - HeaderHeight, COLOUR_BACKGROUND);
 			D_Str8(
 				M->Draw, M->FrameArena,
 				Str8("WELCOME BACK, MR. WICK"),
-				.Position = v3f(680, 45 + sapp_heightf() - 80 - 80, 0),
+				.Position = v3f(680, 50 + sapp_heightf() - 80 - 100 - 80.0/2.0 + HeaderHeight/2.0, 0),
 				.Font = M->Rajdhani,
 				.Colour = COLOUR_BACKGROUND,
 				.HeightInPixels = 80
@@ -603,16 +604,15 @@ void OS_Update(void *Data)
 					D_Str8(M->Draw, M->FrameArena, FileNode->String,
 					.Font = M->Orbitron,
 					.HeightInPixels = 50.0f,
-					.OutlineThickness = 4.0f,
 					.Colour = v4f(0.1, 0.05, 0, 1.0),
-					.Position = v3f(TransformedPoint.X, TransformedPoint.Y, 0.0));
+					.Position = v3f(TransformedPoint.X + 5, TransformedPoint.Y + 5, 0.0));
 					R_PopTransform(M->Render);
 					FileNode = FileNode->Next;
 				}
 
 				D_LinesArray(M->Draw, M->FrameArena, LinePositions, LineIndex, 5.0, v4f(0.5, 0.1, 0, 0.1));
+				D_PointsArray(M->Draw, M->FrameArena, PointPositions, NodeCount, 10.0, v4f(0.1, 0.05, 0, 1.0));
 				D_PointsArray(M->Draw, M->FrameArena, PointPositions, NodeCount, 5.0, COLOUR_BACKGROUND);
-				D_PointsArray(M->Draw, M->FrameArena, PointPositions, NodeCount, 10.0, v4f(0.5, 0.1, 0, 0.1));
 				R_PopTransform(M->Render);
 				v3f Points = v3f(800, 800, 0);
 

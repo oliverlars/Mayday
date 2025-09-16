@@ -152,7 +152,7 @@ d_atlas_glyph *D_GlyphFromCodePoint(draw_context *D, d_font Font, u32 CodePoint)
 		PushGlyphOntoLRU(D, NextGlyph);
 
 		NextGlyph->CurveStart = D->CurveCount;
-		CurvesFromCodePoint(D, D->Arena, NextGlyph, CodePoint, Font, &Glyph->CurveCount, &Glyph->Curves);
+		CurvesFromCodePoint(D, D->Arena, NextGlyph, CodePoint, Font, &NextGlyph->CurveCount, &NextGlyph->Curves);
 		ResultGlyph = NextGlyph;
 	}
 	else if(Glyph->Hash == 0)
@@ -204,7 +204,7 @@ d_atlas_glyph *D_GlyphFromCodePoint2(draw_context *D, u64 FontHash, d_font Font,
 		PushGlyphOntoLRU(D, NextGlyph);
 
 		NextGlyph->CurveStart = D->CurveCount;
-		CurvesFromCodePoint(D, D->Arena, NextGlyph,CodePoint, Font, &Glyph->CurveCount, &Glyph->Curves);
+		CurvesFromCodePoint(D, D->Arena, NextGlyph,CodePoint, Font, &NextGlyph->CurveCount, &NextGlyph->Curves);
 		ResultGlyph = NextGlyph;
 	}
 	else if(Glyph->Hash == 0)
@@ -281,9 +281,7 @@ f32 D_Str8HeightFromWidth(d_font Font, str8 String, f32 WidthInPixels)
 		int GlyphIndex = stbtt_FindGlyphIndex(&Font.Info, CodePoint);
 		int Advance, LSB;
 		stbtt_GetGlyphHMetrics(&Font.Info, GlyphIndex, &Advance, &LSB);
-
-		int NextGlyphIndex = stbtt_FindGlyphIndex(&Font.Info, NextCodePoint);
-		int Kern = stbtt_GetGlyphKernAdvance(&Font.Info, GlyphIndex, NextGlyphIndex);
+		int Kern = stbtt_GetCodepointKernAdvance(&Font.Info, CodePoint, NextCodePoint);
 		Width += Kern * Scale;
 		Width += Advance * Scale;
 	}
@@ -371,9 +369,7 @@ void D_BaseStr8(
 			int GlyphIndex = stbtt_FindGlyphIndex(&Options.Font.Info, CodePoint);
 			int Advance, LSB;
 			stbtt_GetGlyphHMetrics(&Options.Font.Info, GlyphIndex, &Advance, &LSB);
-
-			int NextGlyphIndex = stbtt_FindGlyphIndex(&Options.Font.Info, NextCodePoint);
-			int Kern = stbtt_GetGlyphKernAdvance(&Options.Font.Info, GlyphIndex, NextGlyphIndex);
+			int Kern = stbtt_GetCodepointKernAdvance(&Options.Font.Info, CodePoint, NextCodePoint);
 			Width += Kern * Scale;
 			Width += Advance * Scale;
 		}
@@ -417,23 +413,16 @@ void D_BaseStr8(
 		}
 
 		f32 LineHeight = (Options.Font.Ascent - Options.Font.Descent + Options.Font.LineGap)*Scale;
-
 		d_atlas_glyph *Glyph  = D_GlyphFromCodePoint2(D, Hash, Options.Font, CodePoint);
 		int Kern = stbtt_GetCodepointKernAdvance(&Options.Font.Info, CodePoint, NextCodePoint);
 		f32 AdvanceX = (Kern + Glyph->AdvanceX) * Scale * TabMultiplier;
-
-		if(CodePoint == ' ')
-		{
-			v3f P = v3f(Options.Position.X + 5.0, Options.Position.Y + LineHeight/2.0 - 10.0, 0.0);
-			D_PointsArray(D, Arena, &P, 1, 10, v4f(0.1, 0.02, 0.0, 0.25));
-		}
 
 		if(String.Bytes[I] == '\t')
 		{
 			v3f P[2];
 			P[0] = v3f(Options.Position.X, Options.Position.Y + LineHeight/2.0 - 10.0, 0.0);
 			P[1] = P[0];
-			P[1].X += (Kern + Glyph->AdvanceX) * Scale * TabMultiplier;
+			P[1].X += AdvanceX;
 			D_LinesArray(D, Arena, P, 2, 1.0, v4f(0.1, 0.02, 0.0, 0.25));
 		}
 

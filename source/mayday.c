@@ -430,7 +430,7 @@ void OS_Update(void *Data)
 				UI_PushStyle(M->UI, Style);
 				m44f T = R_CurrentTransform(M->Render);
 				m44f TextTransform = Mul(
-					M44FTranslate(v3f((sapp_heightf() - Width)/2.0, Offset - Height, 0)), 
+					M44FTranslate(v3f((sapp_heightf() - Width)/2.0, Offset - Height + 80, 0)), 
 					Mul(M44FromZAngle(-M_PI/2.0), M44FTranslate(v3f(0, 0, 0)))
 				);
 				R_PushTransform(M->Render, Mul(TextTransform, T));
@@ -447,12 +447,12 @@ void OS_Update(void *Data)
 				
 				UI_PopStyle(M->UI);
 				R_PopTransform(M->Render);
-				Offset -= 125.0f;
+				Offset -= 100.0f;
 			}
 
 			f32 HeaderHeight = 100;
-			D_Quad(M->Draw, M->FrameArena, v2f(650, 50), sapp_widthf() - 650 - 50, sapp_heightf() - 100, v4f(0.2, 0.1, 0.0, 1.0));
-			D_Quad(M->Draw, M->FrameArena, v2f(655, 55), sapp_widthf() - 650 - 50 - 10, sapp_heightf() - 100 - 10 - HeaderHeight, COLOUR_BACKGROUND);
+			D_Quad(M->Draw, M->FrameArena, v2f(580, 50), sapp_widthf() - 580 - 50, sapp_heightf() - 100, v4f(0.2, 0.1, 0.0, 1.0));
+			D_Quad(M->Draw, M->FrameArena, v2f(585, 55), sapp_widthf() - 580 - 50 - 10, sapp_heightf() - 100 - 10 - HeaderHeight, COLOUR_BACKGROUND);
 			D_Str8(
 				M->Draw, M->FrameArena,
 				Str8("WELCOME BACK, MR. WICK"),

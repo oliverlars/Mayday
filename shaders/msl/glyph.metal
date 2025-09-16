@@ -123,4 +123,5 @@ fragment float4 FragmentMain(vertex_output Input [[stage_in]],
 
 	float Alpha = AlphaSum / 9.0;
 	return float4(Input.Colour.rgb, Input.Colour.a * Alpha);
+	//return float4(mix(float3(0, 1, 1), float3(1, 1, 1), Alpha), 1.0);
 }

@@ -87,6 +87,8 @@ d_str8_options;
 
 f32 D_Str8HeightFromWidth(d_font Font, str8 String, f32 WidthInPixels);
 f32 D_Str8WidthFromHeight(d_font Font, str8 String, f32 HeightInPixels);
+f32 D_Str8VisualHeightFromWidth(d_font Font, str8 String, f32 VisualWidthInPixels);
+f32 D_Str8VisualWidthFromHeight(d_font Font, str8 String, f32 VisualHeightInPixels);
 v4f D_Str8BBoxFromHeight(d_font Font, v2f Position, str8 String, f32 HeightInPixels);
 
 

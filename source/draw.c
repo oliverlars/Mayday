@@ -6,7 +6,7 @@
 #include "draw.h"
 
 #include <assert.h>
-#include <math.h>
+#include <float.h>
 
 d_font D_LoadFontFromTTF(draw_context *D_Context, u8 *Data)
 {
@@ -309,6 +309,49 @@ f32 D_Str8WidthFromHeight(d_font Font, str8 String, f32 HeightInPixels)
 	return Width;
 }
 
+f32 D_Str8VisualHeightFromWidth(d_font Font, str8 String, f32 VisualWidthInPixels)
+{
+	f32 Height = VisualWidthInPixels;
+	f32 Width = D_Str8VisualWidthFromHeight(Font, String, Height);
+	f32 WidthHeightRatio = Height/Width;
+	return WidthHeightRatio*VisualWidthInPixels;
+}
+
+f32 D_Str8VisualWidthFromHeight(d_font Font, str8 String, f32 HeightInPixels)
+{
+	f32 Width = 0.0f;
+	f32 Scale = stbtt_ScaleForPixelHeight(&Font.Info, HeightInPixels);
+	f32 MaxX = -FLT_MAX;	
+	for(u32 I = 0; I < String.Size; I++)
+	{
+		int CodePoint = String.Bytes[I];
+		int NextCodePoint = String.Bytes[I+1];
+		int GlyphIndex = stbtt_FindGlyphIndex(&Font.Info, CodePoint);
+		v4i GlyphBBox;
+		stbtt_GetGlyphBox(
+			&Font.Info,
+			GlyphIndex,
+			&GlyphBBox.X,
+			&GlyphBBox.Y,
+			&GlyphBBox.Z,
+			&GlyphBBox.W
+		);
+
+		f32 DrawnWidth = (f32)(GlyphBBox.Z - GlyphBBox.X) * Scale;
+		f32 Right = Width + DrawnWidth;
+		MaxX = Max(Right, MaxX);
+
+		int Advance, LSB;
+		stbtt_GetGlyphHMetrics(&Font.Info, GlyphIndex, &Advance, &LSB);
+
+		int NextGlyphIndex = stbtt_FindGlyphIndex(&Font.Info, NextCodePoint);
+		int Kern = stbtt_GetGlyphKernAdvance(&Font.Info, GlyphIndex, NextGlyphIndex);
+		Width += Kern * Scale;
+		Width += Advance * Scale;
+	}
+	return MaxX;
+}
+
 v4f D_Str8BBoxFromHeight(d_font Font, v2f Position, str8 String, f32 HeightInPixels)
 {
 	f32 WidthInPixels = D_Str8WidthFromHeight(Font, String, HeightInPixels);
@@ -355,26 +398,11 @@ void D_BaseStr8(
 		}
 		OutlineData = ArenaPushArray(Scratch.Arena, v3f, OutlineCount);
 	}
-	assert(Options.WidthInPixels == 0.0 ^ Options.HeightInPixels == 0.0f);
+	assert((Options.WidthInPixels == 0.0) ^ (Options.HeightInPixels == 0.0f));
 
 	if(Options.WidthInPixels > 0.0)
 	{
-		int TestHeight = Options.WidthInPixels;
-		f32 Scale = stbtt_ScaleForPixelHeight(&Options.Font.Info, TestHeight);
-		f32 Width = 0.0f;
-		for(u32 I = 0; I < String.Size; I++)
-		{
-			int CodePoint = String.Bytes[I];
-			int NextCodePoint = String.Bytes[I+1];
-			int GlyphIndex = stbtt_FindGlyphIndex(&Options.Font.Info, CodePoint);
-			int Advance, LSB;
-			stbtt_GetGlyphHMetrics(&Options.Font.Info, GlyphIndex, &Advance, &LSB);
-			int Kern = stbtt_GetCodepointKernAdvance(&Options.Font.Info, CodePoint, NextCodePoint);
-			Width += Kern * Scale;
-			Width += Advance * Scale;
-		}
-		f32 WidthHeightRatio = TestHeight/Width;
-		Options.HeightInPixels = WidthHeightRatio*Options.WidthInPixels;
+		Options.HeightInPixels = D_Str8VisualHeightFromWidth(Options.Font, String, Options.WidthInPixels);
 	}
 
 	f32 Scale = stbtt_ScaleForPixelHeight(&Options.Font.Info, Options.HeightInPixels);
@@ -384,7 +412,7 @@ void D_BaseStr8(
 	{
 		// TODO(Oliver): Needs to actually iterate utf-8
 		u32 CodePoint = String.Bytes[I];
-		u32 NextCodePoint = String.Bytes[Min(String.Size, I + 1)];
+		u32 NextCodePoint = String.Bytes[Min(String.Size - 1, I + 1)];
 
 
 		if(CodePoint == '\r') continue;
@@ -428,7 +456,6 @@ void D_BaseStr8(
 
 		f32 GlyphWidth = ((f32)(Glyph->Box.Z - Glyph->Box.X)*Scale);
 		f32 GlyphHeight = ((f32)(Glyph->Box.W - Glyph->Box.Y)*Scale);
-
 		v2f Vertices[6] =
 		{
 			v2f(Options.Position.X, Options.Position.Y),
@@ -519,7 +546,6 @@ void D_BaseStr8(
 				OutlineData[OutlineOffset++] = Line[2];
 			}
 		}
-
 		Options.Position.X += AdvanceX;
 	}
 	

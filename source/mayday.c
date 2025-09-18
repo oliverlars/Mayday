@@ -428,33 +428,33 @@ void OS_Update(void *Data)
 				f32 H = D_Str8VisualHeightFromWidth(M->Rajdhani, Str8("Mayday!"), TextWidth);
 				TotalHeight += H;
 			}
+			m44f T = R_CurrentTransform(M->Render);
+			m44f TextTransform = Mul(
+				M44FTranslate(v3f((sapp_heightf() - TextWidth)/2.0, -TotalHeight + 80, 0)), 
+				Mul(M44FromZAngle(-M_PI/2.0), M44FTranslate(v3f(0, 0, 0)))
+			);
+			R_PushTransform(M->Render, Mul(TextTransform, T));
 			for(int I = 0; I < 3; I++)
 			{
 				f32 Height = D_Str8VisualHeightFromWidth(M->Rajdhani, Str8("Mayday!"), TextWidth);
 
 				ui_style Style = UI_GetStyle(M->UI);
 				UI_PushStyle(M->UI, Style);
-				m44f T = R_CurrentTransform(M->Render);
-				m44f TextTransform = Mul(
-					M44FTranslate(v3f((sapp_heightf() - TextWidth)/2.0, Offset - Height + 80, 0)), 
-					Mul(M44FromZAngle(-M_PI/2.0), M44FTranslate(v3f(0, 0, 0)))
-				);
-				R_PushTransform(M->Render, Mul(TextTransform, T));
 				
 				if(I < 2)
 				{
-					D_Str8(M->Draw, M->FrameArena, Str8("MAYDAY!"), .Font = M->Rajdhani,.Position = v3f(0, 0, 0), .Colour = v4f(0.2, 0.1, 0.0, 1.0), .WidthInPixels = Width, .OutlineThickness = 5.0);
+					D_Str8(M->Draw, M->FrameArena, Str8("MAYDAY!"), .Font = M->Rajdhani,.Position = v3f(0, 0, 0), .Colour = v4f(0.2, 0.1, 0.0, 1.0), .WidthInPixels = TextWidth, .OutlineThickness = 5.0);
 					D_Quad(M->Draw, M->FrameArena, v2f(-10, -100.0f), sapp_heightf(), Height/2.0, COLOUR_BACKGROUND); 
 				}
 				else
 				{
-					D_Str8(M->Draw, M->FrameArena, Str8("MAYDAY!"), .Font = M->Rajdhani, .Position = v3f(0, 0, 0), .Colour = v4f(0.2, 0.1, 0.0, 1.0), .WidthInPixels = Width);
+					D_Str8(M->Draw, M->FrameArena, Str8("MAYDAY!"), .Font = M->Rajdhani, .Position = v3f(0, 0, 0), .Colour = v4f(0.2, 0.1, 0.0, 1.0), .WidthInPixels = TextWidth);
 				} 
 				
 				UI_PopStyle(M->UI);
-				R_PopTransform(M->Render);
 				Offset -= 100.0f;
 			}
+			R_PopTransform(M->Render);
 
 			f32 HeaderHeight = 100;
 			D_Quad(M->Draw, M->FrameArena, v2f(580, 50), sapp_widthf() - 580 - 50, sapp_heightf() - 100, v4f(0.2, 0.1, 0.0, 1.0));

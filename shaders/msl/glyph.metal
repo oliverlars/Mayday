@@ -116,7 +116,7 @@ fragment float4 FragmentMain(vertex_output Input [[stage_in]],
 				if (OnSeg1) Coverage += clamp(0.5 + Intersect1 * InversePixelWidth, 0.0, 1.0) * Sign;
 			}
 
-			AlphaSum += clamp(Coverage, 0.0, 1.0);
+			AlphaSum += Coverage;
 		}
 
 	}

@@ -421,16 +421,22 @@ void OS_Update(void *Data)
 
 			// Vertical text
 			f32 Offset = 200.0f;
+			f32 TextWidth = sapp_heightf() - 100;
+			f32 TotalHeight = 0.0;
 			for(int I = 0; I < 3; I++)
 			{
-				f32 Width = sapp_heightf() - 100;
-				f32 Height = D_Str8VisualHeightFromWidth(M->Rajdhani, Str8("Mayday!"), Width);
+				f32 H = D_Str8VisualHeightFromWidth(M->Rajdhani, Str8("Mayday!"), TextWidth);
+				TotalHeight += H;
+			}
+			for(int I = 0; I < 3; I++)
+			{
+				f32 Height = D_Str8VisualHeightFromWidth(M->Rajdhani, Str8("Mayday!"), TextWidth);
 
 				ui_style Style = UI_GetStyle(M->UI);
 				UI_PushStyle(M->UI, Style);
 				m44f T = R_CurrentTransform(M->Render);
 				m44f TextTransform = Mul(
-					M44FTranslate(v3f((sapp_heightf() - Width)/2.0, Offset - Height + 80, 0)), 
+					M44FTranslate(v3f((sapp_heightf() - TextWidth)/2.0, Offset - Height + 80, 0)), 
 					Mul(M44FromZAngle(-M_PI/2.0), M44FTranslate(v3f(0, 0, 0)))
 				);
 				R_PushTransform(M->Render, Mul(TextTransform, T));
@@ -456,7 +462,7 @@ void OS_Update(void *Data)
 			D_Str8(
 				M->Draw, M->FrameArena,
 				Str8("WELCOME BACK, MR. WICK"),
-				.Position = v3f(680, 50 + sapp_heightf() - 80 - 100 - 80.0/2.0 + HeaderHeight/2.0, 0),
+				.Position = v3f(580 + 20, sapp_heightf() - 55 - 100 + HeaderHeight/2.0 - 20.0, 0),
 				.Font = M->Rajdhani,
 				.Colour = COLOUR_BACKGROUND,
 				.HeightInPixels = 80

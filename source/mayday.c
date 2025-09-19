@@ -393,66 +393,35 @@ void OS_Update(void *Data)
 		ui_tree_view_signal TreeSignal = {0};
 		if(!OS_ValidPath(M->Folder))
 		{
-			f32 CentreX = sapp_widthf()/2.0 - UI_GetTextWidth(M->CodeFont, M->Draw, Str8("MAYDAY!"), 600)/2.0;
-			f32 LogoHeight = 100.0;
-			int Count = 0;
-			int Middle = sapp_heightf()/(LogoHeight*0.8)/2;
-			for(f32 Y = sapp_heightf(); Y >= 0; Y -= LogoHeight*0.8)
-			{
-				break;
-				if(Count == Middle)
-				{
-					D_Str8(M->Draw, M->FrameArena, Str8("MAYDAY!"),
-					   .Font = M->RegularFont,
-					   .Position = v3f(sapp_widthf()/2.0 + 200.0, Y),
-					   .Colour = v4f(1.0, 0.0, 0.0, 0.1), .HeightInPixels = LogoHeight, .OutlineThickness = 1.0);
-				}
-				else
-				{
-
-					D_Str8(M->Draw, M->FrameArena, Str8("MAYDAY!"),
-					   .Font = M->OutlineFont,
-					   .Position = v3f(sapp_widthf()/2.0 + 200.0, Y),
-					   .Colour = v4f(1.0, 0.0, 0.0, 0.1), .HeightInPixels = LogoHeight, .OutlineThickness = 1.0);
-				}
-				Count += 1;
-			}
-
-
 			// Vertical text
-			f32 Offset = 200.0f;
-			f32 TextWidth = sapp_heightf() - 100;
-			f32 TotalHeight = 0.0;
-			for(int I = 0; I < 3; I++)
-			{
-				f32 H = D_Str8VisualHeightFromWidth(M->Rajdhani, Str8("Mayday!"), TextWidth);
-				TotalHeight += H;
-			}
+			f32 TextWidth = sapp_heightf() - 100.0f;
+			f32 Height = D_Str8VisualHeightFromWidth(M->Rajdhani, Str8("Mayday!"), TextWidth);
+			f32 Offset = 2.0*Height;
 			m44f T = R_CurrentTransform(M->Render);
 			m44f TextTransform = Mul(
-				M44FTranslate(v3f((sapp_heightf() - TextWidth)/2.0, -TotalHeight + 80, 0)), 
+				M44FTranslate(v3f((sapp_heightf() - TextWidth)/2.0, -2.0f*Height, 0)), 
 				Mul(M44FromZAngle(-M_PI/2.0), M44FTranslate(v3f(0, 0, 0)))
 			);
+			TextTransform = M44F_IDENTITY;
 			R_PushTransform(M->Render, Mul(TextTransform, T));
 			for(int I = 0; I < 3; I++)
 			{
-				f32 Height = D_Str8VisualHeightFromWidth(M->Rajdhani, Str8("Mayday!"), TextWidth);
-
 				ui_style Style = UI_GetStyle(M->UI);
 				UI_PushStyle(M->UI, Style);
 				
 				if(I < 2)
 				{
-					D_Str8(M->Draw, M->FrameArena, Str8("MAYDAY!"), .Font = M->Rajdhani,.Position = v3f(0, 0, 0), .Colour = v4f(0.2, 0.1, 0.0, 1.0), .WidthInPixels = TextWidth, .OutlineThickness = 5.0);
-					D_Quad(M->Draw, M->FrameArena, v2f(-10, -100.0f), sapp_heightf(), Height/2.0, COLOUR_BACKGROUND); 
+					D_Str8(M->Draw, M->FrameArena, Str8("MAYDAY!"), .Font = M->Rajdhani,.Position = v3f(0, Offset, 0), .Colour = v4f(0.2, 0.1, 0.0, 1.0), .WidthInPixels = TextWidth, .OutlineThickness = 5.0);
+					//D_Quad(M->Draw, M->FrameArena, v2f(-10, Offset - Height/2.0), sapp_heightf(), Height, COLOUR_BACKGROUND); 
+					D_Quad(M->Draw, M->FrameArena, v2f(0, Offset), sapp_heightf(), Height/2.0, v4f(0, 1, 0, 1));
 				}
 				else
 				{
-					D_Str8(M->Draw, M->FrameArena, Str8("MAYDAY!"), .Font = M->Rajdhani, .Position = v3f(0, 0, 0), .Colour = v4f(0.2, 0.1, 0.0, 1.0), .WidthInPixels = TextWidth);
+					D_Str8(M->Draw, M->FrameArena, Str8("MAYDAY!"), .Font = M->Rajdhani, .Position = v3f(0, Offset, 0), .Colour = v4f(0.2, 0.1, 0.0, 1.0), .WidthInPixels = TextWidth);
 				} 
 				
 				UI_PopStyle(M->UI);
-				Offset -= 100.0f;
+				Offset -= Height;
 			}
 			R_PopTransform(M->Render);
 

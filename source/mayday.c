@@ -118,7 +118,7 @@ mayday_context;
 
 #define COLOUR_BACKGROUND v4f(0.008, 0.00, 0, 1.0)
 
-#define RenderTest 0
+#define RenderTest 1
 
 #if RenderTest
 void OS_Update(void *Data)
@@ -151,11 +151,12 @@ void OS_Update_(void *Data)
 	//D_PointsArray(M->Draw, M->FrameArena, Line, 1, 50, v4f(1, 1, 1, 1));
 	R_PopTransform(M->Render);
 
-	f32 W = D_Str8VisualWidthFromHeight(M->Rajdhani, Str8("ABC DEF"), 100);
-	D_Quad(M->Draw, M->FrameArena, v2f(300, 200), W, 100, v4f(1, 0, 1, 1));
+	f32 W = D_Str8WidthFromHeight(M->Rajdhani, Str8("ABC pDEF"), 100);
+	v4f BBox = D_Str8BBoxFromHeight(M->Rajdhani, v2f(300, 200), Str8("ABC pDEF"), 100);
+	D_Quad(M->Draw, M->FrameArena, v2f(BBox.X, BBox.Y), BBox.Z - BBox.X, BBox.W - BBox.Y, v4f(1, 0, 1, 1));
 	D_Str8(
 		M->Draw, M->FrameArena, 
-		Str8("ABC DEF"), .Font = M->Rajdhani,
+		Str8("ABC pDEF"), .Font = M->Rajdhani,
 		.Position = v3f(300, 200, 0),
 		.Colour = v4f(0, 1, 0, 1),
 		.HeightInPixels = 100
@@ -395,7 +396,7 @@ void OS_Update(void *Data)
 		{
 			// Vertical text
 			f32 TextWidth = sapp_heightf() - 100.0f;
-			f32 Height = D_Str8VisualHeightFromWidth(M->Rajdhani, Str8("Mayday!"), TextWidth);
+			f32 Height = D_Str8HeightFromWidth(M->Rajdhani, Str8("Mayday!"), TextWidth);
 			f32 Offset = 2.0*Height;
 			m44f T = R_CurrentTransform(M->Render);
 			m44f TextTransform = Mul(

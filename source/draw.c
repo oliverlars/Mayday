@@ -354,14 +354,47 @@ f32 D_Str8VisualWidthFromHeight(d_font Font, str8 String, f32 HeightInPixels)
 
 v4f D_Str8BBoxFromHeight(d_font Font, v2f Position, str8 String, f32 HeightInPixels)
 {
-	f32 WidthInPixels = D_Str8WidthFromHeight(Font, String, HeightInPixels);
+	f32 Scale = stbtt_ScaleForPixelHeight(&Font.Info, HeightInPixels);
+	v4f Result = {0};
+	Result.X = Position.X;
+	Result.Y = Position.Y;	
+	Result.Z = -FLT_MAX;
+	Result.W = -FLT_MAX;
+	f32 WidthSoFar = 0.0;
+	for(int I = 0; I < String.Size; I++)
+	{
+		int CodePoint = String.Bytes[I];
+		int NextCodePoint = String.Bytes[I+1];
+		int GlyphIndex = stbtt_FindGlyphIndex(&Font.Info, CodePoint);
+		v4i GlyphBBox;
+		stbtt_GetGlyphBox(
+			&Font.Info,
+			GlyphIndex,
+			&GlyphBBox.X, // X0
+			&GlyphBBox.Y, // Y0
+			&GlyphBBox.Z, // X1
+			&GlyphBBox.W  // Y1
+		);
 
-	return v4f(
-		Position.X,
-		Position.Y,
-		Position.X + WidthInPixels,
-		Position.Y + HeightInPixels
-	);
+		f32 DrawnWidth = (f32)(GlyphBBox.Z - GlyphBBox.X) * Scale;
+		f32 Right = WidthSoFar + DrawnWidth;
+		Result.Z = Max(Position.X + Right, Result.Z);
+		Result.X = Min(Position.X - GlyphBBox.X*Scale, Result.X);
+
+		Result.W = Max(Position.Y + GlyphBBox.W*Scale, Result.W);
+		
+		Result.Y = Min(Position.Y + GlyphBBox.Y*Scale, Result.Y);
+		
+		int Advance, LSB;
+		stbtt_GetGlyphHMetrics(&Font.Info, GlyphIndex, &Advance, &LSB);
+
+		int NextGlyphIndex = stbtt_FindGlyphIndex(&Font.Info, NextCodePoint);
+		int Kern = stbtt_GetGlyphKernAdvance(&Font.Info, GlyphIndex, NextGlyphIndex);
+		WidthSoFar += Kern * Scale;
+		WidthSoFar += Advance * Scale;
+	}
+	assert(Result.Z > Result.X);
+	return Result;
 }
 
 void D_BaseStr8(
@@ -402,7 +435,7 @@ void D_BaseStr8(
 
 	if(Options.WidthInPixels > 0.0)
 	{
-		Options.HeightInPixels = D_Str8VisualHeightFromWidth(Options.Font, String, Options.WidthInPixels);
+		Options.HeightInPixels = D_Str8HeightFromWidth(Options.Font, String, Options.WidthInPixels);
 	}
 
 	f32 Scale = stbtt_ScaleForPixelHeight(&Options.Font.Info, Options.HeightInPixels);

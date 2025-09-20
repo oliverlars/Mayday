@@ -118,7 +118,7 @@ mayday_context;
 
 #define COLOUR_BACKGROUND v4f(0.008, 0.00, 0, 1.0)
 
-#define RenderTest 1
+#define RenderTest 0
 
 #if RenderTest
 void OS_Update(void *Data)
@@ -396,25 +396,38 @@ void OS_Update(void *Data)
 		{
 			// Vertical text
 			f32 TextWidth = sapp_heightf() - 100.0f;
-			f32 Height = D_Str8HeightFromWidth(M->Rajdhani, Str8("Mayday!"), TextWidth);
-			f32 Offset = 2.0*Height;
+			f32 TextHeight = D_Str8VisualHeightFromWidth(M->Rajdhani, Str8("Mayday!"), TextWidth);
+			v4f BBox = D_Str8BBoxFromHeight(M->Rajdhani, v2f(0, 0), Str8("Mayday!"), TextHeight);
+			f32 Height = BBox.W - BBox.Y + 10.0;
+			f32 TotalHeight = (Height + Height/3.0);
+			// HACK(Oliver): I account for the line thickness here, but that
+			// should be done in the height functions
+			f32 Offsets[3] = 
+			{
+				2.0*Height/3.0f - 5,
+				Height/3.0f - 5,
+				0.0f - 5,
+			};
+
 			m44f T = R_CurrentTransform(M->Render);
 			m44f TextTransform = Mul(
-				M44FTranslate(v3f((sapp_heightf() - TextWidth)/2.0, -2.0f*Height, 0)), 
+				M44FTranslate(v3f((sapp_heightf() - TextWidth)/2.0, -TotalHeight, 0)), 
 				Mul(M44FromZAngle(-M_PI/2.0), M44FTranslate(v3f(0, 0, 0)))
 			);
-			TextTransform = M44F_IDENTITY;
 			R_PushTransform(M->Render, Mul(TextTransform, T));
+
+
 			for(int I = 0; I < 3; I++)
 			{
+				f32 Offset = Offsets[I];
 				ui_style Style = UI_GetStyle(M->UI);
 				UI_PushStyle(M->UI, Style);
 				
 				if(I < 2)
 				{
 					D_Str8(M->Draw, M->FrameArena, Str8("MAYDAY!"), .Font = M->Rajdhani,.Position = v3f(0, Offset, 0), .Colour = v4f(0.2, 0.1, 0.0, 1.0), .WidthInPixels = TextWidth, .OutlineThickness = 5.0);
+					D_Quad(M->Draw, M->FrameArena, v2f(0, Offset - 10), sapp_heightf(), Height/3.0 + 10.0, COLOUR_BACKGROUND);
 					//D_Quad(M->Draw, M->FrameArena, v2f(-10, Offset - Height/2.0), sapp_heightf(), Height, COLOUR_BACKGROUND); 
-					D_Quad(M->Draw, M->FrameArena, v2f(0, Offset), sapp_heightf(), Height/2.0, v4f(0, 1, 0, 1));
 				}
 				else
 				{
@@ -422,13 +435,12 @@ void OS_Update(void *Data)
 				} 
 				
 				UI_PopStyle(M->UI);
-				Offset -= Height;
 			}
 			R_PopTransform(M->Render);
 
 			f32 HeaderHeight = 100;
-			D_Quad(M->Draw, M->FrameArena, v2f(580, 50), sapp_widthf() - 580 - 50, sapp_heightf() - 100, v4f(0.2, 0.1, 0.0, 1.0));
-			D_Quad(M->Draw, M->FrameArena, v2f(585, 55), sapp_widthf() - 580 - 50 - 10, sapp_heightf() - 100 - 10 - HeaderHeight, COLOUR_BACKGROUND);
+			D_Quad(M->Draw, M->FrameArena, v2f(TotalHeight, 50), sapp_widthf() - TotalHeight - 50, sapp_heightf() - 100, v4f(0.2, 0.1, 0.0, 1.0));
+			D_Quad(M->Draw, M->FrameArena, v2f(TotalHeight + 5, 55), sapp_widthf() - TotalHeight - 50 - 10, sapp_heightf() - 100 - 10 - HeaderHeight, COLOUR_BACKGROUND);
 			D_Str8(
 				M->Draw, M->FrameArena,
 				Str8("WELCOME BACK, MR. WICK"),

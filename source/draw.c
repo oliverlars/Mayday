@@ -433,7 +433,7 @@ void D_BaseStr8(
 
 	if(Options.WidthInPixels > 0.0)
 	{
-		Options.HeightInPixels = D_Str8HeightFromWidth(Options.Font, String, Options.WidthInPixels);
+		Options.HeightInPixels = D_Str8VisualHeightFromWidth(Options.Font, String, Options.WidthInPixels);
 	}
 
 	f32 Scale = stbtt_ScaleForPixelHeight(&Options.Font.Info, Options.HeightInPixels);

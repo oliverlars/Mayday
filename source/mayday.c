@@ -118,7 +118,7 @@ mayday_context;
 
 #define COLOUR_BACKGROUND v4f(0.008, 0.00, 0, 1.0)
 
-#define RenderTest 1
+#define RenderTest 0
 
 #if RenderTest
 void OS_Update(void *Data)
@@ -150,10 +150,9 @@ void OS_Update_(void *Data)
 	//D_LinesArray(M->Draw, M->FrameArena, Line, 2, 5.0, v4f(1, 1, 1, 1));
 	//D_PointsArray(M->Draw, M->FrameArena, Line, 1, 50, v4f(1, 1, 1, 1));
 	R_PopTransform(M->Render);
-
-	f32 W = D_Str8WidthFromHeight(M->Rajdhani, Str8("MAYDAY!"), 500);
+	f32 W = 800;
 	f32 H = D_Str8HeightFromWidth(M->Rajdhani, Str8("MAYDAY!"), W);
-	v4f BBox = D_Str8BBoxFromHeight(M->Rajdhani, v2f(50, 50), Str8("MAYDAY!"), 500);
+	v4f BBox = D_Str8BBoxFromHeight(M->Rajdhani, v2f(50, 50), Str8("MAYDAY!"), H);
 	D_Quad(M->Draw, M->FrameArena, v2f(50, 50), BBox.Z - BBox.X, BBox.W - BBox.Y, v4f(1, 0, 1, 1));
 	D_Str8(
 		M->Draw, M->FrameArena, 

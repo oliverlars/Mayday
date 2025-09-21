@@ -376,9 +376,7 @@ v4f D_Str8BBoxFromHeight(d_font Font, v2f Position, str8 String, f32 HeightInPix
 			&GlyphBBox.W  // Y1
 		);
 
-		f32 DrawnWidth = (f32)(GlyphBBox.Z - GlyphBBox.X) * Scale;
-		f32 Right = WidthSoFar + DrawnWidth;
-		Result.Z = Max(Position.X + Right, Result.Z);
+		Result.Z = Max(Position.X + WidthSoFar, Result.Z);
 		Result.X = Min(Position.X - GlyphBBox.X*Scale, Result.X);
 
 		Result.W = Max(Position.Y + GlyphBBox.W*Scale, Result.W);

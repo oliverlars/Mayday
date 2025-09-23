@@ -320,11 +320,11 @@ void OS_Update(void *Data)
 
 			static float Angle2 = 0.0f;
 			m44f P = Perspective(sapp_widthf()/sapp_heightf(), 35, 0.01, 10000.0);
-			m44f V =  M44FLookAt(v3f(0, 0, -150), v3f(0, 0, 0), v3f(0, 1, 0));
+			m44f V =  M44FLookAt(v3f(0, 0, -5), v3f(0, 0, 0), v3f(0, 1, 0));
 			m44f RotateAroundOrigin =
-				Mul(M44FTranslate(v3f(0, 0, 150)),
+				Mul(M44FTranslate(v3f(0, 0, 5)),
 				Mul(M44FromYAngle(Angle2),
-				M44FTranslate(v3f(0, 0, -150))));
+				M44FTranslate(v3f(0, 0, -5))));
 			V = Mul(V, RotateAroundOrigin);
 			m44f PV = Mul(V, P);
 			R_PushTransform(M->Render, PV);
@@ -483,8 +483,8 @@ void OS_Update(void *Data)
 					TargetPositions = ArenaPushArrayZero(M->PermanentArena, v4f, NodeCount);
 					Velocities = ArenaPushArrayZero(M->PermanentArena, v4f, NodeCount);
 
-					Froms = ArenaPushArrayZero(M->PermanentArena, int, 5);
-					Tos = ArenaPushArrayZero(M->PermanentArena, int, 5);
+					Froms = ArenaPushArrayZero(M->PermanentArena, int, NodeCount);
+					Tos = ArenaPushArrayZero(M->PermanentArena, int, NodeCount);
 
 					for(int I = 0; I < NodeCount-1; I++)
 					{
@@ -601,10 +601,17 @@ void OS_Update(void *Data)
 					);
 					v2f MP = v2f(M->UI->MousePosition.X, M->UI->MousePosition.Y);
 					v4f LabelColour = v4f(0.1, 0.05, 0, 1.0);
-					if(MP.X >= LabelBBox.X && MP.X < LabelBBox.Z &&
-					MP.Y >= LabelBBox.Y && MP.Y < LabelBBox.W)
+					if(
+						MP.X >= LabelBBox.X && MP.X < LabelBBox.Z &&
+						MP.Y >= LabelBBox.Y && MP.Y < LabelBBox.W)
 					{
 						LabelColour = v4f(0.5, 0.1, 0, 1);
+						if(UI_LeftMouseWentDown(M->UI))
+						{
+							M->Folder = Str8Copy(M->PermanentArena, FileNode->String);
+							M->LookFrom.Z = 500;
+							M->LookAt = v3f(0, 0, 0);
+						}
 					}
 					D_Str8(M->Draw, M->FrameArena, FileNode->String,
 					.Font = M->Orbitron,

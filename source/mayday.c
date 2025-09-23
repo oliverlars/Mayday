@@ -445,7 +445,7 @@ void OS_Update(void *Data)
 			D_Str8(
 				M->Draw, M->FrameArena,
 				Str8("WELCOME BACK, MR. WICK"),
-				.Position = v3f(TotalHeight + 60, sapp_heightf() - 55 - 100 + HeaderHeight/2.0 - 20.0, 0),
+				.Position = v3f(TotalHeight + 40 + 60, sapp_heightf() - 55 - 100 + HeaderHeight/2.0 - 20.0, 0),
 				.Font = M->Rajdhani,
 				.Colour = COLOUR_BACKGROUND,
 				.HeightInPixels = 80
@@ -594,12 +594,25 @@ void OS_Update(void *Data)
 					TransformedPoint.Y *= sapp_heightf();
 
 					R_PushTransform(M->Render, Orthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));					
+					v4f LabelBBox = D_Str8BBoxFromHeight(
+						M->Orbitron, v2f(TransformedPoint.X + 5, TransformedPoint.Y + 5),
+						FileNode->String, 
+						50.0
+					);
+					v2f MP = v2f(M->UI->MousePosition.X, M->UI->MousePosition.Y);
+					v4f LabelColour = v4f(0.1, 0.05, 0, 1.0);
+					if(MP.X >= LabelBBox.X && MP.X < LabelBBox.Z &&
+					MP.Y >= LabelBBox.Y && MP.Y < LabelBBox.W)
+					{
+						LabelColour = v4f(0.5, 0.1, 0, 1);
+					}
 					D_Str8(M->Draw, M->FrameArena, FileNode->String,
 					.Font = M->Orbitron,
 					.HeightInPixels = 50.0f,
-					.Colour = v4f(0.1, 0.05, 0, 1.0),
+					.Colour = LabelColour,
 					.Position = v3f(TransformedPoint.X + 5, TransformedPoint.Y + 5, 0.0));
 					R_PopTransform(M->Render);
+					
 					FileNode = FileNode->Next;
 				}
 

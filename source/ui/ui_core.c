@@ -400,12 +400,12 @@ ui_signal UI_TextButton(ui_context *UI, draw_context *Draw, m_arena *Arena,
 		Result.Hover = True;
 
 		Widget->HotAnimation = Lerp(Widget->HotAnimation, 1.0, 0.1);
-		D_Str8(Draw, Arena, DisplayString, .Font = Style.Font, .Position = V3FromV2(Position), .Colour = v4f(1, 1, 1, 1), .HeightInPixels = HeightInPixels);
+		D_Str8(Draw, Arena, DisplayString, .Font = Style.Font, .Position = V3FromV2(Position), .Colour = v4f(0.5, 0.1, 0, 1), .HeightInPixels = HeightInPixels);
 	}
 	else
 	{
 		//D_Quad(Draw, Arena, BoxPosition, Width, Height, v4f(0, 0, 0, 1));
-		D_Str8(Draw, Arena, DisplayString, .Font = Style.Font, .Position = V3FromV2(Position), .Colour = v4f(1, 1, 1, 1), .HeightInPixels = HeightInPixels);
+		D_Str8(Draw, Arena, DisplayString, .Font = Style.Font, .Position = V3FromV2(Position), .Colour = v4f(0.1, 0.05, 0, 1.0), .HeightInPixels = HeightInPixels);
 		Widget->HotAnimation = Lerp(Widget->HotAnimation, 0.0, 0.1);
 	}
 

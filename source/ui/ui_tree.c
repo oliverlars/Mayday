@@ -161,9 +161,9 @@ void UI_TreeView(ui_context *UI, draw_context *Draw, shared_wave_info *Shared,
 	}
 
 
-	D_PointsArrayWithColours(Draw, Arena, Positions, TreeView->Info.NodeCount, 5.0, Colours);
-	D_LinesArray(Draw, Arena, LinePositions, TreeView->Info.LinkCount*2, 1.0, v4f(0.5, 0.1, 0, 0.1));
-
+	D_LinesArray(Draw, Arena, LinePositions, TreeView->Info.LinkCount*2, 5.0, v4f(0.5, 0.1, 0, 0.1));
+	D_PointsArray(Draw, Arena, Positions, TreeView->Info.NodeCount, 5.0, v4f(0.1, 0.05, 0, 1.0));
+	D_PointsArray(Draw, Arena, Positions, TreeView->Info.NodeCount, 10.0, v4f(0.008, 0.00, 0, 1.0));
 	bounds TotalBounds = GetBoundsV4F(TreeView->Info.NodeTargetPositions, TreeView->Info.NodeCount);
 	v3f Centre = DivV3F(AddV3F(TotalBounds.Min, TotalBounds.Max), v3f(2.0, 2.0, 2.0));
 
@@ -199,7 +199,7 @@ ui_tree_view_signal UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw, 
 	for(os_directory_tree_iterator It = {0};
 		OS_DirectoryTreeIterateWithStack(Scratch.Arena, TreeView->Info.Tree, &It);)
 	{
-		f32 FontSize = 30;
+		f32 FontSize = 50;
 		v4f P = TreeView->Info.NodePositions[It.Index];
 
 		v4f NodePosition4D = v4f(P.X, P.Y, P.Z, 1.0);
@@ -212,11 +212,11 @@ ui_tree_view_signal UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw, 
 		TransformedPoint.X *= sapp_widthf();
 		TransformedPoint.Y *= sapp_heightf();
 
-		v4f Colour = v4f(0.8, 0.3, 0.0, 0.2);
+		v4f Colour = v4f(0.1, 0.05, 0, 1.0);
 		if(It.Index == ActiveNodeIndex)
 		{
 			Colour = v4f(0.8, 0.6, 0.4, 1.0);
-			FontSize = 40;
+			FontSize = 60;
 		}
 		
 		{

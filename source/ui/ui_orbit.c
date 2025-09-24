@@ -213,7 +213,7 @@ ui_orbit_signal UI_OrbitLabels(ui_context *UI, draw_context *Draw, edit_context 
 
 		v4f Colour = v4f(0.8, 0.3, 0.0, 1);
 		v3f C = LerpV3F(v3f(0, 0, 0), v3f(0.5, 0.2, 0.0), NormalizedDistance*NormalizedDistance);
-		Colour = v4f(C.X, C.Y, C.Z, 1.0);
+		Colour = v4f(0.1, 0.05, 0, 1.0);
 
 		f32 FontSize = Lerp(10.0f, 30.0f, NormalizedDistance*NormalizedDistance);
 

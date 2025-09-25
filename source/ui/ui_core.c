@@ -466,7 +466,7 @@ ui_signal UI_TextHighlightButton(
 		//D_Quad(Draw, Arena, BoxPosition, Width, Height, v4f(0, 0, 0, 1));
 		D_Str8(Draw, Arena, DisplayString, 
 		.Font = Style.Font, .Position = V3FromV2(Position), 
-		.Colour = v4f(0.1, 0.05, 0, 1.0), .HighlightColour = HighlightColour, 
+		.Colour = v4f(0.1, 0.05, 0, 1.0), .HighlightColour = v4f(0.5, 0.1, 0, 1), 
 		.HighlightIndices = HighlightIndices,
 		.HeightInPixels = HeightInPixels);
 		Widget->HotAnimation = Lerp(Widget->HotAnimation, 0.0, 0.1);

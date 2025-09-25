@@ -693,18 +693,7 @@ ui_textbox_signal UI_TextBox(m_arena *Arena,
 	v2f BoxPosition = Position;
 	BoxPosition.Y += UI->Font.Descent * Scale;
 
-	{
-		v2f LargerBoxPosition = BoxPosition;
-		v2f LargerBoxSize = v2f(Width, Height - UI->Font.Descent * Scale);
-		LargerBoxSize.X += 20;
-		LargerBoxSize.Y += 20;
-		LargerBoxPosition.X -= 10;
-		LargerBoxPosition.Y -= 10;
-		UI_DrawBoxOutline(UI, Draw, Arena, LargerBoxPosition, LargerBoxSize, v4f(0.2, 0.02, 0.0, 1.0));
-		LargerBoxPosition.X -= 10;
-		LargerBoxPosition.Y += 10;
-		UI_DrawBoxOutline(UI, Draw, Arena, LargerBoxPosition, LargerBoxSize, v4f(0.2, 0.02, 0.0, 1.0));
-	}
+	D_Quad(Draw, Arena, BoxPosition, Width, Height, v4f(0.8, 0.3, 0, 1.0));
 
 	v2f StringPosition = Position;
 	StringPosition.X -= CursorXOffset;
@@ -713,8 +702,9 @@ ui_textbox_signal UI_TextBox(m_arena *Arena,
 	D_Str8(Draw,
 			   Arena, Buffer->String,
 			   .Font =Font,
-			   .Position = V3FromV2(StringPosition), .Colour = v4f(0.8, 0.3, 0, 1),
-			   .HeightInPixels = Height);
+			   .Position = V3FromV2(StringPosition), .Colour = v4f(0.008, 0.00, 0, 1.0),
+			   .HeightInPixels = 100.0,
+			   .OutlineThickness = 10.0);
 	R_PopScissor(Draw->Render);
 
 	//LogInfo("Cursor pos: ?u32", Edit->Cursors[0].Selection.X);

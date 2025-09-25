@@ -1335,7 +1335,7 @@ void R_Update(render_context *R, m_arena *FrameArena)
 					.NumberOfTilesInX = ThreadGroupSize.width,
 					.NumberOfTilesInY = ThreadGroupSize.height,
 					.Scissor = {
-							Command->Scissor.X, sapp_heightf() - Command->Scissor.Y,
+							Command->Scissor.X, Command->Scissor.Y,
 							Command->Scissor.Z, Command->Scissor.W
 						}
 				};

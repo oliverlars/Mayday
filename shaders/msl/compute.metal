@@ -128,21 +128,22 @@ kernel void ComputeMain(metal::texture2d<float, metal::access::read_write> Textu
 	int Count = DataView[TileIndex].Count;
 
 
-	metal::float3 ColourSoFar = Texture.read(ThreadPositionInGrid).rgb;
+	metal::float4 Source = Texture.read(ThreadPositionInGrid);
+	metal::float3 ColourSoFar = Source.rgb;
 	float AlphaSoFar = 0.0;
 
-
+	float4 Scissor = Uniforms.Scissor;
 	// HACK(Oliver): I just made this kind of work but too tired to fix it now
-	if(ThreadPositionInGrid.x < Uniforms.Scissor.x ||
-	   ThreadPositionInGrid.x > Uniforms.Scissor.x + Uniforms.Scissor.z ||
-	   ThreadPositionInGrid.y > Uniforms.Scissor.y ||
-	   ThreadPositionInGrid.y < Uniforms.Scissor.y - Uniforms.Scissor.w)
+	if(metal::any(float2(ThreadPositionInGrid.xy) < Scissor.xy))
 	{
-		//FIXME(Oliver): No clue why this isn't working now
-
-		//return;
+		return;
 	}
-	
+
+	if(metal::any(float2(ThreadPositionInGrid.xy) > Scissor.zw))
+	{
+		return;
+	}
+
 	for(int I = 0; I < Count; I++)
 	{
 		int DataIndex = DataView[TileIndex].At + I;

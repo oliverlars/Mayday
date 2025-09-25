@@ -309,6 +309,63 @@ void OS_Update(void *Data)
 		D_Quad(M->Draw, M->FrameArena, v2f(0, 0),  WindowWidth, WindowHeight, v4f(0.008, 0.00, 0, 1.0));
 		//D_Grid2D(M->Draw, M->FrameArena, M->Buffer.HeightInPixels, M->Buffer.HeightInPixels*5);
 		
+		// Vertical text
+		f32 TextWidth = sapp_heightf() - 100.0f;
+		f32 TextHeight = D_Str8VisualHeightFromWidth(M->Rajdhani, Str8("Mayday!"), TextWidth);
+		v4f BBox = D_Str8BBoxFromHeight(M->Rajdhani, v2f(0, 0), Str8("Mayday!"), TextHeight);
+		f32 Height = BBox.W - BBox.Y + 10.0;
+		f32 TotalHeight = (Height + Height/3.0);
+		// HACK(Oliver): I account for the line thickness here, but that
+		// should be done in the height functions
+		f32 Offsets[3] = 
+		{
+			2.0*Height/3.0f - 40,
+			Height/3.0f - 40,
+			-40,
+		};
+
+		m44f T = R_CurrentTransform(M->Render);
+		m44f TextTransform = Mul(
+			M44FTranslate(v3f((sapp_heightf() - TextWidth)/2.0, -TotalHeight, 0)), 
+			Mul(M44FromZAngle(-M_PI/2.0), M44FTranslate(v3f(0, 0, 0)))
+		);
+		R_PushTransform(M->Render, Mul(TextTransform, T));
+
+		R_PushScissor(M->Render, v4i(0, 0, sapp_widthf(), sapp_heightf()/2.0));
+		for(int I = 0; I < 3; I++)
+		{
+			f32 Offset = Offsets[I];
+			ui_style Style = UI_GetStyle(M->UI);
+			UI_PushStyle(M->UI, Style);
+			
+			if(I < 2)
+			{
+				D_Str8(M->Draw, M->FrameArena, Str8("MAYDAY!"), .Font = M->Rajdhani,.Position = v3f(0, Offset, 0), .Colour = v4f(0.2, 0.1, 0.0, 1.0), .WidthInPixels = TextWidth, .OutlineThickness = 5.0);
+				// HACK(Oliver): Not sure why this needs to be offset by -10 in the X axis
+				D_Quad(M->Draw, M->FrameArena, v2f(-10, Offset - 10), sapp_heightf(), Height/3.0 + 40.0, COLOUR_BACKGROUND);
+				//D_Quad(M->Draw, M->FrameArena, v2f(-10, Offset - Height/2.0), sapp_heightf(), Height, COLOUR_BACKGROUND); 
+			}
+			else
+			{
+				D_Str8(M->Draw, M->FrameArena, Str8("MAYDAY!"), .Font = M->Rajdhani, .Position = v3f(0, Offset, 0), .Colour = v4f(0.2, 0.1, 0.0, 1.0), .WidthInPixels = TextWidth);
+			} 
+			
+			UI_PopStyle(M->UI);
+		}
+		R_PopTransform(M->Render);
+
+		f32 HeaderHeight = 100;
+		D_Quad(M->Draw, M->FrameArena, v2f(TotalHeight + 50, 50), sapp_widthf() - TotalHeight - 10 - 50, sapp_heightf() - 100, v4f(0.2, 0.1, 0.0, 1.0));
+		D_Quad(M->Draw, M->FrameArena, v2f(TotalHeight + 50 + 5, 55), sapp_widthf() - TotalHeight - 10 - 50 - 10, sapp_heightf() - 100 - 10 - HeaderHeight, COLOUR_BACKGROUND);
+		D_Str8(
+			M->Draw, M->FrameArena,
+			Str8("WELCOME BACK, MR. WICK"),
+			.Position = v3f(TotalHeight + 40 + 60, sapp_heightf() - 55 - 100 + HeaderHeight/2.0 - 20.0, 0),
+			.Font = M->Rajdhani,
+			.Colour = COLOUR_BACKGROUND,
+			.HeightInPixels = 80
+		);
+
 
 		ui_orbit Orbit = {0};
 		f32 MinDepth = 0.0f;
@@ -394,63 +451,6 @@ void OS_Update(void *Data)
 		ui_tree_view_signal TreeSignal = {0};
 		if(!OS_ValidPath(M->Folder))
 		{
-			// Vertical text
-			f32 TextWidth = sapp_heightf() - 100.0f;
-			f32 TextHeight = D_Str8VisualHeightFromWidth(M->Rajdhani, Str8("Mayday!"), TextWidth);
-			v4f BBox = D_Str8BBoxFromHeight(M->Rajdhani, v2f(0, 0), Str8("Mayday!"), TextHeight);
-			f32 Height = BBox.W - BBox.Y + 10.0;
-			f32 TotalHeight = (Height + Height/3.0);
-			// HACK(Oliver): I account for the line thickness here, but that
-			// should be done in the height functions
-			f32 Offsets[3] = 
-			{
-				2.0*Height/3.0f - 40,
-				Height/3.0f - 40,
-				-40,
-			};
-
-			m44f T = R_CurrentTransform(M->Render);
-			m44f TextTransform = Mul(
-				M44FTranslate(v3f((sapp_heightf() - TextWidth)/2.0, -TotalHeight, 0)), 
-				Mul(M44FromZAngle(-M_PI/2.0), M44FTranslate(v3f(0, 0, 0)))
-			);
-			R_PushTransform(M->Render, Mul(TextTransform, T));
-
-
-			for(int I = 0; I < 3; I++)
-			{
-				f32 Offset = Offsets[I];
-				ui_style Style = UI_GetStyle(M->UI);
-				UI_PushStyle(M->UI, Style);
-				
-				if(I < 2)
-				{
-					D_Str8(M->Draw, M->FrameArena, Str8("MAYDAY!"), .Font = M->Rajdhani,.Position = v3f(0, Offset, 0), .Colour = v4f(0.2, 0.1, 0.0, 1.0), .WidthInPixels = TextWidth, .OutlineThickness = 5.0);
-					// HACK(Oliver): Not sure why this needs to be offset by -10 in the X axis
-					D_Quad(M->Draw, M->FrameArena, v2f(-10, Offset - 10), sapp_heightf(), Height/3.0 + 40.0, COLOUR_BACKGROUND);
-					//D_Quad(M->Draw, M->FrameArena, v2f(-10, Offset - Height/2.0), sapp_heightf(), Height, COLOUR_BACKGROUND); 
-				}
-				else
-				{
-					D_Str8(M->Draw, M->FrameArena, Str8("MAYDAY!"), .Font = M->Rajdhani, .Position = v3f(0, Offset, 0), .Colour = v4f(0.2, 0.1, 0.0, 1.0), .WidthInPixels = TextWidth);
-				} 
-				
-				UI_PopStyle(M->UI);
-			}
-			R_PopTransform(M->Render);
-
-			f32 HeaderHeight = 100;
-			D_Quad(M->Draw, M->FrameArena, v2f(TotalHeight + 50, 50), sapp_widthf() - TotalHeight - 10 - 50, sapp_heightf() - 100, v4f(0.2, 0.1, 0.0, 1.0));
-			D_Quad(M->Draw, M->FrameArena, v2f(TotalHeight + 50 + 5, 55), sapp_widthf() - TotalHeight - 10 - 50 - 10, sapp_heightf() - 100 - 10 - HeaderHeight, COLOUR_BACKGROUND);
-			D_Str8(
-				M->Draw, M->FrameArena,
-				Str8("WELCOME BACK, MR. WICK"),
-				.Position = v3f(TotalHeight + 40 + 60, sapp_heightf() - 55 - 100 + HeaderHeight/2.0 - 20.0, 0),
-				.Font = M->Rajdhani,
-				.Colour = COLOUR_BACKGROUND,
-				.HeightInPixels = 80
-			);
-
 			// RECENTLY OPENED
 			{
 				static u64 TreeHash = 0;

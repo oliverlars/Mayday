@@ -133,13 +133,12 @@ kernel void ComputeMain(metal::texture2d<float, metal::access::read_write> Textu
 	float AlphaSoFar = 0.0;
 
 	float4 Scissor = Uniforms.Scissor;
-	// HACK(Oliver): I just made this kind of work but too tired to fix it now
 	if(metal::any(float2(ThreadPositionInGrid.xy) < Scissor.xy))
 	{
 		return;
 	}
 
-	if(metal::any(float2(ThreadPositionInGrid.xy) > Scissor.zw))
+	if(metal::any(float2(ThreadPositionInGrid.xy) > Scissor.xy + Scissor.zw))
 	{
 		return;
 	}

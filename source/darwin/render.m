@@ -624,7 +624,7 @@ void R_RenderPoints(render_context *R, id<MTLCommandBuffer> CommandBuffer, v4i S
 	
 	MTLScissorRect ScissorRect = {
 		.x = Scissor.X,
-		.y = Scissor.Y,
+		.y = sapp_heightf() - (Scissor.Y + Scissor.W),
 		.width = Scissor.Z,
 		.height = Scissor.W
 	};
@@ -659,7 +659,7 @@ void R_RenderLines(render_context *R, id<MTLCommandBuffer> CommandBuffer, v4i Sc
 
 	MTLScissorRect ScissorRect = {
 		.x = Scissor.X,
-		.y = Scissor.Y,
+		.y = sapp_heightf() - (Scissor.Y + Scissor.W),
 		.width = Scissor.Z,
 		.height = Scissor.W
 	};
@@ -734,7 +734,9 @@ void R_RenderTriangles(render_context *R, id<MTLCommandBuffer> CommandBuffer, v4
 
 	MTLScissorRect ScissorRect = {
 		.x = Scissor.X,
-		.y = Scissor.Y,
+		// HACK(Oliver): All fun and games until i set different renderable
+		// viewport dimensions!!!
+		.y = sapp_heightf() - (Scissor.Y + Scissor.W),
 		.width = Scissor.Z,
 		.height = Scissor.W
 	};
@@ -764,7 +766,7 @@ void R_RenderGlyphs(render_context *R, id<MTLCommandBuffer> CommandBuffer, v4i S
 
 	MTLScissorRect ScissorRect = {
 		.x = Scissor.X,
-		.y = Scissor.Y,
+		.y = sapp_heightf() - (Scissor.Y + Scissor.W),
 		.width = Scissor.Z,
 		.height = Scissor.W
 	};
@@ -1207,7 +1209,7 @@ void R_Update(render_context *R, m_arena *FrameArena)
 					.NumberOfTilesInX = ThreadGroupSize.width,
 					.NumberOfTilesInY = ThreadGroupSize.height,
 					.Scissor = {
-							Command->Scissor.X, Command->Scissor.Y,
+							Command->Scissor.X, sapp_heightf() - (Command->Scissor.Y + Command->Scissor.W),
 							Command->Scissor.Z, Command->Scissor.W
 						}
 				};
@@ -1335,8 +1337,8 @@ void R_Update(render_context *R, m_arena *FrameArena)
 					.NumberOfTilesInX = ThreadGroupSize.width,
 					.NumberOfTilesInY = ThreadGroupSize.height,
 					.Scissor = {
-							Command->Scissor.X, Command->Scissor.Y,
-							Command->Scissor.Z, Command->Scissor.W
+							Command->Scissor.X, sapp_heightf() - (Command->Scissor.Y + Command->Scissor.W),
+							 Command->Scissor.Z, Command->Scissor.W
 						}
 				};
 
@@ -1465,7 +1467,7 @@ void R_Update(render_context *R, m_arena *FrameArena)
 					.NumberOfTilesInX = ThreadGroupSize.width,
 					.NumberOfTilesInY = ThreadGroupSize.height,
 					.Scissor = {
-							Command->Scissor.X, sapp_heightf() - Command->Scissor.Y,
+							Command->Scissor.X, sapp_heightf() - (Command->Scissor.Y + Command->Scissor.W),
 							Command->Scissor.Z, Command->Scissor.W
 						}
 				};

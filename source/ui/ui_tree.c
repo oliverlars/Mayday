@@ -224,10 +224,11 @@ ui_tree_view_signal UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw, 
 			if(Filter.Size == 0 || Str8FuzzyMatch(FolderName, Filter))
 			{
 
-				ui_signal Button = UI_TextButton(UI, Draw,
+				ui_signal Button = UI_TextHighlightButton(UI, Draw,
 					Arena, Str8PushF(Arena, "?S##?u32", FolderName, It.Index),
 					FontSize,
-					v2f(TransformedPoint.X, TransformedPoint.Y), Colour);
+					v2f(TransformedPoint.X, TransformedPoint.Y), Colour, v4f(1, 1, 1, 1),
+					Str8FuzzyMatchIndices(Scratch.Arena, FolderName, Filter));
 				Result.Hovered |= Button.Hover;
 
 				if(Button.Clicked || (SearchSignal.Submitted && Filter.Size > 0))

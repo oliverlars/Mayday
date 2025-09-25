@@ -414,6 +414,69 @@ ui_signal UI_TextButton(ui_context *UI, draw_context *Draw, m_arena *Arena,
 	return Result;
 }
 
+// HACK(Oliver): This should maybe just take the fuzzy match string?
+ui_signal UI_TextHighlightButton(
+	ui_context *UI, draw_context *Draw, m_arena *Arena,
+	str8 String, f32 HeightInPixels, v2f Position,
+	v4f Colour, v4f HighlightColour, b8 *HighlightIndices)
+{
+	ui_signal Result = {0};
+	ui_widget *Widget = UI_WidgetFromString(UI, String);
+	u64 Hash = Widget->Hash;
+	f32 Scale = stbtt_ScaleForPixelHeight(&UI->Font.Info, HeightInPixels);
+	str8 DisplayString = UI_DisplayString(Arena, String);
+	ui_style Style = UI_GetStyle(UI);
+
+
+	f32 Height = D_LineHeightFromFont(Style.Font, HeightInPixels);
+	f32 Width = UI_GetTextWidth(Style.Font, Draw, DisplayString, HeightInPixels);
+
+	v2f Min = Add(Position, v2f(0, UI->Font.Descent * Scale));
+	v2f Max = v2f(Min.X + Width, Min.Y + Height);
+
+	v4f MouseNDC = v4f(UI->MousePosition.X, UI->MousePosition.Y, 0, 1);
+	MouseNDC.X = (MouseNDC.X/sapp_widthf())*2.0 - 1.0;
+	MouseNDC.Y = (MouseNDC.Y/sapp_heightf())*2.0 -1.0;
+
+	v4f MouseWorld = MulM44FV4F(M44FTranspose(R_CurrentInverseTransform(Draw->Render)), MouseNDC);
+	v2f MousePosition = v2f(MouseWorld.X / MouseWorld.W, MouseWorld.Y / MouseWorld.W);
+
+	if(MousePosition.X >= Min.X && MousePosition.X <= (Max.X) &&
+	   MousePosition.Y >= Min.Y && MousePosition.Y <= (Max.Y))
+	{
+		UI->Hot = Hash;
+	}
+
+
+	if(UI->Hot == Hash)
+	{
+		if(UI_LeftMouseWentUp(UI))
+		{
+			Result.Clicked = True;
+		}
+		Result.Hover = True;
+
+		Widget->HotAnimation = Lerp(Widget->HotAnimation, 1.0, 0.1);
+		D_Str8(Draw, Arena, DisplayString,
+		.Font = Style.Font, .Position = V3FromV2(Position), 
+		.Colour = v4f(0.5, 0.1, 0, 1), .HeightInPixels = HeightInPixels);
+	}
+	else
+	{
+		//D_Quad(Draw, Arena, BoxPosition, Width, Height, v4f(0, 0, 0, 1));
+		D_Str8(Draw, Arena, DisplayString, 
+		.Font = Style.Font, .Position = V3FromV2(Position), 
+		.Colour = v4f(0.1, 0.05, 0, 1.0), .HighlightColour = HighlightColour, 
+		.HighlightIndices = HighlightIndices,
+		.HeightInPixels = HeightInPixels);
+		Widget->HotAnimation = Lerp(Widget->HotAnimation, 0.0, 0.1);
+	}
+
+	Result.HotAnimation = Widget->HotAnimation;
+
+	return Result;
+}
+
 b32 UI_TextButtonWrapping(ui_context *UI, draw_context *Draw, m_arena *Arena,
 				 		  str8 String, f32 HeightInPixels, v2f Position, v4f Colour)
 {

@@ -151,6 +151,10 @@ ui_signal UI_TextButton(ui_context *UI, draw_context *Draw,
 				  m_arena *Arena, str8 String,
 				  f32 HeightInPixels,
 				  v2f Position, v4f Colour);
+ui_signal UI_TextHighlightButton(ui_context *UI, draw_context *Draw,
+				  m_arena *Arena, str8 String,
+				  f32 HeightInPixels,
+				  v2f Position, v4f Colour, v4f HighlightColour, b8 *HighlightIndices);
 
 b32 UI_TextButtonWrapping(ui_context *UI, draw_context *Draw, m_arena *Arena,
 				 		  str8 String, f32 HeightInPixels, v2f Position, v4f Colour);

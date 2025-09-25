@@ -61,8 +61,10 @@ b32  Str8EndsWith(str8 String, str8 EndsWith);
 b32  Str8StartsWith(str8 String, str8 StartsWith);
 b32 Str8HasSubString(str8 Haystack, str8 Needle);
 b32 Str8HasCaseInsensitiveSubString(str8 Haystack, str8 Needle);
+int Str8IndexOfCaseInsensitiveSubString(str8 Haystack, str8 Needle);
 str8_list Str8Split(m_arena *Arena, str8 String, char SplitBy);
 b32 Str8FuzzyMatch(str8 HayStack, str8 Needle);
+b8 *Str8FuzzyMatchIndices(m_arena *Arena, str8 HayStack, str8 Needle);
 
 void Str8ListAppend(m_arena *Arena, str8_list *List, str8 String);
 void Str8ListPrepend(m_arena *Arena, str8_list *List, str8 String);

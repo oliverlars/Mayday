@@ -79,6 +79,9 @@ typedef struct d_str8_options
 	f32 HeightInPixels;
 	f32 OutlineThickness;
 	v4f Colour;
+	v4f HighlightColour;
+	b32 HighlightFromIndex;
+	b8 *HighlightIndices;
 }
 d_str8_options;
 

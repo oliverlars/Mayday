@@ -414,7 +414,7 @@ void D_BaseStr8(
 	r_vertex *R_Vertices = Command.Vertices;
 
 	b32 NewLine = False;
-	v4f Colours[2] = {Options.Colour, v4f(0, 0, 1, 1) };
+	v4f Colours[2] = { Options.HighlightColour, Options.Colour };
 
 	int OutlineCount = 0;
 	v3f *OutlineData = Null;
@@ -445,6 +445,12 @@ void D_BaseStr8(
 		u32 CodePoint = String.Bytes[I];
 		u32 NextCodePoint = String.Bytes[Min(String.Size - 1, I + 1)];
 
+		v4f Colour = Options.Colour;
+		if(Options.HighlightIndices)
+		{
+			assert(Options.HighlightIndices + I);
+			if(Options.HighlightIndices[I]) Colour = Options.HighlightColour;
+		}
 
 		if(CodePoint == '\r') continue;
 		
@@ -527,7 +533,7 @@ void D_BaseStr8(
 			r_vertex Vertex = {
 				.Position = v4f(Vertices[V].X, Vertices[V].Y + Glyph->Box.Y*Scale, Options.Position.Z, 1),
 				.UV = UVs[V],
-				.Colour = Colours[NewLine],
+				.Colour = Colour,
 				.CurveStart = Glyph->CurveStart,
 				.CurveCount = Glyph->CurveCount
 			};

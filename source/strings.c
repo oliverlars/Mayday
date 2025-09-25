@@ -338,6 +338,31 @@ b32 Str8FuzzyMatch(str8 Haystack, str8 Needle)
 	return NeedleCount > 0 && Matches == NeedleCount;
 }
 
+b8 *Str8FuzzyMatchIndices(m_arena *Arena, str8 Haystack, str8 Needle)
+{
+	m_scratch_arena Scratch = ScratchBegin(&Arena, 1);
+	str8_list Needles = Str8Split(Scratch.Arena, Needle, ' ');
+
+
+	b8 *HighlightIndices = ArenaPushArrayZero(Arena, b8, Haystack.Size);
+
+	int Matches = 0;
+	int NeedleCount = 0;
+	for(str8_list_node *Needle = Needles.First; Needle != Null; Needle = Needle->Next)
+	{
+		int MatchIndex = Str8IndexOfCaseInsensitiveSubString(Haystack, Needle->String); 
+		for(int I = 0; I < Needle->String.Size; I++)
+		{
+			HighlightIndices[I + MatchIndex] = True;
+		}
+		NeedleCount += 1;
+	}
+
+	ScratchEnd(Scratch);
+
+	return HighlightIndices;
+}
+
 b32 Str8Equal(str8 A, str8 B)
 {
 	if(A.Size != B.Size) return False;
@@ -459,6 +484,28 @@ b32 Str8HasCaseInsensitiveSubString(str8 Haystack, str8 Needle)
 	}
 
 	return False;
+}
+
+int Str8IndexOfCaseInsensitiveSubString(str8 Haystack, str8 Needle)
+{
+	if (Needle.Size == 0)  return 0;
+	if (Needle.Size > Haystack.Size) return -1;
+
+	for (u64 I = 0; I <= Haystack.Size - Needle.Size; I++)
+	{
+		b32 Match = True;
+		for (u64 J = 0; J < Needle.Size; J++)
+		{
+			if (CharToLower(Haystack.Bytes[I + J]) != CharToLower(Needle.Bytes[J]))
+			{
+				Match = False;
+				break;
+			}
+		}
+		if (Match) return I;
+	}
+
+	return -1;
 }
 
 b32  Str8StartsWith(str8 String, str8 StartsWith)

@@ -430,11 +430,11 @@ void OS_Update(void *Data)
 			}
 			else if(TreeViewSignal.Hovered)
 			{
-				Angle2 += 0.001;
+				Angle2 += 0.0005;
 			}
 			else
 			{
-				Angle2 += 0.005;
+				Angle2 += 0.001;
 			}
 
 			if(TreeViewSignal.Clicked)

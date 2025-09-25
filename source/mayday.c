@@ -331,7 +331,6 @@ void OS_Update(void *Data)
 		);
 		R_PushTransform(M->Render, Mul(TextTransform, T));
 
-		R_PushScissor(M->Render, v4i(0, 0, sapp_widthf(), sapp_heightf()/2.0));
 		for(int I = 0; I < 3; I++)
 		{
 			f32 Offset = Offsets[I];
@@ -354,6 +353,7 @@ void OS_Update(void *Data)
 		}
 		R_PopTransform(M->Render);
 
+
 		f32 HeaderHeight = 100;
 		D_Quad(M->Draw, M->FrameArena, v2f(TotalHeight + 50, 50), sapp_widthf() - TotalHeight - 10 - 50, sapp_heightf() - 100, v4f(0.2, 0.1, 0.0, 1.0));
 		D_Quad(M->Draw, M->FrameArena, v2f(TotalHeight + 50 + 5, 55), sapp_widthf() - TotalHeight - 10 - 50 - 10, sapp_heightf() - 100 - 10 - HeaderHeight, COLOUR_BACKGROUND);
@@ -366,10 +366,14 @@ void OS_Update(void *Data)
 			.HeightInPixels = 80
 		);
 
-
+		
 		ui_orbit Orbit = {0};
 		f32 MinDepth = 0.0f;
 		f32 MaxDepth = 0.0f;
+
+
+
+		R_PushScissor(M->Render, v4i(TotalHeight + 50 + 5, 55, sapp_widthf() - TotalHeight - 10 - 50 - 10, sapp_heightf() - 100 - 10 - HeaderHeight));
 		if(OS_ValidPath(M->Folder))
 		{
 			// HACK(Oliver): This is annoying i have to do this twice
@@ -445,6 +449,7 @@ void OS_Update(void *Data)
 		{
 			R_PopTransform(M->Render);
 		}
+		R_PopScissor(M->Render);
 
 		R_PushTransform(M->Render, Orthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
 

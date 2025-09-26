@@ -794,28 +794,31 @@ void R_RenderGlyphs(render_context *R, id<MTLCommandBuffer> CommandBuffer, v4i S
 
 	[Encoder endEncoding];
 }
+
 void R_RenderBlur(render_context *R, id<MTLCommandBuffer> CommandBuffer, v4i Clip, f32 Sigma)
 {
 	metal_context *Metal = R->Backend;
-
+	Clip.Y = sapp_height() - (Clip.Y + Clip.W);
 	MPSImageGaussianBlur *GaussianBlur = [[MPSImageGaussianBlur alloc] initWithDevice:Metal->Device sigma:Sigma]; 
-	[GaussianBlur setClipRect:MTLRegionMake2D(Clip.X, Clip.Y, Clip.Z, Clip.W)];
+	// TODO(Oliver): Figure out why doing setClipRect here does not work
+	//[GaussianBlur setClipRect:MTLRegionMake2D(Clip.X, Clip.Y, Clip.Z, Clip.W)];
 	[GaussianBlur encodeToCommandBuffer:CommandBuffer
 				  sourceTexture:Metal->BaseFrameBuffer
 				  destinationTexture:Metal->TempFrameBuffer];
 	
 	MTLRenderPassDescriptor* PassDesc = [MTLRenderPassDescriptor renderPassDescriptor];
 	id<MTLBlitCommandEncoder> Encoder = [CommandBuffer blitCommandEncoder];
-
+	
 	[Encoder copyFromTexture:(id<MTLTexture>) Metal->TempFrameBuffer 
-             sourceSlice:(NSUInteger) 0 
-             sourceLevel:(NSUInteger) 0 
-            sourceOrigin:(MTLOrigin) MTLOriginMake(Clip.X, Clip.Y, 0) 
-              sourceSize:(MTLSize) MTLSizeMake(Clip.Z, Clip.W, 0) 
-               toTexture:(id<MTLTexture>) Metal->BaseFrameBuffer 
-        destinationSlice:(NSUInteger) 0 
-        destinationLevel:(NSUInteger) 0 
-       destinationOrigin:(MTLOrigin) MTLOriginMake(Clip.X, Clip.Y, 0)];
+			 sourceSlice:(NSUInteger) 0 
+			 sourceLevel:(NSUInteger) 0 
+			 sourceOrigin:(MTLOrigin) MTLOriginMake(Clip.X, Clip.Y, 0) 
+			 sourceSize:(MTLSize) MTLSizeMake(Clip.Z, Clip.W, 1) 
+			 toTexture:(id<MTLTexture>) Metal->BaseFrameBuffer 
+			 destinationSlice:(NSUInteger) 0 
+			 destinationLevel:(NSUInteger) 0 
+			 destinationOrigin:(MTLOrigin) MTLOriginMake(Clip.X, Clip.Y, 0)
+		];
 
 	[Encoder endEncoding];
 }
@@ -999,6 +1002,11 @@ void R_Update(render_context *R, m_arena *FrameArena)
 		u64 Stride = 0;
 		switch(Command->Type)
 		{
+		case R_COMMAND_BLUR:
+		{
+			R_RenderBlur(R, CommandBuffer, Command->Rect, Command->BlurSigma);
+		}
+		break;
 		case R_COMMAND_GLYPH:
 		case R_COMMAND_TRIANGLE:
 		{
@@ -1540,8 +1548,6 @@ void R_Update(render_context *R, m_arena *FrameArena)
 			UniformOffset += 1;
 		}
 	}
-
-	R_RenderBlur(R, CommandBuffer, v4i(0, 0, 100, 100), 10);
 
 
 	R_RenderFullscreenBloom(R, CommandBuffer);

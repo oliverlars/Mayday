@@ -147,6 +147,8 @@ void D_PointsArrayWithColours
 	v4f *Colours
 );
 
+void D_Blur(draw_context *D, m_arena *Arena, v4i Rect, f32 Sigma);
+
 void D_LinesArray(draw_context *D,
 					  m_arena *Arena,
 					  v3f *Positions,

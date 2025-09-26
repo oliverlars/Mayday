@@ -398,6 +398,7 @@ void OS_Update(void *Data)
 			ui_tree_view_signal TreeViewSignal = UI_TreeViewFolderLabels(M->UI, M->Draw, M->Edit, M->Orbitron, M->FrameArena, 0, &M->TreeView, PV, M->Folder, &M->TextBoxBuffer);
 			if(M->ShowFileList)
 			{
+				D_Blur(M->Draw, M->FrameArena, v4i(TotalHeight + 50 + 5, 55, sapp_widthf() - TotalHeight - 10 - 50 - 10, sapp_heightf() - 100 - 10 - HeaderHeight), 10.0);
 				os_directory_tree ActiveTree = OS_DirectoryTreeFromPath(M->FrameArena, M->FileListPath, (os_directory_tree_options){});
 				
 				f32 Height = 100.0;
@@ -678,8 +679,6 @@ void OS_Update(void *Data)
 #endif
 		}
 
-		// D_Blur(M->Draw, M->FrameArena, v4i(TotalHeight + 50 + 5, 55, sapp_widthf() - TotalHeight - 10 - 50 - 10, sapp_heightf() - 100 - 10 - HeaderHeight), 10.0);
-		D_Blur(M->Draw, M->FrameArena, v4i(0, 0, sapp_width()/2.0, sapp_height()/2.0), 10.0);
 		//D_Str8(M->Draw, M->FrameArena, M->LogoFont, v2f(50, 50), v4f(1.0, 0.05, 0.0, 1), 100, Str8("MAYDAY!"));
 		R_PopTransform(M->Render);
 	}

@@ -574,6 +574,16 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 	}
 
 	{
+		MTLTextureDescriptor *Desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm
+														width:Size.X
+														height:Size.Y mipmapped:NO];
+		Desc.usage = MTLTextureUsageShaderRead | MTLTextureUsageShaderWrite | MTLTextureUsageRenderTarget;
+		Desc.storageMode = MTLStorageModePrivate;
+
+		Metal->TempFrameBuffer = [Metal->Device newTextureWithDescriptor:Desc];
+	}
+
+	{
 		MTLTextureDescriptor *Desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatDepth32Float
 														width:Size.X
 														height:Size.Y mipmapped:NO];
@@ -784,13 +794,37 @@ void R_RenderGlyphs(render_context *R, id<MTLCommandBuffer> CommandBuffer, v4i S
 
 	[Encoder endEncoding];
 }
+void R_RenderBlur(render_context *R, id<MTLCommandBuffer> CommandBuffer, v4i Clip, f32 Sigma)
+{
+	metal_context *Metal = R->Backend;
+
+	MPSImageGaussianBlur *GaussianBlur = [[MPSImageGaussianBlur alloc] initWithDevice:Metal->Device sigma:Sigma]; 
+	[GaussianBlur setClipRect:MTLRegionMake2D(Clip.X, Clip.Y, Clip.Z, Clip.W)];
+	[GaussianBlur encodeToCommandBuffer:CommandBuffer
+				  sourceTexture:Metal->BaseFrameBuffer
+				  destinationTexture:Metal->TempFrameBuffer];
+	
+	MTLRenderPassDescriptor* PassDesc = [MTLRenderPassDescriptor renderPassDescriptor];
+	id<MTLBlitCommandEncoder> Encoder = [CommandBuffer blitCommandEncoder];
+
+	[Encoder copyFromTexture:(id<MTLTexture>) Metal->TempFrameBuffer 
+             sourceSlice:(NSUInteger) 0 
+             sourceLevel:(NSUInteger) 0 
+            sourceOrigin:(MTLOrigin) MTLOriginMake(Clip.X, Clip.Y, 0) 
+              sourceSize:(MTLSize) MTLSizeMake(Clip.Z, Clip.W, 0) 
+               toTexture:(id<MTLTexture>) Metal->BaseFrameBuffer 
+        destinationSlice:(NSUInteger) 0 
+        destinationLevel:(NSUInteger) 0 
+       destinationOrigin:(MTLOrigin) MTLOriginMake(Clip.X, Clip.Y, 0)];
+
+	[Encoder endEncoding];
+}
 
 void R_RenderFullscreenBloom(render_context *R, id<MTLCommandBuffer> CommandBuffer)
 {
 	metal_context *Metal = R->Backend;
 
-	MPSImageGaussianBlur *GaussianBlur = [[MPSImageGaussianBlur alloc] initWithDevice:Metal->Device sigma:10];
-
+	MPSImageGaussianBlur *GaussianBlur = [[MPSImageGaussianBlur alloc] initWithDevice:Metal->Device sigma:10]; 
 	[GaussianBlur encodeToCommandBuffer:CommandBuffer
 				  sourceTexture:Metal->BaseFrameBuffer
 				  destinationTexture:Metal->BlurredFrameBuffer];
@@ -903,6 +937,9 @@ void R_Update(render_context *R, m_arena *FrameArena)
 									CGSizeMake(Metal->Drawable.texture.width,
 												Metal->Drawable.texture.height));
 
+	Metal->TempFrameBuffer = ResizeTexture(R, Metal->TempFrameBuffer,
+									CGSizeMake(Metal->Drawable.texture.width,
+												Metal->Drawable.texture.height));
 
 	id<MTLCommandBuffer> CommandBuffer = [Metal->CommandQueue commandBuffer];
 
@@ -1503,6 +1540,8 @@ void R_Update(render_context *R, m_arena *FrameArena)
 			UniformOffset += 1;
 		}
 	}
+
+	R_RenderBlur(R, CommandBuffer, v4i(0, 0, 100, 100), 10);
 
 
 	R_RenderFullscreenBloom(R, CommandBuffer);

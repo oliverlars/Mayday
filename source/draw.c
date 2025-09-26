@@ -395,6 +395,16 @@ v4f D_Str8BBoxFromHeight(d_font Font, v2f Position, str8 String, f32 HeightInPix
 	return Result;
 }
 
+void D_Blur(draw_context *D, m_arena *Arena, v4i Rect, f32 Sigma)
+{
+	render_context *R = D->Render;
+	r_command Command = {0};
+	Command.Type = R_COMMAND_BLUR;
+	Command.Rect = Rect;
+	Command.BlurSigma = Sigma;
+	R_PushCommand(R, Arena, Command);
+}
+
 void D_BaseStr8(
 	draw_context *D,
 	m_arena *Arena,

@@ -42,6 +42,7 @@ typedef struct metal_context
 
 	id<MTLTexture>             DepthTexture;
 	id<MTLTexture>             BaseFrameBuffer;
+	id<MTLTexture>             TempFrameBuffer;
 	id<MTLTexture>             BlurredFrameBuffer;
 
 	id<MTLBuffer>              CurveBuffer[FRAMES_IN_FLIGHT];

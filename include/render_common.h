@@ -60,6 +60,7 @@ typedef enum r_command_type
 	R_COMMAND_POINTS,
 	R_COMMAND_LINES,
 	R_COMMAND_BEZIER,
+	R_COMMAND_BLUR,
 } r_command_type;
 
 typedef struct r_command
@@ -78,6 +79,10 @@ typedef struct r_command
 	m44f Transform;
 	v4i Scissor;
 
+	// TODO(Oliver): This could all be better
+	// Blur rect
+	v4i Rect;
+	f32 BlurSigma;
 
 	// Shape specific information for tile calculations
 	v3f Position;

@@ -278,7 +278,7 @@ void OS_Update(void *Data)
 	{
 		u64 Start = OS_TimeStampNow();
 		R_PushTransform(M->Render, Orthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
-		D_Quad(M->Draw, M->FrameArena, v2f(0, 0),  WindowWidth, WindowHeight, v4f(0.008, 0.00, 0, 1.0));
+		D_Quad(M->Draw, M->FrameArena, v2f(0, 0),  WindowWidth, WindowHeight, COLOUR_BACKGROUND);
 		D_Grid2D(M->Draw, M->FrameArena, M->Buffer.HeightInPixels, 5*sapp_widthf() / M->Buffer.HeightInPixels);
 	
 		UI_Buffer(M->UI, M->Draw, M->Edit,
@@ -372,10 +372,14 @@ void OS_Update(void *Data)
 		f32 MaxDepth = 0.0f;
 
 
+		// TOOD(Oliver): Get rid of all this static shit
+		static v2f MouseRotation = v2f(0, 0);
 
 		R_PushScissor(M->Render, v4i(TotalHeight + 50 + 5, 55, sapp_widthf() - TotalHeight - 10 - 50 - 10, sapp_heightf() - 100 - 10 - HeaderHeight));
 		if(OS_ValidPath(M->Folder))
 		{
+			MouseRotation.X += UI_Scroll(M->UI).X;
+			MouseRotation.Y += UI_Scroll(M->UI).Y;
 			// HACK(Oliver): This is annoying i have to do this twice
 			R_PopTransform(M->Render);
 
@@ -384,7 +388,7 @@ void OS_Update(void *Data)
 			m44f V =  M44FLookAt(v3f(0, 0, -5), v3f(0, 0, 0), v3f(0, 1, 0));
 			m44f RotateAroundOrigin =
 				Mul(M44FTranslate(v3f(0, 0, 5)),
-				Mul(M44FromYAngle(Angle2),
+				Mul(M44FromYAngle(Angle2 + MouseRotation.X*0.01),
 				M44FTranslate(v3f(0, 0, -5))));
 			V = Mul(V, RotateAroundOrigin);
 			m44f PV = Mul(V, P);
@@ -401,7 +405,7 @@ void OS_Update(void *Data)
 				D_Blur(M->Draw, M->FrameArena, v4i(TotalHeight + 50 + 5, 55 + 1, sapp_widthf() - TotalHeight - 10 - 50 - 10, sapp_heightf() - 100 - 10 - HeaderHeight), 10.0);
 				os_directory_tree ActiveTree = OS_DirectoryTreeFromPath(M->FrameArena, M->FileListPath, (os_directory_tree_options){});
 				
-				f32 Height = 40.0;
+				f32 Height = 50.0;
 				M->FileListScrollTarget += UI_Scroll(M->UI).Y*0.4;
 				M->FileListScroll = Lerp(M->FileListScroll, M->FileListScrollTarget, 0.2);
 				v2f Position = M->FileListPosition;
@@ -421,7 +425,19 @@ void OS_Update(void *Data)
 					f32 Value = fabs(DistanceFromActiveItem)*0.01;
 					f32 W = 1.0f - SmoothStep(Value);
 					f32 Scale = MinScale  + (MaxScale - MinScale)*W;
-					if(fabs(DistanceFromActiveItem) < Height*10.0) UI_TextButton(M->UI, M->Draw, M->FrameArena, FileName, Height*Scale, Position, v4f(1, 1, 1, 1));
+					ui_style CurrentStyle = UI_GetStyle(M->UI);
+					CurrentStyle.Font = M->Orbitron;
+					UI_PushStyle(M->UI, CurrentStyle);
+					if(fabs(DistanceFromActiveItem) < Height*10.0)
+					{
+						ui_signal Signal = UI_TextButton(M->UI, M->Draw, M->FrameArena, FileName, Height*Scale, Position, v4f(1, 1, 1, 1));
+						if(Signal.Clicked)
+						{
+							M->Buffer.String = OS_LoadEntireFileIntoMemory(M->PermanentArena, Iter.Current->PathAndName);
+							M->UI->View = UI_VIEW_EDIT;
+						}
+					}
+					UI_PopStyle(M->UI);
 					Position.Y -= Height*Scale;
 					Index++;
 				}
@@ -455,6 +471,8 @@ void OS_Update(void *Data)
 		ui_tree_view_signal TreeSignal = {0};
 		if(!OS_ValidPath(M->Folder))
 		{
+			MouseRotation.X += UI_Scroll(M->UI).X;
+			MouseRotation.Y += UI_Scroll(M->UI).Y;
 			// RECENTLY OPENED
 			{
 				static u64 TreeHash = 0;
@@ -572,13 +590,13 @@ void OS_Update(void *Data)
 
 				m44f TranslateToOrigin = Translate(v3f(-From.X, -From.Y, -From.Z));
 
-				m44f RotationY = M44FromYAngle(Angle + 2.0f*M_PI*AngleOffset);
-				m44f RotationZ = M44FromZAngle(Angle*0.5 + 2.0 + 2.0f*M_PI*AngleOffset);
+				m44f RotationY = M44FromYAngle(Angle + 2.0f*M_PI*AngleOffset + MouseRotation.X*0.01);
+				m44f RotationZ = M44FromZAngle(Angle*0.5 + 2.0 + 2.0f*M_PI*AngleOffset - MouseRotation.Y*0.01);
 
 				m44f TranslateBack = Translate(v3f(From.X, From.Y, From.Z));
 
 				Angle += 0.002;
-				m44f Model = Mul(TranslateToOrigin, Mul(Mul(RotationY, RotationZ), TranslateBack));
+				m44f Model = Mul(TranslateToOrigin, Mul(Mul(RotationZ, RotationY), TranslateBack));
 				m44f View = M44FLookAt(From, At, v3f(0, 1, 0));
 				m44f PV = Mul(Mul(View, Model), P);
 				R_PushTransform(M->Render, PV);

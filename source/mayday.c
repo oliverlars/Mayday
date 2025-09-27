@@ -404,9 +404,8 @@ void OS_Update(void *Data)
 				f32 Height = 40.0;
 				M->FileListScrollTarget += UI_Scroll(M->UI).Y*0.4;
 				M->FileListScroll = Lerp(M->FileListScroll, M->FileListScrollTarget, 0.2);
-				v2f StartPosition = M->FileListPosition;
 				v2f Position = M->FileListPosition;
-				Position.Y -= M->FileListScroll*10.0;
+				Position.Y += M->FileListScroll*10.0;
 				f32 VisibleRadius = 5.0f;
 				f32 MinScale = 0.8f;
 				f32 MaxScale = 1.35f;
@@ -418,12 +417,11 @@ void OS_Update(void *Data)
 				)
 				{
 					str8 FileName = Str8FromLastCharacter(M->FrameArena, Iter.Current->PathAndName, '/');
-					f32 DistanceFromActiveItem = Position.Y - StartPosition.Y;
+					f32 DistanceFromActiveItem = Position.Y - M->FileListPosition.Y;
 					f32 Value = fabs(DistanceFromActiveItem)*0.01;
 					f32 W = 1.0f - SmoothStep(Value);
 					f32 Scale = MinScale  + (MaxScale - MinScale)*W;
-
-					UI_TextButton(M->UI, M->Draw, M->FrameArena, FileName, Height*Scale, Position, v4f(1, 1, 1, 1));
+					if(fabs(DistanceFromActiveItem) < Height*10.0) UI_TextButton(M->UI, M->Draw, M->FrameArena, FileName, Height*Scale, Position, v4f(1, 1, 1, 1));
 					Position.Y -= Height*Scale;
 					Index++;
 				}

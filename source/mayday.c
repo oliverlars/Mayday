@@ -398,13 +398,15 @@ void OS_Update(void *Data)
 			ui_tree_view_signal TreeViewSignal = UI_TreeViewFolderLabels(M->UI, M->Draw, M->Edit, M->Orbitron, M->FrameArena, 0, &M->TreeView, PV, M->Folder, &M->TextBoxBuffer);
 			if(M->ShowFileList)
 			{
-				D_Blur(M->Draw, M->FrameArena, v4i(TotalHeight + 50 + 5, 55, sapp_widthf() - TotalHeight - 10 - 50 - 10, sapp_heightf() - 100 - 10 - HeaderHeight), 10.0);
+				D_Blur(M->Draw, M->FrameArena, v4i(TotalHeight + 50 + 5, 55 + 1, sapp_widthf() - TotalHeight - 10 - 50 - 10, sapp_heightf() - 100 - 10 - HeaderHeight), 10.0);
 				os_directory_tree ActiveTree = OS_DirectoryTreeFromPath(M->FrameArena, M->FileListPath, (os_directory_tree_options){});
 				
-				f32 Height = 100.0;
+				f32 Height = 40.0;
 				M->FileListScrollTarget += UI_Scroll(M->UI).Y*0.4;
 				M->FileListScroll = Lerp(M->FileListScroll, M->FileListScrollTarget, 0.2);
+				v2f StartPosition = M->FileListPosition;
 				v2f Position = M->FileListPosition;
+				Position.Y -= M->FileListScroll*10.0;
 				f32 VisibleRadius = 5.0f;
 				f32 MinScale = 0.8f;
 				f32 MaxScale = 1.35f;
@@ -416,15 +418,13 @@ void OS_Update(void *Data)
 				)
 				{
 					str8 FileName = Str8FromLastCharacter(M->FrameArena, Iter.Current->PathAndName, '/');
-					f32 DistanceFromActiveItem = (f32)Index - M->FileListScroll;
-					// if(DistanceFromActiveItem < -5.0) {Index++; continue; }
-					// if(DistanceFromActiveItem > 5.0) break;
-					f32 Value = fabsf(DistanceFromActiveItem)/VisibleRadius;
+					f32 DistanceFromActiveItem = Position.Y - StartPosition.Y;
+					f32 Value = fabs(DistanceFromActiveItem)*0.01;
 					f32 W = 1.0f - SmoothStep(Value);
 					f32 Scale = MinScale  + (MaxScale - MinScale)*W;
 
-					UI_TextButton(M->UI, M->Draw, M->FrameArena, FileName, Height/Scale, Position, v4f(1, 1, 1, 1));
-					Position.Y -= Height/Scale;
+					UI_TextButton(M->UI, M->Draw, M->FrameArena, FileName, Height*Scale, Position, v4f(1, 1, 1, 1));
+					Position.Y -= Height*Scale;
 					Index++;
 				}
 

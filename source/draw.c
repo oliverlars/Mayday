@@ -498,7 +498,7 @@ void D_BaseStr8(
 			P[0] = v3f(Options.Position.X, Options.Position.Y + LineHeight/2.0 - 10.0, 0.0);
 			P[1] = P[0];
 			P[1].X += AdvanceX;
-			D_LinesArray(D, Arena, P, 2, 1.0, v4f(0.1, 0.02, 0.0, 0.25));
+			//D_LinesArray(D, Arena, P, 2, 1.0, v4f(0.1, 0.02, 0.0, 0.25));
 		}
 
 		f32 GlyphWidth = ((f32)(Glyph->Box.Z - Glyph->Box.X)*Scale);
@@ -1006,4 +1006,27 @@ void D_Grid2D(draw_context *Draw, m_arena *Arena, f32 Size, s32 Count)
 	}
 
 	D_LinesArray(Draw, Arena, Lines, LineCount * 2, 1.0, v4f(0.05, .0, 0, 1));
+}
+
+void D_DiscoGrid2D(draw_context *Draw, m_arena *Arena, v2f Dim, v2i Count)
+{
+	random32_state RandomState = {0};
+	RandomState.State = (u32)M_FNV_HASH_START;
+	v4f Background = v4f(0.015, 0.001, 0, 1.0);
+	for(int Y = 0; Y < Count.Y; Y++)
+	{
+		for(int X = 0; X < Count.X; X++)
+		{
+			f32 Width = Dim.X/(f32)Count.X;
+			f32 Height = Dim.Y/(f32)Count.Y;
+			v4f RandomShift = v4f(
+				RandomBilateral(&RandomState)/100.0f,
+				RandomBilateral(&RandomState)/50.0f,
+				0.0,
+				1.0f
+			);
+			D_Quad(Draw, Arena, v2f(X*Width, Y*Height), Width, Height, Add(Background, RandomShift));
+		}
+	}
+	D_Blur(Draw, Arena, v4i(0, 0, Dim.X, Dim.Y), 10);
 }

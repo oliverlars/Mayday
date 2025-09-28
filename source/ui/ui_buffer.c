@@ -84,7 +84,7 @@ int DigitCountFromInt(u32 Value) {
 }
 
 void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
-			   m_arena *Arena, d_font Font,
+			   m_arena *Arena, d_font Font, d_font NumbersFont,
 			   str8 BufferPath, editable_buffer *Buffer,
 			   v2i Size)
 {
@@ -131,13 +131,13 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 	{
 		if(MainCursorLine == I)
 		{
-			D_Str8(Draw, Arena, Str8PushF(Arena, "?u32", I + 1), .Font = Font, 
+			D_Str8(Draw, Arena, Str8PushF(Arena, "?u32", I + 1), .Font = NumbersFont, 
 			.Position = V3FromV2(NumbersPosition),
 				.Colour = v4f(0.8, 0.3, 0, 1), .HeightInPixels = LineHeight);
 		}
 		else
 		{
-			D_Str8(Draw, Arena, Str8PushF(Arena, "?u32", I + 1), .Font = Font, 
+			D_Str8(Draw, Arena, Str8PushF(Arena, "?u32", I + 1), .Font = NumbersFont, 
 			.Position = V3FromV2(NumbersPosition),
 				.Colour = v4f(0.1, 0.05, 0, 1), .HeightInPixels = LineHeight);
 		}

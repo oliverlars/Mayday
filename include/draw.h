@@ -180,5 +180,6 @@ void D_Bezier(draw_context *D,
 void D_Grid(draw_context *Draw, m_arena *Arena, f32 Size, s32 Count);
 
 void D_Grid2D(draw_context *Draw, m_arena *Arena, f32 Size, s32 Count);
+void D_DiscoGrid2D(draw_context *Draw, m_arena *Arena, v2f Dim, v2i Count);
 
 f32 D_LineHeightFromFont(d_font Font, f32 HeightInPixels);

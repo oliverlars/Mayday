@@ -49,9 +49,10 @@ fragment float4 FragmentMain(vertex_output Input [[stage_in]],
 							 texture2d<float> Bloom [[texture(1)]],
 							 sampler Sampler [[sampler(0)]])
 {
-	float4 Colour = float4(Base.sample(Sampler, Input.UV).rgb + Bloom.sample(Sampler, Input.UV).rgb*0.7, 1.0);
+	float4 Colour = float4(float3(1.0) - metal::exp(-Base.sample(Sampler, Input.UV).rgb) * metal::exp(-Bloom.sample(Sampler, Input.UV).rgb*0.8), 1.0);
 
 	Colour.rgb = TonemapToACESFilm(Colour.rgb);
+	Colour.a = 1.0;
 	Colour = ToSRGB(Colour);
 	return Colour;
 }

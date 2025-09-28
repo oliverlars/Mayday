@@ -166,7 +166,7 @@ void UI_Slider(ui_context *UI, draw_context *Draw, m_arena *Arena, str8 String,
 				  v2f Position, f32 Width, f32 *Value, v4f Colour);
 
 void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
-			   m_arena *Arena, d_font Font,
+			   m_arena *Arena, d_font Font, d_font NumbersFont,
 			   str8 BufferPath, editable_buffer *Buffer,
 			   v2i Size);
 

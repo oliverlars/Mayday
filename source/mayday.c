@@ -279,10 +279,12 @@ void OS_Update(void *Data)
 		u64 Start = OS_TimeStampNow();
 		R_PushTransform(M->Render, Orthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
 		D_Quad(M->Draw, M->FrameArena, v2f(0, 0),  WindowWidth, WindowHeight, COLOUR_BACKGROUND);
-		D_Grid2D(M->Draw, M->FrameArena, M->Buffer.HeightInPixels, 5*sapp_widthf() / M->Buffer.HeightInPixels);
+		f32 Aspect = sapp_heightf()/sapp_widthf();
+		D_DiscoGrid2D(M->Draw, M->FrameArena, v2f(sapp_widthf(), sapp_heightf()), v2i(100, 100*Aspect));
 	
 		UI_Buffer(M->UI, M->Draw, M->Edit,
 			   M->FrameArena, M->CodeFont,
+			   M->Rajdhani,
 			   M->ActiveFilePath, &M->Buffer,
 			   v2i(WindowWidth, WindowHeight));
 

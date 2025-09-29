@@ -250,7 +250,7 @@ metal_shader R_GlyphShader(render_context *R)
 	MTLRenderPipelineDescriptor* PipelineDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
 	PipelineDescriptor.vertexFunction = VertexFunction;
 	PipelineDescriptor.fragmentFunction = FragmentFunction;
-	PipelineDescriptor.colorAttachments[0].pixelFormat = MTLPixelFormatBGRA8Unorm;
+	PipelineDescriptor.colorAttachments[0].pixelFormat = MTLPixelFormatRGBA16Float;
 	PipelineDescriptor.colorAttachments[0].blendingEnabled = true;
 	PipelineDescriptor.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactorSourceAlpha;
 	PipelineDescriptor.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
@@ -324,7 +324,7 @@ metal_shader R_TriangleShader(render_context *R)
 	MTLRenderPipelineDescriptor* PipelineDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
 	PipelineDescriptor.vertexFunction = VertexFunction;
 	PipelineDescriptor.fragmentFunction = FragmentFunction;
-	PipelineDescriptor.colorAttachments[0].pixelFormat = MTLPixelFormatBGRA8Unorm;
+	PipelineDescriptor.colorAttachments[0].pixelFormat = MTLPixelFormatRGBA16Float;
 	PipelineDescriptor.colorAttachments[0].blendingEnabled = true;
 	PipelineDescriptor.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactorSourceAlpha;
 	PipelineDescriptor.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
@@ -378,7 +378,7 @@ metal_shader R_PointShader(render_context *R)
 	MTLRenderPipelineDescriptor* PipelineDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
 	PipelineDescriptor.vertexFunction = VertexFunction;
 	PipelineDescriptor.fragmentFunction = FragmentFunction;
-	PipelineDescriptor.colorAttachments[0].pixelFormat = MTLPixelFormatBGRA8Unorm;
+	PipelineDescriptor.colorAttachments[0].pixelFormat = MTLPixelFormatRGBA16Float;
 	PipelineDescriptor.colorAttachments[0].blendingEnabled = true;
 	PipelineDescriptor.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactorSourceAlpha;
 	PipelineDescriptor.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
@@ -436,7 +436,7 @@ metal_shader R_LineShader(render_context *R)
 	MTLRenderPipelineDescriptor* PipelineDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
 	PipelineDescriptor.vertexFunction = VertexFunction;
 	PipelineDescriptor.fragmentFunction = FragmentFunction;
-	PipelineDescriptor.colorAttachments[0].pixelFormat = MTLPixelFormatBGRA8Unorm;
+	PipelineDescriptor.colorAttachments[0].pixelFormat = MTLPixelFormatRGBA16Float;
 	PipelineDescriptor.colorAttachments[0].blendingEnabled = true;
 	PipelineDescriptor.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactorSourceAlpha;
 	PipelineDescriptor.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
@@ -489,7 +489,7 @@ metal_shader R_BezierShader(render_context *R)
 	MTLRenderPipelineDescriptor* PipelineDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
 	PipelineDescriptor.vertexFunction = VertexFunction;
 	PipelineDescriptor.fragmentFunction = FragmentFunction;
-	PipelineDescriptor.colorAttachments[0].pixelFormat = MTLPixelFormatBGRA8Unorm;
+	PipelineDescriptor.colorAttachments[0].pixelFormat = MTLPixelFormatRGBA16Float;
 	PipelineDescriptor.colorAttachments[0].blendingEnabled = true;
 	PipelineDescriptor.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactorSourceAlpha;
 	PipelineDescriptor.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
@@ -553,7 +553,7 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 	}
 
 	{
-		MTLTextureDescriptor *Desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm
+		MTLTextureDescriptor *Desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatRGBA16Float
 														width:Size.X
 														height:Size.Y mipmapped:NO];
 		Desc.usage = MTLTextureUsageShaderRead | MTLTextureUsageShaderWrite | MTLTextureUsageRenderTarget;
@@ -564,7 +564,7 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 	}
 
 	{
-		MTLTextureDescriptor *Desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm
+		MTLTextureDescriptor *Desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatRGBA16Float
 														width:Size.X
 														height:Size.Y mipmapped:NO];
 		Desc.usage = MTLTextureUsageShaderRead | MTLTextureUsageShaderWrite | MTLTextureUsageRenderTarget;
@@ -574,7 +574,7 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 	}
 
 	{
-		MTLTextureDescriptor *Desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm
+		MTLTextureDescriptor *Desc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatRGBA16Float
 														width:Size.X
 														height:Size.Y mipmapped:NO];
 		Desc.usage = MTLTextureUsageShaderRead | MTLTextureUsageShaderWrite | MTLTextureUsageRenderTarget;

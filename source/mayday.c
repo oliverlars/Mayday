@@ -279,8 +279,7 @@ void OS_Update(void *Data)
 		u64 Start = OS_TimeStampNow();
 		R_PushTransform(M->Render, Orthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
 		D_Quad(M->Draw, M->FrameArena, v2f(0, 0),  WindowWidth, WindowHeight, COLOUR_BACKGROUND);
-		f32 Aspect = sapp_heightf()/sapp_widthf();
-		D_DiscoGrid2D(M->Draw, M->FrameArena, v2f(sapp_widthf(), sapp_heightf()), v2i(100, 100*Aspect));
+		//D_DiscoGrid2D(M->Draw, M->FrameArena, v2f(sapp_widthf(), sapp_heightf()), v2i(1, sapp_height()/M->Buffer.HeightInPixels));
 	
 		UI_Buffer(M->UI, M->Draw, M->Edit,
 			   M->FrameArena, M->CodeFont,
@@ -661,7 +660,6 @@ void OS_Update(void *Data)
 					Positions[I] = v4f(Result.X, Result.Y, Result.Z, 0.0);
 				}
 			}
-
 #if 0
 			D_Quad(M->Draw, M->FrameArena, v2f(100.0, sapp_heightf()-300), 500, 200, v4f(0.2, 0.0, 0.0, 1.0));
 			ui_textbox_signal SearchSignal = UI_TextBox(M->FrameArena, M->LogoFont, v2f(100.0, sapp_heightf() - 400), 500,
@@ -696,6 +694,8 @@ void OS_Update(void *Data)
 			}
 #endif
 		}
+
+		D_Grid2D(M->Draw, M->FrameArena, 20, 500);
 
 		//D_Str8(M->Draw, M->FrameArena, M->LogoFont, v2f(50, 50), v4f(1.0, 0.05, 0.0, 1), 100, Str8("MAYDAY!"));
 		R_PopTransform(M->Render);

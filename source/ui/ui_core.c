@@ -756,18 +756,18 @@ ui_textbox_signal UI_TextBox(m_arena *Arena,
 	v2f BoxPosition = Position;
 	BoxPosition.Y += UI->Font.Descent * Scale;
 
-	D_Quad(Draw, Arena, BoxPosition, Width, Height, v4f(0.8, 0.3, 0, 1.0));
+	D_Quad(Draw, Arena, BoxPosition, Width, Height, v4f(0.2, 0.1, 0, 1.0));
 
 	v2f StringPosition = Position;
 	StringPosition.X -= CursorXOffset;
 	StringPosition.Y -= UI->Font.Descent * Scale;
-	R_PushScissor(Draw->Render, v4i(Position.X, sapp_height() - Position.Y - Height, Width, Height));
+	R_PushScissor(Draw->Render, v4i(Position.X, Position.Y, Width, Height));
 	D_Str8(Draw,
 			   Arena, Buffer->String,
 			   .Font =Font,
-			   .Position = V3FromV2(StringPosition), .Colour = v4f(0.008, 0.00, 0, 1.0),
+			   .Position = V3FromV2(StringPosition), .Colour = v4f(0.008, 0.0, 0.0, 1.0),
 			   .HeightInPixels = 100.0,
-			   .OutlineThickness = 10.0);
+			   .OutlineThickness = 5.0);
 	R_PopScissor(Draw->Render);
 
 	//LogInfo("Cursor pos: ?u32", Edit->Cursors[0].Selection.X);

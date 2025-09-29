@@ -1005,7 +1005,7 @@ void D_Grid2D(draw_context *Draw, m_arena *Arena, f32 Size, s32 Count)
 		Lines[Index++] = v3f(X, HalfSize, 0);
 	}
 
-	D_LinesArray(Draw, Arena, Lines, LineCount * 2, 1.0, v4f(0.05, .0, 0, 1));
+	D_LinesArray(Draw, Arena, Lines, LineCount * 2, 2.0, v4f(0.008, 0.00, 0, 1.0));
 }
 
 void D_DiscoGrid2D(draw_context *Draw, m_arena *Arena, v2f Dim, v2i Count)

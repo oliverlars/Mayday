@@ -159,6 +159,7 @@ void OS_Update_(void *Data)
 		Str8("MAYDAY!"), .Font = M->Rajdhani,
 		.Position = v3f(50, 50, 0),
 		.Colour = v4f(0, 1, 0, 1),
+		.OutlineThickness = 5.0,
 		.HeightInPixels = H
 	);
 	//D_Quad(M->Draw, M->FrameArena, v2f(600, 600), 100, 200, v4f(1, 0, 1, 1));
@@ -364,7 +365,8 @@ void OS_Update(void *Data)
 			.Position = v3f(TotalHeight + 40 + 60, sapp_heightf() - 55 - 100 + HeaderHeight/2.0 - 20.0, 0),
 			.Font = M->Rajdhani,
 			.Colour = COLOUR_BACKGROUND,
-			.HeightInPixels = 80
+			.OutlineThickness = 2.0,
+			.HeightInPixels = 100
 		);
 
 		

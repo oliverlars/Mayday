@@ -129,7 +129,7 @@ kernel void ComputeMain(metal::texture2d<float, metal::access::read_write> Textu
 
 
 	metal::float4 Source = Texture.read(ThreadPositionInGrid);
-	metal::float3 ColourSoFar = Source.rgb;
+	metal::float3 ColourSoFar = float3(0.0);
 	float AlphaSoFar = 0.0;
 
 	float4 Scissor = Uniforms.Scissor;
@@ -193,5 +193,5 @@ kernel void ComputeMain(metal::texture2d<float, metal::access::read_write> Textu
 			AlphaSoFar += AA*(1.0 - AlphaSoFar);
 		}
 	}
-	Texture.write(float4(ColourSoFar, 1.0), ThreadPositionInGrid);
+	Texture.write(float4(ColourSoFar + Source.rgb * (1.0 - AlphaSoFar), 1.0), ThreadPositionInGrid);
 }

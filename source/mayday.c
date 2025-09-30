@@ -651,8 +651,8 @@ void OS_Update(void *Data)
 				}
 
 				D_LinesArray(M->Draw, M->FrameArena, LinePositions, LineIndex, 5.0, v4f(0.5, 0.1, 0, 0.1));
-				D_PointsArray(M->Draw, M->FrameArena, PointPositions, NodeCount, 10.0, v4f(0.1, 0.05, 0, 1.0));
 				D_PointsArray(M->Draw, M->FrameArena, PointPositions, NodeCount, 5.0, COLOUR_BACKGROUND);
+				D_PointsArray(M->Draw, M->FrameArena, PointPositions, NodeCount, 10.0, v4f(0.1, 0.05, 0, 1.0));
 				R_PopTransform(M->Render);
 				v3f Points = v3f(800, 800, 0);
 

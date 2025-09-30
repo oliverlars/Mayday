@@ -192,6 +192,7 @@ kernel void ComputeMain(metal::texture2d<float, metal::access::read_write> Textu
 			ColourSoFar += (1.0 - AlphaSoFar) * Beziers[DataIndex].Colour.rgb*AA;
 			AlphaSoFar += AA*(1.0 - AlphaSoFar);
 		}
+		AlphaSoFar = metal::clamp(AlphaSoFar, 0.0, 1.0);
 	}
 	Texture.write(float4(ColourSoFar + Source.rgb * (1.0 - AlphaSoFar), 1.0), ThreadPositionInGrid);
 }

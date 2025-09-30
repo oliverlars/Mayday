@@ -402,7 +402,7 @@ void OS_Update(void *Data)
 			R_PopTransform(M->Render);
 
 			R_PushTransform(M->Render, Orthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
-			ui_tree_view_signal TreeViewSignal = UI_TreeViewFolderLabels(M->UI, M->Draw, M->Edit, M->Orbitron, M->FrameArena, 0, &M->TreeView, PV, M->Folder, &M->TextBoxBuffer);
+			ui_tree_view_signal TreeViewSignal = UI_TreeViewFolderLabels(M->UI, M->Draw, M->Edit, M->Orbitron, M->FrameArena, M->OrbitItem, &M->TreeView, PV, M->Folder, &M->TextBoxBuffer);
 			if(M->ShowFileList)
 			{
 				D_Blur(M->Draw, M->FrameArena, v4i(TotalHeight + 50 + 5, 55 + 1, sapp_widthf() - TotalHeight - 10 - 50 - 10, sapp_heightf() - 100 - 10 - HeaderHeight), 10.0);
@@ -454,6 +454,8 @@ void OS_Update(void *Data)
 			{
 				Angle2 += 0.001;
 			}
+
+			M->OrbitItem = TreeViewSignal.NodeIndex;
 
 			if(TreeViewSignal.Clicked)
 			{
@@ -586,10 +588,10 @@ void OS_Update(void *Data)
 					LinePositions[LineIndex + 1] = v3f(To.X, To.Y, To.Z);
 					LineIndex += 2;
 				}
-				m44f P = Perspective(sapp_widthf()/sapp_heightf(), 70, 0.01, 10000.0);
+				m44f P = Perspective(sapp_widthf()/sapp_heightf(), 80, 0.01, 10000.0);
 				v3f At = V3FromV4(Positions[0]);
 				v3f From = At;
-				From.Z -= 3;
+				From.Z -= 2;
 
 				m44f TranslateToOrigin = Translate(v3f(-From.X, -From.Y, -From.Z));
 
@@ -697,7 +699,7 @@ void OS_Update(void *Data)
 #endif
 		}
 
-		D_Grid2D(M->Draw, M->FrameArena, 20, 500);
+		//D_Grid2D(M->Draw, M->FrameArena, 15, 500);
 
 		//D_Str8(M->Draw, M->FrameArena, M->LogoFont, v2f(50, 50), v4f(1.0, 0.05, 0.0, 1), 100, Str8("MAYDAY!"));
 		R_PopTransform(M->Render);

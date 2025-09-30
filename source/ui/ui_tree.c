@@ -267,13 +267,11 @@ ui_tree_view_signal UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw, 
 
 	if(UI_KeyDown(UI, SAPP_KEYCODE_RIGHT, 0))
 	{
-		Result.Clicked = True;
 		Result.NodeIndex = ActiveNodeIndex + 1;
 	}
 
 	if(UI_KeyDown(UI, SAPP_KEYCODE_LEFT, 0))
 	{
-		Result.Clicked = True;
 		Result.NodeIndex = Max(ActiveNodeIndex - 1, 0);
 	}
 

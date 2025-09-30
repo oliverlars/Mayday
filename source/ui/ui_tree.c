@@ -199,7 +199,7 @@ ui_tree_view_signal UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw, 
 	for(os_directory_tree_iterator It = {0};
 		OS_DirectoryTreeIterateWithStack(Scratch.Arena, TreeView->Info.Tree, &It);)
 	{
-		f32 FontSize = 50;
+		f32 FontSize = 30;
 		v4f P = TreeView->Info.NodePositions[It.Index];
 
 		v4f NodePosition4D = v4f(P.X, P.Y, P.Z, 1.0);
@@ -215,10 +215,13 @@ ui_tree_view_signal UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw, 
 		if(It.Index == ActiveNodeIndex)
 		{
 			Colour = v4f(0.8, 0.6, 0.4, 1.0);
-			FontSize = 60;
+			FontSize = 30;
 		}
 		
-		FontSize *= 1.0/sqrtf((f32)It.Depth);
+		TransformedPoint.X += 15.0f;
+		TransformedPoint.Y += 5.0f;
+
+		FontSize *= 1.5/sqrtf((f32)It.Depth);
 
 		{
 			str8 FolderName = Str8FromLastCharacter(Arena, TreeView->Info.NodeInfos[It.Index].Name, '/');

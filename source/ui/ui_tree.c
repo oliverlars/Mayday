@@ -162,8 +162,8 @@ void UI_TreeView(ui_context *UI, draw_context *Draw, shared_wave_info *Shared,
 
 
 	D_LinesArray(Draw, Arena, LinePositions, TreeView->Info.LinkCount*2, 5.0, v4f(0.5, 0.1, 0, 0.1));
-	D_PointsArray(Draw, Arena, Positions, TreeView->Info.NodeCount, 5.0, v4f(0.1, 0.05, 0, 1.0));
-	D_PointsArray(Draw, Arena, Positions, TreeView->Info.NodeCount, 10.0, v4f(0.008, 0.00, 0, 1.0));
+	D_PointsArray(Draw, Arena, Positions, TreeView->Info.NodeCount, 5.0, v4f(0.008, 0.00, 0, 1.0));
+	D_PointsArray(Draw, Arena, Positions, TreeView->Info.NodeCount, 10.0, v4f(0.1, 0.05, 0, 1.0));
 	bounds TotalBounds = GetBoundsV4F(TreeView->Info.NodeTargetPositions, TreeView->Info.NodeCount);
 	v3f Centre = DivV3F(AddV3F(TotalBounds.Min, TotalBounds.Max), v3f(2.0, 2.0, 2.0));
 
@@ -211,7 +211,6 @@ ui_tree_view_signal UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw, 
 
 		TransformedPoint.X *= sapp_widthf();
 		TransformedPoint.Y *= sapp_heightf();
-
 		v4f Colour = v4f(0.1, 0.05, 0, 1.0);
 		if(It.Index == ActiveNodeIndex)
 		{
@@ -219,6 +218,8 @@ ui_tree_view_signal UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw, 
 			FontSize = 60;
 		}
 		
+		FontSize *= 1.0/sqrtf((f32)It.Depth);
+
 		{
 			str8 FolderName = Str8FromLastCharacter(Arena, TreeView->Info.NodeInfos[It.Index].Name, '/');
 			if(Filter.Size == 0 || Str8FuzzyMatch(FolderName, Filter))

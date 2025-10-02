@@ -552,13 +552,13 @@ void UI_StatusBar(ui_context *UI, draw_context *Draw, edit_context *Edit,
 	int Ascent, Descent, LineGap;
 	stbtt_GetFontVMetrics(&Font.Info, &Ascent, &Descent, &LineGap);
 
-	f32 Scale = stbtt_ScaleForPixelHeight(&Font.Info, Buffer->HeightInPixels * 1.2);
+	f32 Scale = stbtt_ScaleForPixelHeight(&Font.Info, Buffer->HeightInPixels * 1.5);
 	float AscentInPixels = Ascent  * Scale;
 	float DescentInPixels = Descent * Scale;
 
 	float TextHeight = (AscentInPixels - DescentInPixels);
 
-	f32 StatusBarHeight = Buffer->HeightInPixels * 1.2f;
+	f32 StatusBarHeight = Buffer->HeightInPixels * 1.5f;
 
 	float CentreOffset = (AscentInPixels + DescentInPixels) * 0.5f;
 
@@ -575,7 +575,7 @@ void UI_StatusBar(ui_context *UI, draw_context *Draw, edit_context *Edit,
 		int LineStart = E_LineStartFromIndex(Edit, Cursor->Selection.Y, Buffer);
 		int Index = IndexFromLine(Buffer->String, Line);
 		int Column = Cursor->Selection.Y - LineStart;
-		D_Str8(Draw, Arena, Str8PushF(Arena, "?u32:?u32 | Index: ?u32:?u32 | ?v2f", Line, Column, Cursor->Selection.Y, Index, Cursor->Position),
+		D_Str8(Draw, Arena, Str8PushF(Arena, "?u32:?u32 | Index: ?u32:?u32 | ?v2i", Line, Column, Cursor->Selection.Y, Index, v2i(Cursor->Position.X, Cursor->Position.Y)),
 				   .Font = Font, .Position = v3f((f32)Size.X - 1500, TextPosY),
 				   .Colour = v4f(0.009, 0.00, 0, 1.0),
 				   .HeightInPixels = TextHeight);
@@ -594,10 +594,12 @@ void UI_StatusBar(ui_context *UI, draw_context *Draw, edit_context *Edit,
 
 	f32 PointSize = 20.0f;
 	f32 PointPosY = (StatusBarHeight - 0.0f) / 2.0f;
-	v3f Position = v3f(Size.X - 100, PointPosY, 0.0);
+	v3f Position = v3f(Size.X - 200, TextPosY, 0.0);
 	if(!Buffer->EditedSinceLastSave)
 	{
-		D_PointsArray(Draw, Arena, &Position, 1, 20, v4f(0.0, 0.6, 0, 1));
+		//D_PointsArray(Draw, Arena, &Position, 1, 20, v4f(0.0, 0.6, 0, 1));
+		D_Str8(Draw, Arena, Str8("UNSAVED"), .Font = Font, .Position = Position, 
+		.HeightInPixels = TextHeight, .Colour = v4f(0.008, 0.0 ,0.0, 1.0));
 	}
 	else
 	{

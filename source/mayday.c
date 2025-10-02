@@ -288,7 +288,7 @@ void OS_Update(void *Data)
 			   M->ActiveFilePath, &M->Buffer,
 			   v2i(WindowWidth, WindowHeight));
 
-		UI_StatusBar(M->UI, M->Draw, M->Edit, M->FrameArena, M->StatusFont,
+		UI_StatusBar(M->UI, M->Draw, M->Edit, M->FrameArena, M->Rajdhani,
 					 M->Edit->Cursors, &M->Buffer,
 					 v2i(WindowWidth, WindowHeight));
 
@@ -407,7 +407,11 @@ void OS_Update(void *Data)
 			{
 				D_Blur(M->Draw, M->FrameArena, v4i(TotalHeight + 50 + 5, 55 + 1, sapp_widthf() - TotalHeight - 10 - 50 - 10, sapp_heightf() - 100 - 10 - HeaderHeight), 10.0);
 				os_directory_tree ActiveTree = OS_DirectoryTreeFromPath(M->FrameArena, M->FileListPath, (os_directory_tree_options){});
-				
+
+				if(UI_KeyDown(M->UI, SAPP_KEYCODE_ESCAPE, 0))
+				{
+					M->ShowFileList = False;
+				}
 				f32 Height = 50.0;
 				M->FileListScrollTarget += UI_Scroll(M->UI).Y*0.4;
 				M->FileListScroll = Lerp(M->FileListScroll, M->FileListScrollTarget, 0.2);

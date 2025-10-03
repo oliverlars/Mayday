@@ -228,6 +228,8 @@ typedef struct ui_orbit_node
 
 typedef array(ui_orbit_node) ui_orbit_node_array;
 
+b32 UI_MouseInV4I(ui_context *UI, v4i Rect);
+
 ui_orbit_node_array UI_OrbitNodesFromTreeDepth(m_arena *Arena, os_directory_tree Tree, int Depth, f32 Scale);
 
 ui_orbit_signal UI_OrbitLabels(ui_context *UI, draw_context *Draw, edit_context *Edit,

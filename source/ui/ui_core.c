@@ -163,6 +163,14 @@ v2f UI_Scroll(ui_context *UI)
 	return Result;
 }
 
+b32 UI_MouseInV4I(ui_context *UI, v4i Rect)
+{
+	return UI->MousePosition.X >= Rect.X &&
+		   UI->MousePosition.X <= (Rect.X + Rect.Z) &&
+		   UI->MousePosition.Y >= Rect.Y &&
+		   UI->MousePosition.Y <= (Rect.Y + Rect.W);
+}
+
 b32 UI_DoubleClicked(ui_context *UI)
 {
 	return UI->MultiLeftClickCount == 1 && UI_LeftMouseWentDown(UI);
@@ -384,12 +392,6 @@ ui_signal UI_TextButton(ui_context *UI, draw_context *Draw, m_arena *Arena,
 	v4f MouseWorld = MulM44FV4F(M44FTranspose(R_CurrentInverseTransform(Draw->Render)), MouseNDC);
 	v2f MousePosition = v2f(MouseWorld.X / MouseWorld.W, MouseWorld.Y / MouseWorld.W);
 
-	if(MousePosition.X >= Min.X && MousePosition.X <= (Max.X) &&
-	   MousePosition.Y >= Min.Y && MousePosition.Y <= (Max.Y))
-	{
-		UI->Hot = Hash;
-	}
-
 
 	if(UI->Hot == Hash)
 	{
@@ -407,6 +409,12 @@ ui_signal UI_TextButton(ui_context *UI, draw_context *Draw, m_arena *Arena,
 		//D_Quad(Draw, Arena, BoxPosition, Width, Height, v4f(0, 0, 0, 1));
 		D_Str8(Draw, Arena, DisplayString, .Font = Style.Font, .Position = V3FromV2(Position), .Colour = v4f(0.1, 0.05, 0, 1.0), .HeightInPixels = HeightInPixels);
 		Widget->HotAnimation = Lerp(Widget->HotAnimation, 0.0, 0.1);
+	}
+
+	if(MousePosition.X >= Min.X && MousePosition.X <= (Max.X) &&
+	   MousePosition.Y >= Min.Y && MousePosition.Y <= (Max.Y))
+	{
+		UI->Hot = Hash;
 	}
 
 	Result.HotAnimation = Widget->HotAnimation;
@@ -441,12 +449,6 @@ ui_signal UI_TextHighlightButton(
 	v4f MouseWorld = MulM44FV4F(M44FTranspose(R_CurrentInverseTransform(Draw->Render)), MouseNDC);
 	v2f MousePosition = v2f(MouseWorld.X / MouseWorld.W, MouseWorld.Y / MouseWorld.W);
 
-	if(MousePosition.X >= Min.X && MousePosition.X <= (Max.X) &&
-	   MousePosition.Y >= Min.Y && MousePosition.Y <= (Max.Y))
-	{
-		UI->Hot = Hash;
-	}
-
 
 	if(UI->Hot == Hash)
 	{
@@ -470,6 +472,12 @@ ui_signal UI_TextHighlightButton(
 		.HighlightIndices = HighlightIndices,
 		.HeightInPixels = HeightInPixels);
 		Widget->HotAnimation = Lerp(Widget->HotAnimation, 0.0, 0.1);
+	}
+
+	if(MousePosition.X >= Min.X && MousePosition.X <= (Max.X) &&
+	   MousePosition.Y >= Min.Y && MousePosition.Y <= (Max.Y))
+	{
+		UI->Hot = Hash;
 	}
 
 	Result.HotAnimation = Widget->HotAnimation;

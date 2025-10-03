@@ -403,9 +403,16 @@ void OS_Update(void *Data)
 
 			R_PushTransform(M->Render, Orthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
 			ui_tree_view_signal TreeViewSignal = UI_TreeViewFolderLabels(M->UI, M->Draw, M->Edit, M->Orbitron, M->FrameArena, M->OrbitItem, &M->TreeView, PV, M->Folder, &M->TextBoxBuffer);
+			
+			// HACK(Oliver): Find a better way to do this
+			v4i PanelRect = v4i(TotalHeight + 50 + 5, 55 + 1, sapp_widthf() - TotalHeight - 10 - 50 - 10, sapp_heightf() - 100 - 10 - HeaderHeight);
 			if(M->ShowFileList)
 			{
-				D_Blur(M->Draw, M->FrameArena, v4i(TotalHeight + 50 + 5, 55 + 1, sapp_widthf() - TotalHeight - 10 - 50 - 10, sapp_heightf() - 100 - 10 - HeaderHeight), 10.0);
+				D_Blur(M->Draw, M->FrameArena, PanelRect, 10.0);
+				if(UI_MouseInV4I(M->UI, PanelRect))
+				{
+					M->UI->Hot = M_FNVHashString(M_FNV_HASH_START, Str8("Background Panel"));
+				}
 				os_directory_tree ActiveTree = OS_DirectoryTreeFromPath(M->FrameArena, M->FileListPath, (os_directory_tree_options){});
 
 				if(UI_KeyDown(M->UI, SAPP_KEYCODE_ESCAPE, 0))
@@ -447,6 +454,11 @@ void OS_Update(void *Data)
 					UI_PopStyle(M->UI);
 					Position.Y -= Height*Scale;
 					Index++;
+				}
+			
+				if(UI_MouseInV4I(M->UI, PanelRect))
+				{
+					M->UI->Hot = M_FNVHashString(M_FNV_HASH_START, Str8("Background Panel"));
 				}
 
 			}
@@ -559,7 +571,7 @@ void OS_Update(void *Data)
 				}
 
 				QuadTree->Masses[0] = QuadTreeCalculateAttributes(QuadTree, 0);
-
+		
 				SimulateForceDirectedGraphQuadTree(
 					M->FrameArena,
 					Velocities,
@@ -668,6 +680,7 @@ void OS_Update(void *Data)
 					Positions[I] = v4f(Result.X, Result.Y, Result.Z, 0.0);
 				}
 			}
+
 #if 0
 			D_Quad(M->Draw, M->FrameArena, v2f(100.0, sapp_heightf()-300), 500, 200, v4f(0.2, 0.0, 0.0, 1.0));
 			ui_textbox_signal SearchSignal = UI_TextBox(M->FrameArena, M->LogoFont, v2f(100.0, sapp_heightf() - 400), 500,
@@ -963,7 +976,7 @@ int main()
 
 	u64 Start = OS_TimeStampNow();
 
-	DispatchInitialise(&M.Shared, 15);
+	DispatchInitialise(&M.Shared, 8);
 
 	//M.Folder = Str8("/");
 

@@ -179,9 +179,11 @@ void UI_TreeView(ui_context *UI, draw_context *Draw, shared_wave_info *Shared,
 }
 
 
-ui_tree_view_signal UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw, edit_context *Edit, d_font Font,
-							 				m_arena *Arena, int ActiveNodeIndex,
-											ui_tree *TreeView, m44f TreeTransform, str8 CurrentPath, editable_buffer* SearchBuffer)
+ui_tree_view_signal UI_TreeViewFolderLabels(
+	ui_context *UI, draw_context *Draw, edit_context *Edit, 
+	d_font Font,
+	m_arena *Arena, int ActiveNodeIndex,
+	ui_tree *TreeView, m44f TreeTransform, str8 CurrentPath, editable_buffer* SearchBuffer)
 {
 	ui_tree_view_signal Result = {0};
 

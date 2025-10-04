@@ -99,6 +99,7 @@ typedef struct ui_context
 
 
 	u64 Hot;
+	u64 NextHot;
 	u64 Active;
 	u64 LastActive;
 

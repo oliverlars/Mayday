@@ -411,7 +411,7 @@ void OS_Update(void *Data)
 				D_Blur(M->Draw, M->FrameArena, PanelRect, 10.0);
 				if(UI_MouseInV4I(M->UI, PanelRect))
 				{
-					M->UI->Hot = M_FNVHashString(M_FNV_HASH_START, Str8("Background Panel"));
+					M->UI->NextHot = M_FNVHashString(M_FNV_HASH_START, Str8("Background Panel"));
 				}
 				os_directory_tree ActiveTree = OS_DirectoryTreeFromPath(M->FrameArena, M->FileListPath, (os_directory_tree_options){});
 
@@ -454,11 +454,6 @@ void OS_Update(void *Data)
 					UI_PopStyle(M->UI);
 					Position.Y -= Height*Scale;
 					Index++;
-				}
-			
-				if(UI_MouseInV4I(M->UI, PanelRect))
-				{
-					M->UI->Hot = M_FNVHashString(M_FNV_HASH_START, Str8("Background Panel"));
 				}
 
 			}
@@ -642,25 +637,19 @@ void OS_Update(void *Data)
 						FileNode->String, 
 						50.0
 					);
-					v2f MP = v2f(M->UI->MousePosition.X, M->UI->MousePosition.Y);
-					v4f LabelColour = v4f(0.1, 0.05, 0, 1.0);
-					if(
-						MP.X >= LabelBBox.X && MP.X < LabelBBox.Z &&
-						MP.Y >= LabelBBox.Y && MP.Y < LabelBBox.W)
+
+					UI_PushStyle(M->UI, (ui_style){.Font = M->Orbitron });
+					ui_signal Button = UI_TextButton(M->UI, M->Draw,
+						M->FrameArena, Str8PushF(M->FrameArena, "?S##?u32", FileNode->String, I),
+						50.0,
+						v2f(TransformedPoint.X + 5, TransformedPoint.Y + 5), v4f(0.5, 0.1, 0, 1));
+					UI_PopStyle(M->UI);
+					if(Button.Clicked)
 					{
-						LabelColour = v4f(0.5, 0.1, 0, 1);
-						if(UI_LeftMouseWentDown(M->UI))
-						{
 							M->Folder = Str8Copy(M->PermanentArena, FileNode->String);
 							M->LookFrom.Z = 500;
-							M->LookAt = v3f(0, 0, 0);
-						}
+							M->LookAt = v3f(0, 0, 0);					
 					}
-					D_Str8(M->Draw, M->FrameArena, FileNode->String,
-					.Font = M->Orbitron,
-					.HeightInPixels = 50.0f,
-					.Colour = LabelColour,
-					.Position = v3f(TransformedPoint.X + 5, TransformedPoint.Y + 5, 0.0));
 					R_PopTransform(M->Render);
 					
 					FileNode = FileNode->Next;

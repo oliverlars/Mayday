@@ -414,7 +414,7 @@ ui_signal UI_TextButton(ui_context *UI, draw_context *Draw, m_arena *Arena,
 	if(MousePosition.X >= Min.X && MousePosition.X <= (Max.X) &&
 	   MousePosition.Y >= Min.Y && MousePosition.Y <= (Max.Y))
 	{
-		UI->Hot = Hash;
+		UI->NextHot = Hash;
 	}
 
 	Result.HotAnimation = Widget->HotAnimation;
@@ -477,7 +477,7 @@ ui_signal UI_TextHighlightButton(
 	if(MousePosition.X >= Min.X && MousePosition.X <= (Max.X) &&
 	   MousePosition.Y >= Min.Y && MousePosition.Y <= (Max.Y))
 	{
-		UI->Hot = Hash;
+		UI->NextHot = Hash;
 	}
 
 	Result.HotAnimation = Widget->HotAnimation;
@@ -519,16 +519,6 @@ b32 UI_TextButtonWrapping(ui_context *UI, draw_context *Draw, m_arena *Arena,
 	v4f MouseWorld = MulM44FV4F(M44FTranspose(R_CurrentInverseTransform(Draw->Render)), MouseNDC);
 	v2f MousePosition = v2f(MouseWorld.X / MouseWorld.W, MouseWorld.Y / MouseWorld.W);
 
-	if(MousePosition.X >= Min.X && MousePosition.X <= (Max.X) &&
-	   MousePosition.Y >= Min.Y && MousePosition.Y <= (Max.Y))
-	{
-		UI->Hot = Hash;
-	}
-	else
-	{
-		UI->HotAnimation = Lerp(UI->HotAnimation, 0.0, 0.1);
-	}
-
 	b32 Clicked = False;
 	if(UI->Hot == Hash)
 	{
@@ -563,12 +553,23 @@ b32 UI_TextButtonWrapping(ui_context *UI, draw_context *Draw, m_arena *Arena,
 		}
 	}
 
+	if(MousePosition.X >= Min.X && MousePosition.X <= (Max.X) &&
+	   MousePosition.Y >= Min.Y && MousePosition.Y <= (Max.Y))
+	{
+		UI->NextHot = Hash;
+	}
+	else
+	{
+		UI->HotAnimation = Lerp(UI->HotAnimation, 0.0, 0.1);
+	}
+
 	return Clicked;
 }
 
 void UI_Begin(ui_context *UI)
 {
-	UI->Hot = 0;
+	UI->Hot = UI->NextHot;
+	UI->NextHot = 0;
 	UI->StyleCount = 0;
 	ui_style Style = {0};
 	Style.Font = UI->Font;
@@ -623,16 +624,6 @@ ui_textbox_signal UI_TextBox(m_arena *Arena,
 	v4f MouseWorld = MulM44FV4F(M44FTranspose(R_CurrentInverseTransform(Draw->Render)), MouseNDC);
 	v2f MousePosition = v2f(MouseWorld.X / MouseWorld.W, MouseWorld.Y / MouseWorld.W);
 
-	if(MousePosition.X >= Min.X && MousePosition.X <= (Max.X) &&
-	   MousePosition.Y >= Min.Y && MousePosition.Y <= (Max.Y))
-	{
-		UI->Hot = Hash;
-	}
-	else
-	{
-		UI->HotAnimation = Lerp(UI->HotAnimation, 0.0, 0.1);
-	}
-
 	b32 Clicked = False;
 	if(UI->Hot == Hash)
 	{
@@ -643,6 +634,16 @@ ui_textbox_signal UI_TextBox(m_arena *Arena,
 		}
 
 		UI->HotAnimation = Lerp(UI->HotAnimation, 1.0, 0.1);
+	}
+	else
+	{
+		UI->HotAnimation = Lerp(UI->HotAnimation, 0.0, 0.1);
+	}
+
+	if(MousePosition.X >= Min.X && MousePosition.X <= (Max.X) &&
+	   MousePosition.Y >= Min.Y && MousePosition.Y <= (Max.Y))
+	{
+		UI->NextHot = Hash;
 	}
 	else
 	{

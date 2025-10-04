@@ -444,7 +444,11 @@ void OS_Update(void *Data)
 					UI_PushStyle(M->UI, CurrentStyle);
 					if(fabs(DistanceFromActiveItem) < Height*10.0)
 					{
-						ui_signal Signal = UI_TextButton(M->UI, M->Draw, M->FrameArena, FileName, Height*Scale, Position, v4f(1, 1, 1, 1));
+						ui_signal Signal = UI_TextButton(
+							M->UI, M->Draw, M->FrameArena,
+							Str8PushF(M->FrameArena, "?S###?u32", FileName, Index), Height*Scale, Position,
+							v4f(1, 1, 1, 1)
+						);
 						if(Signal.Clicked)
 						{
 							M->Buffer.String = OS_LoadEntireFileIntoMemory(M->PermanentArena, Iter.Current->PathAndName);

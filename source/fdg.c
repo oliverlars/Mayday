@@ -449,9 +449,11 @@ void ParallelForceDisplacement(wave_info *WaveInfo, void* Input)
 
 		// HACK(Oliver): Figure out a better constant here
 		// Likely should include dt
-		P->NodeVelocities[I + NodeIndex].X *= 0.01;
-		P->NodeVelocities[I + NodeIndex].Y *= 0.01;
-		P->NodeVelocities[I + NodeIndex].Z *= 0.01;
+		// Okay new constant is better but not sure, i feel it should work
+		// regardless of the constant?
+		P->NodeVelocities[I + NodeIndex].X *= 5.0f/(f32)(P->NodeCount*P->NodeCount);
+		P->NodeVelocities[I + NodeIndex].Y *= 5.0f/(f32)(P->NodeCount*P->NodeCount);
+		P->NodeVelocities[I + NodeIndex].Z *= 5.0f/(f32)(P->NodeCount*P->NodeCount);
 
 		P->NodePositions[I + NodeIndex].X += P->NodeVelocities[I + NodeIndex].X;
 		P->NodePositions[I + NodeIndex].Y += P->NodeVelocities[I + NodeIndex].Y;

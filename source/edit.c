@@ -324,7 +324,7 @@ v2f E_GetVisualPositionFromEditableBuffer(edit_context *E,
 	v2f Result = Position;
 
 	int At = Index;
-	for(int I = Indices.X; I < Indices.Y; I++)
+	for(int I = Indices.X; I <= Indices.Y; I++)
 	{
 		if(I == At)
 		{
@@ -478,7 +478,7 @@ int E_IndexFromPosition(edit_context *Edit, draw_context *Draw, d_font Font,
 	f32 BufferXStart = BufferPosition.X;
 
 	int Result = Index;
-	for(;Index < Indices.Y; Index++)
+	for(;Index <= Indices.Y; Index++)
 	{
 		u32 CodePoint =  Buffer->String.Bytes[Index];
 

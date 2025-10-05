@@ -207,7 +207,7 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 	{
 		for(cursor *Cursor = Edit->Cursors; Cursor; Cursor = Cursor->Next)
 		{
-			if(Cursor->Selection.Y > Range.X && Cursor->Selection.Y < Range.Y)
+			if(Cursor->Selection.Y >= Range.X && Cursor->Selection.Y <= Range.Y)
 			{
 				Cursor->TargetPosition = E_GetVisualPositionFromEditableBuffer(Edit,
 																		 Draw,

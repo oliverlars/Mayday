@@ -832,6 +832,7 @@ void OS_Event(const sapp_event *Event, void *Data)
 
 void OS_Initialise(void *Data)
 {
+	LogInfo("ABC");
 	mayday_context *M = Data;
 	M->Buffer.HeightInPixels = 35;
 	M->BufferFontHeight = 35;

@@ -228,14 +228,6 @@ Entry(InputWaveInfo)
 		}
 		
 		str8 PathToBundle = Str8("build/Mayday");
-
-		if(ShouldRun && !FailedToBuild)
-		{
-			printf("\nStarting Mayday...\n\n");
-			b32 Outcome = False;
-			ExecuteCommand(&Arena, PathToExecutable, &Outcome);
-		}
-
 		if(!FailedToBuild && OS == OS_DARWIN)
 		{
 			if(PathExists(&Arena, Str8("build/Icon.iconset")))
@@ -251,6 +243,13 @@ Entry(InputWaveInfo)
 			{
 				printf(F_ERROR "build/Icon.iconset folder not found. Put \n");
 			}
+		}
+
+		if(ShouldRun && !FailedToBuild)
+		{
+			printf("\nStarting Mayday...\n\n");
+			b32 Outcome = False;
+			ExecuteCommand(&Arena, PathToExecutable, &Outcome);
 		}
 	}
 

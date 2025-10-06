@@ -1,3 +1,4 @@
+#include "memory.h"
 #include <assert.h>
 #include <math.h>
 #include <stdio.h>
@@ -387,10 +388,11 @@ b32 ExecuteCommand(memory_arena *Arena, str8 EntireCommandAndArguments, b32 *Fai
 	posix_spawn_file_actions_init(&SpawnActions);
 
 	posix_spawn_file_actions_adddup2(&SpawnActions, Pipes[1], STDOUT_FILENO);
+	posix_spawn_file_actions_adddup2(&SpawnActions, Pipes[1], STDERR_FILENO);
 	posix_spawn_file_actions_addclose(&SpawnActions, Pipes[0]);
 	posix_spawn_file_actions_addclose(&SpawnActions, Pipes[1]);
 
-	char** CompilerArguments = (char**)ArenaPush(Arena, 1024);
+	char** CompilerArguments = (char**)ArenaPush(Arena, 1024*sizeof(char*));
 	u64 ArgumentIndex = 0;
 	for(u64 Index = 0; Index < EntireCommandAndArguments.Size; Index++, ArgumentIndex++)
 	{
@@ -404,7 +406,11 @@ b32 ExecuteCommand(memory_arena *Arena, str8 EntireCommandAndArguments, b32 *Fai
 		Index += Argument.Size;
 	}
 
+	CompilerArguments[ArgumentIndex] = Null;
+
 	s32 ProcessStatus = posix_spawnp(&ProcessID, CompilerArguments[0], &SpawnActions, Null, CompilerArguments, environ);
+	posix_spawn_file_actions_destroy(&SpawnActions);
+	
 	if (ProcessStatus == 0)
 	{
 		close(Pipes[1]);
@@ -413,17 +419,14 @@ b32 ExecuteCommand(memory_arena *Arena, str8 EntireCommandAndArguments, b32 *Fai
 
 		s32 ExitCode;
 		u8 *BackingMemory = ArenaPush(Arena, 4096);
+		s64 NumberOfBytesRead = 0;
+		waitpid(ProcessID, &ExitCode, WUNTRACED | WCONTINUED | WNOHANG);
 		do
 		{
-			waitpid(ProcessID, &ExitCode, WUNTRACED | WCONTINUED);
-			s64 NumberOfBytesRead = read(Pipes[0], BackingMemory, 4096);
-			if (NumberOfBytesRead <= 0)
-			{
-				//continue;
-			}
+			NumberOfBytesRead = read(Pipes[0], BackingMemory, 4096);
 			str8 String = {.Bytes = (s8*)BackingMemory, .Size = NumberOfBytesRead};
 			printf("%.*s", Str8ToPrintfArgs(String));
-		} while(!WIFEXITED(ExitCode));
+		} while(NumberOfBytesRead > 0);
 		close(Pipes[0]);
 		
 

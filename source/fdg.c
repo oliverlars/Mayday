@@ -458,12 +458,6 @@ void ParallelForceDisplacement(wave_info *WaveInfo, void* Input)
 		P->NodePositions[I + NodeIndex].X += P->NodeVelocities[I + NodeIndex].X;
 		P->NodePositions[I + NodeIndex].Y += P->NodeVelocities[I + NodeIndex].Y;
 		P->NodePositions[I + NodeIndex].Z += P->NodeVelocities[I + NodeIndex].Z;
-		
-		// {
-		// 	P->NodePositions[I + NodeIndex].X += D.X * P->Temperature;
-		// 	P->NodePositions[I + NodeIndex].Y += D.Y * P->Temperature;
-		// 	P->NodePositions[I + NodeIndex].Z += D.Z * P->Temperature;
-		// }
 	}
 
 	ScratchEnd(Scratch);

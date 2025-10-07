@@ -1,1 +1,1 @@
-clang friday.c -O2 -o friday
+clang friday.c -O0 -g -o friday

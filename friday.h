@@ -101,6 +101,8 @@ typedef struct str8_list
 typedef array(str8) str8_array;
 
 #if defined(__APPLE__)
+
+#include <util.h>
 typedef enum compiler
 {
 	COMPILER_PLATFORM_DEFAULT = 0,
@@ -379,21 +381,26 @@ HACK(Oliver): Fix ExecuteCommand spaces
  */
 b32 ExecuteCommand(memory_arena *Arena, str8 EntireCommandAndArguments, b32 *FailedToExecute)
 {
-	s32 Pipes[2] = {0};
 	pid_t ProcessID;
 	posix_spawn_file_actions_t SpawnActions;
 
-	pipe(Pipes);
+	int MasterFD = -1;
+	int SlaveFD = -1;
+	openpty(&MasterFD, &SlaveFD, Null, Null, Null);
 
 	posix_spawn_file_actions_init(&SpawnActions);
 
-	posix_spawn_file_actions_adddup2(&SpawnActions, Pipes[1], STDOUT_FILENO);
-	posix_spawn_file_actions_adddup2(&SpawnActions, Pipes[1], STDERR_FILENO);
-	posix_spawn_file_actions_addclose(&SpawnActions, Pipes[0]);
-	posix_spawn_file_actions_addclose(&SpawnActions, Pipes[1]);
+	posix_spawn_file_actions_adddup2(&SpawnActions, SlaveFD, STDOUT_FILENO);
+	posix_spawn_file_actions_adddup2(&SpawnActions, SlaveFD, STDERR_FILENO);
+	posix_spawn_file_actions_addclose(&SpawnActions, MasterFD);
+	posix_spawn_file_actions_addclose(&SpawnActions, SlaveFD);
 
 	char** CompilerArguments = (char**)ArenaPush(Arena, 1024*sizeof(char*));
 	u64 ArgumentIndex = 0;
+	CompilerArguments[0] = "script";    // macOS & most BSDs
+	CompilerArguments[1] = "-q";
+	CompilerArguments[2] = "/dev/null";
+	ArgumentIndex += 3;
 	for(u64 Index = 0; Index < EntireCommandAndArguments.Size; Index++, ArgumentIndex++)
 	{
 		GobbleWhitespace(EntireCommandAndArguments, &Index);
@@ -413,21 +420,21 @@ b32 ExecuteCommand(memory_arena *Arena, str8 EntireCommandAndArguments, b32 *Fai
 	
 	if (ProcessStatus == 0)
 	{
-		close(Pipes[1]);
+		close(SlaveFD);
 
 		str8_list StdOutList = {0};
 
 		s32 ExitCode;
 		u8 *BackingMemory = ArenaPush(Arena, 4096);
 		s64 NumberOfBytesRead = 0;
-		waitpid(ProcessID, &ExitCode, WUNTRACED | WCONTINUED | WNOHANG);
 		do
 		{
-			NumberOfBytesRead = read(Pipes[0], BackingMemory, 4096);
+			NumberOfBytesRead = read(MasterFD, BackingMemory, 4096);
 			str8 String = {.Bytes = (s8*)BackingMemory, .Size = NumberOfBytesRead};
 			printf("%.*s", Str8ToPrintfArgs(String));
 		} while(NumberOfBytesRead > 0);
-		close(Pipes[0]);
+		waitpid(ProcessID, &ExitCode, WUNTRACED);
+		close(MasterFD);
 		
 
 
@@ -580,7 +587,7 @@ void Dispatch(shared_wave_info *Shared, s64 LaneCount)
 		Entries[Lane].Shared = Shared;
 		Entries[Lane].Lane = Lane;
 		Entries[Lane].Shared->Barrier = &Barrier;
-		pthread_create(Waves + Lane, Null, Entry, Entries + Lane);
+		assert(pthread_create(Waves + Lane, Null, Entry, Entries + Lane) == 0);
 	}
 
 	for (s64 Lane = 0; Lane < LaneCount; Lane++)

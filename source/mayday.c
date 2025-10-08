@@ -742,7 +742,7 @@ void OS_Update(void *Data)
 	f32 MillisecondsSinceLastClick = OS_MilliSecondsFromTimeStamp(OS_TimeStampNow() - M->UI->TimeStampWhenLeftMousePressed);
 	if(MillisecondsSinceLastClick >= 400)
 	{
-	M->UI->MultiLeftClickCount = 0;
+		M->UI->MultiLeftClickCount = 0;
 	}
 
 }
@@ -970,12 +970,12 @@ int main()
 
 	u64 Start = OS_TimeStampNow();
 
-	DispatchInitialise(&M.Shared, 8);
+	DispatchInitialise(&M.Shared, 12);
 
 	//M.Folder = Str8("/");
 
 	sapp_desc *SAPPDesc = ArenaPushArrayZero(Arena, sapp_desc, 1);
-	SAPPDesc->window_title = "assdfasdfsd";
+	SAPPDesc->window_title = "Mayday!";
 	SAPPDesc->init_userdata_cb = OS_Initialise;
 	SAPPDesc->frame_userdata_cb = OS_Update;
 	SAPPDesc->event_userdata_cb = OS_Event;

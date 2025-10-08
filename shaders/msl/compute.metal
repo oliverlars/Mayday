@@ -66,6 +66,28 @@ float DistanceToLine(float2 Position, float2 Start, float2 End)
 	return metal::length(PositionToStart - H*EndToStart);
 }
 
+float DistanceToDashedLines(float2 Position, float2 InitialStart, float2 InitialEnd, float Length)
+{
+	int Count = metal::length(InitialStart - InitialEnd)/Length;
+	float MinDistance = 100000.0;
+	float2 Start = InitialStart;
+	float2 End = Start + metal::normalize(InitialEnd - InitialStart)*Length;
+	for(int I = 0; I < Count; I++)
+	{
+		float2 EndToStart = End - Start;
+		float2 PositionToStart = Position - Start;
+		float H = metal::clamp(metal::dot(PositionToStart, EndToStart)/metal::dot(EndToStart,EndToStart), 0.0, 1.0);
+		float D = metal::length(PositionToStart - H*EndToStart);
+		Start += metal::normalize(InitialEnd - InitialStart)*Length;
+		End += metal::normalize(InitialEnd - InitialStart)*Length;
+		if(I % 2 == 0) continue;
+		MinDistance = metal::min(D, MinDistance);
+	}
+
+	return MinDistance;
+}
+
+
 // https://iquilezles.org/articles/distfunctions2d/
 float DistanceToBezier(float2 Pos, float2 A, float2 B, float2 C)
 {
@@ -164,7 +186,7 @@ kernel void ComputeMain(metal::texture2d<float, metal::access::read_write> Textu
 		{
 			metal::float2 Position = float2(ThreadPositionInGrid.x, ThreadPositionInGrid.y);
 			float Thickness = Lines[DataIndex].Thickness;
-			float Distance = DistanceToLine(Position, Lines[DataIndex].Start, Lines[DataIndex].End) - Thickness*0.5;
+			float Distance = DistanceToDashedLines(Position, Lines[DataIndex].Start, Lines[DataIndex].End, 15.0) - Thickness*0.5;
 			float AA = metal::smoothstep(-1, 1, -Distance) * Lines[DataIndex].Colour.a;
 
 			// Equivalent to ONE_MINUS_SRC_ALPHA

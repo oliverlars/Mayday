@@ -496,7 +496,6 @@ void OS_Update(void *Data)
 			// RECENTLY OPENED
 			{
 				static u64 TreeHash = 0;
-				static v4f *TargetPositions = 0;
 				static v4f *Positions = 0;
 				static v4f *Velocities = 0;
 				static int *Froms = 0;
@@ -522,7 +521,6 @@ void OS_Update(void *Data)
 				if(TreeHash != CurrentHash)
 				{
 					Positions = ArenaPushArrayZero(M->PermanentArena, v4f, NodeCount);
-					TargetPositions = ArenaPushArrayZero(M->PermanentArena, v4f, NodeCount);
 					Velocities = ArenaPushArrayZero(M->PermanentArena, v4f, NodeCount);
 
 					Froms = ArenaPushArrayZero(M->PermanentArena, int, NodeCount);
@@ -542,7 +540,6 @@ void OS_Update(void *Data)
 						f32 X = RandomBilateral(&RandomState);
 						f32 Y = RandomBilateral(&RandomState);
 						f32 Z = RandomBilateral(&RandomState);
-						TargetPositions[I] = v4f(X, Y, Z, 0);
 						Positions[I] = v4f(X, Y, Z, 0);
 						X = RandomBilateral(&RandomState)*0.1;
 						Y = RandomBilateral(&RandomState)*0.1;
@@ -552,8 +549,6 @@ void OS_Update(void *Data)
 					TreeHash = CurrentHash;
 				}
 
-				TargetPositions[0] = v4f(0, 0, 0, 0);
-
 				quadtree_header *QuadTree = ArenaPushArrayZero(M->FrameArena, quadtree_header, 1);
 				QuadTree->Bounds = ArenaPushArrayZero(M->FrameArena, bounds, NodeCount*4);
 				QuadTree->ChildrenCounts = ArenaPushArrayZero(M->FrameArena, int, NodeCount*4);
@@ -561,20 +556,25 @@ void OS_Update(void *Data)
 				QuadTree->Masses = ArenaPushArrayZero(M->FrameArena, v4f, NodeCount*4);
 				QuadTree->Quadrants = ArenaPushArrayZero(M->FrameArena, Quadrant, NodeCount*4);
 				
-				QuadTree->Bounds[0] = GetBoundsV4F(TargetPositions, NodeCount);
+				QuadTree->Bounds[0] = GetBoundsV4F(Positions, NodeCount);
 				QuadTree->NextQuadrantIndex = 1;
 
 				for(int I = 0; I < NodeCount; I++)
 				{
-					QuadTreeBuild(M->FrameArena, QuadTree, 0, TargetPositions[I], 0);
+					QuadTreeBuild(M->FrameArena, QuadTree, 0, Positions[I], 0);
 				}
 
 				QuadTree->Masses[0] = QuadTreeCalculateAttributes(QuadTree, 0);
+
+				m44f P = Perspective(sapp_widthf()/sapp_heightf(), 80, 0.01, 10000.0);
+				v3f At = V3FromV4(Positions[0]);
+				v3f From = At;
+				From.Z -= 2;
 		
 				SimulateForceDirectedGraphQuadTree(
 					M->FrameArena,
 					Velocities,
-					TargetPositions,
+					Positions,
 					NodeCount,
 					Froms,
 					Tos,
@@ -583,6 +583,8 @@ void OS_Update(void *Data)
 					QuadTree,
 					&M->Shared
 				);
+
+				Positions[0] = v4f(0.0);
 
 				v3f *PointPositions = ArenaPushArray(M->FrameArena, v3f, NodeCount);
 				for(int I = 0; I < NodeCount; I++)
@@ -603,10 +605,6 @@ void OS_Update(void *Data)
 					LinePositions[LineIndex + 1] = v3f(To.X, To.Y, To.Z);
 					LineIndex += 2;
 				}
-				m44f P = Perspective(sapp_widthf()/sapp_heightf(), 80, 0.01, 10000.0);
-				v3f At = V3FromV4(Positions[0]);
-				v3f From = At;
-				From.Z -= 2;
 
 				m44f TranslateToOrigin = Translate(v3f(-From.X, -From.Y, -From.Z));
 
@@ -620,7 +618,6 @@ void OS_Update(void *Data)
 				m44f View = M44FLookAt(From, At, v3f(0, 1, 0));
 				m44f PV = Mul(Mul(View, Model), P);
 				R_PushTransform(M->Render, PV);
-				//PointPositions[0] = At;
 
 				str8_list_node *FileNode = M->RecentlyLoadedFolders.First;
 				for(int I = 1; I < NodeCount; I++)
@@ -664,14 +661,6 @@ void OS_Update(void *Data)
 				D_PointsArray(M->Draw, M->FrameArena, PointPositions, NodeCount, 10.0, v4f(0.1, 0.05, 0, 1.0));
 				R_PopTransform(M->Render);
 				v3f Points = v3f(800, 800, 0);
-
-				for(int I = 0; I < NodeCount; I++)
-				{
-					v4f P = Positions[I];
-					v4f Target = TargetPositions[I];
-					v3f Result = LerpV3F(v3f(P.X, P.Y, P.Z), v3f(Target.X, Target.Y, Target.Z), 0.1);
-					Positions[I] = v4f(Result.X, Result.Y, Result.Z, 0.0);
-				}
 			}
 
 #if 0

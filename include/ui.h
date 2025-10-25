@@ -29,7 +29,6 @@ typedef enum ui_view
 
 typedef struct ui_tree_info
 {
-	_Alignas(128) v4f *NodeTargetPositions;
 	_Alignas(128) v4f *NodePositions;
 	_Alignas(128) v4f *NodeVelocities;
 	fdg_node_info *NodeInfos;

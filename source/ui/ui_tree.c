@@ -17,7 +17,6 @@ ui_tree_info TreeInfoFromPath(m_arena *Arena, str8 Path, v3f Size)
 	Info.Tree = OS_DirectoryTreeFromPath(Arena, Str8Copy(Arena, Path), (os_directory_tree_options){ .FoldersOnly = True});
 
 	Info.NodePositions = ArenaPushArrayZero(Arena, v4f, Info.Tree.Count);
-	Info.NodeTargetPositions = ArenaPushArrayZero(Arena, v4f, Info.Tree.Count);
 	Info.NodeVelocities = ArenaPushArrayZero(Arena, v4f, Info.Tree.Count);
 	Info.NodeInfos = ArenaPushArrayZero(Arena, fdg_node_info, Info.Tree.Count);
 	Info.Froms = ArenaPushArrayZero(Arena, int, Info.Tree.Count);
@@ -34,8 +33,7 @@ ui_tree_info TreeInfoFromPath(m_arena *Arena, str8 Path, v3f Size)
 		f32 X = RandomBilateral(&RandomState);
 		f32 Y = RandomBilateral(&RandomState);
 		f32 Z = RandomBilateral(&RandomState);
-		Info.NodeTargetPositions[It.Index] = v4f(X, Y, Z, 0);
-		Info.NodePositions[It.Index] = Info.NodeTargetPositions[It.Index];
+		Info.NodePositions[It.Index] = v4f(X, Y, Z, 0);
 		Info.NodeInfos[It.Index].Name = It.Current->PathAndName;
 		assert(It.Current->Type == OS_DIR_ENTRY_FOLDER);
 		Info.NodeInfos[It.Index].IsFolder = It.Current->Type == OS_DIR_ENTRY_FOLDER;
@@ -98,7 +96,6 @@ void UI_TreeView(ui_context *UI, draw_context *Draw, shared_wave_info *Shared,
 			for(int I = 0; I < NextInfo.NodeCount; I++)
 			{
 				NextInfo.NodePositions[I] = TreeView->Info.NodePositions[I + Index];
-				NextInfo.NodeTargetPositions[I] = TreeView->Info.NodeTargetPositions[I + Index];
 			}
 		}
 		TreeView->Info = NextInfo;
@@ -113,12 +110,12 @@ void UI_TreeView(ui_context *UI, draw_context *Draw, shared_wave_info *Shared,
 	QuadTree->Masses = ArenaPushArrayZero(Arena, v4f, TreeView->Info.NodeCount*4);
 	QuadTree->Quadrants = ArenaPushArrayZero(Arena, Quadrant, TreeView->Info.NodeCount*4);
 
-	QuadTree->Bounds[0] = GetBoundsV4F(TreeView->Info.NodeTargetPositions, TreeView->Info.NodeCount);
+	QuadTree->Bounds[0] = GetBoundsV4F(TreeView->Info.NodePositions, TreeView->Info.NodeCount);
 	QuadTree->NextQuadrantIndex = 1;
 
 	for(int I = 0; I < TreeView->Info.NodeCount; I++)
 	{
-		QuadTreeBuild(Arena, QuadTree, 0, TreeView->Info.NodeTargetPositions[I], 0);
+		QuadTreeBuild(Arena, QuadTree, 0, TreeView->Info.NodePositions[I], 0);
 	}
 
 	QuadTree->Masses[0] = QuadTreeCalculateAttributes(QuadTree, 0);
@@ -127,7 +124,7 @@ void UI_TreeView(ui_context *UI, draw_context *Draw, shared_wave_info *Shared,
 	(
 		Arena,
 		TreeView->Info.NodeVelocities,
-		TreeView->Info.NodeTargetPositions,
+		TreeView->Info.NodePositions,
 		TreeView->Info.NodeCount,
 		TreeView->Info.Froms,
 		TreeView->Info.Tos,
@@ -164,18 +161,10 @@ void UI_TreeView(ui_context *UI, draw_context *Draw, shared_wave_info *Shared,
 	D_LinesArray(Draw, Arena, LinePositions, TreeView->Info.LinkCount*2, 5.0, v4f(0.5, 0.1, 0, 0.1));
 	D_PointsArray(Draw, Arena, Positions, TreeView->Info.NodeCount, 5.0, v4f(0.008, 0.00, 0, 1.0));
 	D_PointsArray(Draw, Arena, Positions, TreeView->Info.NodeCount, 10.0, v4f(0.1, 0.05, 0, 1.0));
-	bounds TotalBounds = GetBoundsV4F(TreeView->Info.NodeTargetPositions, TreeView->Info.NodeCount);
+	bounds TotalBounds = GetBoundsV4F(TreeView->Info.NodePositions, TreeView->Info.NodeCount);
 	v3f Centre = DivV3F(AddV3F(TotalBounds.Min, TotalBounds.Max), v3f(2.0, 2.0, 2.0));
 
 	//DrawQuadTree(Draw, Arena, QuadTree, 0);
-
-	for(int I = 0; I < TreeView->Info.NodeCount; I++)
-	{
-		v4f P = TreeView->Info.NodePositions[I];
-		v4f Target = TreeView->Info.NodeTargetPositions[I];
-		v3f Result = LerpV3F(v3f(P.X, P.Y, P.Z), v3f(Target.X, Target.Y, Target.Z), 0.1);
-		TreeView->Info.NodePositions[I] = v4f(Result.X, Result.Y, Result.Z, 0.0);
-	}
 }
 
 

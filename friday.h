@@ -397,10 +397,6 @@ b32 ExecuteCommand(memory_arena *Arena, str8 EntireCommandAndArguments, b32 *Fai
 
 	char** CompilerArguments = (char**)ArenaPush(Arena, 1024*sizeof(char*));
 	u64 ArgumentIndex = 0;
-	CompilerArguments[0] = "script";    // macOS & most BSDs
-	CompilerArguments[1] = "-q";
-	CompilerArguments[2] = "/dev/null";
-	ArgumentIndex += 3;
 	for(u64 Index = 0; Index < EntireCommandAndArguments.Size; Index++, ArgumentIndex++)
 	{
 		GobbleWhitespace(EntireCommandAndArguments, &Index);
@@ -426,12 +422,12 @@ b32 ExecuteCommand(memory_arena *Arena, str8 EntireCommandAndArguments, b32 *Fai
 
 		s32 ExitCode;
 		u8 *BackingMemory = ArenaPush(Arena, 4096);
-		s64 NumberOfBytesRead = 0;
+		s64 NumberOfBytesRead = 0;  
 		do
 		{
 			NumberOfBytesRead = read(MasterFD, BackingMemory, 4096);
 			str8 String = {.Bytes = (s8*)BackingMemory, .Size = NumberOfBytesRead};
-			printf("%.*s", Str8ToPrintfArgs(String));
+			write(STDOUT_FILENO, String.Bytes, String.Size);
 		} while(NumberOfBytesRead > 0);
 		waitpid(ProcessID, &ExitCode, WUNTRACED);
 		close(MasterFD);

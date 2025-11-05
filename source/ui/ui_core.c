@@ -769,7 +769,7 @@ ui_textbox_signal UI_TextBox(m_arena *Arena,
 
 	v2f StringPosition = Position;
 	StringPosition.X -= CursorXOffset;
-	StringPosition.Y += UI->Font.Descent * Scale;
+	//StringPosition.Y += UI->Font.Descent * Scale;
 	R_PushScissor(Draw->Render, v4i(BoxPosition.X, BoxPosition.Y, Width, Height));
 	D_Str8(Draw,
 			   Arena, Buffer->String,

@@ -396,7 +396,6 @@ void OS_Update(void *Data)
 			V = Mul(V, RotateAroundOrigin);
 			m44f PV = Mul(V, P);
 			R_PushTransform(M->Render, PV);
-			
 			UI_TreeView(M->UI, M->Draw, &M->Shared, M->FrameArena, &M->TreeView, M->Folder, v3f(0.1, 0.1, 0.1));
 
 			R_PopTransform(M->Render);
@@ -615,7 +614,8 @@ void OS_Update(void *Data)
 
 				Angle += 0.002;
 				m44f Model = Mul(TranslateToOrigin, Mul(Mul(RotationZ, RotationY), TranslateBack));
-				m44f View = M44FLookAt(From, At, v3f(0, 1, 0));
+				
+				m44f View = M44FLookAt(Add(From, v3f(0, 0, 0)) , At, v3f(0, 1, 0));
 				m44f PV = Mul(Mul(View, Model), P);
 				R_PushTransform(M->Render, PV);
 

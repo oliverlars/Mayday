@@ -357,6 +357,7 @@ void OS_Update(void *Data)
 
 
 		f32 HeaderHeight = 100;
+
 		D_Quad(M->Draw, M->FrameArena, v2f(TotalHeight + 50, 50), sapp_widthf() - TotalHeight - 10 - 50, sapp_heightf() - 100, v4f(0.2, 0.1, 0.0, 1.0));
 		D_Quad(M->Draw, M->FrameArena, v2f(TotalHeight + 50 + 5, 55), sapp_widthf() - TotalHeight - 10 - 50 - 10, sapp_heightf() - 100 - 10 - HeaderHeight, COLOUR_BACKGROUND);
 		D_Str8(
@@ -365,7 +366,7 @@ void OS_Update(void *Data)
 			.Position = v3f(TotalHeight + 40 + 60, sapp_heightf() - 55 - 100 + HeaderHeight/2.0 - 20.0, 0),
 			.Font = M->Rajdhani,
 			.Colour = COLOUR_BACKGROUND,
-			.OutlineThickness = 2.0,
+			.OutlineThickness = 2.5,
 			.HeightInPixels = 100
 		);
 
@@ -381,8 +382,6 @@ void OS_Update(void *Data)
 		R_PushScissor(M->Render, v4i(TotalHeight + 50 + 5, 55, sapp_widthf() - TotalHeight - 10 - 50 - 10, sapp_heightf() - 100 - 10 - HeaderHeight));
 		if(OS_ValidPath(M->Folder))
 		{
-			MouseRotation.X += UI_Scroll(M->UI).X;
-			MouseRotation.Y += UI_Scroll(M->UI).Y;
 			// HACK(Oliver): This is annoying i have to do this twice
 			R_PopTransform(M->Render);
 
@@ -462,11 +461,16 @@ void OS_Update(void *Data)
 			}
 			else if(TreeViewSignal.Hovered)
 			{
-				Angle2 += 0.0005;
-			}
-			else
-			{
-				Angle2 += 0.001;
+				if(TreeViewSignal.Hovered)
+				{
+					Angle2 += 0.0005;
+				}
+				else
+				{
+					Angle2 += 0.001;
+				}
+				MouseRotation.X += UI_Scroll(M->UI).X;
+				MouseRotation.Y += UI_Scroll(M->UI).Y;
 			}
 
 			M->OrbitItem = TreeViewSignal.NodeIndex;

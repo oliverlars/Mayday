@@ -469,6 +469,9 @@ void OS_Update(void *Data)
 				{
 					Angle2 += 0.001;
 				}
+			}
+			else 
+			{
 				MouseRotation.X += UI_Scroll(M->UI).X;
 				MouseRotation.Y += UI_Scroll(M->UI).Y;
 			}
@@ -836,6 +839,9 @@ void OS_Initialise(void *Data)
 	M->Buffer.String.Size = sizeof(G_TriangleShader);
 	MemoryCopy(M->Buffer.String.Bytes, G_TriangleShader.Data, G_TriangleShader.Length);
 
+
+	M->Edit->SearchBox.String.Bytes = ArenaPushZero(M->PermanentArena, MegaBytes(1));
+	
 	M->TextBoxBuffer.String.Bytes = ArenaPushArrayZero(M->PermanentArena, u8, 8192);
 	M->TextBoxBuffer.HeightInPixels = 60;
 

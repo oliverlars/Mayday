@@ -46,6 +46,8 @@ typedef struct editable_buffer
 
 	u64 LastModifiedTime;
 
+	b32 Search;
+
 	struct editable_buffer *NextInFreeList;
 } editable_buffer;
 
@@ -56,6 +58,7 @@ typedef struct edit_context
 	draw_context *Draw;
 
 	editable_buffer Buffer;
+	editable_buffer SearchBox;
 
 	undo_stack *NewestAction;
 	undo_stack *OldestAction;

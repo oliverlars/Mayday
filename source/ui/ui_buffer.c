@@ -10,6 +10,7 @@
 #include <assert.h>
 
 #include <math.h>
+#include <signal.h>
 
 
 // HACK(Oliver): Remove the ifdef...
@@ -391,6 +392,18 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 			}
 
 		}
+	}
+
+	if(Buffer->Search)
+	{
+		UI_TextBox(Arena, Font, v2f(sapp_widthf()/2 - 100, sapp_heightf() - 300), 200, UI, UI->Draw, Edit, 100, Str8("BufferSearchBox"), &Edit->SearchBox);
+	}
+
+	if(UI_KeyDown(UI, SAPP_KEYCODE_F, SAPP_MODIFIER_SUPER))
+	{
+		//UI->Active = UI_IDFromString(Str8("BufferSearchBox"));
+		raise(SIGTRAP);
+		Buffer->Search = True;
 	}
 
 	if(UI_KeyDown(UI, SAPP_KEYCODE_TAB, 0))

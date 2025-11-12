@@ -83,6 +83,7 @@ void E_InsertTo(edit_context *Edit, cursor *Cursor, editable_buffer *Buffer, str
 			E_RemoveTextFromSelection(Edit, Buffer, Selection);
 			PerCursorOffset -= (Selection.Y - Selection.X);
 		}
+		assert(Edit->Temp);
 		E_InsertTextAtIndex(Edit, Selection.X, Buffer, TextToInsert);
 		Selection = v2i(Selection.X + TextToInsert.Size, Selection.X + TextToInsert.Size);
 

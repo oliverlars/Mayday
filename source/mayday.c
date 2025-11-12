@@ -824,6 +824,7 @@ void OS_Event(const sapp_event *Event, void *Data)
 		}
 	}
 
+	assert(M->Edit->Arena);
 }
 
 void OS_Initialise(void *Data)
@@ -840,8 +841,8 @@ void OS_Initialise(void *Data)
 	MemoryCopy(M->Buffer.String.Bytes, G_TriangleShader.Data, G_TriangleShader.Length);
 
 
-	M->Edit->SearchBox.String.Bytes = ArenaPushZero(M->PermanentArena, MegaBytes(1));
-	
+	M->Edit->SearchBox.String.Bytes = ArenaPushArrayZero(M->PermanentArena, u8, 8192);
+
 	M->TextBoxBuffer.String.Bytes = ArenaPushArrayZero(M->PermanentArena, u8, 8192);
 	M->TextBoxBuffer.HeightInPixels = 60;
 

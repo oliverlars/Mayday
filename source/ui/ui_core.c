@@ -874,6 +874,7 @@ ui_textbox_signal UI_TextBox(m_arena *Arena,
 		str8 TextToInsert = UI_Text(UI, Arena);
 		if(TextToInsert.Size > 0)
 		{
+			assert(Edit->Temp);
 			E_InsertTo(Edit, Edit->Cursors, Buffer, TextToInsert);
 		}
 	}

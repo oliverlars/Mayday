@@ -84,20 +84,17 @@ int DigitCountFromInt(u32 Value) {
 	return Result;
 }
 
-void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
-			   m_arena *Arena, d_font Font, d_font NumbersFont,
-			   str8 BufferPath, editable_buffer *Buffer,
-			   v2i Size)
+void UI_BufferUpdate(
+	ui_context *UI, draw_context *Draw,
+	edit_context *Edit, d_font Font,
+	m_arena *Arena, editable_buffer *Buffer,
+	str8 BufferPath, v2i Size)
 {
-	//TODO(Oliver): Theres a better way to do this
+
 	int WindowHeight = Size.Y;
 	int WindowWidth = Size.X;
 
 	f32 LineHeight = D_LineHeightFromFont(Font, Buffer->HeightInPixels);
-
-	m44f Transform = R_CurrentTransform(Draw->Render);
-	Transform = Mul(Translate(v3f(Buffer->Offset.X, fmod(Buffer->Offset.Y, LineHeight), 0)), Transform);
-	R_PushTransform(Draw->Render, Transform);
 
 	int NumberOfLines = CountNewLinesNEON(Buffer->String);
 
@@ -120,120 +117,6 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 	SubString.Bytes += StartIndex;
 	SubString.Size = EndIndex - StartIndex;
 	v2i Range = {StartIndex, EndIndex};
-
-	// D_Str8(Draw, Arena, Font, v2f(800, 400),
-	// 		   v4f(1.0, 1.0, 1, 1), LineHeight, Str8PushF(Arena, "FirstVsibleLine: ?u32 LastVisibleLine: ?u32", FirstVisibleLine, LastVisibleLine));
-
-	// D_Str8(Draw, Arena, Font, v2f(900, 300),
-	// 		   v4f(1.0, 1.0, 1, 1), LineHeight, Str8PushF(Arena, "StartIndex: ?u32 EndIndex: ?u32", StartIndex, EndIndex));
-
-	int MainCursorLine = E_LineFromBufferIndex(Edit, Edit->Cursors[0].Selection.Y, Buffer);
-	for(int I = FirstVisibleLine; I <= LastVisibleLine; I++)
-	{
-		if(MainCursorLine == I)
-		{
-			D_Str8(Draw, Arena, Str8PushF(Arena, "?u32", I + 1), .Font = NumbersFont, 
-			.Position = V3FromV2(NumbersPosition),
-				.Colour = v4f(0.8, 0.3, 0, 1), .HeightInPixels = LineHeight);
-		}
-		else
-		{
-			D_Str8(Draw, Arena, Str8PushF(Arena, "?u32", I + 1), .Font = NumbersFont, 
-			.Position = V3FromV2(NumbersPosition),
-				.Colour = v4f(0.1, 0.05, 0, 1), .HeightInPixels = LineHeight);
-		}
-		NumbersPosition.Y -= LineHeight;
-	}
-
-	for(cursor *Cursor = Edit->Cursors; Cursor; Cursor = Cursor->Next)
-	{
-		v2i Selection = E_GetSortedSelection(Cursor->Selection);
-		str8 SelectedString = Buffer->String;
-		D_SelectionRange(Draw,
-							 Arena,
-							 Font,
-							 BufferPosition,
-							 v4f(0.04, 0.01, 0, 0.8),
-							 Buffer->HeightInPixels,
-							 Buffer->String,
-							 Range,
-							 Selection.X,
-							 Selection.Y);
-
-		f32 Scale = stbtt_ScaleForPixelHeight(&Font.Info, Buffer->HeightInPixels);
-		int CursorStartLine = E_LineFromBufferIndex(Edit, StartIndex, Buffer);
-		int CursorEndLine = E_LineFromBufferIndex(Edit, EndIndex, Buffer);
-		// HACK(Oliver): The start position should be for the buffer, 0 isn't necessarily always the start...
-		// Also the colours are just random guesses, need a better way of formalising these.
-		D_Quad(Draw, Arena, v2f(0, Cursor->TargetPosition.Y),
-					sapp_widthf(), (Font.Ascent - Font.Descent + Font.LineGap)*Scale, v4f(0.04, 0.01, 0, 0.25));
-	}
-
-
-
-	D_Str8(Draw,
-			   Arena, SubString, .Font = Font,
-			   .Position = V3FromV2(BufferPosition), .Colour = v4f(0.8, 0.3, 0, 1),
-			   .HeightInPixels = Buffer->HeightInPixels);
-
-	v2f ScrollOffset = UI_Scroll(UI);
-
-	if(fabs(ScrollOffset.X) > fabs(ScrollOffset.Y))
-	{
-		Buffer->Offset.X = Min(Buffer->Offset.X + ScrollOffset.X*15, 0.0);
-	}
-	else
-	{
-		Buffer->Offset.Y = Max(Buffer->Offset.Y + ScrollOffset.Y*15, 0.0);
-	}
-
-	if(UI->MouseIsDragging)
-	{
-		int Index = E_IndexFromPosition(Edit, Draw, Font,
-										Buffer, Range,
-										BufferPosition, UI->MousePosition);
-		Edit->Cursors[0].Selection.Y = Index;
-
-		Edit->Cursors[0].TargetPosition = E_GetVisualPositionFromEditableBuffer(Edit,
-																	Draw,
-																	Edit->Cursors[0].Selection.Y,
-																	Buffer[0],
-																	Font,
-																	Range,
-																	BufferPosition);
-		Edit->Cursors[0].Position = Edit->Cursors[0].TargetPosition;
-		D_Quad(Draw, Arena, Edit->Cursors[0].Position, Min(LineHeight/10.0, 2), LineHeight, v4f(0.3, 0.7, 0, 1));
-	}
-	else
-	{
-		for(cursor *Cursor = Edit->Cursors; Cursor; Cursor = Cursor->Next)
-		{
-			if(Cursor->Selection.Y >= Range.X && Cursor->Selection.Y <= Range.Y)
-			{
-				Cursor->TargetPosition = E_GetVisualPositionFromEditableBuffer(Edit,
-																		 Draw,
-																		 Cursor->Selection.Y,
-																		 Buffer[0],
-																		 Font,
-																		 Range,
-																		 BufferPosition);
-			}
-			if(fabs(ScrollOffset.X) > 0.0f || fabs(ScrollOffset.Y) > 0.0f)
-			{
-				Cursor->Position = Cursor->TargetPosition;
-			}
-			else
-			{
-				Cursor->Position = LerpV2F(Cursor->Position, Cursor->TargetPosition, 0.3);
-			}
-			int CursorLine = E_LineFromBufferIndex(Edit, Cursor->Selection.Y, Buffer);
-			if(FirstVisibleLine < CursorLine && CursorLine < LastVisibleLine)
-			{
-				D_Quad(Draw, Arena, Cursor->Position, Min(LineHeight/10.0, 2), LineHeight, v4f(0.3, 0.7, 0, 1));
-			}
-
-		}
-	}
 
 	if(UI_DoubleClicked(UI))
 	{
@@ -396,7 +279,8 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 
 	if(Buffer->Search)
 	{
-		UI_TextBox(Arena, Font, v2f(sapp_widthf()/2 - 100, sapp_heightf() - 300), 200, UI, Draw, Edit, 100, Str8("BufferSearchBox"), &Edit->SearchBox);
+		assert(Edit->Temp);
+		ui_textbox_signal Signal = UI_TextBox(Arena, Font, v2f(sapp_widthf()/2 - 100, sapp_heightf() - 300), 200, UI, Draw, Edit, 100, Str8("BufferSearchBox"), &Edit->SearchBox);
 	}
 
 	if(UI_KeyDown(UI, SAPP_KEYCODE_F, SAPP_MODIFIER_SUPER))
@@ -551,6 +435,167 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 			E_AppendCursor(Edit, Edit->Arena, Cursor, NextCursor);
 			Cursor = Cursor->Next;
 		}
+	}
+}
+
+void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
+			   m_arena *Arena, d_font Font, d_font NumbersFont,
+			   str8 BufferPath, editable_buffer *Buffer,
+			   v2i Size)
+{
+	//TODO(Oliver): Theres a better way to do this
+	int WindowHeight = Size.Y;
+	int WindowWidth = Size.X;
+
+	f32 LineHeight = D_LineHeightFromFont(Font, Buffer->HeightInPixels);
+
+	m44f Transform = R_CurrentTransform(Draw->Render);
+	Transform = Mul(Translate(v3f(Buffer->Offset.X, fmod(Buffer->Offset.Y, LineHeight), 0)), Transform);
+	R_PushTransform(Draw->Render, Transform);
+
+	int NumberOfLines = CountNewLinesNEON(Buffer->String);
+
+	f32 Margin = 10.0f;
+	f32 MinOffsetX = 4 * UI_GetTextWidth(Font, Draw, Str8("0"), Buffer->HeightInPixels);
+
+	f32 NumberOffsetX = Max(MinOffsetX, DigitCountFromInt(NumberOfLines) * UI_GetTextWidth(Font, Draw, Str8("0"), Buffer->HeightInPixels));
+
+	v2f BufferPosition = v2f(NumberOffsetX, (f32)WindowHeight);
+
+	v2f NumbersPosition = v2f(Margin, BufferPosition.Y);
+
+	int FirstVisibleLine = Max((Buffer->Offset.Y)/LineHeight, 0);
+	int LastVisibleLine = FirstVisibleLine + WindowHeight/LineHeight;
+
+	int StartIndex = IndexFromLine(Buffer->String, FirstVisibleLine);
+	int EndIndex = IndexFromLine(Buffer->String, LastVisibleLine);
+
+	str8 SubString = Buffer->String;
+	SubString.Bytes += StartIndex;
+	SubString.Size = EndIndex - StartIndex;
+	v2i Range = {StartIndex, EndIndex};
+
+	// D_Str8(Draw, Arena, Font, v2f(800, 400),
+	// 		   v4f(1.0, 1.0, 1, 1), LineHeight, Str8PushF(Arena, "FirstVsibleLine: ?u32 LastVisibleLine: ?u32", FirstVisibleLine, LastVisibleLine));
+
+	// D_Str8(Draw, Arena, Font, v2f(900, 300),
+	// 		   v4f(1.0, 1.0, 1, 1), LineHeight, Str8PushF(Arena, "StartIndex: ?u32 EndIndex: ?u32", StartIndex, EndIndex));
+
+	int MainCursorLine = E_LineFromBufferIndex(Edit, Edit->Cursors[0].Selection.Y, Buffer);
+	for(int I = FirstVisibleLine; I <= LastVisibleLine; I++)
+	{
+		if(MainCursorLine == I)
+		{
+			D_Str8(Draw, Arena, Str8PushF(Arena, "?u32", I + 1), .Font = NumbersFont, 
+			.Position = V3FromV2(NumbersPosition),
+				.Colour = v4f(0.8, 0.3, 0, 1), .HeightInPixels = LineHeight);
+		}
+		else
+		{
+			D_Str8(Draw, Arena, Str8PushF(Arena, "?u32", I + 1), .Font = NumbersFont, 
+			.Position = V3FromV2(NumbersPosition),
+				.Colour = v4f(0.1, 0.05, 0, 1), .HeightInPixels = LineHeight);
+		}
+		NumbersPosition.Y -= LineHeight;
+	}
+
+	for(cursor *Cursor = Edit->Cursors; Cursor; Cursor = Cursor->Next)
+	{
+		v2i Selection = E_GetSortedSelection(Cursor->Selection);
+		str8 SelectedString = Buffer->String;
+		D_SelectionRange(Draw,
+							 Arena,
+							 Font,
+							 BufferPosition,
+							 v4f(0.04, 0.01, 0, 0.8),
+							 Buffer->HeightInPixels,
+							 Buffer->String,
+							 Range,
+							 Selection.X,
+							 Selection.Y);
+
+		f32 Scale = stbtt_ScaleForPixelHeight(&Font.Info, Buffer->HeightInPixels);
+		int CursorStartLine = E_LineFromBufferIndex(Edit, StartIndex, Buffer);
+		int CursorEndLine = E_LineFromBufferIndex(Edit, EndIndex, Buffer);
+		// HACK(Oliver): The start position should be for the buffer, 0 isn't necessarily always the start...
+		// Also the colours are just random guesses, need a better way of formalising these.
+		D_Quad(Draw, Arena, v2f(0, Cursor->TargetPosition.Y),
+					sapp_widthf(), (Font.Ascent - Font.Descent + Font.LineGap)*Scale, v4f(0.04, 0.01, 0, 0.25));
+	}
+
+
+
+	D_Str8(Draw,
+			   Arena, SubString, .Font = Font,
+			   .Position = V3FromV2(BufferPosition), .Colour = v4f(0.8, 0.3, 0, 1),
+			   .HeightInPixels = Buffer->HeightInPixels);
+
+	v2f ScrollOffset = UI_Scroll(UI);
+
+	if(fabs(ScrollOffset.X) > fabs(ScrollOffset.Y))
+	{
+		Buffer->Offset.X = Min(Buffer->Offset.X + ScrollOffset.X*15, 0.0);
+	}
+	else
+	{
+		Buffer->Offset.Y = Max(Buffer->Offset.Y + ScrollOffset.Y*15, 0.0);
+	}
+
+	if(UI->MouseIsDragging)
+	{
+		int Index = E_IndexFromPosition(Edit, Draw, Font,
+										Buffer, Range,
+										BufferPosition, UI->MousePosition);
+		Edit->Cursors[0].Selection.Y = Index;
+
+		Edit->Cursors[0].TargetPosition = E_GetVisualPositionFromEditableBuffer(Edit,
+																	Draw,
+																	Edit->Cursors[0].Selection.Y,
+																	Buffer[0],
+																	Font,
+																	Range,
+																	BufferPosition);
+		Edit->Cursors[0].Position = Edit->Cursors[0].TargetPosition;
+		D_Quad(Draw, Arena, Edit->Cursors[0].Position, Min(LineHeight/10.0, 2), LineHeight, v4f(0.3, 0.7, 0, 1));
+	}
+	else
+	{
+		for(cursor *Cursor = Edit->Cursors; Cursor; Cursor = Cursor->Next)
+		{
+			if(Cursor->Selection.Y >= Range.X && Cursor->Selection.Y <= Range.Y)
+			{
+				Cursor->TargetPosition = E_GetVisualPositionFromEditableBuffer(Edit,
+																		 Draw,
+																		 Cursor->Selection.Y,
+																		 Buffer[0],
+																		 Font,
+																		 Range,
+																		 BufferPosition);
+			}
+			if(fabs(ScrollOffset.X) > 0.0f || fabs(ScrollOffset.Y) > 0.0f)
+			{
+				Cursor->Position = Cursor->TargetPosition;
+			}
+			else
+			{
+				Cursor->Position = LerpV2F(Cursor->Position, Cursor->TargetPosition, 0.3);
+			}
+			int CursorLine = E_LineFromBufferIndex(Edit, Cursor->Selection.Y, Buffer);
+			if(FirstVisibleLine < CursorLine && CursorLine < LastVisibleLine)
+			{
+				D_Quad(Draw, Arena, Cursor->Position, Min(LineHeight/10.0, 2), LineHeight, v4f(0.3, 0.7, 0, 1));
+			}
+
+		}
+	}
+
+	if(Buffer->Search)
+	{
+		UI_TextBox(Arena, Font, v2f(sapp_widthf()/2 - 100, sapp_heightf() - 300), 200, UI, Draw, Edit, 100, Str8("BufferSearchBox"), &Edit->SearchBox);
+	}
+	else
+	{
+		UI_BufferUpdate(UI, Draw, Edit, Font, Arena, Buffer, BufferPath, Size);	
 	}
 
 	R_PopTransform(Draw->Render);

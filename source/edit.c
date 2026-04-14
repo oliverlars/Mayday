@@ -3,6 +3,7 @@
 #include "maths.h"
 #include "memory.h"
 #include "misc.h"
+#include "os.h"
 #include "stb_truetype.h"
 #include "draw.h"
 
@@ -46,52 +47,115 @@ v2i E_GetSortedSelection(v2i Selection)
 
 void E_DeleteTo(edit_context *Edit, cursor *Cursor, editable_buffer *Buffer)
 {
-	// NOTE(Oliver): For each deletion, every subsequent cursor should be
-	// offset by the previous cursors selection range
-	int PerCursorOffset = 0;
-	for(;Cursor; Cursor = Cursor->Next)
-	{
-		v2i Selection = E_GetSortedSelection(Cursor->Selection);
-		Selection = v2i(Max(Selection.X - PerCursorOffset, 0), Max(Selection.Y - PerCursorOffset, 0));
+	assert(Edit->Temp);
 
-		if(Cursor->Selection.X != Cursor->Selection.Y)
+	int ReadPos = 0;
+	int WritePos = 0;
+
+	for(cursor *C = Cursor; C; C = C->Next)
+	{
+		v2i Selection = E_GetSortedSelection(C->Selection);
+
+		int DeleteStart;
+		int DeleteEnd;
+		if(C->Selection.X != C->Selection.Y)
 		{
-			PerCursorOffset += Selection.Y - Selection.X;
-			E_RemoveTextFromSelection(Edit, Buffer, Selection);
-			Cursor->Selection = v2i(Selection.X, Selection.X);
+			DeleteStart = Selection.X;
+			DeleteEnd = Selection.Y;
 		}
 		else
 		{
-			PerCursorOffset -= Selection.X - 1 - Selection.Y;
-			E_RemoveTextFromSelection(Edit, Buffer, v2i(Max(Selection.X - 1, 0), Selection.Y));
-			Cursor->Selection = v2i(Max(Selection.X - 1, 0), Max(Selection.X -1, 0));
+			DeleteStart = Max(Selection.X - 1, 0);
+			DeleteEnd = Selection.Y;
 		}
+
+		// Copy source text before this cursor's delete range
+		int CopySize = DeleteStart - ReadPos;
+		if(CopySize > 0)
+		{
+			MemoryCopy(Edit->Temp + WritePos, Buffer->String.Bytes + ReadPos, CopySize);
+			WritePos += CopySize;
+		}
+
+		// Update cursor position
+		C->Selection = v2i(WritePos, WritePos);
+
+		// Skip over deleted range in source
+		ReadPos = DeleteEnd;
 	}
+
+	// Copy remaining source text after last cursor
+	int Remaining = Buffer->String.Size - ReadPos;
+	if(Remaining > 0)
+	{
+		MemoryCopy(Edit->Temp + WritePos, Buffer->String.Bytes + ReadPos, Remaining);
+		WritePos += Remaining;
+	}
+
+	// Swap temp and source
+	u8 *Swap = Buffer->String.Bytes;
+	Buffer->String.Bytes = Edit->Temp;
+	Edit->Temp = Swap;
+	Buffer->String.Size = WritePos;
 }
 
 void E_InsertTo(edit_context *Edit, cursor *Cursor, editable_buffer *Buffer, str8 TextToInsert)
 {
-	// NOTE(Oliver): For each insertion, every subsequent cursor should be
-	// offset by the previous cursors selection range
-	int PerCursorOffset = 0;
-	for(;Cursor; Cursor = Cursor->Next)
-	{
-		v2i Selection = E_GetSortedSelection(Cursor->Selection);
-		Selection = v2i(Selection.X + PerCursorOffset, Selection.Y + PerCursorOffset);
-		if(Cursor->Selection.X != Cursor->Selection.Y)
-		{
-			E_RemoveTextFromSelection(Edit, Buffer, Selection);
-			PerCursorOffset -= (Selection.Y - Selection.X);
-		}
-		assert(Edit->Temp);
-		E_InsertTextAtIndex(Edit, Selection.X, Buffer, TextToInsert);
-		Selection = v2i(Selection.X + TextToInsert.Size, Selection.X + TextToInsert.Size);
+	assert(Edit->Temp);
 
-		Selection.X = ClampS32(Selection.X, 0, Buffer->String.Size);
-		Selection.Y = ClampS32(Selection.Y, 0, Buffer->String.Size);
-		Cursor->Selection = Selection;
-		PerCursorOffset += TextToInsert.Size;
+	u64 Start = OS_TimeStampNow();
+
+	int ReadPos = 0;
+	int WritePos = 0;
+	int TotalBytesCopied = 0;
+	int TotalBytesInserted = 0;
+	int CursorCount = 0;
+
+	for(cursor *C = Cursor; C; C = C->Next)
+	{
+		v2i Selection = E_GetSortedSelection(C->Selection);
+
+		// Copy source text before this cursor
+		int CopySize = Selection.X - ReadPos;
+		if(CopySize > 0)
+		{
+			MemoryCopy(Edit->Temp + WritePos, Buffer->String.Bytes + ReadPos, CopySize);
+			WritePos += CopySize;
+			TotalBytesCopied += CopySize;
+		}
+
+		// Insert text
+		MemoryCopy(Edit->Temp + WritePos, TextToInsert.Bytes, TextToInsert.Size);
+		WritePos += TextToInsert.Size;
+		TotalBytesInserted += TextToInsert.Size;
+
+		// Update cursor to after inserted text
+		C->Selection = v2i(WritePos, WritePos);
+
+		// Skip over selection range in source (collapse)
+		ReadPos = Selection.Y;
+		CursorCount++;
 	}
+
+	// Copy remaining source text after last cursor
+	int Remaining = Buffer->String.Size - ReadPos;
+	if(Remaining > 0)
+	{
+		MemoryCopy(Edit->Temp + WritePos, Buffer->String.Bytes + ReadPos, Remaining);
+		WritePos += Remaining;
+		TotalBytesCopied += Remaining;
+	}
+
+	Edit->DebugBytesCopied = TotalBytesCopied;
+	Edit->DebugBytesInserted = TotalBytesInserted;
+	Edit->DebugCursorCount = CursorCount;
+	Edit->DebugTimeMs = OS_MilliSecondsFromTimeStamp(OS_TimeStampNow() - Start);
+
+	// Swap temp and source
+	u8 *Swap = Buffer->String.Bytes;
+	Buffer->String.Bytes = Edit->Temp;
+	Edit->Temp = Swap;
+	Buffer->String.Size = WritePos;
 }
 
 void E_RemoveTextFromSelection(edit_context *Edit, editable_buffer *Buffer, v2i Selection)

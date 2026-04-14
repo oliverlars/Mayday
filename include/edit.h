@@ -67,6 +67,12 @@ typedef struct edit_context
 
 	// HACK(Oliver): This is dumb, just add a pool allocator
 	u8* Temp;
+
+	// Debug stats for insert/delete
+	int DebugBytesCopied;
+	int DebugBytesInserted;
+	int DebugCursorCount;
+	f32 DebugTimeMs;
 } edit_context;
 
 typedef enum edit_movement

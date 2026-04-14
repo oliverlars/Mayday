@@ -530,6 +530,44 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 			   .Position = V3FromV2(BufferPosition), .Colour = v4f(0.8, 0.3, 0, 1),
 			   .HeightInPixels = Buffer->HeightInPixels);
 
+	// Debug: show insert stats on the right side
+	if(Edit->DebugBytesCopied || Edit->DebugBytesInserted)
+	{
+		f32 DebugX = sapp_widthf() - 700;
+		f32 DebugY = sapp_heightf() - 50;
+		f32 DebugH = 40;
+		f32 DebugSpacing = 50;
+		int BufSize = (int)Buffer->String.Size;
+		f32 CopyRatio = BufSize > 0 ? (f32)Edit->DebugBytesCopied / (f32)BufSize * 100.0f : 0;
+		f32 InsertRatio = BufSize > 0 ? (f32)Edit->DebugBytesInserted / (f32)BufSize * 100.0f : 0;
+		f32 AvgPerCursor = Edit->DebugCursorCount > 0 ? (f32)(Edit->DebugBytesCopied + Edit->DebugBytesInserted) / (f32)Edit->DebugCursorCount : 0;
+
+		D_Str8(Draw, Arena,
+			Str8PushF(Arena, "Bytes copied: ?s32 (?f32%%)", Edit->DebugBytesCopied, CopyRatio),
+			.Font = Font, .Position = v3f(DebugX, DebugY, 0),
+			.Colour = v4f(1, 1, 1, 1), .HeightInPixels = DebugH);
+		D_Str8(Draw, Arena,
+			Str8PushF(Arena, "Bytes inserted: ?s32 (?f32%%)", Edit->DebugBytesInserted, InsertRatio),
+			.Font = Font, .Position = v3f(DebugX, DebugY - DebugSpacing, 0),
+			.Colour = v4f(1, 1, 1, 1), .HeightInPixels = DebugH);
+		D_Str8(Draw, Arena,
+			Str8PushF(Arena, "Cursors: ?s32", Edit->DebugCursorCount),
+			.Font = Font, .Position = v3f(DebugX, DebugY - DebugSpacing*2, 0),
+			.Colour = v4f(1, 1, 1, 1), .HeightInPixels = DebugH);
+		D_Str8(Draw, Arena,
+			Str8PushF(Arena, "Avg bytes/cursor: ?f32", AvgPerCursor),
+			.Font = Font, .Position = v3f(DebugX, DebugY - DebugSpacing*3, 0),
+			.Colour = v4f(1, 1, 1, 1), .HeightInPixels = DebugH);
+		D_Str8(Draw, Arena,
+			Str8PushF(Arena, "Buffer size: ?s32", BufSize),
+			.Font = Font, .Position = v3f(DebugX, DebugY - DebugSpacing*4, 0),
+			.Colour = v4f(1, 1, 1, 1), .HeightInPixels = DebugH);
+		D_Str8(Draw, Arena,
+			Str8PushF(Arena, "Time: ?f32 ms", Edit->DebugTimeMs),
+			.Font = Font, .Position = v3f(DebugX, DebugY - DebugSpacing*5, 0),
+			.Colour = v4f(1, 1, 1, 1), .HeightInPixels = DebugH);
+	}
+
 	v2f ScrollOffset = UI_Scroll(UI);
 
 	if(fabs(ScrollOffset.X) > fabs(ScrollOffset.Y))

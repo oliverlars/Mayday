@@ -128,7 +128,9 @@ b32 OS_IsPathDirectory(str8 Path)
 s64
 OS_DirectoryTreeFromPathHelper(m_arena *Arena,
 							   str8         Path,
-							   os_directory_entry *Entries)
+							   os_directory_entry *Entries,
+							   os_directory_tree_options Options,
+							   int Depth)
 {
 	m_scratch_arena Scratch = ScratchBegin(&Arena, 1);
 	str8 Pattern = Str8PushF(Arena, "?S\\*", Path);
@@ -151,16 +153,22 @@ OS_DirectoryTreeFromPathHelper(m_arena *Arena,
 					Entry.Type        = OS_DIR_ENTRY_FOLDER;
 					Entry.PathAndName = FullPath;
 					InsertDirectoryEntryAsChild(Arena, Entries, Entry);
-					Count += OS_DirectoryTreeFromPathHelper(Arena,
-															FullPath,
-															Entries->Last);
+					Count += 1;
+					if(Options.MaxDepth == 0 || Depth + 1 < Options.MaxDepth)
+					{
+						Count += OS_DirectoryTreeFromPathHelper(Arena,
+																FullPath,
+																Entries->Last,
+																Options,
+																Depth + 1);
+					}
 				}
-				else {
+				else if(!Options.FoldersOnly) {
 					Entry.Type        = OS_DIR_ENTRY_FILE;
 					Entry.PathAndName = FullPath;
 					InsertDirectoryEntryAsChild(Arena, Entries, Entry);
+					Count += 1;
 				}
-				Count += 1;
 			}
 		}
 		while(FindNextFileA(FindHandle, &FindData));
@@ -172,7 +180,7 @@ OS_DirectoryTreeFromPathHelper(m_arena *Arena,
 }
 
 os_directory_tree
-OS_DirectoryTreeFromPath(m_arena *Arena, str8 Path)
+OS_DirectoryTreeFromPath(m_arena *Arena, str8 Path, os_directory_tree_options Options)
 {
 	m_scratch_arena Scratch = ScratchBegin(&Arena, 1);
 
@@ -185,7 +193,9 @@ OS_DirectoryTreeFromPath(m_arena *Arena, str8 Path)
 
 	s64 Count = OS_DirectoryTreeFromPathHelper(Arena,
 												Path,
-												EntryRoot);
+												EntryRoot,
+												Options,
+												0);
 	Result.Count = Count + 1;
 	Result.Root  = EntryRoot;
 

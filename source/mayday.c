@@ -29,6 +29,50 @@
 
 #include <float.h>
 
+#define DEBUG_TIMING_HISTORY 120
+
+typedef struct debug_timings
+{
+	f32 FrameMs;
+	f32 FrameMsMax;
+	f32 FrameMsHistory[DEBUG_TIMING_HISTORY];
+	int FrameMsHistoryIndex;
+
+	f32 CPUMs;
+	f32 CPUMsMax;
+
+	f32 FPS;
+	f32 FPSMin;
+	f32 FPSMax;
+	f32 FPSAvg;
+	f32 FPSAccumulator;
+	int FPSFrameCount;
+
+	f32 FDGBuildMs;
+	f32 FDGBuildMsMax;
+
+	f32 FDGAttributesMs;
+	f32 FDGAttributesMsMax;
+
+	f32 FDGSimulateMs;
+	f32 FDGSimulateMsMax;
+
+	f32 FDGTotalMs;
+	f32 FDGTotalMsMax;
+
+	f32 EditViewMs;
+	f32 EditViewMsMax;
+
+	f32 TreeViewMs;
+	f32 TreeViewMsMax;
+
+	f32 RenderMs;
+	f32 RenderMsMax;
+
+	u64 LastFrameTimeStamp;
+	u64 CPUStart;
+} debug_timings;
+
 typedef struct mayday_context
 {
 	m_arena *FrameArena;
@@ -81,6 +125,15 @@ typedef struct mayday_context
 
 	ui_tree TreeView;
 
+	v3f TreeCameraLookAt;
+	v3f TreeCameraLookAtTarget;
+	f32 TreeCameraZoom;
+	f32 TreeCameraZoomTarget;
+	str8 PendingFolder;
+	b32 TreeTransitioning;
+	b32 PendingShowFileList;
+	v2f PendingFileListPosition;
+
 	f32 OrbitAnimation;
 	f32 OrbitAnimationTarget;
 	int OrbitItem;
@@ -107,6 +160,9 @@ typedef struct mayday_context
 
 
 	b32 UnFocused;
+	b32 ShowDebugOverlay;
+
+	debug_timings Debug;
 }
 mayday_context;
 
@@ -200,6 +256,26 @@ void OS_Update(void *Data)
 {
 	mayday_context *M = Data;
 
+	u64 FrameStart = OS_TimeStampNow();
+	if(M->Debug.LastFrameTimeStamp)
+	{
+		M->Debug.FrameMs = OS_MilliSecondsFromTimeStamp(FrameStart - M->Debug.LastFrameTimeStamp);
+		if(M->Debug.FrameMs > M->Debug.FrameMsMax) M->Debug.FrameMsMax = M->Debug.FrameMs;
+
+		M->Debug.FrameMsHistory[M->Debug.FrameMsHistoryIndex % DEBUG_TIMING_HISTORY] = M->Debug.FrameMs;
+		M->Debug.FrameMsHistoryIndex++;
+
+		M->Debug.FPS = (M->Debug.FrameMs > 0.001f) ? 1000.0f / M->Debug.FrameMs : 0;
+		if(M->Debug.FPSMin == 0 || M->Debug.FPS < M->Debug.FPSMin) M->Debug.FPSMin = M->Debug.FPS;
+		if(M->Debug.FPS > M->Debug.FPSMax) M->Debug.FPSMax = M->Debug.FPS;
+
+		M->Debug.FPSAccumulator += M->Debug.FPS;
+		M->Debug.FPSFrameCount++;
+		M->Debug.FPSAvg = M->Debug.FPSAccumulator / (f32)M->Debug.FPSFrameCount;
+	}
+	M->Debug.LastFrameTimeStamp = FrameStart;
+	M->Debug.CPUStart = FrameStart;
+
 	//if(M->UnFocused) return;
 
 	R_PushScissor(M->Render, v4i(0, 0, sapp_width(), sapp_height()));
@@ -207,25 +283,28 @@ void OS_Update(void *Data)
 
 	UI_Begin(M->UI);
 
-	v2f Scroll = UI_Scroll(M->UI);
-	M->ScrollAccumulationTarget += Max(0.0, Scroll.Y)/5.0;
-
-	if(M->ScrollAccumulationTarget >= 5.0)
+	if(M->UI->View != UI_VIEW_TREE)
 	{
-		M->ScrollAccumulationTarget = 0;
+		v2f Scroll = UI_Scroll(M->UI);
+		M->ScrollAccumulationTarget += Max(0.0, Scroll.Y)/5.0;
 
-		M->OrbitAnimationTarget -= 10.0;
-		M->OrbitItem = 0;
-		M->OrbitDepth = 0;
+		if(M->ScrollAccumulationTarget >= 5.0)
+		{
+			M->ScrollAccumulationTarget = 0;
+
+			M->OrbitAnimationTarget -= 10.0;
+			M->OrbitItem = 0;
+			M->OrbitDepth = 0;
+		}
+
+		M->ScrollAccumulationTarget = Lerp(M->ScrollAccumulationTarget, 0.0, 0.3);
+
+		M->ScrollAccumulation = Lerp(M->ScrollAccumulation, M->ScrollAccumulationTarget, 0.1);
+
+		M->ZoomLevel = Lerp(M->ZoomLevel, M->ZoomLevelTarget, 0.1);
+
+		M->ZoomLevel += M->ScrollAccumulation;
 	}
-
-	M->ScrollAccumulationTarget = Lerp(M->ScrollAccumulationTarget, 0.0, 0.3);
-
-	M->ScrollAccumulation = Lerp(M->ScrollAccumulation, M->ScrollAccumulationTarget, 0.1);
-
-	M->ZoomLevel = Lerp(M->ZoomLevel, M->ZoomLevelTarget, 0.1);
-
-	M->ZoomLevel += M->ScrollAccumulation;
 
 	int WindowHeight = OS_WindowHeight(&M->Window);
 	int WindowWidth = OS_WindowWidth(&M->Window);
@@ -293,7 +372,8 @@ void OS_Update(void *Data)
 					 v2i(WindowWidth, WindowHeight));
 
 		u64 End = OS_TimeStampNow();
-		//LogInfo("Time: ?f32", OS_MilliSecondsFromTimeStamp(End - Start));
+		M->Debug.EditViewMs = OS_MilliSecondsFromTimeStamp(End - Start);
+		if(M->Debug.EditViewMs > M->Debug.EditViewMsMax) M->Debug.EditViewMsMax = M->Debug.EditViewMs;
 		R_PopTransform(M->Render);
 	}
 	else if(M->UI->View == UI_VIEW_TREE)
@@ -386,21 +466,68 @@ void OS_Update(void *Data)
 			R_PopTransform(M->Render);
 
 			static float Angle2 = 0.0f;
+
+			if(M->TreeView.Info.NodePositions && M->TreeView.Info.NodeCount > 0 && !M->TreeTransitioning)
+			{
+				// Track the focus node position directly
+				v4f FP = M->TreeView.Info.NodePositions[M->TreeView.FocusNodeIndex];
+				M->TreeCameraLookAt = v3f(FP.X, FP.Y, FP.Z);
+				M->TreeCameraLookAtTarget = v3f(FP.X, FP.Y, FP.Z);
+			}
+			else if(M->TreeTransitioning)
+			{
+				M->TreeCameraLookAt = LerpV3F(M->TreeCameraLookAt, M->TreeCameraLookAtTarget, 0.12f);
+			}
+			M->TreeCameraZoom = Lerp(M->TreeCameraZoom, M->TreeCameraZoomTarget, M->TreeTransitioning ? 0.12f : 0.08f);
+
+			// Check if transition lerp is done
+			if(M->TreeTransitioning)
+			{
+				v3f Diff = SubV3F(M->TreeCameraLookAt, M->TreeCameraLookAtTarget);
+				f32 Dist = sqrtf(DotV3F(Diff, Diff));
+				f32 ZoomDiff = fabsf(M->TreeCameraZoom - M->TreeCameraZoomTarget);
+				if(Dist < 0.02f && ZoomDiff < 0.1f)
+				{
+					M->TreeTransitioning = False;
+					if(M->PendingShowFileList)
+					{
+						M->FileListPath = M->PendingFolder;
+						M->ShowFileList = True;
+						M->FileListPosition = M->PendingFileListPosition;
+						M->PendingShowFileList = False;
+					}
+				}
+			}
+
+			f32 CamAngle = Angle2 + MouseRotation.X * 0.01f;
+			v3f CamOffset = v3f(
+				-sinf(CamAngle) * M->TreeCameraZoom,
+				0,
+				-cosf(CamAngle) * M->TreeCameraZoom
+			);
+			v3f CamPos = AddV3F(M->TreeCameraLookAt, CamOffset);
 			m44f P = Perspective(sapp_widthf()/sapp_heightf(), 35, 0.01, 10000.0);
-			m44f V =  M44FLookAt(v3f(0, 0, -5), v3f(0, 0, 0), v3f(0, 1, 0));
-			m44f RotateAroundOrigin =
-				Mul(M44FTranslate(v3f(0, 0, 5)),
-				Mul(M44FromYAngle(Angle2 + MouseRotation.X*0.01),
-				M44FTranslate(v3f(0, 0, -5))));
-			V = Mul(V, RotateAroundOrigin);
+			m44f V = M44FLookAt(CamPos, M->TreeCameraLookAt, v3f(0, 1, 0));
 			m44f PV = Mul(V, P);
 			R_PushTransform(M->Render, PV);
+			u64 TreeViewStart = OS_TimeStampNow();
 			UI_TreeView(M->UI, M->Draw, &M->Shared, M->FrameArena, &M->TreeView, M->Folder, v3f(0.1, 0.1, 0.1));
+			M->Debug.TreeViewMs = OS_MilliSecondsFromTimeStamp(OS_TimeStampNow() - TreeViewStart);
+			if(M->Debug.TreeViewMs > M->Debug.TreeViewMsMax) M->Debug.TreeViewMsMax = M->Debug.TreeViewMs;
+
+			M->Debug.FDGBuildMs = M->TreeView.DebugBuildMs;
+			M->Debug.FDGAttributesMs = M->TreeView.DebugAttributesMs;
+			M->Debug.FDGSimulateMs = M->TreeView.DebugSimulateMs;
+			M->Debug.FDGTotalMs = M->Debug.FDGBuildMs + M->Debug.FDGAttributesMs + M->Debug.FDGSimulateMs;
+			if(M->Debug.FDGBuildMsMax < M->Debug.FDGBuildMs) M->Debug.FDGBuildMsMax = M->Debug.FDGBuildMs;
+			if(M->Debug.FDGAttributesMsMax < M->Debug.FDGAttributesMs) M->Debug.FDGAttributesMsMax = M->Debug.FDGAttributesMs;
+			if(M->Debug.FDGSimulateMsMax < M->Debug.FDGSimulateMs) M->Debug.FDGSimulateMsMax = M->Debug.FDGSimulateMs;
+			if(M->Debug.FDGTotalMsMax < M->Debug.FDGTotalMs) M->Debug.FDGTotalMsMax = M->Debug.FDGTotalMs;
 
 			R_PopTransform(M->Render);
 
 			R_PushTransform(M->Render, Orthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
-			ui_tree_view_signal TreeViewSignal = UI_TreeViewFolderLabels(M->UI, M->Draw, M->Edit, M->Orbitron, M->FrameArena, M->OrbitItem, &M->TreeView, PV, M->Folder, &M->TextBoxBuffer);
+			ui_tree_view_signal TreeViewSignal = UI_TreeViewFolderLabels(M->UI, M->Draw, M->Edit, M->Orbitron, M->FrameArena, M->OrbitItem, &M->TreeView, PV, CamPos, M->Folder, &M->TextBoxBuffer);
 			
 			// HACK(Oliver): Find a better way to do this
 			v4i PanelRect = v4i(TotalHeight + 50 + 5, 55 + 1, sapp_widthf() - TotalHeight - 10 - 50 - 10, sapp_heightf() - 100 - 10 - HeaderHeight);
@@ -459,30 +586,82 @@ void OS_Update(void *Data)
 				}
 
 			}
-			else if(TreeViewSignal.Hovered)
+			else
 			{
+				v2f TreeScroll = UI_Scroll(M->UI);
+				if(fabsf(TreeScroll.X) > fabsf(TreeScroll.Y))
+				{
+					MouseRotation.X += TreeScroll.X;
+				}
+				else
+				{
+					M->TreeCameraZoomTarget -= TreeScroll.Y * 0.1f;
+					M->TreeCameraZoomTarget = Max(2.0f, M->TreeCameraZoomTarget);
+					M->TreeCameraZoomTarget = Min(15.0f, M->TreeCameraZoomTarget);
+				}
+
 				if(TreeViewSignal.Hovered)
 				{
 					Angle2 += 0.0005;
 				}
-				else
-				{
-					Angle2 += 0.001;
-				}
-			}
-			else 
-			{
-				MouseRotation.X += UI_Scroll(M->UI).X;
-				MouseRotation.Y += UI_Scroll(M->UI).Y;
 			}
 
 			M->OrbitItem = TreeViewSignal.NodeIndex;
 
-			if(TreeViewSignal.Clicked)
+			if(TreeViewSignal.Clicked && TreeViewSignal.NewPath.Size > 0 && !M->TreeTransitioning)
 			{
-				M->FileListPath = Str8Copy(M->PermanentArena, TreeViewSignal.NewPath);
-				M->ShowFileList = True;
-				M->FileListPosition = TreeViewSignal.ClickedPosition;
+				int ClickedIndex = TreeViewSignal.NodeIndex;
+				if(ClickedIndex >= 0 && ClickedIndex < M->TreeView.Info.NodeCount)
+				{
+					// Check if this node has children in the already-loaded tree
+					b32 HasChildren = False;
+					for(int I = 0; I < M->TreeView.Info.LinkCount; I++)
+					{
+						if(M->TreeView.Info.Froms[I] == ClickedIndex && M->TreeView.Info.Tos[I] != ClickedIndex)
+						{
+							HasChildren = True;
+							break;
+						}
+					}
+
+					if(!HasChildren)
+					{
+						// Leaf folder — show file browser
+						M->FileListPath = Str8Copy(M->PermanentArena, TreeViewSignal.NewPath);
+						M->ShowFileList = True;
+						M->FileListPosition = TreeViewSignal.ClickedPosition;
+					}
+					else
+					{
+						// Focus on this subtree — orbit the clicked node
+						M->TreeView.FocusNodeIndex = ClickedIndex;
+						v4f ClickedPos = M->TreeView.Info.NodePositions[ClickedIndex];
+						M->TreeCameraLookAtTarget = v3f(ClickedPos.X, ClickedPos.Y, ClickedPos.Z);
+						M->TreeCameraZoomTarget = 5.0f;
+						M->TreeTransitioning = True;
+					}
+				}
+			}
+
+			if(UI_KeyDown(M->UI, SAPP_KEYCODE_ESCAPE, 0) && !M->ShowFileList)
+			{
+				if(M->TreeView.FocusNodeIndex > 0)
+				{
+					// Navigate up: find parent of current focus node
+					for(int I = 0; I < M->TreeView.Info.LinkCount; I++)
+					{
+						if(M->TreeView.Info.Tos[I] == M->TreeView.FocusNodeIndex)
+						{
+							int ParentIndex = M->TreeView.Info.Froms[I];
+							M->TreeView.FocusNodeIndex = ParentIndex;
+							v4f ParentPos = M->TreeView.Info.NodePositions[ParentIndex];
+							M->TreeCameraLookAtTarget = v3f(ParentPos.X, ParentPos.Y, ParentPos.Z);
+							M->TreeCameraZoomTarget = 5.0f;
+							M->TreeTransitioning = True;
+							break;
+						}
+					}
+				}
 			}
 			R_PopTransform(M->Render);
 		}
@@ -713,6 +892,108 @@ void OS_Update(void *Data)
 
 	R_PopTransform(M->Render);
 
+	if(UI_KeyDown(M->UI, SAPP_KEYCODE_F3, 0))
+	{
+		M->ShowDebugOverlay = !M->ShowDebugOverlay;
+	}
+
+	if(UI_KeyDown(M->UI, SAPP_KEYCODE_F4, 0))
+	{
+		M->Debug.FrameMsMax = 0;
+		M->Debug.CPUMsMax = 0;
+		M->Debug.FPSMin = 0;
+		M->Debug.FPSMax = 0;
+		M->Debug.FPSAvg = 0;
+		M->Debug.FPSAccumulator = 0;
+		M->Debug.FPSFrameCount = 0;
+		M->Debug.RenderMsMax = 0;
+		M->Debug.EditViewMsMax = 0;
+		M->Debug.TreeViewMsMax = 0;
+		M->Debug.FDGBuildMsMax = 0;
+		M->Debug.FDGAttributesMsMax = 0;
+		M->Debug.FDGSimulateMsMax = 0;
+		M->Debug.FDGTotalMsMax = 0;
+	}
+
+	// Debug timing overlay
+	if(M->ShowDebugOverlay)
+	{
+		R_PushTransform(M->Render, Orthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
+
+		f32 DebugH = 40;
+		f32 DebugSpacing = 50;
+		f32 DebugPadding = 15;
+		f32 DebugX = DebugPadding + 10;
+		v4f Col = v4f(1, 1, 1, 1);
+		v4f ColDim = v4f(0.6, 0.6, 0.6, 1);
+		v4f ColHeader = v4f(1, 0.5, 0, 1);
+		d_font Font = M->Rajdhani;
+
+		int TotalRows = 12;
+		if(M->UI->View == UI_VIEW_EDIT) TotalRows += 3;
+		else if(M->UI->View == UI_VIEW_TREE) TotalRows += 13;
+
+		f32 PanelWidth = 450;
+		f32 PanelHeight = DebugSpacing * (f32)TotalRows + DebugPadding * 2;
+		f32 PanelY = sapp_heightf() - DebugPadding;
+		f32 DebugY = PanelY - DebugPadding - DebugH * 0.25f;
+
+		D_Quad(M->Draw, M->FrameArena, v2f(DebugPadding, PanelY - PanelHeight), PanelWidth, PanelHeight, v4f(0, 0, 0, 0.85));
+
+		int Row = 0;
+
+		#define DEBUG_ROW(colour, fmt, ...) \
+			D_Str8(M->Draw, M->FrameArena, \
+				Str8PushF(M->FrameArena, fmt, ##__VA_ARGS__), \
+				.Font = Font, .Position = v3f(DebugX, DebugY - DebugSpacing*(f32)(Row), 0), \
+				.Colour = colour, .HeightInPixels = DebugH); \
+			Row++
+
+		DEBUG_ROW(ColHeader, "--- FRAME (F4 reset) ---");
+		DEBUG_ROW(Col,    "Frame:    ?f32 ms", M->Debug.FrameMs);
+		DEBUG_ROW(ColDim, "Max:      ?f32 ms", M->Debug.FrameMsMax);
+		DEBUG_ROW(Col,    "CPU:      ?f32 ms", M->Debug.CPUMs);
+		DEBUG_ROW(ColDim, "Max:      ?f32 ms", M->Debug.CPUMsMax);
+		DEBUG_ROW(Col,    "FPS:      ?f32", M->Debug.FPS);
+		DEBUG_ROW(ColDim, "FPS Avg:  ?f32", M->Debug.FPSAvg);
+		DEBUG_ROW(ColDim, "FPS Min:  ?f32", M->Debug.FPSMin);
+		DEBUG_ROW(ColDim, "FPS Max:  ?f32", M->Debug.FPSMax);
+
+		DEBUG_ROW(ColHeader, "--- RENDER (vsync) ---");
+		DEBUG_ROW(Col,    "R_Update: ?f32 ms", M->Debug.RenderMs);
+		DEBUG_ROW(ColDim, "Max:      ?f32 ms", M->Debug.RenderMsMax);
+
+		if(M->UI->View == UI_VIEW_EDIT)
+		{
+			DEBUG_ROW(ColHeader, "--- EDIT VIEW ---");
+			DEBUG_ROW(Col,    "Total:    ?f32 ms", M->Debug.EditViewMs);
+			DEBUG_ROW(ColDim, "Max:      ?f32 ms", M->Debug.EditViewMsMax);
+		}
+		else if(M->UI->View == UI_VIEW_TREE)
+		{
+			DEBUG_ROW(ColHeader, "--- TREE VIEW ---");
+			DEBUG_ROW(Col,    "Total:    ?f32 ms", M->Debug.TreeViewMs);
+			DEBUG_ROW(ColDim, "Max:      ?f32 ms", M->Debug.TreeViewMsMax);
+
+			DEBUG_ROW(ColHeader, "--- FDG ---");
+			DEBUG_ROW(Col,    "Build:    ?f32 ms", M->Debug.FDGBuildMs);
+			DEBUG_ROW(ColDim, "Max:      ?f32 ms", M->Debug.FDGBuildMsMax);
+			DEBUG_ROW(Col,    "Attribs:  ?f32 ms", M->Debug.FDGAttributesMs);
+			DEBUG_ROW(ColDim, "Max:      ?f32 ms", M->Debug.FDGAttributesMsMax);
+			DEBUG_ROW(Col,    "Simulate: ?f32 ms", M->Debug.FDGSimulateMs);
+			DEBUG_ROW(ColDim, "Max:      ?f32 ms", M->Debug.FDGSimulateMsMax);
+			DEBUG_ROW(Col,    "FDG Total:?f32 ms", M->Debug.FDGTotalMs);
+			DEBUG_ROW(ColDim, "Max:      ?f32 ms", M->Debug.FDGTotalMsMax);
+
+			DEBUG_ROW(ColDim, "Nodes:    ?s32", M->TreeView.Info.NodeCount);
+			DEBUG_ROW(ColDim, "Links:    ?s32", M->TreeView.Info.LinkCount);
+		}
+
+		#undef DEBUG_ROW
+
+		R_PopTransform(M->Render);
+	}
+
 	if(OS_MilliSecondsFromTimeStamp(OS_TimeStampNow() - M->UI->TimeStampWhenLeftMousePressed) > 150.0 &&
 	   M->UI->LeftMouseIsDown && abs(M->UI->MousePosition.X - M->UI->MouseDragStart.X) > 2
 	   && abs(M->UI->MousePosition.Y - M->UI->MouseDragStart.Y) > 2)
@@ -725,7 +1006,13 @@ void OS_Update(void *Data)
 		M->UI->MouseIsDragging = False;
 	}
 
+	M->Debug.CPUMs = OS_MilliSecondsFromTimeStamp(OS_TimeStampNow() - M->Debug.CPUStart);
+	if(M->Debug.CPUMs > M->Debug.CPUMsMax) M->Debug.CPUMsMax = M->Debug.CPUMs;
+
+	u64 RenderStart = OS_TimeStampNow();
 	R_Update(M->Render, M->FrameArena);
+	M->Debug.RenderMs = OS_MilliSecondsFromTimeStamp(OS_TimeStampNow() - RenderStart);
+	if(M->Debug.RenderMs > M->Debug.RenderMsMax) M->Debug.RenderMsMax = M->Debug.RenderMs;
 
 	ArenaReset(M->FrameArena);
 	m_arena *TempArena = M->FrameArena;
@@ -845,6 +1132,9 @@ void OS_Initialise(void *Data)
 
 	M->TextBoxBuffer.String.Bytes = ArenaPushArrayZero(M->PermanentArena, u8, 8192);
 	M->TextBoxBuffer.HeightInPixels = 60;
+
+	M->TreeCameraZoom = 5.0f;
+	M->TreeCameraZoomTarget = 5.0f;
 
 	UI_SetActive(M->UI, UI_IDFromString(Str8("FolderTextBox")));
 

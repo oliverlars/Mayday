@@ -455,9 +455,10 @@ void ParallelForceDisplacement(wave_info *WaveInfo, void* Input)
 		P->NodeVelocities[I + NodeIndex].Y *= 5.0f/(f32)(P->NodeCount*P->NodeCount);
 		P->NodeVelocities[I + NodeIndex].Z *= 5.0f/(f32)(P->NodeCount*P->NodeCount);
 
-		P->NodePositions[I + NodeIndex].X += P->NodeVelocities[I + NodeIndex].X;
-		P->NodePositions[I + NodeIndex].Y += P->NodeVelocities[I + NodeIndex].Y;
-		P->NodePositions[I + NodeIndex].Z += P->NodeVelocities[I + NodeIndex].Z;
+		f32 TempFactor = Min(1.0f, P->Temperature);
+		P->NodePositions[I + NodeIndex].X += P->NodeVelocities[I + NodeIndex].X * TempFactor;
+		P->NodePositions[I + NodeIndex].Y += P->NodeVelocities[I + NodeIndex].Y * TempFactor;
+		P->NodePositions[I + NodeIndex].Z += P->NodeVelocities[I + NodeIndex].Z * TempFactor;
 
 	}
 

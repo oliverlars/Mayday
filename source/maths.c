@@ -526,9 +526,9 @@ m44f M44FLookAt(v3f From, v3f To, v3f ArbitraryUp)
 	};
 	m44f Result = (m44f)
 	{
-		Right.X, Up.X, -Forward.X, 0,
-		Right.Y, Up.Y, -Forward.Y, 0,
-		Right.Z, Up.Z, -Forward.Z, 0,
+		Right.X, Up.X, Forward.X, 0,
+		Right.Y, Up.Y, Forward.Y, 0,
+		Right.Z, Up.Z, Forward.Z, 0,
 		-Translation.X, -Translation.Y, -Translation.Z, 1,
 	};
 

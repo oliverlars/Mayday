@@ -186,7 +186,7 @@ kernel void ComputeMain(metal::texture2d<float, metal::access::read_write> Textu
 		{
 			metal::float2 Position = float2(ThreadPositionInGrid.x, ThreadPositionInGrid.y);
 			float Thickness = Lines[DataIndex].Thickness;
-			float Distance = DistanceToDashedLines(Position, Lines[DataIndex].Start, Lines[DataIndex].End, 15.0) - Thickness*0.5;
+			float Distance = DistanceToLine(Position, Lines[DataIndex].Start, Lines[DataIndex].End) - Thickness*0.5;
 			float AA = metal::smoothstep(-1, 1, -Distance) * Lines[DataIndex].Colour.a;
 
 			// Equivalent to ONE_MINUS_SRC_ALPHA

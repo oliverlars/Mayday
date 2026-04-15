@@ -402,12 +402,12 @@ ui_signal UI_TextButton(ui_context *UI, draw_context *Draw, m_arena *Arena,
 		Result.Hover = True;
 
 		Widget->HotAnimation = Lerp(Widget->HotAnimation, 1.0, 0.1);
-		D_Str8(Draw, Arena, DisplayString, .Font = Style.Font, .Position = V3FromV2(Position), .Colour = v4f(0.5, 0.1, 0, 1), .HeightInPixels = HeightInPixels);
+		v4f HotColour = v4f(Min(1.0f, Colour.X * 5.0f), Min(1.0f, Colour.Y * 5.0f), Min(1.0f, Colour.Z * 5.0f), Colour.W);
+		D_Str8(Draw, Arena, DisplayString, .Font = Style.Font, .Position = V3FromV2(Position), .Colour = HotColour, .HeightInPixels = HeightInPixels);
 	}
 	else
 	{
-		//D_Quad(Draw, Arena, BoxPosition, Width, Height, v4f(0, 0, 0, 1));
-		D_Str8(Draw, Arena, DisplayString, .Font = Style.Font, .Position = V3FromV2(Position), .Colour = v4f(0.1, 0.05, 0, 1.0), .HeightInPixels = HeightInPixels);
+		D_Str8(Draw, Arena, DisplayString, .Font = Style.Font, .Position = V3FromV2(Position), .Colour = Colour, .HeightInPixels = HeightInPixels);
 		Widget->HotAnimation = Lerp(Widget->HotAnimation, 0.0, 0.1);
 	}
 
@@ -459,16 +459,16 @@ ui_signal UI_TextHighlightButton(
 		Result.Hover = True;
 
 		Widget->HotAnimation = Lerp(Widget->HotAnimation, 1.0, 0.1);
+		v4f HotColour = v4f(Min(1.0f, Colour.X * 5.0f), Min(1.0f, Colour.Y * 5.0f), Min(1.0f, Colour.Z * 5.0f), Colour.W);
 		D_Str8(Draw, Arena, DisplayString,
-		.Font = Style.Font, .Position = V3FromV2(Position), 
-		.Colour = v4f(0.5, 0.1, 0, 1), .HeightInPixels = HeightInPixels);
+		.Font = Style.Font, .Position = V3FromV2(Position),
+		.Colour = HotColour, .HeightInPixels = HeightInPixels);
 	}
 	else
 	{
-		//D_Quad(Draw, Arena, BoxPosition, Width, Height, v4f(0, 0, 0, 1));
-		D_Str8(Draw, Arena, DisplayString, 
-		.Font = Style.Font, .Position = V3FromV2(Position), 
-		.Colour = v4f(0.1, 0.05, 0, 1.0), .HighlightColour = v4f(0.5, 0.1, 0, 1), 
+		D_Str8(Draw, Arena, DisplayString,
+		.Font = Style.Font, .Position = V3FromV2(Position),
+		.Colour = Colour, .HighlightColour = HighlightColour,
 		.HighlightIndices = HighlightIndices,
 		.HeightInPixels = HeightInPixels);
 		Widget->HotAnimation = Lerp(Widget->HotAnimation, 0.0, 0.1);

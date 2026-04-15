@@ -7,6 +7,7 @@
 
 #include <assert.h>
 #include <float.h>
+#include <math.h>
 
 d_font D_LoadFontFromTTF(draw_context *D_Context, u8 *Data)
 {
@@ -733,8 +734,8 @@ int SortPointsByZ(const void *S, const void *T)
 {
 	// We assume these are in clip space
 	// such that Z is the distance from the camera
-	v4f *A = S;
-	v4f *B = T;
+	const v4f *A = S;
+	const v4f *B = T;
 	if(A->Z > B->Z) return -1;
 	if(A->Z < B->Z) return 1;
 	return 0;
@@ -901,16 +902,12 @@ void D_LinesArray(draw_context *D,
 	render_context *R = D->Render;
 	r_command Command = {0};
 	assert(PositionsCount % 2 == 0);
-	Command.Vertices = (r_vertex*)ArenaPushArrayZero(Arena, r_vertex, PositionsCount/2);
-	Command.VerticesCount = PositionsCount/2;
+	int LineCount = PositionsCount / 2;
+	Command.Vertices = (r_vertex*)ArenaPushArrayZero(Arena, r_vertex, LineCount);
+	Command.VerticesCount = LineCount;
 	r_vertex *R_Vertices = Command.Vertices;
 
 	m44f Transform = R_CurrentTransform(D->Render);
-
-	
-
-	m44f Ortho = M44FOrthographic(0, D->ViewportSize.X, 0.0, D->ViewportSize.Y, -1000.0, 1000.0);
-	R_PushTransform(D->Render, Ortho);
 
 	for(int P = 0; P < PositionsCount; P += 2)
 	{
@@ -926,33 +923,26 @@ void D_LinesArray(draw_context *D,
 		B = v3f(B4D.X, B4D.Y, B4D.Z);
 
 		A.X = D->ViewportSize.X * (A.X*0.5 + 0.5);
-		B.X = D->ViewportSize.X * (B.X*0.5 + 0.5); 
+		B.X = D->ViewportSize.X * (B.X*0.5 + 0.5);
 
-		// We flip the NDC Y coordinate so that when we do the
-		// SDF evaluation the [[position]]/fragCoord position aligns
-		// with our coordinate system.
-		// TODO(Oliver): explain this better
 		A.Y = -A.Y;
 		B.Y = -B.Y;
 
 		A.Y = D->ViewportSize.Y * (A.Y*0.5 + 0.5);
 		B.Y = D->ViewportSize.Y * (B.Y*0.5 + 0.5);
 
-		r_vertex Vertex = {
-			.Position = v4f(A.X, A.Y, 0.0, 1),
+		r_vertex V = {
 			.Colour = Colour,
 			.Start = v2f(A.X, A.Y),
 			.End = v2f(B.X, B.Y),
 			.Thickness = Thickness
 		};
-		*R_Vertices++ = Vertex;
 
+		*R_Vertices++ = V;
 	}
 	Command.Type = R_COMMAND_LINES;
 	Command.Attributes = R_AttributesFromCommandType(Command.Type);
 	R_PushCommand(R, Arena, Command);
-
-	R_PopTransform(D->Render);
 }
 
 

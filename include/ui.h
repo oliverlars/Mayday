@@ -50,7 +50,13 @@ typedef struct ui_tree
 
 	u64 TreeHash;
 
+	int FocusNodeIndex;
+
 	v2f Offset;
+
+	f32 DebugBuildMs;
+	f32 DebugAttributesMs;
+	f32 DebugSimulateMs;
 } ui_tree;
 
 typedef enum ui_mouse_buttons
@@ -190,7 +196,7 @@ typedef struct ui_tree_view_signal
 
 ui_tree_view_signal UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw, edit_context *Edit, d_font Font,
 							 				m_arena *Arena, int ActiveNodeIndex,
-											ui_tree *TreeView, m44f TreeTransform, str8 CurrentPath, editable_buffer* SearchBuffer);
+											ui_tree *TreeView, m44f TreeTransform, v3f CameraPosition, str8 CurrentPath, editable_buffer* SearchBuffer);
 
 
 typedef struct ui_orbit

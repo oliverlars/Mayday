@@ -93,6 +93,7 @@ operating_system OS_GetOperatingSystem();
 typedef struct os_directory_tree_options
 {
 	b32 FoldersOnly;
+	int MaxDepth; // 0 = unlimited
 } os_directory_tree_options;
 
 

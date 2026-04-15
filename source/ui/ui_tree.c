@@ -19,6 +19,7 @@ ui_tree_info TreeInfoFromPath(m_arena *Arena, str8 Path, v3f Size)
 	Info.NodePositions = ArenaPushArrayZero(Arena, v4f, Info.Tree.Count);
 	Info.NodeVelocities = ArenaPushArrayZero(Arena, v4f, Info.Tree.Count);
 	Info.NodeInfos = ArenaPushArrayZero(Arena, fdg_node_info, Info.Tree.Count);
+	Info.NodeOpacity = ArenaPushArrayZero(Arena, f32, Info.Tree.Count);
 	Info.Froms = ArenaPushArrayZero(Arena, int, Info.Tree.Count);
 	Info.Tos = ArenaPushArrayZero(Arena, int, Info.Tree.Count);
 
@@ -208,106 +209,71 @@ void UI_TreeView(ui_context *UI, draw_context *Draw, shared_wave_info *Shared,
 		}
 	}
 
-	// Collect positions per brightness level
-	int ActiveCount = 0, DimCount = 0;
+	// Collect visible points using NodeOpacity
+	int VisiblePointCount = 0;
 	for(int I = 0; I < TreeView->Info.NodeCount; I++)
 	{
-		if(NodeLevel[I] == 1) ActiveCount++;
-		else if(NodeLevel[I] > 1) DimCount++;
+		if(TreeView->Info.NodeOpacity[I] > 0.01f) VisiblePointCount++;
 	}
 
-	v3f *ActivePositions = ArenaPushArray(Arena, v3f, ActiveCount);
-	v3f *DimPositions = ArenaPushArray(Arena, v3f, DimCount);
-	int AI = 0, DI = 0;
+	v3f *VisiblePositions = ArenaPushArray(Arena, v3f, VisiblePointCount);
+	f32 *VisibleOpacities = ArenaPushArray(Arena, f32, VisiblePointCount);
+	int VPI = 0;
 	for(int I = 0; I < TreeView->Info.NodeCount; I++)
 	{
-		v4f P = TreeView->Info.NodePositions[I];
-		v3f P3 = v3f(P.X, P.Y, P.Z);
-		if(NodeLevel[I] == 1) ActivePositions[AI++] = P3;
-		else if(NodeLevel[I] > 1) DimPositions[DI++] = P3;
-	}
-
-	// Lines: from focus to active children
-	int ActiveLineCount = 0;
-	for(int I = 0; I < TreeView->Info.LinkCount; I++)
-	{
-		if(TreeView->Info.Froms[I] == FocusIndex && TreeView->Info.Tos[I] != FocusIndex
-		   && NodeLevel[TreeView->Info.Tos[I]] == 1)
-			ActiveLineCount++;
-	}
-
-	v3f *ActiveLines = ArenaPushArray(Arena, v3f, ActiveLineCount * 2);
-	int ALI = 0;
-	for(int I = 0; I < TreeView->Info.LinkCount; I++)
-	{
-		if(TreeView->Info.Froms[I] == FocusIndex && TreeView->Info.Tos[I] != FocusIndex
-		   && NodeLevel[TreeView->Info.Tos[I]] == 1)
+		if(TreeView->Info.NodeOpacity[I] > 0.01f)
 		{
-			v4f FP = TreeView->Info.NodePositions[FocusIndex];
-			v4f TP = TreeView->Info.NodePositions[TreeView->Info.Tos[I]];
-			ActiveLines[ALI++] = v3f(FP.X, FP.Y, FP.Z);
-			ActiveLines[ALI++] = v3f(TP.X, TP.Y, TP.Z);
+			v4f P = TreeView->Info.NodePositions[I];
+			VisiblePositions[VPI] = v3f(P.X, P.Y, P.Z);
+			VisibleOpacities[VPI] = TreeView->Info.NodeOpacity[I];
+			VPI++;
 		}
 	}
 
-	// Lines: sibling connections (parent-of-focus to its children)
-	int SiblingLineCount = 0;
-	if(ParentOfFocus >= 0)
-	{
-		for(int I = 0; I < TreeView->Info.LinkCount; I++)
-		{
-			if(TreeView->Info.Froms[I] == ParentOfFocus && TreeView->Info.Tos[I] != ParentOfFocus
-			   && NodeLevel[TreeView->Info.Tos[I]] == 2)
-				SiblingLineCount++;
-		}
-	}
-
-	v3f *SiblingLines = ArenaPushArray(Arena, v3f, SiblingLineCount * 2);
-	int SLI = 0;
-	if(ParentOfFocus >= 0)
-	{
-		for(int I = 0; I < TreeView->Info.LinkCount; I++)
-		{
-			if(TreeView->Info.Froms[I] == ParentOfFocus && TreeView->Info.Tos[I] != ParentOfFocus
-			   && NodeLevel[TreeView->Info.Tos[I]] == 2)
-			{
-				v4f FP = TreeView->Info.NodePositions[ParentOfFocus];
-				v4f TP = TreeView->Info.NodePositions[TreeView->Info.Tos[I]];
-				SiblingLines[SLI++] = v3f(FP.X, FP.Y, FP.Z);
-				SiblingLines[SLI++] = v3f(TP.X, TP.Y, TP.Z);
-			}
-		}
-	}
-
-	// Lines: grandchild connections (active children to their children)
-	int GrandchildLineCount = 0;
+	// Lines: draw any link where both endpoints have opacity, using min opacity
+	int VisibleLineCount = 0;
 	for(int I = 0; I < TreeView->Info.LinkCount; I++)
 	{
-		if(IsActiveChild[TreeView->Info.Froms[I]] && TreeView->Info.Tos[I] != TreeView->Info.Froms[I]
-		   && NodeLevel[TreeView->Info.Tos[I]] == 3)
-			GrandchildLineCount++;
+		int From = TreeView->Info.Froms[I];
+		int To = TreeView->Info.Tos[I];
+		if(From == To) continue;
+		f32 FromOp = TreeView->Info.NodeOpacity[From];
+		f32 ToOp = TreeView->Info.NodeOpacity[To];
+		if(FromOp > 0.01f && ToOp > 0.01f) VisibleLineCount++;
 	}
 
-	v3f *GrandchildLines = ArenaPushArray(Arena, v3f, GrandchildLineCount * 2);
-	int GLI = 0;
+	v3f *Lines = ArenaPushArray(Arena, v3f, VisibleLineCount * 2);
+	f32 *LineOpacities = ArenaPushArray(Arena, f32, VisibleLineCount);
+	int LI = 0;
 	for(int I = 0; I < TreeView->Info.LinkCount; I++)
 	{
-		if(IsActiveChild[TreeView->Info.Froms[I]] && TreeView->Info.Tos[I] != TreeView->Info.Froms[I]
-		   && NodeLevel[TreeView->Info.Tos[I]] == 3)
+		int From = TreeView->Info.Froms[I];
+		int To = TreeView->Info.Tos[I];
+		if(From == To) continue;
+		f32 FromOp = TreeView->Info.NodeOpacity[From];
+		f32 ToOp = TreeView->Info.NodeOpacity[To];
+		if(FromOp > 0.01f && ToOp > 0.01f)
 		{
-			v4f FP = TreeView->Info.NodePositions[TreeView->Info.Froms[I]];
-			v4f TP = TreeView->Info.NodePositions[TreeView->Info.Tos[I]];
-			GrandchildLines[GLI++] = v3f(FP.X, FP.Y, FP.Z);
-			GrandchildLines[GLI++] = v3f(TP.X, TP.Y, TP.Z);
+			v4f FP = TreeView->Info.NodePositions[From];
+			v4f TP = TreeView->Info.NodePositions[To];
+			Lines[LI * 2 + 0] = v3f(FP.X, FP.Y, FP.Z);
+			Lines[LI * 2 + 1] = v3f(TP.X, TP.Y, TP.Z);
+			LineOpacities[LI] = Min(FromOp, ToOp);
+			LI++;
 		}
 	}
 
-	// Draw dim lines first (behind), then active on top
-	D_LinesArray(Draw, Arena, SiblingLines, SiblingLineCount * 2, 1.0, v4f(0.3, 0.08, 0, 0.06));
-	D_LinesArray(Draw, Arena, GrandchildLines, GrandchildLineCount * 2, 1.0, v4f(0.3, 0.08, 0, 0.06));
-	D_LinesArray(Draw, Arena, ActiveLines, ActiveLineCount * 2, 2.0, v4f(0.5, 0.1, 0, 0.1));
-	D_PointsArray(Draw, Arena, ActivePositions, ActiveCount, 5.0, v4f(0.008, 0.00, 0, 1.0));
-	D_PointsArray(Draw, Arena, ActivePositions, ActiveCount, 10.0, v4f(0.1, 0.05, 0, 1.0));
+	// Draw lines grouped by opacity (batch into a few alpha levels to avoid too many draw calls)
+	// Simple approach: draw all with average opacity scaled colour
+	for(int I = 0; I < VisibleLineCount; I++)
+	{
+		f32 Alpha = LineOpacities[I] * 0.1f;
+		f32 Thickness = 1.0f + LineOpacities[I];
+		D_LinesArray(Draw, Arena, &Lines[I * 2], 2, Thickness, v4f(0.5, 0.1, 0, Alpha));
+	}
+
+	D_PointsArray(Draw, Arena, VisiblePositions, VisiblePointCount, 5.0, v4f(0.008, 0.00, 0, 1.0));
+	D_PointsArray(Draw, Arena, VisiblePositions, VisiblePointCount, 10.0, v4f(0.1, 0.05, 0, 1.0));
 }
 
 
@@ -321,8 +287,13 @@ ui_tree_view_signal UI_TreeViewFolderLabels(
 
 	if(!OS_ValidPath(CurrentPath)) return Result;
 
-	ui_textbox_signal SearchSignal = UI_TextBox(Arena, Font, v2f(sapp_widthf()/2.0 - 500, 100), 1000,
-												UI, Draw, Edit, 60, Str8("TreeViewTextBox"), SearchBuffer);
+	// Centre the search box on the viewport panel
+	v4i PanelScissor = R_CurrentScissor(Draw->Render);
+	f32 SearchBoxWidth = 600;
+	f32 SearchBoxX = PanelScissor.X + (PanelScissor.Z - SearchBoxWidth) * 0.5f;
+	f32 SearchBoxY = PanelScissor.Y + 30;
+	ui_textbox_signal SearchSignal = UI_TextBox(Arena, Font, v2f(SearchBoxX, SearchBoxY), SearchBoxWidth,
+												UI, Draw, Edit, 40, Str8("TreeViewTextBox"), SearchBuffer);
 
 	str8 Filter = SearchSignal.String;
 
@@ -358,10 +329,46 @@ ui_tree_view_signal UI_TreeViewFolderLabels(
 		}
 	}
 
+	// Compute per-node target opacity and lerp toward it
+	f32 LerpRate = 0.08f;
+	for(int I = 0; I < TreeView->Info.NodeCount; I++)
+	{
+		// Determine target opacity based on level
+		int Level = 0;
+		if(I == FocusIdx)
+			Level = 4;
+		else if(ParentOfFocus >= 0 && I == ParentOfFocus)
+			Level = 2; // parent of focus is visible but dimmed
+		else
+		{
+			for(int L = 0; L < TreeView->Info.LinkCount; L++)
+			{
+				if(TreeView->Info.Tos[L] == I)
+				{
+					int Parent = TreeView->Info.Froms[L];
+					if(Parent == FocusIdx) { Level = 1; break; }
+					else if(ParentOfFocus >= 0 && Parent == ParentOfFocus) { Level = 2; break; }
+					else if(IsActiveChild[Parent] && I != Parent) { Level = 3; break; }
+				}
+			}
+		}
+
+		f32 TargetOpacity;
+		if(Level == 4) TargetOpacity = 1.0f;
+		else if(Level == 1) TargetOpacity = 1.0f;
+		else if(Level > 1) TargetOpacity = 0.6f;
+		else TargetOpacity = 0.0f;
+
+		TreeView->Info.NodeOpacity[I] += (TargetOpacity - TreeView->Info.NodeOpacity[I]) * LerpRate;
+	}
+
 	m_scratch_arena Scratch = ScratchBegin(0, 0);
 	for(os_directory_tree_iterator It = {0};
 		OS_DirectoryTreeIterateWithStack(Scratch.Arena, TreeView->Info.Tree, &It);)
 	{
+		f32 Opacity = TreeView->Info.NodeOpacity[It.Index];
+		if(Opacity < 0.01f) continue;
+
 		// Four-level visibility: focus node, active children, above/siblings, below/grandchildren
 		int Level = 0;
 		if(It.Index == FocusIdx)
@@ -372,8 +379,6 @@ ui_tree_view_signal UI_TreeViewFolderLabels(
 			Level = 2; // above: siblings of focus
 		else if(IsActiveChild[It.ParentIndex] && It.Index != It.ParentIndex)
 			Level = 3; // below: grandchildren
-
-		if(Level == 0) continue;
 
 		f32 FontSize = 30;
 		v4f P = TreeView->Info.NodePositions[It.Index];
@@ -393,7 +398,7 @@ ui_tree_view_signal UI_TreeViewFolderLabels(
 			Colour = v4f(0.8, 0.6, 0.4, 1.0);
 			FontSize = 30;
 		}
-		
+
 		TransformedPoint.X += 15.0f;
 		TransformedPoint.Y += 5.0f;
 
@@ -409,14 +414,19 @@ ui_tree_view_signal UI_TreeViewFolderLabels(
 		// Focus node: larger, brighter, distinct
 		if(Level == 4)
 		{
-			Colour = v4f(0.6, 0.35, 0.1, 1.0);
+			Colour = v4f(0.6, 0.35, 0.1, Opacity);
 			FontSize = 40;
 		}
-		// Non-active levels: smaller and dimmed but still readable
+		// Non-active levels: smaller and dimmed
 		else if(Level > 1)
 		{
-			Colour.W *= 0.6f;
+			Colour.W *= Opacity;
 			FontSize *= 0.6f;
+		}
+		else
+		{
+			// Active children: use lerped opacity
+			Colour.W *= Opacity;
 		}
 
 		{

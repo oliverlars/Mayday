@@ -651,7 +651,7 @@ void OS_Update(void *Data)
 						M->TreeView.FocusNodeIndex = ClickedIndex;
 						v4f ClickedPos = M->TreeView.Info.NodePositions[ClickedIndex];
 						M->TreeCameraLookAtTarget = v3f(ClickedPos.X, ClickedPos.Y, ClickedPos.Z);
-						M->TreeCameraZoomTarget = 5.0f;
+						M->TreeCameraZoomTarget = 3.0f;
 						M->TreeTransitioning = True;
 					}
 				}
@@ -670,7 +670,7 @@ void OS_Update(void *Data)
 							M->TreeView.FocusNodeIndex = ParentIndex;
 							v4f ParentPos = M->TreeView.Info.NodePositions[ParentIndex];
 							M->TreeCameraLookAtTarget = v3f(ParentPos.X, ParentPos.Y, ParentPos.Z);
-							M->TreeCameraZoomTarget = 5.0f;
+							M->TreeCameraZoomTarget = 3.5f;
 							M->TreeTransitioning = True;
 							break;
 						}

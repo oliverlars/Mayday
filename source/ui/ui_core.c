@@ -6,6 +6,7 @@
 #include "draw.h"
 #include "strings.h"
 #include <assert.h>
+#include <math.h>
 
 void UI_RemoveEventFromList(ui_context *UI, ui_event *Event)
 {
@@ -762,19 +763,44 @@ ui_textbox_signal UI_TextBox(m_arena *Arena,
 		}
 	}
 
+	f32 PadX = 10.0f;
+	f32 PadY = 8.0f;
+
 	v2f BoxPosition = Position;
 	BoxPosition.Y += UI->Font.Descent * Scale;
 
-	D_Quad(Draw, Arena, Sub(BoxPosition, v2f(2, 2)), Width, Height, v4f(0.2, 0.1, 0, 1.0));
+	// Orange outline with padding around text
+	f32 BorderThickness = 2.0f;
+	v4f BorderColour = v4f(0.5, 0.2, 0.0, 0.6);
+	f32 BoxW = Width + PadX * 2;
+	f32 BoxH = Height + PadY * 2;
+	v2f BoxOrigin = Sub(BoxPosition, v2f(PadX, PadY));
+	D_Quad(Draw, Arena, BoxOrigin, BoxW, BorderThickness, BorderColour); // top
+	D_Quad(Draw, Arena, v2f(BoxOrigin.X, BoxOrigin.Y + BoxH - BorderThickness), BoxW, BorderThickness, BorderColour); // bottom
+	D_Quad(Draw, Arena, BoxOrigin, BorderThickness, BoxH, BorderColour); // left
+	D_Quad(Draw, Arena, v2f(BoxOrigin.X + BoxW - BorderThickness, BoxOrigin.Y), BorderThickness, BoxH, BorderColour); // right
 
 	v2f StringPosition = Position;
 	StringPosition.X -= CursorXOffset;
-	//StringPosition.Y += UI->Font.Descent * Scale;
-	R_PushScissor(Draw->Render, v4i(BoxPosition.X, BoxPosition.Y, Width, Height));
+
+	R_PushScissor(Draw->Render, v4i(BoxOrigin.X, BoxOrigin.Y, BoxW, BoxH));
+
+	// Placeholder text when empty and not active
+	if(Buffer->String.Size == 0 && UI->Active != Hash)
+	{
+		f32 T = (f32)sapp_frame_count() * 0.04f;
+		f32 PlaceholderAlpha = 0.2f + 0.3f * (sinf(T) * 0.5f + 0.5f);
+		D_Str8(Draw, Arena, Str8("Search..."),
+			   .Font = Font,
+			   .Position = V3FromV2(Position),
+			   .Colour = v4f(0.5, 0.2, 0.0, PlaceholderAlpha),
+			   .HeightInPixels = HeightInPixels);
+	}
+
 	D_Str8(Draw,
 			   Arena, Buffer->String,
-			   .Font =Font,
-			   .Position = V3FromV2(StringPosition), .Colour = v4f(0.008, 0.0, 0.0, 1.0),
+			   .Font = Font,
+			   .Position = V3FromV2(StringPosition), .Colour = v4f(0.5, 0.2, 0.0, 1.0),
 			   .HeightInPixels = HeightInPixels);
 	R_PopScissor(Draw->Render);
 

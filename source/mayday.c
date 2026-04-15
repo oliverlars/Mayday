@@ -459,6 +459,18 @@ void OS_Update(void *Data)
 		// TOOD(Oliver): Get rid of all this static shit
 		static v2f MouseRotation = v2f(0, 0);
 
+		// Panel metrics for centering FDG projections on the viewport
+		f32 PanelLeft = TotalHeight + 55;
+		f32 PanelTop = 55;
+		f32 PanelWidth = sapp_widthf() - TotalHeight - 70;
+		f32 PanelHeight = sapp_heightf() - 210;
+		f32 PanelCenterX = PanelLeft + PanelWidth * 0.5f;
+		f32 PanelCenterY = PanelTop + PanelHeight * 0.5f;
+		f32 PanelAspect = PanelWidth / PanelHeight;
+		// Off-center projection: shift frustum so world origin maps to panel centre
+		f32 PanelNDCOffsetX = -(2.0f * PanelCenterX / sapp_widthf() - 1.0f);
+		f32 PanelNDCOffsetY = (2.0f * PanelCenterY / sapp_heightf() - 1.0f);
+
 		R_PushScissor(M->Render, v4i(TotalHeight + 50 + 5, 55, sapp_widthf() - TotalHeight - 10 - 50 - 10, sapp_heightf() - 100 - 10 - HeaderHeight));
 		if(OS_ValidPath(M->Folder))
 		{
@@ -506,7 +518,9 @@ void OS_Update(void *Data)
 				-cosf(CamAngle) * M->TreeCameraZoom
 			);
 			v3f CamPos = AddV3F(M->TreeCameraLookAt, CamOffset);
-			m44f P = Perspective(sapp_widthf()/sapp_heightf(), 35, 0.01, 10000.0);
+			m44f P = Perspective(PanelAspect, 35, 0.01, 10000.0);
+			P.E[2][0] = PanelNDCOffsetX;
+			P.E[2][1] = PanelNDCOffsetY;
 			m44f V = M44FLookAt(CamPos, M->TreeCameraLookAt, v3f(0, 1, 0));
 			m44f PV = Mul(V, P);
 			R_PushTransform(M->Render, PV);
@@ -751,7 +765,9 @@ void OS_Update(void *Data)
 
 				QuadTree->Masses[0] = QuadTreeCalculateAttributes(QuadTree, 0);
 
-				m44f P = Perspective(sapp_widthf()/sapp_heightf(), 80, 0.01, 10000.0);
+				m44f P = Perspective(PanelAspect, 80, 0.01, 10000.0);
+				P.E[2][0] = PanelNDCOffsetX;
+				P.E[2][1] = PanelNDCOffsetY;
 				v3f At = V3FromV4(Positions[0]);
 				v3f From = At;
 				From.Z -= 2;

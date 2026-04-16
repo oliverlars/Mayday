@@ -10,6 +10,12 @@
 #include "ui.h"
 #include "wave.h"
 
+// FDG side is now drawn on a black background post-rotation,
+// so all the formerly-black UI elements become red.
+#define FDG_FG_R (0.753f)
+#define FDG_FG_G (0.036f)
+#define FDG_FG_B (0.0f)
+
 
 // Build a flat FDG from a list of recently opened paths:
 // one root node + one child per path (no intermediate components)
@@ -349,11 +355,11 @@ void UI_TreeView(ui_context *UI, draw_context *Draw, shared_wave_info *Shared,
 	for(int I = 0; I < VisibleLineCount; I++)
 	{
 		f32 Thickness = 1.0f + LineOpacities[I];
-		D_LinesArray(Draw, Arena, &Lines[I * 2], 2, Thickness, v4f(0.0, 0.0, 0.0, 0.4));
+		D_LinesArray(Draw, Arena, &Lines[I * 2], 2, Thickness, v4f(FDG_FG_R, FDG_FG_G, FDG_FG_B, 0.4));
 	}
 
-	D_PointsArray(Draw, Arena, VisiblePositions, VisiblePointCount, 6.0, v4f(0.0, 0.0, 0.0, 1.0));
-	D_PointsArray(Draw, Arena, VisiblePositions, VisiblePointCount, 12.0, v4f(0.0, 0.0, 0.0, 1.0));
+	D_PointsArray(Draw, Arena, VisiblePositions, VisiblePointCount, 6.0, v4f(FDG_FG_R, FDG_FG_G, FDG_FG_B, 1.0));
+	D_PointsArray(Draw, Arena, VisiblePositions, VisiblePointCount, 12.0, v4f(FDG_FG_R, FDG_FG_G, FDG_FG_B, 1.0));
 }
 
 
@@ -514,11 +520,11 @@ void UI_TreeViewFromPaths(ui_context *UI, draw_context *Draw, shared_wave_info *
 	for(int I = 0; I < VisibleLineCount; I++)
 	{
 		f32 Thickness = 1.0f + LineOps[I];
-		D_LinesArray(Draw, Arena, &VisLines[I * 2], 2, Thickness, v4f(0.0, 0.0, 0.0, 0.4));
+		D_LinesArray(Draw, Arena, &VisLines[I * 2], 2, Thickness, v4f(FDG_FG_R, FDG_FG_G, FDG_FG_B, 0.4));
 	}
 
-	D_PointsArray(Draw, Arena, VisiblePositions, VisiblePointCount, 6.0, v4f(0.0, 0.0, 0.0, 1.0));
-	D_PointsArray(Draw, Arena, VisiblePositions, VisiblePointCount, 12.0, v4f(0.0, 0.0, 0.0, 1.0));
+	D_PointsArray(Draw, Arena, VisiblePositions, VisiblePointCount, 6.0, v4f(FDG_FG_R, FDG_FG_G, FDG_FG_B, 1.0));
+	D_PointsArray(Draw, Arena, VisiblePositions, VisiblePointCount, 12.0, v4f(FDG_FG_R, FDG_FG_G, FDG_FG_B, 1.0));
 }
 
 
@@ -588,15 +594,15 @@ ui_tree_view_signal UI_TreeViewFolderLabels(
 				BcX += Pad;
 				D_Str8(Draw, Arena, Sep,
 					.Font = BackdropFont, .Position = V3FromV2(v2f(BcX, BcY)),
-					.Colour = v4f(0.0, 0.0, 0.0, 1.0),
+					.Colour = v4f(FDG_FG_R, FDG_FG_G, FDG_FG_B, 1.0),
 					.HeightInPixels = BcFontSize);
 				BcX += SepW + Pad;
 			}
 
 			b32 IsLast = (I == ChainLen - 1);
 			v4f BcColour = IsLast
-				? v4f(0.0, 0.0, 0.0, 1.0)
-				: v4f(0.0, 0.0, 0.0, 1.0);
+				? v4f(FDG_FG_R, FDG_FG_G, FDG_FG_B, 1.0)
+				: v4f(FDG_FG_R, FDG_FG_G, FDG_FG_B, 1.0);
 
 			str8 BcLabel = Str8PushF(Arena, "?S##bc?u32", ComponentName, Chain[I]);
 			ui_signal BcSignal = UI_TextButton(UI, Draw, Arena,
@@ -719,7 +725,7 @@ ui_tree_view_signal UI_TreeViewFolderLabels(
 
 		TransformedPoint.X *= sapp_widthf();
 		TransformedPoint.Y *= sapp_heightf();
-		v4f Colour = v4f(0.0, 0.0, 0.0, 1.0);
+		v4f Colour = v4f(FDG_FG_R, FDG_FG_G, FDG_FG_B, 1.0);
 		if(It.Index == ActiveNodeIndex)
 		{
 			// Lerp the active label font size toward its target
@@ -727,7 +733,7 @@ ui_tree_view_signal UI_TreeViewFolderLabels(
 			if(TreeView->ActiveLabelFontSizeTarget < 1.0f) TreeView->ActiveLabelFontSizeTarget = 45.0f;
 			TreeView->ActiveLabelFontSize += (TreeView->ActiveLabelFontSizeTarget - TreeView->ActiveLabelFontSize) * 0.12f;
 			FontSize = TreeView->ActiveLabelFontSize;
-			Colour = v4f(0.0, 0.0, 0.0, 1.0);
+			Colour = v4f(FDG_FG_R, FDG_FG_G, FDG_FG_B, 1.0);
 			Result.ActiveScreenPosition = v2f(TransformedPoint.X + 15.0f, TransformedPoint.Y + 5.0f);
 		}
 
@@ -746,7 +752,7 @@ ui_tree_view_signal UI_TreeViewFolderLabels(
 		// Focus node: larger, distinct
 		if(Level == 4)
 		{
-			Colour = v4f(0.0, 0.0, 0.0, Opacity);
+			Colour = v4f(FDG_FG_R, FDG_FG_G, FDG_FG_B, Opacity);
 			FontSize = 60;
 		}
 		// Non-active levels: depth-faded
@@ -765,9 +771,9 @@ ui_tree_view_signal UI_TreeViewFolderLabels(
 			str8 LabelString = Str8PushF(Arena, "?S##?u32", FolderName, It.Index);
 			if(Filter.Size == 0 || Str8FuzzyMatch(FolderName, Filter))
 			{
-				// When filtering: non-matching chars dark red (subtle), matching chars black (stand out)
-				v4f LabelColour = (Filter.Size > 0) ? v4f(0.35, 0.015, 0.0, 1.0) : Colour;
-				v4f HighlightCol = v4f(0.0, 0.0, 0.0, 1.0);
+				// When filtering: non-matching chars dimmed, matching chars bright red (stand out on black bg)
+				v4f LabelColour = (Filter.Size > 0) ? v4f(FDG_FG_R * 0.35f, FDG_FG_G * 0.35f, FDG_FG_B * 0.35f, 1.0) : Colour;
+				v4f HighlightCol = v4f(FDG_FG_R, FDG_FG_G, FDG_FG_B, 1.0);
 				ui_signal Button = UI_TextHighlightButton(UI, Draw,
 					Arena, LabelString,
 					FontSize,
@@ -852,7 +858,7 @@ ui_tree_view_signal UI_TreeViewFolderLabels(
 				SizeLine = Str8PushF(Arena, "?s32 bytes", (int)TreeView->BackdropStats.TotalSizeBytes);
 			D_Str8(Draw, Arena, SizeLine,
 				.Font = BackdropFont, .Position = V3FromV2(v2f(InfoX, StatY)),
-				.Colour = v4f(0.0, 0.0, 0.0, InfoAlpha),
+				.Colour = v4f(FDG_FG_R, FDG_FG_G, FDG_FG_B, InfoAlpha),
 				.HeightInPixels = StatFontSize);
 			StatY += StatFontSize + 4.0f;
 
@@ -860,7 +866,7 @@ ui_tree_view_signal UI_TreeViewFolderLabels(
 			str8 FolderLine = Str8PushF(Arena, "?s32 folders", TreeView->BackdropStats.FolderCount);
 			D_Str8(Draw, Arena, FolderLine,
 				.Font = BackdropFont, .Position = V3FromV2(v2f(InfoX, StatY)),
-				.Colour = v4f(0.0, 0.0, 0.0, InfoAlpha),
+				.Colour = v4f(FDG_FG_R, FDG_FG_G, FDG_FG_B, InfoAlpha),
 				.HeightInPixels = StatFontSize);
 			StatY += StatFontSize + 4.0f;
 
@@ -868,7 +874,7 @@ ui_tree_view_signal UI_TreeViewFolderLabels(
 			str8 FileLine = Str8PushF(Arena, "?s32 files", TreeView->BackdropStats.FileCount);
 			D_Str8(Draw, Arena, FileLine,
 				.Font = BackdropFont, .Position = V3FromV2(v2f(InfoX, StatY)),
-				.Colour = v4f(0.0, 0.0, 0.0, InfoAlpha),
+				.Colour = v4f(FDG_FG_R, FDG_FG_G, FDG_FG_B, InfoAlpha),
 				.HeightInPixels = StatFontSize);
 			StatY += StatFontSize + 15.0f;
 
@@ -876,7 +882,7 @@ ui_tree_view_signal UI_TreeViewFolderLabels(
 			f32 InfoFontSize = 180.0f;
 			D_Str8(Draw, Arena, TreeView->BackdropName,
 				.Font = BackdropFont, .Position = V3FromV2(v2f(InfoX, StatY)),
-				.Colour = v4f(0.0, 0.0, 0.0, InfoAlpha),
+				.Colour = v4f(FDG_FG_R, FDG_FG_G, FDG_FG_B, InfoAlpha),
 				.HeightInPixels = InfoFontSize);
 		}
 	}

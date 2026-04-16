@@ -165,6 +165,12 @@ typedef struct mayday_context
 	b32 UnFocused;
 	b32 ShowDebugOverlay;
 
+	// Split-flap carousel rotation (homescreen -> FDG, one-way)
+	f32 CameraAngle;
+	f32 CameraVelocity;
+	f32 CameraTarget;
+	b32 HomescreenLocked;
+
 	debug_timings Debug;
 }
 mayday_context;
@@ -416,86 +422,125 @@ void OS_Update(void *Data)
 			M->FolderHash = FolderHash;
 		}
 
-		v2f Centre = {0};
-		R_PushTransform(M->Render, Orthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
-		D_Quad(M->Draw, M->FrameArena, v2f(0, 0),  WindowWidth, WindowHeight, COLOUR_BACKGROUND);
-		//D_Grid2D(M->Draw, M->FrameArena, M->Buffer.HeightInPixels, M->Buffer.HeightInPixels*5);
-		
-		// Vertical text — single row on black sidebar, inset from edges
-		f32 SidebarPad = 15.0f;
-		f32 TextInnerPad = 30.0f;
-		f32 TextWidth = (sapp_heightf() - 200.0f - TextInnerPad * 2) * 0.8f;
-		f32 TextHeight = D_Str8VisualHeightFromWidth(M->BebasNeue, Str8("MAYDAY!"), TextWidth);
-		v4f BBox = D_Str8BBoxFromHeight(M->BebasNeue, v2f(0, 0), Str8("MAYDAY!"), TextHeight);
-		f32 Height = BBox.W - BBox.Y;
-		f32 SidebarWidth = Height + TextInnerPad * 2;
-		f32 TotalHeight = SidebarWidth + SidebarPad * 2;
-
-		// Black sidebar panel — inset from window edges
-		D_Quad(M->Draw, M->FrameArena, v2f(SidebarPad, SidebarPad), SidebarWidth, sapp_heightf() - SidebarPad * 2, COLOUR_BLACK);
-
-		// Position MAYDAY text at top of panel with equal padding on top/left/right
-		f32 TextYOffset = sapp_heightf() - SidebarPad - TextInnerPad - TextWidth;
-
-		m44f T = R_CurrentTransform(M->Render);
-		m44f TextTransform = Mul(
-			M44FTranslate(v3f(TextYOffset, -(SidebarPad + SidebarWidth/2.0 + Height/2.0), 0)),
-			Mul(M44FromZAngle(-M_PI/2.0), M44FTranslate(v3f(0, 0, 0)))
-		);
-		R_PushTransform(M->Render, Mul(TextTransform, T));
-		D_Str8(M->Draw, M->FrameArena, Str8("MAYDAY!"), .Font = M->BebasNeue, .Position = v3f(0, 0, 0), .Colour = COLOUR_BACKGROUND, .WidthInPixels = TextWidth);
-		R_PopTransform(M->Render);
-
-		// Sidebar info — horizontal text just below MAYDAY
+		// === SPLIT-FLAP CAROUSEL: one-way homescreen -> FDG ===
+		// Model: a single camera at origin looking down -Z. Homescreen panel
+		// lives at world z = -z0, FDG panel lives at world z = +z1. The camera
+		// Y-rotates; when |angle| > threshold we snap + lock to face the FDG.
+		//
+		// Because we draw pixel-space text with Orthographic() and the FDG's
+		// own PV already flattens to clip space, we can't apply a full 3D model
+		// rotation directly. Instead, for each panel we apply a POST-projection
+		// homography that matches what a camera looking at a flat card at
+		// distance D (in NDC units) would see if that card was rotated around
+		// its vertical axis. This gives real perspective foreshortening —
+		// the near edge stretches, the far edge bunches up toward the vanishing
+		// point, rather than just squishing uniformly.
 		{
-			f32 InfoFontSize = 50.0f;
-			f32 InfoLineSpacing = InfoFontSize * 1.5f;
-			f32 InfoX = SidebarPad + TextInnerPad / 2.0f;
-			f32 InfoY = TextYOffset - InfoFontSize * 2.0f;
+			f32 dt = 1.0f / 60.0f;
 
-			str8 BuildRoman = IntToRomanNumerals(M->FrameArena, BUILD_NUMBER);
-			D_Str8(M->Draw, M->FrameArena,
-				Str8PushF(M->FrameArena, "BUILD: ?S", BuildRoman),
-				.Font = M->CodeFont, .Position = v3f(InfoX, InfoY, 0),
-				.Colour = COLOUR_BACKGROUND, .HeightInPixels = InfoFontSize);
+			// Before lock, consume scroll events so the FDG doesn't also see them
+			if(!M->HomescreenLocked)
+			{
+				f32 ScrollX = 0;
+				ui_event *Event = M->UI->EventFirst;
+				while(Event)
+				{
+					ui_event *Next = Event->Next;
+					if(Event->E.type == SAPP_EVENTTYPE_MOUSE_SCROLL)
+					{
+						ScrollX += Event->E.scroll_x;
+						UI_RemoveEventFromList(M->UI, Event);
+					}
+					Event = Next;
+				}
+				M->CameraVelocity -= ScrollX * 0.035f;
+			}
 
-			InfoY -= InfoLineSpacing;
-			D_Str8(M->Draw, M->FrameArena, Str8(__DATE__),
-				.Font = M->CodeFont, .Position = v3f(InfoX, InfoY, 0),
-				.Colour = COLOUR_BACKGROUND, .HeightInPixels = InfoFontSize);
+			// Critically damped spring
+			f32 K = 15.0f;
+			f32 Damping = 2.0f * sqrtf(K);
+			f32 Target = M->HomescreenLocked ? M->CameraTarget : 0.0f;
+			f32 Accel = -K * (M->CameraAngle - Target) - Damping * M->CameraVelocity;
+			M->CameraVelocity += Accel * dt;
+			M->CameraAngle   += M->CameraVelocity * dt;
 
-			InfoY -= InfoLineSpacing;
-#if defined(OS_DARWIN)
-			D_Str8(M->Draw, M->FrameArena, Str8("DARWIN/ARM64"),
-#elif defined(OS_WINDOWS)
-			D_Str8(M->Draw, M->FrameArena, Str8("WIN64"),
-#else
-			D_Str8(M->Draw, M->FrameArena, Str8("UNKNOWN"),
-#endif
-				.Font = M->CodeFont, .Position = v3f(InfoX, InfoY, 0),
-				.Colour = COLOUR_BACKGROUND, .HeightInPixels = InfoFontSize);
+			// Once we pass ±15°, commit to ±180° forever
+			if(!M->HomescreenLocked && fabsf(M->CameraAngle) > (f32)M_PI / 12.0f)
+			{
+				M->HomescreenLocked = True;
+				M->CameraTarget = (M->CameraAngle > 0) ? (f32)M_PI : -(f32)M_PI;
+			}
 		}
 
+		// === Carousel: two panels orbiting around the camera ===
+		// Conceptually this is a standard Model·View·Projection for a flat panel:
+		// scale panel-local (u, v) ∈ [-1, 1] to world units, place at z=-D, rotate
+		// around the Y axis through the camera, project with a standard frustum.
+		// Worked out symbolically, D and the panel half-extents cancel and the
+		// end-to-end transform collapses to the 4×4 below, with
+		//   c = aspect · tan(fov/2):
+		//
+		//     [ cos α    0    0    -sin α/c ]   ← clip_x row
+		//     [ 0        1    0     0       ]   ← clip_y identity
+		//     [ 0        0    1     0       ]   ← clip_z identity
+		//     [ c·sin α  0    0     cos α   ]   ← clip_w row
+		//
+		// Why the collapsed form rather than the explicit MVP: we compose this
+		// AFTER another projection in the pipeline — either Ortho (for 2D UI)
+		// or PV (for the 3D FDG graph). The input to this matrix is already in
+		// clip/screen space, not panel-local world space. The identity rows for
+		// y and z are what let 3D content preserve its own depth through the
+		// carousel rotation. An explicit MVP would mangle clip_z and clip_w for
+		// pre-projected input, breaking 3D line depth.
+		//
+		// The FDG version is the same matrix with α shifted by π, encoded directly
+		// (cos(α+π) = −cos α, sin(α+π) = −sin α): FDG faces the camera at α = ±π
+		// and has clip_w < 0 (clipped) at α = 0, symmetric to Home.
+
+		f32 CarouselFOV    = 45.0f;
+		f32 CarouselAspect = sapp_widthf() / sapp_heightf();
+		f32 CarouselC      = CarouselAspect * tanf(CarouselFOV * 0.5f * (f32)M_PI / 180.0f);
+
+		f32 CosA = cosf(M->CameraAngle);
+		f32 SinA = sinf(M->CameraAngle);
+
+		m44f HomeCarousel = M44F_IDENTITY;
+		HomeCarousel.E[0][0] =  CosA;
+		HomeCarousel.E[3][0] = -SinA / CarouselC;
+		HomeCarousel.E[0][3] =  CarouselC * SinA;
+		HomeCarousel.E[3][3] =  CosA;
+
+		m44f FDGCarousel = M44F_IDENTITY;
+		FDGCarousel.E[0][0] = -CosA;
+		FDGCarousel.E[3][0] =  SinA / CarouselC;
+		FDGCarousel.E[0][3] = -CarouselC * SinA;
+		FDGCarousel.E[3][3] = -CosA;
+
+		// cos(angle) interpolates 1 → -1 as the camera swings 0 → ±π,
+		// which maps 1→0 via (cos+1)/2 for the red↔black background blend.
+		f32 RotBlendT = (cosf(M->CameraAngle) + 1.0f) * 0.5f; // 1 = home, 0 = FDG
+		v4f ClearCol  = v4f(
+			LerpF32(COLOUR_BLACK.X, COLOUR_BACKGROUND.X, RotBlendT),
+			LerpF32(COLOUR_BLACK.Y, COLOUR_BACKGROUND.Y, RotBlendT),
+			LerpF32(COLOUR_BLACK.Z, COLOUR_BACKGROUND.Z, RotBlendT),
+			1.0f);
+
+		// Clear the whole screen with a color that lerps between the two sides.
+		R_PushTransform(M->Render, Orthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
+		D_Quad(M->Draw, M->FrameArena, v2f(0, 0), WindowWidth, WindowHeight, ClearCol);
+		R_PopTransform(M->Render);
+
+		// Sidebar removed — FDG gets the full window. Keep a TotalHeight=0 shim
+		// so downstream arithmetic that still subtracts it stays correct.
+		f32 TotalHeight = 0.0f;
+
+		// The FDG side only faces us once we're past ±90°. Before that, the
+		// home panel occludes it (and we skip work for it entirely).
+		b32 DrawFDGSide = fabsf(M->CameraAngle) > (f32)M_PI * 0.5f;
 
 		f32 HeaderHeight = 300;
 
-		// No panel border — FDG sits directly on red background
-		D_Str8(
-			M->Draw, M->FrameArena,
-			Str8("WELCOME BACK, MR. WICK"),
-			.Position = v3f(TotalHeight + 75, sapp_heightf() - 55 - HeaderHeight + HeaderHeight/2.0 - 20.0, 0),
-			.Font = M->BebasNeue,
-			.Colour = COLOUR_BLACK,
-			.HeightInPixels = HeaderHeight
-		);
-
-		
-		ui_orbit Orbit = {0};
-		f32 MinDepth = 0.0f;
-		f32 MaxDepth = 0.0f;
-
-
-		// TOOD(Oliver): Get rid of all this static shit
+		// Static vars that need to persist across frames even when FDG not visible
 		static v2f MouseRotation = v2f(0, 0);
 
 		// Panel metrics for centering FDG projections on the viewport
@@ -509,6 +554,33 @@ void OS_Update(void *Data)
 		// Off-center projection: shift frustum so world origin maps to panel centre
 		f32 PanelNDCOffsetX = -(2.0f * PanelCenterX / sapp_widthf() - 1.0f);
 		f32 PanelNDCOffsetY = (2.0f * PanelCenterY / sapp_heightf() - 1.0f);
+
+		if(DrawFDGSide)
+		{
+		// Welcome header only; background is the shared lerping clear color.
+		// Lerp the welcome text with the rotation: red at angle=±π, fades to black at 0.
+		v4f WelcomeCol = v4f(
+			LerpF32(COLOUR_BACKGROUND.X, COLOUR_BLACK.X, RotBlendT),
+			LerpF32(COLOUR_BACKGROUND.Y, COLOUR_BLACK.Y, RotBlendT),
+			LerpF32(COLOUR_BACKGROUND.Z, COLOUR_BLACK.Z, RotBlendT),
+			1.0f);
+		R_PushTransform(M->Render, Mul(Orthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0), FDGCarousel));
+		D_Str8(
+			M->Draw, M->FrameArena,
+			Str8("WELCOME BACK, MR. WICK"),
+			.Position = v3f(TotalHeight + 75, sapp_heightf() - 55 - HeaderHeight + HeaderHeight/2.0 - 20.0, 0),
+			.Font = M->BebasNeue,
+			.Colour = WelcomeCol,
+			.HeightInPixels = HeaderHeight
+		);
+		R_PopTransform(M->Render);
+
+		ui_orbit Orbit = {0};
+		f32 MinDepth = 0.0f;
+		f32 MaxDepth = 0.0f;
+
+		// This push is consumed by the pops at line ~534 or ~766 below
+		R_PushTransform(M->Render, Mul(Orthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0), FDGCarousel));
 
 		R_PushScissor(M->Render, v4i(TotalHeight + 50 + 5, 55, sapp_widthf() - TotalHeight - 10 - 50 - 10, sapp_heightf() - 100 - 10 - HeaderHeight));
 		if(OS_ValidPath(M->Folder))
@@ -563,7 +635,7 @@ void OS_Update(void *Data)
 			P.E[2][1] = PanelNDCOffsetY;
 			m44f V = M44FLookAt(CamPos, M->TreeCameraLookAt, v3f(0, 1, 0));
 			m44f PV = Mul(V, P);
-			R_PushTransform(M->Render, PV);
+			R_PushTransform(M->Render, Mul(PV, FDGCarousel));
 			u64 TreeViewStart = OS_TimeStampNow();
 			UI_TreeView(M->UI, M->Draw, &M->Shared, M->FrameArena, &M->TreeView, M->Folder, v3f(0.1, 0.1, 0.1));
 			M->Debug.TreeViewMs = OS_MilliSecondsFromTimeStamp(OS_TimeStampNow() - TreeViewStart);
@@ -580,7 +652,7 @@ void OS_Update(void *Data)
 
 			R_PopTransform(M->Render);
 
-			R_PushTransform(M->Render, Orthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
+			R_PushTransform(M->Render, Mul(Orthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0), FDGCarousel));
 			ui_tree_view_signal TreeViewSignal = UI_TreeViewFolderLabels(M->UI, M->Draw, M->Edit, M->Orbitron, M->BebasNeue, M->FrameArena, M->OrbitItem, &M->TreeView, PV, CamPos, M->Folder, &M->TextBoxBuffer);
 			
 			// HACK(Oliver): Find a better way to do this
@@ -750,7 +822,7 @@ void OS_Update(void *Data)
 		}
 		R_PopScissor(M->Render);
 
-		R_PushTransform(M->Render, Orthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
+		R_PushTransform(M->Render, Mul(Orthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0), FDGCarousel));
 
 		ui_tree_view_signal TreeSignal = {0};
 		if(!OS_ValidPath(M->Folder))
@@ -782,7 +854,7 @@ void OS_Update(void *Data)
 			P.E[2][1] = PanelNDCOffsetY;
 			m44f V = M44FLookAt(CamPos, M->TreeCameraLookAt, v3f(0, 1, 0));
 			m44f PV = Mul(V, P);
-			R_PushTransform(M->Render, PV);
+			R_PushTransform(M->Render, Mul(PV, FDGCarousel));
 
 			UI_TreeViewFromPaths(M->UI, M->Draw, &M->Shared, M->FrameArena,
 								&M->HomescreenTree, M->RecentlyLoadedFolders);
@@ -790,7 +862,7 @@ void OS_Update(void *Data)
 			R_PopTransform(M->Render);
 
 			R_PushScissor(M->Render, v4i(TotalHeight + 50 + 5, 55, sapp_widthf() - TotalHeight - 10 - 50 - 10, sapp_heightf() - 100 - 10 - HeaderHeight));
-			R_PushTransform(M->Render, Orthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
+			R_PushTransform(M->Render, Mul(Orthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0), FDGCarousel));
 			ui_tree_view_signal HomescreenSignal = UI_TreeViewFolderLabels(
 				M->UI, M->Draw, M->Edit, M->Orbitron, M->BebasNeue, M->FrameArena, -1,
 				&M->HomescreenTree, PV, CamPos, Str8("/"), Null);
@@ -816,6 +888,78 @@ void OS_Update(void *Data)
 
 		//D_Str8(M->Draw, M->FrameArena, M->LogoFont, v2f(50, 50), v4f(1.0, 0.05, 0.0, 1), 100, Str8("MAYDAY!"));
 		R_PopTransform(M->Render);
+		} // end if(DrawFDGSide)
+
+		// === MAYDAY! front panel (homescreen) ===
+		// The red background is already drawn by the shared lerping clear color,
+		// so the panel only contains its text (which rotates with the carousel).
+		// Text lerps from black (at angle=0) to red (at ±π) as the bg inverts the other way.
+		// Only draw while the home side is actually facing us (|angle| < π/2).
+		f32 CarouselCX = sapp_widthf() * 0.5f;
+		f32 CarouselCY = sapp_heightf() * 0.5f;
+		if(fabsf(M->CameraAngle) < (f32)M_PI * 0.5f)
+		{
+			m44f HomeOrtho = Mul(Orthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0), HomeCarousel);
+			R_PushTransform(M->Render, HomeOrtho);
+
+			v4f HomeTextCol = v4f(
+				LerpF32(COLOUR_BACKGROUND.X, COLOUR_BLACK.X, RotBlendT),
+				LerpF32(COLOUR_BACKGROUND.Y, COLOUR_BLACK.Y, RotBlendT),
+				LerpF32(COLOUR_BACKGROUND.Z, COLOUR_BLACK.Z, RotBlendT),
+				1.0f);
+
+			// Centered MAYDAY! text
+			f32 MaydayHeight = 760.0f;
+			str8 MaydayStr = Str8("MAYDAY!");
+			f32 MaydayW = (f32)UI_GetTextWidth(M->BebasNeue, M->Draw, MaydayStr, MaydayHeight);
+			f32 MaydayX = CarouselCX - MaydayW * 0.5f;
+			f32 MaydayY = CarouselCY - MaydayHeight * 0.32f;
+			D_Str8(M->Draw, M->FrameArena, MaydayStr,
+				.Font = M->BebasNeue,
+				.Position = v3f(MaydayX, MaydayY, 0),
+				.Colour = HomeTextCol,
+				.HeightInPixels = MaydayHeight);
+
+			// Build info below, centered horizontally
+			f32 InfoSize = 36.0f;
+			f32 InfoLineGap = InfoSize * 1.5f;
+			f32 InfoY = MaydayY - InfoSize * 2.0f;
+
+			str8 BuildRoman = IntToRomanNumerals(M->FrameArena, BUILD_NUMBER);
+			str8 BuildStr = Str8PushF(M->FrameArena, "BUILD: ?S", BuildRoman);
+			f32 BuildW = (f32)UI_GetTextWidth(M->CodeFont, M->Draw, BuildStr, InfoSize);
+			D_Str8(M->Draw, M->FrameArena, BuildStr,
+				.Font = M->CodeFont,
+				.Position = v3f(CarouselCX - BuildW * 0.5f, InfoY, 0),
+				.Colour = HomeTextCol,
+				.HeightInPixels = InfoSize);
+
+			InfoY -= InfoLineGap;
+			str8 DateStr = Str8(__DATE__);
+			f32 DateW = (f32)UI_GetTextWidth(M->CodeFont, M->Draw, DateStr, InfoSize);
+			D_Str8(M->Draw, M->FrameArena, DateStr,
+				.Font = M->CodeFont,
+				.Position = v3f(CarouselCX - DateW * 0.5f, InfoY, 0),
+				.Colour = HomeTextCol,
+				.HeightInPixels = InfoSize);
+
+			InfoY -= InfoLineGap;
+#if defined(OS_DARWIN)
+			str8 PlatStr = Str8("DARWIN/ARM64");
+#elif defined(OS_WINDOWS)
+			str8 PlatStr = Str8("WIN64");
+#else
+			str8 PlatStr = Str8("UNKNOWN");
+#endif
+			f32 PlatW = (f32)UI_GetTextWidth(M->CodeFont, M->Draw, PlatStr, InfoSize);
+			D_Str8(M->Draw, M->FrameArena, PlatStr,
+				.Font = M->CodeFont,
+				.Position = v3f(CarouselCX - PlatW * 0.5f, InfoY, 0),
+				.Colour = HomeTextCol,
+				.HeightInPixels = InfoSize);
+
+			R_PopTransform(M->Render);
+		}
 	}
 
 	R_PopTransform(M->Render);

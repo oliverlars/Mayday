@@ -451,9 +451,11 @@ void ParallelForceDisplacement(wave_info *WaveInfo, void* Input)
 		// Likely should include dt
 		// Okay new constant is better but not sure, i feel it should work
 		// regardless of the constant?
-		P->NodeVelocities[I + NodeIndex].X *= 5.0f/(f32)(P->NodeCount*P->NodeCount);
-		P->NodeVelocities[I + NodeIndex].Y *= 5.0f/(f32)(P->NodeCount*P->NodeCount);
-		P->NodeVelocities[I + NodeIndex].Z *= 5.0f/(f32)(P->NodeCount*P->NodeCount);
+		// Clamp effective N so small graphs (homescreen etc) don't under-damp
+		f32 EffN = (f32)(P->NodeCount < 50 ? 50 : P->NodeCount);
+		P->NodeVelocities[I + NodeIndex].X *= 5.0f/(EffN*EffN);
+		P->NodeVelocities[I + NodeIndex].Y *= 5.0f/(EffN*EffN);
+		P->NodeVelocities[I + NodeIndex].Z *= 5.0f/(EffN*EffN);
 
 		f32 TempFactor = Min(1.0f, P->Temperature);
 		P->NodePositions[I + NodeIndex].X += P->NodeVelocities[I + NodeIndex].X * TempFactor;

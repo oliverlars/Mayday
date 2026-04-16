@@ -769,12 +769,16 @@ ui_textbox_signal UI_TextBox(m_arena *Arena,
 	v2f BoxPosition = Position;
 	BoxPosition.Y += UI->Font.Descent * Scale;
 
-	// Orange outline with padding around text
+	// Filled background with outline
 	f32 BorderThickness = 2.0f;
 	v4f BorderColour = v4f(0.5, 0.2, 0.0, 0.6);
+	v4f FillColour = v4f(0.5, 0.2, 0.0, 0.08);
 	f32 BoxW = Width + PadX * 2;
 	f32 BoxH = Height + PadY * 2;
 	v2f BoxOrigin = Sub(BoxPosition, v2f(PadX, PadY));
+	// Fill
+	D_Quad(Draw, Arena, BoxOrigin, BoxW, BoxH, FillColour);
+	// Outline
 	D_Quad(Draw, Arena, BoxOrigin, BoxW, BorderThickness, BorderColour); // top
 	D_Quad(Draw, Arena, v2f(BoxOrigin.X, BoxOrigin.Y + BoxH - BorderThickness), BoxW, BorderThickness, BorderColour); // bottom
 	D_Quad(Draw, Arena, BoxOrigin, BorderThickness, BoxH, BorderColour); // left

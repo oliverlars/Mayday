@@ -55,6 +55,14 @@ typedef struct ui_tree
 
 	v2f Offset;
 
+	f32 ActiveLabelFontSize;
+	f32 ActiveLabelFontSizeTarget;
+
+	f32 BackdropOpacity;
+	os_directory_stats BackdropStats;
+	str8 BackdropName;
+	u8 BackdropNameBuffer[256];
+
 	f32 DebugBuildMs;
 	f32 DebugAttributesMs;
 	f32 DebugSimulateMs;
@@ -180,6 +188,9 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 void UI_TreeView(ui_context *UI, draw_context *Draw, shared_wave_info *Shared,
 				 m_arena *Arena, ui_tree *TreeView, str8 Path, v3f Size);
 
+void UI_TreeViewFromPaths(ui_context *UI, draw_context *Draw, shared_wave_info *Shared,
+						  m_arena *Arena, ui_tree *TreeView, str8_list Paths);
+
 typedef struct ui_tree_view_signal
 {
 	b32 Clicked;
@@ -193,9 +204,11 @@ typedef struct ui_tree_view_signal
 
 	int NodeDepth;
 	int NodeIndex;
+
+	v2f ActiveScreenPosition; // projected screen pos of ActiveNodeIndex
 } ui_tree_view_signal;
 
-ui_tree_view_signal UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw, edit_context *Edit, d_font Font,
+ui_tree_view_signal UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw, edit_context *Edit, d_font Font, d_font BackdropFont,
 							 				m_arena *Arena, int ActiveNodeIndex,
 											ui_tree *TreeView, m44f TreeTransform, v3f CameraPosition, str8 CurrentPath, editable_buffer* SearchBuffer);
 

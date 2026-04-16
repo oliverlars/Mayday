@@ -94,6 +94,8 @@ typedef struct mayday_context
 	d_font LogoFont;
 	d_font StatusFont;
 
+	d_font BebasNeue;
+
 	d_font RegularFont;
 	d_font OutlineFont;
 	d_font GradientFont;
@@ -124,6 +126,7 @@ typedef struct mayday_context
 	v3f LookFrom;
 
 	ui_tree TreeView;
+	ui_tree HomescreenTree;
 
 	v3f TreeCameraLookAt;
 	v3f TreeCameraLookAtTarget;
@@ -507,6 +510,7 @@ void OS_Update(void *Data)
 						M->ShowFileList = True;
 						M->FileListPosition = M->PendingFileListPosition;
 						M->PendingShowFileList = False;
+						M->TreeView.ActiveLabelFontSizeTarget = 55.0f;
 					}
 				}
 			}
@@ -541,7 +545,7 @@ void OS_Update(void *Data)
 			R_PopTransform(M->Render);
 
 			R_PushTransform(M->Render, Orthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
-			ui_tree_view_signal TreeViewSignal = UI_TreeViewFolderLabels(M->UI, M->Draw, M->Edit, M->Orbitron, M->FrameArena, M->OrbitItem, &M->TreeView, PV, CamPos, M->Folder, &M->TextBoxBuffer);
+			ui_tree_view_signal TreeViewSignal = UI_TreeViewFolderLabels(M->UI, M->Draw, M->Edit, M->Orbitron, M->BebasNeue, M->FrameArena, M->OrbitItem, &M->TreeView, PV, CamPos, M->Folder, &M->TextBoxBuffer);
 			
 			// HACK(Oliver): Find a better way to do this
 			v4i PanelRect = v4i(TotalHeight + 50 + 5, 55 + 1, sapp_widthf() - TotalHeight - 10 - 50 - 10, sapp_heightf() - 100 - 10 - HeaderHeight);
@@ -557,11 +561,30 @@ void OS_Update(void *Data)
 				if(UI_KeyDown(M->UI, SAPP_KEYCODE_ESCAPE, 0))
 				{
 					M->ShowFileList = False;
+					M->TreeView.ActiveLabelFontSizeTarget = 30.0f;
 				}
+				// Track the active node's projected position each frame
+				M->FileListPosition = TreeViewSignal.ActiveScreenPosition;
+
+				// Draw header label AFTER blur so it stays crisp
+				{
+					str8 HeaderName = Str8FromLastCharacter(M->FrameArena,
+						M->TreeView.Info.NodeInfos[M->OrbitItem].Name, '/');
+					if(HeaderName.Size == 0)
+						HeaderName = M->TreeView.Info.NodeInfos[M->OrbitItem].Name;
+					D_Str8(M->Draw, M->FrameArena, HeaderName,
+						.Font = M->Orbitron,
+						.Position = v3f(M->FileListPosition.X, M->FileListPosition.Y, 0),
+						.Colour = v4f(0.8, 0.6, 0.4, 1.0),
+						.HeightInPixels = M->TreeView.ActiveLabelFontSize);
+				}
+
 				f32 Height = 50.0;
 				M->FileListScrollTarget += UI_Scroll(M->UI).Y*0.4;
 				M->FileListScroll = Lerp(M->FileListScroll, M->FileListScrollTarget, 0.2);
 				v2f Position = M->FileListPosition;
+				// Offset file list below the header label
+				Position.Y -= M->TreeView.ActiveLabelFontSize + 10.0f;
 				Position.Y += M->FileListScroll*10.0;
 				f32 VisibleRadius = 5.0f;
 				f32 MinScale = 0.8f;
@@ -586,7 +609,7 @@ void OS_Update(void *Data)
 						ui_signal Signal = UI_TextButton(
 							M->UI, M->Draw, M->FrameArena,
 							Str8PushF(M->FrameArena, "?S###?u32", FileName, Index), Height*Scale, Position,
-							v4f(1, 1, 1, 1)
+							v4f(0.5, 0.25, 0.05, 1)
 						);
 						if(Signal.Clicked)
 						{
@@ -614,13 +637,16 @@ void OS_Update(void *Data)
 					M->TreeCameraZoomTarget = Min(15.0f, M->TreeCameraZoomTarget);
 				}
 
-				if(TreeViewSignal.Hovered)
+				if(!TreeViewSignal.Hovered)
 				{
 					Angle2 += 0.0005;
 				}
 			}
 
-			M->OrbitItem = TreeViewSignal.NodeIndex;
+			if(!M->ShowFileList)
+			{
+				M->OrbitItem = TreeViewSignal.NodeIndex;
+			}
 
 			if(TreeViewSignal.Clicked && TreeViewSignal.NewPath.Size > 0 && !M->TreeTransitioning)
 			{
@@ -640,10 +666,13 @@ void OS_Update(void *Data)
 
 					if(!HasChildren)
 					{
-						// Leaf folder — show file browser
+						// Leaf folder — show file browser; label grows into header
 						M->FileListPath = Str8Copy(M->PermanentArena, TreeViewSignal.NewPath);
 						M->ShowFileList = True;
 						M->FileListPosition = TreeViewSignal.ClickedPosition;
+						M->FileListScroll = 0;
+						M->FileListScrollTarget = 0;
+						M->TreeView.ActiveLabelFontSizeTarget = 55.0f;
 					}
 					else
 					{
@@ -651,7 +680,7 @@ void OS_Update(void *Data)
 						M->TreeView.FocusNodeIndex = ClickedIndex;
 						v4f ClickedPos = M->TreeView.Info.NodePositions[ClickedIndex];
 						M->TreeCameraLookAtTarget = v3f(ClickedPos.X, ClickedPos.Y, ClickedPos.Z);
-						M->TreeCameraZoomTarget = 3.0f;
+						M->TreeCameraZoomTarget = 2.5f;
 						M->TreeTransitioning = True;
 					}
 				}
@@ -670,7 +699,7 @@ void OS_Update(void *Data)
 							M->TreeView.FocusNodeIndex = ParentIndex;
 							v4f ParentPos = M->TreeView.Info.NodePositions[ParentIndex];
 							M->TreeCameraLookAtTarget = v3f(ParentPos.X, ParentPos.Y, ParentPos.Z);
-							M->TreeCameraZoomTarget = 3.5f;
+							M->TreeCameraZoomTarget = 3.0f;
 							M->TreeTransitioning = True;
 							break;
 						}
@@ -690,214 +719,61 @@ void OS_Update(void *Data)
 		ui_tree_view_signal TreeSignal = {0};
 		if(!OS_ValidPath(M->Folder))
 		{
+			// Homescreen: use same tree view rendering as the directory browser
+			R_PopTransform(M->Render);
+
+			static float HomescreenAngle = 0.0f;
 			MouseRotation.X += UI_Scroll(M->UI).X;
 			MouseRotation.Y += UI_Scroll(M->UI).Y;
-			// RECENTLY OPENED
+
+			// Camera orbits the root node
+			if(M->HomescreenTree.Info.NodePositions && M->HomescreenTree.Info.NodeCount > 0)
 			{
-				static u64 TreeHash = 0;
-				static v4f *Positions = 0;
-				static v4f *Velocities = 0;
-				static int *Froms = 0;
-				static int *Tos = 0;
-				static int FromCount = 0;
-				static int LinkCount = 0;
-				static f32 Temperature = 15.0f;
-
-				// NOTE(Oliver): This wont change but it's fun to hash stuff so why not
-				// and it can change later to something that could change
-				u64 CurrentHash = M_FNV_HASH_START;
-				for(
-					str8_list_node *Node = M->RecentlyLoadedFolders.First;
-					Node != Null; Node = Node->Next
-				)
-				{
-					CurrentHash = M_FNVHashString(CurrentHash, Node->String);
-				}
-
-				int NodeCount = Str8ListCount(M->RecentlyLoadedFolders);
-				NodeCount += 1; // For the main orbit node
-				
-				if(TreeHash != CurrentHash)
-				{
-					Positions = ArenaPushArrayZero(M->PermanentArena, v4f, NodeCount);
-					Velocities = ArenaPushArrayZero(M->PermanentArena, v4f, NodeCount);
-
-					Froms = ArenaPushArrayZero(M->PermanentArena, int, NodeCount);
-					Tos = ArenaPushArrayZero(M->PermanentArena, int, NodeCount);
-
-					for(int I = 0; I < NodeCount-1; I++)
-					{
-						Froms[I] = 0;
-						Tos[I] = I + 1;
-					}
-					LinkCount = NodeCount-1;
-
-					random32_state RandomState = {0};
-					RandomState.State = (u32)M_FNV_HASH_START;
-					for(int I = 0; I < NodeCount; I++)
-					{
-						f32 X = RandomBilateral(&RandomState);
-						f32 Y = RandomBilateral(&RandomState);
-						f32 Z = RandomBilateral(&RandomState);
-						Positions[I] = v4f(X, Y, Z, 0);
-						X = RandomBilateral(&RandomState)*0.1;
-						Y = RandomBilateral(&RandomState)*0.1;
-						Z = RandomBilateral(&RandomState)*0.1;
-						Velocities[I] = v4f(X, Y, Z, 0);
-					}
-					TreeHash = CurrentHash;
-				}
-
-				quadtree_header *QuadTree = ArenaPushArrayZero(M->FrameArena, quadtree_header, 1);
-				QuadTree->Bounds = ArenaPushArrayZero(M->FrameArena, bounds, NodeCount*4);
-				QuadTree->ChildrenCounts = ArenaPushArrayZero(M->FrameArena, int, NodeCount*4);
-				QuadTree->Nodes = ArenaPushArrayZero(M->FrameArena, quadrant_node*, NodeCount*4);
-				QuadTree->Masses = ArenaPushArrayZero(M->FrameArena, v4f, NodeCount*4);
-				QuadTree->Quadrants = ArenaPushArrayZero(M->FrameArena, Quadrant, NodeCount*4);
-				
-				QuadTree->Bounds[0] = GetBoundsV4F(Positions, NodeCount);
-				QuadTree->NextQuadrantIndex = 1;
-
-				for(int I = 0; I < NodeCount; I++)
-				{
-					QuadTreeBuild(M->FrameArena, QuadTree, 0, Positions[I], 0);
-				}
-
-				QuadTree->Masses[0] = QuadTreeCalculateAttributes(QuadTree, 0);
-
-				m44f P = Perspective(PanelAspect, 80, 0.01, 10000.0);
-				P.E[2][0] = PanelNDCOffsetX;
-				P.E[2][1] = PanelNDCOffsetY;
-				v3f At = V3FromV4(Positions[0]);
-				v3f From = At;
-				From.Z -= 2;
-		
-				SimulateForceDirectedGraphQuadTree(
-					M->FrameArena,
-					Velocities,
-					Positions,
-					NodeCount,
-					Froms,
-					Tos,
-					LinkCount,
-					&Temperature,
-					QuadTree,
-					&M->Shared
-				);
-
-				Positions[0] = v4f(0.0);
-
-				v3f *PointPositions = ArenaPushArray(M->FrameArena, v3f, NodeCount);
-				for(int I = 0; I < NodeCount; I++)
-				{
-					PointPositions[I].X = Positions[I].X;
-					PointPositions[I].Y = Positions[I].Y;
-					PointPositions[I].Z = Positions[I].Z;
-				}
-
-				v3f *LinePositions = ArenaPushArray(M->FrameArena, v3f, LinkCount*2);
-				int LineIndex = 0;
-				for(int I = 0; I < LinkCount; I++)
-				{
-					if(Froms[I] == Tos[I]) continue;
-					v4f From = Positions[Froms[I]];
-					v4f To = Positions[Tos[I]];
-					LinePositions[LineIndex + 0] = v3f(From.X, From.Y, From.Z);
-					LinePositions[LineIndex + 1] = v3f(To.X, To.Y, To.Z);
-					LineIndex += 2;
-				}
-
-				m44f TranslateToOrigin = Translate(v3f(-From.X, -From.Y, -From.Z));
-
-				m44f RotationY = M44FromYAngle(Angle + 2.0f*M_PI*AngleOffset + MouseRotation.X*0.01);
-				m44f RotationZ = M44FromZAngle(Angle*0.5 + 2.0 + 2.0f*M_PI*AngleOffset - MouseRotation.Y*0.01);
-
-				m44f TranslateBack = Translate(v3f(From.X, From.Y, From.Z));
-
-				Angle += 0.002;
-				m44f Model = Mul(TranslateToOrigin, Mul(Mul(RotationZ, RotationY), TranslateBack));
-				
-				m44f View = M44FLookAt(Add(From, v3f(0, 0, 0)) , At, v3f(0, 1, 0));
-				m44f PV = Mul(Mul(View, Model), P);
-				R_PushTransform(M->Render, PV);
-
-				str8_list_node *FileNode = M->RecentlyLoadedFolders.First;
-				for(int I = 1; I < NodeCount; I++)
-				{
-					v4f P = Positions[I];
-					v4f NodePosition4D = v4f(P.X, P.Y, P.Z, 1.0);
-					v4f TransformedPoint = Mul(M44FTranspose(PV), NodePosition4D);
-					TransformedPoint.X /= TransformedPoint.W;
-					TransformedPoint.Y /= TransformedPoint.W;
-					TransformedPoint.X = TransformedPoint.X*0.5 + 0.5;
-					TransformedPoint.Y = TransformedPoint.Y*0.5 + 0.5;
-					TransformedPoint.X *= sapp_widthf();
-					TransformedPoint.Y *= sapp_heightf();
-
-					R_PushTransform(M->Render, Orthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));					
-					v4f LabelBBox = D_Str8BBoxFromHeight(
-						M->Orbitron, v2f(TransformedPoint.X + 5, TransformedPoint.Y + 5),
-						FileNode->String, 
-						50.0
-					);
-
-					UI_PushStyle(M->UI, (ui_style){.Font = M->Orbitron });
-					ui_signal Button = UI_TextButton(M->UI, M->Draw,
-						M->FrameArena, Str8PushF(M->FrameArena, "?S##?u32", FileNode->String, I),
-						50.0,
-						v2f(TransformedPoint.X + 5, TransformedPoint.Y + 5), v4f(0.5, 0.1, 0, 1));
-					UI_PopStyle(M->UI);
-					if(Button.Clicked)
-					{
-							M->Folder = Str8Copy(M->PermanentArena, FileNode->String);
-							M->LookFrom.Z = 500;
-							M->LookAt = v3f(0, 0, 0);					
-					}
-					R_PopTransform(M->Render);
-					
-					FileNode = FileNode->Next;
-				}
-
-				D_LinesArray(M->Draw, M->FrameArena, LinePositions, LineIndex, 5.0, v4f(0.5, 0.1, 0, 0.1));
-				D_PointsArray(M->Draw, M->FrameArena, PointPositions, NodeCount, 5.0, COLOUR_BACKGROUND);
-				D_PointsArray(M->Draw, M->FrameArena, PointPositions, NodeCount, 10.0, v4f(0.1, 0.05, 0, 1.0));
-				R_PopTransform(M->Render);
-				v3f Points = v3f(800, 800, 0);
+				v4f FP = M->HomescreenTree.Info.NodePositions[M->HomescreenTree.FocusNodeIndex];
+				M->TreeCameraLookAt = v3f(FP.X, FP.Y, FP.Z);
 			}
 
-#if 0
-			D_Quad(M->Draw, M->FrameArena, v2f(100.0, sapp_heightf()-300), 500, 200, v4f(0.2, 0.0, 0.0, 1.0));
-			ui_textbox_signal SearchSignal = UI_TextBox(M->FrameArena, M->LogoFont, v2f(100.0, sapp_heightf() - 400), 500,
-														M->UI, M->Draw, M->Edit, 30, Str8("FolderTextBox"), &M->TextBoxBuffer);
-			if(SearchSignal.Submitted)
+			f32 CamAngle = HomescreenAngle + MouseRotation.X * 0.01f;
+			f32 HomescreenZoom = 3.0f;
+			v3f CamOffset = v3f(
+				-sinf(CamAngle) * HomescreenZoom,
+				0,
+				-cosf(CamAngle) * HomescreenZoom
+			);
+			v3f CamPos = AddV3F(M->TreeCameraLookAt, CamOffset);
+			m44f P = Perspective(PanelAspect, 35, 0.01, 10000.0);
+			P.E[2][0] = PanelNDCOffsetX;
+			P.E[2][1] = PanelNDCOffsetY;
+			m44f V = M44FLookAt(CamPos, M->TreeCameraLookAt, v3f(0, 1, 0));
+			m44f PV = Mul(V, P);
+			R_PushTransform(M->Render, PV);
+
+			UI_TreeViewFromPaths(M->UI, M->Draw, &M->Shared, M->FrameArena,
+								&M->HomescreenTree, M->RecentlyLoadedFolders);
+
+			R_PopTransform(M->Render);
+
+			R_PushScissor(M->Render, v4i(TotalHeight + 50 + 5, 55, sapp_widthf() - TotalHeight - 10 - 50 - 10, sapp_heightf() - 100 - 10 - HeaderHeight));
+			R_PushTransform(M->Render, Orthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
+			ui_tree_view_signal HomescreenSignal = UI_TreeViewFolderLabels(
+				M->UI, M->Draw, M->Edit, M->Orbitron, M->BebasNeue, M->FrameArena, -1,
+				&M->HomescreenTree, PV, CamPos, Str8("/"), Null);
+			R_PopScissor(M->Render);
+
+			if(HomescreenSignal.Clicked && HomescreenSignal.NewPath.Size > 0)
 			{
-				// HACK(Oliver): This is leaking memory
-				M->Folder = Str8Copy(M->PermanentArena, SearchSignal.String);
-				M->UI->Active = UI_IDFromString(Str8("FolderTextBox"));
-				Str8ListAppend(M->PermanentArena, &M->RecentlyLoadedFolders, SearchSignal.String);
-			}
-
-			v2f Pos = v2f(0, sapp_heightf() - 500);
-			for(str8_list_node *Node = M->RecentlyLoadedFolders.Last; Node; Node = Node->Previous)
-			{
-				CentreX = sapp_widthf()/2.0 - UI_GetTextWidth(M->UI->Font, M->Draw, Node->String, 60)/2.0;
-				Pos.X = 100.0;
-
-				str8 Folder = Str8PushF(M->FrameArena, "?S##f32", Node->String, Pos.Y);
-
-				UI_PushStyle(M->UI, (ui_style){.Font = M->Rajdhani });
-				str8 LastModified = OS_GetLastModifiedTime(M->FrameArena, Node->String);
-				UI_Label(M->UI, M->Draw, M->FrameArena, LastModified, 120, Add(Pos, v2f(0, 20)), v4f(0.2, 0.01, 0.0, 0.1));
-				ui_signal Button = UI_TextButton(M->UI, M->Draw, M->FrameArena, Folder, 60, Pos, v4f(0.3, 0.3, 0.3, 1));
-				UI_PopStyle(M->UI);
-				if(Button.Clicked)
+				// Check if the clicked path is a real directory — if so, open it
+				if(OS_ValidPath(HomescreenSignal.NewPath))
 				{
-					M->Folder = Str8Copy(M->PermanentArena, Node->String);
+					M->Folder = Str8Copy(M->PermanentArena, HomescreenSignal.NewPath);
 					M->UI->Active = UI_IDFromString(Str8("TreeViewTextBox"));
 				}
-				Pos.Y -= 100;
+				else
+				{
+					// Navigate within the homescreen tree
+					M->HomescreenTree.FocusNodeIndex = HomescreenSignal.NodeIndex;
+				}
 			}
-#endif
 		}
 
 		//D_Grid2D(M->Draw, M->FrameArena, 15, 500);
@@ -1149,8 +1025,8 @@ void OS_Initialise(void *Data)
 	M->TextBoxBuffer.String.Bytes = ArenaPushArrayZero(M->PermanentArena, u8, 8192);
 	M->TextBoxBuffer.HeightInPixels = 60;
 
-	M->TreeCameraZoom = 5.0f;
-	M->TreeCameraZoomTarget = 5.0f;
+	M->TreeCameraZoom = 4.0f;
+	M->TreeCameraZoomTarget = 4.0f;
 
 	UI_SetActive(M->UI, UI_IDFromString(Str8("FolderTextBox")));
 
@@ -1266,6 +1142,7 @@ int main()
 	M.StatusFont = D_LoadFontFromTTF(M.Draw, G_Doto.Data);
 	M.Orbitron = D_LoadFontFromTTF(M.Draw, G_OrbitronRegular.Data);
 	M.Rajdhani = D_LoadFontFromTTF(M.Draw, G_RajdhaniMedium.Data);
+	M.BebasNeue = D_LoadFontFromTTF(M.Draw, G_BebasNeueRegular.Data);
 
 	M.UI->Font = M.CodeFont;
 	M.LookFrom.Z = 500;

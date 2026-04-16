@@ -110,6 +110,38 @@ void InsertDirectoryEntryAsChild(m_arena *Arena, os_directory_entry *At, os_dire
 	}
 }
 
+os_directory_stats OS_DirectoryStats(str8 Path)
+{
+	os_directory_stats Result = {0};
+	m_scratch_arena Scratch = ScratchBegin(0, 0);
+	DIR *Directory = opendir(CStrFromStr8(Scratch.Arena, Path));
+	if(Directory)
+	{
+		struct dirent *Entry;
+		while((Entry = readdir(Directory)))
+		{
+			if(Entry->d_name[0] == '.') continue;
+			str8 FullPath = Str8PushF(Scratch.Arena, "?S/?cstr", Path, Entry->d_name);
+			struct stat StatBuf;
+			if(stat(CStrFromStr8(Scratch.Arena, FullPath), &StatBuf) == 0)
+			{
+				if(S_ISDIR(StatBuf.st_mode))
+				{
+					Result.FolderCount++;
+				}
+				else
+				{
+					Result.FileCount++;
+					Result.TotalSizeBytes += StatBuf.st_size;
+				}
+			}
+		}
+		closedir(Directory);
+	}
+	ScratchEnd(Scratch);
+	return Result;
+}
+
 b32 OS_IsPathDirectory(str8 Path)
 {
 	m_scratch_arena Scratch = ScratchBegin(0, 0);

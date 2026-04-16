@@ -101,6 +101,15 @@ str8 OS_LoadEntireFileIntoMemory(m_arena *Arena, str8 Filename);
 void OS_WriteStringToDisk(m_arena *Arena, str8 DestinationPath, str8 StringToWrite);
 
 
+typedef struct os_directory_stats
+{
+	int FileCount;
+	int FolderCount;
+	u64 TotalSizeBytes;
+} os_directory_stats;
+
+os_directory_stats OS_DirectoryStats(str8 Path);
+
 b32 OS_ValidPath(str8 Path);
 b32 OS_DirectoryTreeIterate(os_directory_tree Tree, os_directory_tree_iterator *Iterator);
 b32 OS_DirectoryTreeIterateWithStack(m_arena *Arena, os_directory_tree Tree, os_directory_tree_iterator *Iterator);

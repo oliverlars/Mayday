@@ -829,11 +829,26 @@ void R_RenderFullscreenBloom(render_context *R, id<MTLCommandBuffer> CommandBuff
 {
 	metal_context *Metal = R->Backend;
 
-	MPSImageGaussianBlur *GaussianBlur = [[MPSImageGaussianBlur alloc] initWithDevice:Metal->Device sigma:10]; 
-	[GaussianBlur encodeToCommandBuffer:CommandBuffer
-				  sourceTexture:Metal->BaseFrameBuffer
-				  destinationTexture:Metal->BlurredFrameBuffer];
+	if(R->BloomEnabled)
+	{
+		MPSImageGaussianBlur *GaussianBlur = [[MPSImageGaussianBlur alloc] initWithDevice:Metal->Device sigma:10];
+		[GaussianBlur encodeToCommandBuffer:CommandBuffer
+					  sourceTexture:Metal->BaseFrameBuffer
+					  destinationTexture:Metal->BlurredFrameBuffer];
+	}
+	else
+	{
+		// Clear bloom texture to black so composite pass gets zero bloom contribution
+		MTLRenderPassDescriptor* ClearPass = [MTLRenderPassDescriptor renderPassDescriptor];
+		ClearPass.colorAttachments[0].texture = Metal->BlurredFrameBuffer;
+		ClearPass.colorAttachments[0].loadAction = MTLLoadActionClear;
+		ClearPass.colorAttachments[0].storeAction = MTLStoreActionStore;
+		ClearPass.colorAttachments[0].clearColor = MTLClearColorMake(0.0, 0.0, 0.0, 1.0);
+		id<MTLRenderCommandEncoder> ClearEncoder = [CommandBuffer renderCommandEncoderWithDescriptor:ClearPass];
+		[ClearEncoder endEncoding];
+	}
 
+	// Composite pass always runs (tonemapping + sRGB conversion)
 	MTLRenderPassDescriptor* PassDesc = [MTLRenderPassDescriptor renderPassDescriptor];
 	PassDesc.colorAttachments[0].texture = Metal->Drawable.texture;
 	PassDesc.colorAttachments[0].loadAction = MTLLoadActionClear;

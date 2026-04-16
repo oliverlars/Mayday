@@ -348,13 +348,12 @@ void UI_TreeView(ui_context *UI, draw_context *Draw, shared_wave_info *Shared,
 	// Simple approach: draw all with average opacity scaled colour
 	for(int I = 0; I < VisibleLineCount; I++)
 	{
-		f32 Alpha = LineOpacities[I] * 0.1f;
 		f32 Thickness = 1.0f + LineOpacities[I];
-		D_LinesArray(Draw, Arena, &Lines[I * 2], 2, Thickness, v4f(0.5, 0.1, 0, Alpha));
+		D_LinesArray(Draw, Arena, &Lines[I * 2], 2, Thickness, v4f(0.0, 0.0, 0.0, 0.4));
 	}
 
-	D_PointsArray(Draw, Arena, VisiblePositions, VisiblePointCount, 5.0, v4f(0.008, 0.00, 0, 1.0));
-	D_PointsArray(Draw, Arena, VisiblePositions, VisiblePointCount, 10.0, v4f(0.1, 0.05, 0, 1.0));
+	D_PointsArray(Draw, Arena, VisiblePositions, VisiblePointCount, 6.0, v4f(0.0, 0.0, 0.0, 1.0));
+	D_PointsArray(Draw, Arena, VisiblePositions, VisiblePointCount, 12.0, v4f(0.0, 0.0, 0.0, 1.0));
 }
 
 
@@ -514,13 +513,12 @@ void UI_TreeViewFromPaths(ui_context *UI, draw_context *Draw, shared_wave_info *
 
 	for(int I = 0; I < VisibleLineCount; I++)
 	{
-		f32 Alpha = LineOps[I] * 0.1f;
 		f32 Thickness = 1.0f + LineOps[I];
-		D_LinesArray(Draw, Arena, &VisLines[I * 2], 2, Thickness, v4f(0.5, 0.1, 0, Alpha));
+		D_LinesArray(Draw, Arena, &VisLines[I * 2], 2, Thickness, v4f(0.0, 0.0, 0.0, 0.4));
 	}
 
-	D_PointsArray(Draw, Arena, VisiblePositions, VisiblePointCount, 5.0, v4f(0.008, 0.00, 0, 1.0));
-	D_PointsArray(Draw, Arena, VisiblePositions, VisiblePointCount, 10.0, v4f(0.1, 0.05, 0, 1.0));
+	D_PointsArray(Draw, Arena, VisiblePositions, VisiblePointCount, 6.0, v4f(0.0, 0.0, 0.0, 1.0));
+	D_PointsArray(Draw, Arena, VisiblePositions, VisiblePointCount, 12.0, v4f(0.0, 0.0, 0.0, 1.0));
 }
 
 
@@ -537,7 +535,7 @@ ui_tree_view_signal UI_TreeViewFolderLabels(
 	v4i PanelScissor = R_CurrentScissor(Draw->Render);
 
 	ui_style Style = UI_GetStyle(UI);
-	Style.Font = Font;
+	Style.Font = BackdropFont;
 	UI_PushStyle(UI, Style);
 
 	// Breadcrumb: walk from focus node to root, then render left-to-right
@@ -570,8 +568,8 @@ ui_tree_view_signal UI_TreeViewFolderLabels(
 		}
 
 		f32 BcX = (f32)PanelScissor.X + 20.0f;
-		f32 BcY = (f32)PanelScissor.Y + (f32)PanelScissor.W - 40.0f;
-		f32 BcFontSize = 38.0f;
+		f32 BcY = (f32)PanelScissor.Y + (f32)PanelScissor.W - 50.0f;
+		f32 BcFontSize = 50.0f;
 
 		for(int I = 0; I < ChainLen; I++)
 		{
@@ -582,18 +580,23 @@ ui_tree_view_signal UI_TreeViewFolderLabels(
 
 			if(I > 0)
 			{
-				str8 Sep = Str8(" > ");
+				f32 CharW = (f32)UI_GetTextWidth(BackdropFont, Draw, Str8("A"), BcFontSize);
+				f32 SepTotal = CharW * 1.5f;
+				str8 Sep = Str8(">");
+				f32 SepW = (f32)UI_GetTextWidth(BackdropFont, Draw, Sep, BcFontSize);
+				f32 Pad = (SepTotal - SepW) / 2.0f;
+				BcX += Pad;
 				D_Str8(Draw, Arena, Sep,
-					.Font = Font, .Position = V3FromV2(v2f(BcX, BcY)),
-					.Colour = v4f(0.3, 0.15, 0.0, 0.3),
+					.Font = BackdropFont, .Position = V3FromV2(v2f(BcX, BcY)),
+					.Colour = v4f(0.0, 0.0, 0.0, 1.0),
 					.HeightInPixels = BcFontSize);
-				BcX += (f32)UI_GetTextWidth(Font, Draw, Sep, BcFontSize);
+				BcX += SepW + Pad;
 			}
 
 			b32 IsLast = (I == ChainLen - 1);
 			v4f BcColour = IsLast
-				? v4f(0.5, 0.25, 0.05, 0.8)
-				: v4f(0.35, 0.18, 0.02, 0.5);
+				? v4f(0.0, 0.0, 0.0, 1.0)
+				: v4f(0.0, 0.0, 0.0, 1.0);
 
 			str8 BcLabel = Str8PushF(Arena, "?S##bc?u32", ComponentName, Chain[I]);
 			ui_signal BcSignal = UI_TextButton(UI, Draw, Arena,
@@ -608,7 +611,7 @@ ui_tree_view_signal UI_TreeViewFolderLabels(
 					TreeView->Info.NodeInfos[Chain[I]].Name);
 			}
 
-			BcX += (f32)UI_GetTextWidth(Font, Draw, ComponentName, BcFontSize);
+			BcX += (f32)UI_GetTextWidth(BackdropFont, Draw, ComponentName, BcFontSize);
 		}
 	}
 
@@ -704,7 +707,7 @@ ui_tree_view_signal UI_TreeViewFolderLabels(
 		else if(IsActiveChild[It.ParentIndex] && It.Index != It.ParentIndex)
 			Level = 3; // below: grandchildren
 
-		f32 FontSize = 30;
+		f32 FontSize = 45;
 		v4f P = TreeView->Info.NodePositions[It.Index];
 
 		v4f NodePosition4D = v4f(P.X, P.Y, P.Z, 1.0);
@@ -716,45 +719,43 @@ ui_tree_view_signal UI_TreeViewFolderLabels(
 
 		TransformedPoint.X *= sapp_widthf();
 		TransformedPoint.Y *= sapp_heightf();
-		v4f Colour = v4f(0.35, 0.18, 0.02, 1.0);
+		v4f Colour = v4f(0.0, 0.0, 0.0, 1.0);
 		if(It.Index == ActiveNodeIndex)
 		{
 			// Lerp the active label font size toward its target
-			if(TreeView->ActiveLabelFontSize < 1.0f) TreeView->ActiveLabelFontSize = 30.0f;
-			if(TreeView->ActiveLabelFontSizeTarget < 1.0f) TreeView->ActiveLabelFontSizeTarget = 30.0f;
+			if(TreeView->ActiveLabelFontSize < 1.0f) TreeView->ActiveLabelFontSize = 45.0f;
+			if(TreeView->ActiveLabelFontSizeTarget < 1.0f) TreeView->ActiveLabelFontSizeTarget = 45.0f;
 			TreeView->ActiveLabelFontSize += (TreeView->ActiveLabelFontSizeTarget - TreeView->ActiveLabelFontSize) * 0.12f;
 			FontSize = TreeView->ActiveLabelFontSize;
-			Colour = v4f(0.8, 0.6, 0.4, 1.0);
+			Colour = v4f(0.0, 0.0, 0.0, 1.0);
 			Result.ActiveScreenPosition = v2f(TransformedPoint.X + 15.0f, TransformedPoint.Y + 5.0f);
 		}
 
 		TransformedPoint.X += 15.0f;
 		TransformedPoint.Y += 5.0f;
 
-		// Fade colour based on camera distance (not font size — keeps text readable)
+		// Fade based on camera distance for depth
 		f32 CamDist = sqrtf(
 			(P.X - CameraPosition.X)*(P.X - CameraPosition.X) +
 			(P.Y - CameraPosition.Y)*(P.Y - CameraPosition.Y) +
 			(P.Z - CameraPosition.Z)*(P.Z - CameraPosition.Z));
 		f32 RelDist = CamDist / (RefDist + 0.001f);
-		f32 DepthFade = Max(0.2f, Min(1.0f, 1.0f / (RelDist * RelDist)));
+		f32 DepthFade = Max(0.15f, Min(1.0f, 1.0f / (RelDist * RelDist)));
 		Colour.W *= DepthFade;
 
-		// Focus node: larger, brighter, distinct
+		// Focus node: larger, distinct
 		if(Level == 4)
 		{
-			Colour = v4f(0.6, 0.35, 0.1, Opacity);
-			FontSize = 40;
+			Colour = v4f(0.0, 0.0, 0.0, Opacity);
+			FontSize = 60;
 		}
-		// Non-active levels: smaller and dimmed
+		// Non-active levels: depth-faded
 		else if(Level > 1)
 		{
 			Colour.W *= Opacity;
-			FontSize *= 0.6f;
 		}
 		else
 		{
-			// Active children: use lerped opacity
 			Colour.W *= Opacity;
 		}
 
@@ -764,10 +765,13 @@ ui_tree_view_signal UI_TreeViewFolderLabels(
 			str8 LabelString = Str8PushF(Arena, "?S##?u32", FolderName, It.Index);
 			if(Filter.Size == 0 || Str8FuzzyMatch(FolderName, Filter))
 			{
+				// When filtering: non-matching chars dark red (subtle), matching chars black (stand out)
+				v4f LabelColour = (Filter.Size > 0) ? v4f(0.35, 0.015, 0.0, 1.0) : Colour;
+				v4f HighlightCol = v4f(0.0, 0.0, 0.0, 1.0);
 				ui_signal Button = UI_TextHighlightButton(UI, Draw,
 					Arena, LabelString,
 					FontSize,
-					v2f(TransformedPoint.X, TransformedPoint.Y), Colour, v4f(1, 1, 1, 1),
+					v2f(TransformedPoint.X, TransformedPoint.Y), LabelColour, HighlightCol,
 					Str8FuzzyMatchIndices(Scratch.Arena, FolderName, Filter));
 				Result.Hovered |= Button.Hover;
 				if(Button.Hover) HoveredNodeIndex = It.Index;
@@ -785,7 +789,7 @@ ui_tree_view_signal UI_TreeViewFolderLabels(
 
 		if(It.ParentIndex == ActiveNodeIndex)
 		{
-			FontSize = 30;
+			FontSize = 45;
 			str8 FileName = Str8FromLastCharacter(Arena, TreeView->Info.NodeInfos[It.Index].Name, '/');
 			if(FileName.Size == 0) FileName = TreeView->Info.NodeInfos[It.Index].Name;
 			if(!TreeView->Info.NodeInfos[It.Index].IsFolder)
@@ -832,7 +836,7 @@ ui_tree_view_signal UI_TreeViewFolderLabels(
 		if(TreeView->BackdropName.Size > 0 && TreeView->BackdropOpacity > 0.005f)
 		{
 			f32 InfoX = (f32)PanelScissor.X + 30.0f;
-			f32 InfoAlpha = 0.08f * TreeView->BackdropOpacity;
+			f32 InfoAlpha = 0.5f * TreeView->BackdropOpacity;
 
 			// Stats at the bottom-left of the panel, above the search box
 			f32 StatFontSize = 48.0f;
@@ -848,7 +852,7 @@ ui_tree_view_signal UI_TreeViewFolderLabels(
 				SizeLine = Str8PushF(Arena, "?s32 bytes", (int)TreeView->BackdropStats.TotalSizeBytes);
 			D_Str8(Draw, Arena, SizeLine,
 				.Font = BackdropFont, .Position = V3FromV2(v2f(InfoX, StatY)),
-				.Colour = v4f(0.4, 0.2, 0.0, InfoAlpha),
+				.Colour = v4f(0.0, 0.0, 0.0, InfoAlpha),
 				.HeightInPixels = StatFontSize);
 			StatY += StatFontSize + 4.0f;
 
@@ -856,7 +860,7 @@ ui_tree_view_signal UI_TreeViewFolderLabels(
 			str8 FolderLine = Str8PushF(Arena, "?s32 folders", TreeView->BackdropStats.FolderCount);
 			D_Str8(Draw, Arena, FolderLine,
 				.Font = BackdropFont, .Position = V3FromV2(v2f(InfoX, StatY)),
-				.Colour = v4f(0.4, 0.2, 0.0, InfoAlpha),
+				.Colour = v4f(0.0, 0.0, 0.0, InfoAlpha),
 				.HeightInPixels = StatFontSize);
 			StatY += StatFontSize + 4.0f;
 
@@ -864,7 +868,7 @@ ui_tree_view_signal UI_TreeViewFolderLabels(
 			str8 FileLine = Str8PushF(Arena, "?s32 files", TreeView->BackdropStats.FileCount);
 			D_Str8(Draw, Arena, FileLine,
 				.Font = BackdropFont, .Position = V3FromV2(v2f(InfoX, StatY)),
-				.Colour = v4f(0.4, 0.2, 0.0, InfoAlpha),
+				.Colour = v4f(0.0, 0.0, 0.0, InfoAlpha),
 				.HeightInPixels = StatFontSize);
 			StatY += StatFontSize + 15.0f;
 
@@ -872,7 +876,7 @@ ui_tree_view_signal UI_TreeViewFolderLabels(
 			f32 InfoFontSize = 180.0f;
 			D_Str8(Draw, Arena, TreeView->BackdropName,
 				.Font = BackdropFont, .Position = V3FromV2(v2f(InfoX, StatY)),
-				.Colour = v4f(0.4, 0.2, 0.0, InfoAlpha),
+				.Colour = v4f(0.0, 0.0, 0.0, InfoAlpha),
 				.HeightInPixels = InfoFontSize);
 		}
 	}

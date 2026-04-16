@@ -175,7 +175,34 @@ mayday_context;
 #include "sokol_log.h"
 
 
-#define COLOUR_BACKGROUND v4f(0.008, 0.00, 0, 1.0)
+#define COLOUR_BACKGROUND v4f(0.753, 0.036, 0.0, 1.0)
+#define COLOUR_BLACK v4f(0.0, 0.0, 0.0, 1.0)
+
+#ifndef BUILD_NUMBER
+#define BUILD_NUMBER 0
+#endif
+
+str8 IntToRomanNumerals(m_arena *Arena, int Value)
+{
+	struct { int Val; char *Str; int Len; } Table[] = {
+		{1000, "M", 1}, {900, "CM", 2}, {500, "D", 1}, {400, "CD", 2},
+		{100, "C", 1}, {90, "XC", 2}, {50, "L", 1}, {40, "XL", 2},
+		{10, "X", 1}, {9, "IX", 2}, {5, "V", 1}, {4, "IV", 2}, {1, "I", 1}
+	};
+	char Buf[128] = {0};
+	int At = 0;
+	for(int I = 0; I < 13 && Value > 0; I++)
+	{
+		while(Value >= Table[I].Val)
+		{
+			for(int J = 0; J < Table[I].Len; J++) Buf[At++] = Table[I].Str[J];
+			Value -= Table[I].Val;
+		}
+	}
+	u8 *Bytes = ArenaPush(Arena, At);
+	MemoryCopy(Bytes, Buf, At);
+	return (str8){At, Bytes};
+}
 
 #define RenderTest 0
 
@@ -391,66 +418,75 @@ void OS_Update(void *Data)
 
 		v2f Centre = {0};
 		R_PushTransform(M->Render, Orthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
-		D_Quad(M->Draw, M->FrameArena, v2f(0, 0),  WindowWidth, WindowHeight, v4f(0.008, 0.00, 0, 1.0));
+		D_Quad(M->Draw, M->FrameArena, v2f(0, 0),  WindowWidth, WindowHeight, COLOUR_BACKGROUND);
 		//D_Grid2D(M->Draw, M->FrameArena, M->Buffer.HeightInPixels, M->Buffer.HeightInPixels*5);
 		
-		// Vertical text
-		f32 TextWidth = sapp_heightf() - 100.0f;
-		f32 TextHeight = D_Str8VisualHeightFromWidth(M->Rajdhani, Str8("Mayday!"), TextWidth);
-		v4f BBox = D_Str8BBoxFromHeight(M->Rajdhani, v2f(0, 0), Str8("Mayday!"), TextHeight);
-		f32 Height = BBox.W - BBox.Y + 10.0;
-		f32 TotalHeight = (Height + Height/3.0);
-		// HACK(Oliver): I account for the line thickness here, but that
-		// should be done in the height functions
-		f32 Offsets[3] = 
-		{
-			2.0*Height/3.0f - 40,
-			Height/3.0f - 40,
-			-40,
-		};
+		// Vertical text — single row on black sidebar, inset from edges
+		f32 SidebarPad = 15.0f;
+		f32 TextInnerPad = 30.0f;
+		f32 TextWidth = (sapp_heightf() - 200.0f - TextInnerPad * 2) * 0.8f;
+		f32 TextHeight = D_Str8VisualHeightFromWidth(M->BebasNeue, Str8("MAYDAY!"), TextWidth);
+		v4f BBox = D_Str8BBoxFromHeight(M->BebasNeue, v2f(0, 0), Str8("MAYDAY!"), TextHeight);
+		f32 Height = BBox.W - BBox.Y;
+		f32 SidebarWidth = Height + TextInnerPad * 2;
+		f32 TotalHeight = SidebarWidth + SidebarPad * 2;
+
+		// Black sidebar panel — inset from window edges
+		D_Quad(M->Draw, M->FrameArena, v2f(SidebarPad, SidebarPad), SidebarWidth, sapp_heightf() - SidebarPad * 2, COLOUR_BLACK);
+
+		// Position MAYDAY text at top of panel with equal padding on top/left/right
+		f32 TextYOffset = sapp_heightf() - SidebarPad - TextInnerPad - TextWidth;
 
 		m44f T = R_CurrentTransform(M->Render);
 		m44f TextTransform = Mul(
-			M44FTranslate(v3f((sapp_heightf() - TextWidth)/2.0, -TotalHeight, 0)), 
+			M44FTranslate(v3f(TextYOffset, -(SidebarPad + SidebarWidth/2.0 + Height/2.0), 0)),
 			Mul(M44FromZAngle(-M_PI/2.0), M44FTranslate(v3f(0, 0, 0)))
 		);
 		R_PushTransform(M->Render, Mul(TextTransform, T));
-
-		for(int I = 0; I < 3; I++)
-		{
-			f32 Offset = Offsets[I];
-			ui_style Style = UI_GetStyle(M->UI);
-			UI_PushStyle(M->UI, Style);
-			
-			if(I < 2)
-			{
-				D_Str8(M->Draw, M->FrameArena, Str8("MAYDAY!"), .Font = M->Rajdhani,.Position = v3f(0, Offset, 0), .Colour = v4f(0.2, 0.1, 0.0, 1.0), .WidthInPixels = TextWidth, .OutlineThickness = 5.0);
-				// HACK(Oliver): Not sure why this needs to be offset by -10 in the X axis
-				D_Quad(M->Draw, M->FrameArena, v2f(-10, Offset - 10), sapp_heightf(), Height/3.0 + 40.0, COLOUR_BACKGROUND);
-				//D_Quad(M->Draw, M->FrameArena, v2f(-10, Offset - Height/2.0), sapp_heightf(), Height, COLOUR_BACKGROUND); 
-			}
-			else
-			{
-				D_Str8(M->Draw, M->FrameArena, Str8("MAYDAY!"), .Font = M->Rajdhani, .Position = v3f(0, Offset, 0), .Colour = v4f(0.2, 0.1, 0.0, 1.0), .WidthInPixels = TextWidth);
-			} 
-			
-			UI_PopStyle(M->UI);
-		}
+		D_Str8(M->Draw, M->FrameArena, Str8("MAYDAY!"), .Font = M->BebasNeue, .Position = v3f(0, 0, 0), .Colour = COLOUR_BACKGROUND, .WidthInPixels = TextWidth);
 		R_PopTransform(M->Render);
 
+		// Sidebar info — horizontal text just below MAYDAY
+		{
+			f32 InfoFontSize = 50.0f;
+			f32 InfoLineSpacing = InfoFontSize * 1.5f;
+			f32 InfoX = SidebarPad + TextInnerPad / 2.0f;
+			f32 InfoY = TextYOffset - InfoFontSize * 2.0f;
 
-		f32 HeaderHeight = 100;
+			str8 BuildRoman = IntToRomanNumerals(M->FrameArena, BUILD_NUMBER);
+			D_Str8(M->Draw, M->FrameArena,
+				Str8PushF(M->FrameArena, "BUILD: ?S", BuildRoman),
+				.Font = M->CodeFont, .Position = v3f(InfoX, InfoY, 0),
+				.Colour = COLOUR_BACKGROUND, .HeightInPixels = InfoFontSize);
 
-		D_Quad(M->Draw, M->FrameArena, v2f(TotalHeight + 50, 50), sapp_widthf() - TotalHeight - 10 - 50, sapp_heightf() - 100, v4f(0.2, 0.1, 0.0, 1.0));
-		D_Quad(M->Draw, M->FrameArena, v2f(TotalHeight + 50 + 5, 55), sapp_widthf() - TotalHeight - 10 - 50 - 10, sapp_heightf() - 100 - 10 - HeaderHeight, COLOUR_BACKGROUND);
+			InfoY -= InfoLineSpacing;
+			D_Str8(M->Draw, M->FrameArena, Str8(__DATE__),
+				.Font = M->CodeFont, .Position = v3f(InfoX, InfoY, 0),
+				.Colour = COLOUR_BACKGROUND, .HeightInPixels = InfoFontSize);
+
+			InfoY -= InfoLineSpacing;
+#if defined(OS_DARWIN)
+			D_Str8(M->Draw, M->FrameArena, Str8("DARWIN/ARM64"),
+#elif defined(OS_WINDOWS)
+			D_Str8(M->Draw, M->FrameArena, Str8("WIN64"),
+#else
+			D_Str8(M->Draw, M->FrameArena, Str8("UNKNOWN"),
+#endif
+				.Font = M->CodeFont, .Position = v3f(InfoX, InfoY, 0),
+				.Colour = COLOUR_BACKGROUND, .HeightInPixels = InfoFontSize);
+		}
+
+
+		f32 HeaderHeight = 300;
+
+		// No panel border — FDG sits directly on red background
 		D_Str8(
 			M->Draw, M->FrameArena,
 			Str8("WELCOME BACK, MR. WICK"),
-			.Position = v3f(TotalHeight + 40 + 60, sapp_heightf() - 55 - 100 + HeaderHeight/2.0 - 20.0, 0),
-			.Font = M->Rajdhani,
-			.Colour = COLOUR_BACKGROUND,
-			.OutlineThickness = 2.5,
-			.HeightInPixels = 100
+			.Position = v3f(TotalHeight + 75, sapp_heightf() - 55 - HeaderHeight + HeaderHeight/2.0 - 20.0, 0),
+			.Font = M->BebasNeue,
+			.Colour = COLOUR_BLACK,
+			.HeightInPixels = HeaderHeight
 		);
 
 		
@@ -573,9 +609,9 @@ void OS_Update(void *Data)
 					if(HeaderName.Size == 0)
 						HeaderName = M->TreeView.Info.NodeInfos[M->OrbitItem].Name;
 					D_Str8(M->Draw, M->FrameArena, HeaderName,
-						.Font = M->Orbitron,
+						.Font = M->BebasNeue,
 						.Position = v3f(M->FileListPosition.X, M->FileListPosition.Y, 0),
-						.Colour = v4f(0.8, 0.6, 0.4, 1.0),
+						.Colour = v4f(0.0, 0.0, 0.0, 1.0),
 						.HeightInPixels = M->TreeView.ActiveLabelFontSize);
 				}
 
@@ -602,14 +638,14 @@ void OS_Update(void *Data)
 					f32 W = 1.0f - SmoothStep(Value);
 					f32 Scale = MinScale  + (MaxScale - MinScale)*W;
 					ui_style CurrentStyle = UI_GetStyle(M->UI);
-					CurrentStyle.Font = M->Orbitron;
+					CurrentStyle.Font = M->BebasNeue;
 					UI_PushStyle(M->UI, CurrentStyle);
 					if(fabs(DistanceFromActiveItem) < Height*10.0)
 					{
 						ui_signal Signal = UI_TextButton(
 							M->UI, M->Draw, M->FrameArena,
 							Str8PushF(M->FrameArena, "?S###?u32", FileName, Index), Height*Scale, Position,
-							v4f(0.5, 0.25, 0.05, 1)
+							v4f(0.0, 0.0, 0.0, 1)
 						);
 						if(Signal.Clicked)
 						{
@@ -1014,6 +1050,7 @@ void OS_Initialise(void *Data)
 	M->BufferFontHeight = 35;
 	M->BufferFontHeightTarget = 35;
 	R_Init(M->Render, M->PermanentArena, v2i(sapp_width() , sapp_height()));
+	M->Render->BloomEnabled = False;
 
 	M->Buffer.String.Bytes = ArenaPushZero(M->PermanentArena, MegaBytes(1));
 	M->Buffer.String.Size = sizeof(G_TriangleShader);

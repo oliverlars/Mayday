@@ -531,26 +531,26 @@ b32 UI_TextButtonWrapping(ui_context *UI, draw_context *Draw, m_arena *Arena,
 		UI->HotAnimation = Lerp(UI->HotAnimation, 1.0, 0.1);
 		if(LineCount == 2)
 		{
-			D_Str8(Draw, Arena, FirstLine, .Font =UI->Font, .Position = V3FromV2(Position), .Colour = v4f(1, 1, 1, 1), .HeightInPixels = HeightInPixels);
+			D_Str8(Draw, Arena, FirstLine, .Font =UI->Font, .Position = V3FromV2(Position), .Colour = v4f(0.0, 0.0, 0.0, 1.0), .HeightInPixels = HeightInPixels);
 			//Position.Y -= HeightInPixels;
-			//D_Str8(Draw, Arena, UI->Font, Position, v4f(1, 1, 1, 1), HeightInPixels, SecondLine);
+			//D_Str8(Draw, Arena, UI->Font, Position, v4f(0.0, 0.0, 0.0, 1.0), HeightInPixels, SecondLine);
 		}
 		else
 		{
-			D_Str8(Draw, Arena, DisplayString, .Font =UI->Font, .Position = V3FromV2(Position), .Colour = v4f(1, 1, 1, 1), .HeightInPixels = HeightInPixels);
+			D_Str8(Draw, Arena, DisplayString, .Font =UI->Font, .Position = V3FromV2(Position), .Colour = v4f(0.0, 0.0, 0.0, 1.0), .HeightInPixels = HeightInPixels);
 		}
 	}
 	else
 	{
 		if(LineCount == 2)
 		{
-			D_Str8(Draw, Arena, FirstLine, .Font =UI->Font, .Position = V3FromV2(Position), .Colour = v4f(0.2, 0.5, 0.0, 1.0), .HeightInPixels = HeightInPixels);
+			D_Str8(Draw, Arena, FirstLine, .Font =UI->Font, .Position = V3FromV2(Position), .Colour = v4f(0.0, 0.0, 0.0, 1.0), .HeightInPixels = HeightInPixels);
 			//Position.Y -= HeightInPixels;
-			//D_Str8(Draw, Arena, UI->Font, Position, v4f(0.2, 0.5, 0.0, 1.0), HeightInPixels, SecondLine);
+			//D_Str8(Draw, Arena, UI->Font, Position, v4f(0.0, 0.0, 0.0, 0.7), HeightInPixels, SecondLine);
 		}
 		else
 		{
-			D_Str8(Draw, Arena, DisplayString, .Font =UI->Font, .Position = V3FromV2(Position), .Colour = v4f(0.2, 0.5, 0.0, 1.0), .HeightInPixels = HeightInPixels);
+			D_Str8(Draw, Arena, DisplayString, .Font =UI->Font, .Position = V3FromV2(Position), .Colour = v4f(0.0, 0.0, 0.0, 1.0), .HeightInPixels = HeightInPixels);
 		}
 	}
 
@@ -771,8 +771,8 @@ ui_textbox_signal UI_TextBox(m_arena *Arena,
 
 	// Filled background with outline
 	f32 BorderThickness = 2.0f;
-	v4f BorderColour = v4f(0.5, 0.2, 0.0, 0.6);
-	v4f FillColour = v4f(0.5, 0.2, 0.0, 0.08);
+	v4f BorderColour = v4f(0.0, 0.0, 0.0, 1.0);
+	v4f FillColour = v4f(0.0, 0.0, 0.0, 1.0);
 	f32 BoxW = Width + PadX * 2;
 	f32 BoxH = Height + PadY * 2;
 	v2f BoxOrigin = Sub(BoxPosition, v2f(PadX, PadY));
@@ -792,19 +792,17 @@ ui_textbox_signal UI_TextBox(m_arena *Arena,
 	// Placeholder text when empty and not active
 	if(Buffer->String.Size == 0 && UI->Active != Hash)
 	{
-		f32 T = (f32)sapp_frame_count() * 0.04f;
-		f32 PlaceholderAlpha = 0.2f + 0.3f * (sinf(T) * 0.5f + 0.5f);
 		D_Str8(Draw, Arena, Str8("Search..."),
 			   .Font = Font,
 			   .Position = V3FromV2(Position),
-			   .Colour = v4f(0.5, 0.2, 0.0, PlaceholderAlpha),
+			   .Colour = v4f(0.753, 0.036, 0.0, 1.0),
 			   .HeightInPixels = HeightInPixels);
 	}
 
 	D_Str8(Draw,
 			   Arena, Buffer->String,
 			   .Font = Font,
-			   .Position = V3FromV2(StringPosition), .Colour = v4f(0.5, 0.2, 0.0, 1.0),
+			   .Position = V3FromV2(StringPosition), .Colour = v4f(0.753, 0.036, 0.0, 1.0),
 			   .HeightInPixels = HeightInPixels);
 	R_PopScissor(Draw->Render);
 
@@ -817,7 +815,7 @@ ui_textbox_signal UI_TextBox(m_arena *Arena,
 							 Arena,
 							 Font,
 							 StringPosition,
-							 v4f(0.04, 0.01, 0, 0.8),
+							 v4f(0.753, 0.036, 0.0, 1.0),
 							 HeightInPixels,
 							 Buffer->String,
 							 v2i(0, Buffer->String.Size),
@@ -840,7 +838,7 @@ ui_textbox_signal UI_TextBox(m_arena *Arena,
 			Edit->Cursors[0].Position = LerpV2F(Edit->Cursors[0].Position, Edit->Cursors[0].TargetPosition, 0.3);
 			v2f CursorPosition = Edit->Cursors[0].Position;
 			CursorPosition.X -= CursorXOffset;
-			D_Quad(Draw, Arena, CursorPosition, 2, Height, v4f(0.3, 0.7, 0, 1));
+			D_Quad(Draw, Arena, CursorPosition, 2, Height, v4f(0.753, 0.036, 0.0, 1));
 		}
 		else
 		{
@@ -856,7 +854,7 @@ ui_textbox_signal UI_TextBox(m_arena *Arena,
 			Edit->Cursors[0].Position = LerpV2F(Edit->Cursors[0].Position, Edit->Cursors[0].TargetPosition, 0.3);
 			v2f CursorPosition = Edit->Cursors[0].Position;
 			CursorPosition.X -= CursorXOffset;
-			D_Quad(Draw, Arena, CursorPosition, 2, Height, v4f(0.3, 0.7, 0, 1));
+			D_Quad(Draw, Arena, CursorPosition, 2, Height, v4f(0.753, 0.036, 0.0, 1));
 
 		}
 

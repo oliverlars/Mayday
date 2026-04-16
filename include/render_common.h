@@ -114,6 +114,8 @@ typedef struct render_context
 	v4i ScissorStack[MAX_SCISSORS];
 	int ScissorCount;
 
+	b32 BloomEnabled;
+
 } render_context;
 
 r_vertex_attributes R_AttributesFromCommandType(r_command_type CommandType);

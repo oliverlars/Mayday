@@ -1,6 +1,18 @@
 #include "friday.h"
 #include "memory.h"
 
+s64 GetGitCommitCount(void)
+{
+	system("git rev-list --count HEAD > .build_count.tmp 2>/dev/null");
+	FILE *F = fopen(".build_count.tmp", "r");
+	if(!F) return 0;
+	char Buffer[64] = {0};
+	fgets(Buffer, sizeof(Buffer), F);
+	fclose(F);
+	remove(".build_count.tmp");
+	return atoll(Buffer);
+}
+
 Entry(InputWaveInfo)
 {
 
@@ -170,6 +182,13 @@ Entry(InputWaveInfo)
 		EmbedFiles(&Arena, Shaders, Str8("embed/shaders.c"), ShaderVariableNames);
 
 		AppendSourceFilesInFolder(&Shared->Arena, &SourceFiles, Str8("embed/"));
+
+		// Inject build number from git commit count
+		s64 CommitCount = GetGitCommitCount();
+		if(CommitCount > 0)
+		{
+			Str8ListAppend(&Arena, &ExtraCompileFlags, Str8PushF(&Arena, " -DBUILD_NUMBER=%lld ", CommitCount));
+		}
 
 		if(OS == OS_WINDOWS)
 		{

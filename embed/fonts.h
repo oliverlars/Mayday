@@ -9,3 +9,5 @@ extern embed_data G_CocogooseGradient;
 extern embed_data G_CocogooseRegular;
 extern embed_data G_RajdhaniMedium;
 extern embed_data G_OrbitronRegular;
+extern embed_data G_BodoniModa;
+extern embed_data G_ThunderBold;

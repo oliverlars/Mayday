@@ -16,6 +16,8 @@
 #define FDG_FG_G (0.036f)
 #define FDG_FG_B (0.0f)
 
+#define COLOUR_YELLOW v4f(1.0, 0.65, 0.0, 1.0)
+
 
 // Build a flat FDG from a list of recently opened paths:
 // one root node + one child per path (no intermediate components)
@@ -538,7 +540,7 @@ ui_tree_view_signal UI_TreeViewFolderLabels(
 
 	if(!OS_ValidPath(CurrentPath)) return Result;
 
-	v4i PanelScissor = R_CurrentScissor(Draw->Render);
+	v4f PanelScissor = v4f(0, 0, sapp_widthf(), sapp_heightf());
 
 	ui_style Style = UI_GetStyle(UI);
 	Style.Font = BackdropFont;
@@ -611,7 +613,7 @@ ui_tree_view_signal UI_TreeViewFolderLabels(
 			if(BcSignal.Clicked && !IsLast)
 			{
 				Result.NodeIndex = Chain[I];
-				Result.NodeDepth = TreeView->Info.NodeInfos[Chain[I]].Depth;
+				Result.ClickedDepth = TreeView->Info.NodeInfos[Chain[I]].Depth;
 				Result.Clicked = True;
 				Result.NewPath = Str8Copy(TreeView->Arena,
 					TreeView->Info.NodeInfos[Chain[I]].Name);
@@ -621,6 +623,7 @@ ui_tree_view_signal UI_TreeViewFolderLabels(
 		}
 	}
 
+
 	ui_textbox_signal SearchSignal = {0};
 	str8 Filter = {0};
 	if(SearchBuffer)
@@ -628,8 +631,10 @@ ui_tree_view_signal UI_TreeViewFolderLabels(
 		f32 SearchBoxWidth = 600;
 		f32 SearchBoxX = PanelScissor.X + (PanelScissor.Z - SearchBoxWidth) * 0.5f;
 		f32 SearchBoxY = PanelScissor.Y + 45;
+		D_Quad(Draw, Arena, v2f(SearchBoxX - 15, SearchBoxY - 30), SearchBoxWidth + 30, 40 + 30, v4f(0, 0, 0, 1));
 		SearchSignal = UI_TextBox(Arena, Font, v2f(SearchBoxX, SearchBoxY), SearchBoxWidth,
 													UI, Draw, Edit, 40, Str8("TreeViewTextBox"), SearchBuffer);
+		
 		Filter = SearchSignal.String;
 	}
 	// Reference distance: camera to focus node (used to normalise per-node depth)
@@ -785,9 +790,9 @@ ui_tree_view_signal UI_TreeViewFolderLabels(
 				if(Button.Clicked || (SearchSignal.Submitted && Filter.Size > 0))
 				{
 					Result.NodeIndex = It.Index;
-					Result.NodeDepth = It.Depth;
 					Result.Clicked = True;
 					Result.ClickedPosition = v2f(TransformedPoint.X, TransformedPoint.Y);
+					Result.ClickedDepth = It.Depth;
 					Result.NewPath = Str8Copy(TreeView->Arena, TreeView->Info.NodeInfos[It.Index].Name);
 				}
 			}

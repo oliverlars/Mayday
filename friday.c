@@ -116,6 +116,8 @@ Entry(InputWaveInfo)
 		Str8ListAppend(&Arena, &Fonts, Str8("fonts/cocogoose-pro.regular.ttf"));
 		Str8ListAppend(&Arena, &Fonts, Str8("fonts/Rajdhani-Medium.ttf"));
 		Str8ListAppend(&Arena, &Fonts, Str8("fonts/Orbitron-Regular.ttf"));
+		Str8ListAppend(&Arena, &Fonts, Str8("fonts/BodoniModa_18pt-ExtraBold.ttf"));
+		Str8ListAppend(&Arena, &Fonts, Str8("fonts/Thunder-BlackLC.ttf"));
 
 		str8_list FontVariableNames = {0};
 		Str8ListAppend(&Arena, &FontVariableNames, Str8("G_BerkeleyMonoRegular"));
@@ -127,6 +129,8 @@ Entry(InputWaveInfo)
 		Str8ListAppend(&Arena, &FontVariableNames, Str8("G_CocogooseRegular"));
 		Str8ListAppend(&Arena, &FontVariableNames, Str8("G_RajdhaniMedium"));
 		Str8ListAppend(&Arena, &FontVariableNames, Str8("G_OrbitronRegular"));
+		Str8ListAppend(&Arena, &FontVariableNames, Str8("G_BodoniModa"));
+		Str8ListAppend(&Arena, &FontVariableNames, Str8("G_ThunderBold"));
 
 
 		EmbedFiles(&Arena, Fonts, Str8("embed/fonts.c"), FontVariableNames);

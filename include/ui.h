@@ -195,6 +195,7 @@ typedef struct ui_tree_view_signal
 {
 	b32 Clicked;
 	v2f ClickedPosition;
+	int ClickedDepth;
 
 	str8 NewPath;
 	int NewPathIndex;
@@ -202,15 +203,16 @@ typedef struct ui_tree_view_signal
 
 	b32 Hovered;
 
-	int NodeDepth;
 	int NodeIndex;
 
 	v2f ActiveScreenPosition; // projected screen pos of ActiveNodeIndex
 } ui_tree_view_signal;
 
-ui_tree_view_signal UI_TreeViewFolderLabels(ui_context *UI, draw_context *Draw, edit_context *Edit, d_font Font, d_font BackdropFont,
-							 				m_arena *Arena, int ActiveNodeIndex,
-											ui_tree *TreeView, m44f TreeTransform, v3f CameraPosition, str8 CurrentPath, editable_buffer* SearchBuffer);
+ui_tree_view_signal UI_TreeViewFolderLabels(
+	ui_context *UI, draw_context *Draw, edit_context *Edit, 
+	d_font Font, d_font BackdropFont,
+	m_arena *Arena, int ActiveNodeIndex,
+	ui_tree *TreeView, m44f TreeTransform, v3f CameraPosition, str8 CurrentPath, editable_buffer* SearchBuffer);
 
 
 typedef struct ui_orbit

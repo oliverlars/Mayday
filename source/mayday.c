@@ -96,6 +96,10 @@ typedef struct mayday_context
 
 	d_font BebasNeue;
 
+	d_font BodoniModa;
+
+	d_font ThunderBold;
+
 	d_font RegularFont;
 	d_font OutlineFont;
 	d_font GradientFont;
@@ -181,8 +185,9 @@ mayday_context;
 #include "sokol_log.h"
 
 
-#define COLOUR_BACKGROUND v4f(0.753, 0.036, 0.0, 1.0)
+#define COLOUR_RED v4f(0.753, 0.036, 0.0, 1.0)
 #define COLOUR_BLACK v4f(0.0, 0.0, 0.0, 1.0)
+#define COLOUR_YELLOW v4f(1.0, 0.65, 0.0, 1.0)
 
 #ifndef BUILD_NUMBER
 #define BUILD_NUMBER 0
@@ -224,7 +229,7 @@ void OS_Update_(void *Data)
 	M->Draw->ViewportSize = v2f(sapp_widthf(), sapp_heightf());
 	UI_Begin(M->UI);
 	R_PushScissor(M->Render, v4i(0, 0, sapp_width(), sapp_height()));
-	R_PushTransform(M->Render, Orthographic(0.0, sapp_widthf()/2.0, sapp_heightf()/2.0, 0.0, -1000.0, 1000.0));
+	R_PushTransform(M->Render, Orthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
 
 	//D_Str8(M->Draw, M->FrameArena, M->CodeFont, v2f(200, 500), v4f(0, 1, 0, 1), 100, Str8("This text is upside down"));
 	v3f Line[4] = 
@@ -394,7 +399,7 @@ void OS_Update(void *Data)
 	{
 		u64 Start = OS_TimeStampNow();
 		R_PushTransform(M->Render, Orthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
-		D_Quad(M->Draw, M->FrameArena, v2f(0, 0),  WindowWidth, WindowHeight, COLOUR_BACKGROUND);
+		D_Quad(M->Draw, M->FrameArena, v2f(0, 0),  WindowWidth, WindowHeight, COLOUR_RED);
 		//D_DiscoGrid2D(M->Draw, M->FrameArena, v2f(sapp_widthf(), sapp_heightf()), v2i(1, sapp_height()/M->Buffer.HeightInPixels));
 	
 		UI_Buffer(M->UI, M->Draw, M->Edit,
@@ -520,9 +525,9 @@ void OS_Update(void *Data)
 		// which maps 1→0 via (cos+1)/2 for the red↔black background blend.
 		f32 RotBlendT = (cosf(M->CameraAngle) + 1.0f) * 0.5f; // 1 = home, 0 = FDG
 		v4f ClearCol  = v4f(
-			LerpF32(COLOUR_BLACK.X, COLOUR_BACKGROUND.X, RotBlendT),
-			LerpF32(COLOUR_BLACK.Y, COLOUR_BACKGROUND.Y, RotBlendT),
-			LerpF32(COLOUR_BLACK.Z, COLOUR_BACKGROUND.Z, RotBlendT),
+			LerpF32(COLOUR_BLACK.X, COLOUR_RED.X, RotBlendT),
+			LerpF32(COLOUR_BLACK.Y, COLOUR_RED.Y, RotBlendT),
+			LerpF32(COLOUR_BLACK.Z, COLOUR_RED.Z, RotBlendT),
 			1.0f);
 
 		// Clear the whole screen with a color that lerps between the two sides.
@@ -560,17 +565,22 @@ void OS_Update(void *Data)
 		// Welcome header only; background is the shared lerping clear color.
 		// Lerp the welcome text with the rotation: red at angle=±π, fades to black at 0.
 		v4f WelcomeCol = v4f(
-			LerpF32(COLOUR_BACKGROUND.X, COLOUR_BLACK.X, RotBlendT),
-			LerpF32(COLOUR_BACKGROUND.Y, COLOUR_BLACK.Y, RotBlendT),
-			LerpF32(COLOUR_BACKGROUND.Z, COLOUR_BLACK.Z, RotBlendT),
+			LerpF32(COLOUR_RED.X, COLOUR_BLACK.X, RotBlendT),
+			LerpF32(COLOUR_RED.Y, COLOUR_BLACK.Y, RotBlendT),
+			LerpF32(COLOUR_RED.Z, COLOUR_BLACK.Z, RotBlendT),
+			1.0f);
+		v4f InverseWelcomeCol = v4f(
+			LerpF32(COLOUR_BLACK.X, COLOUR_RED.X, RotBlendT),
+			LerpF32(COLOUR_BLACK.Y, COLOUR_RED.Y, RotBlendT),
+			LerpF32(COLOUR_BLACK.Z, COLOUR_RED.Z, RotBlendT),
 			1.0f);
 		R_PushTransform(M->Render, Mul(Orthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0), FDGCarousel));
 		D_Str8(
 			M->Draw, M->FrameArena,
-			Str8("WELCOME BACK, MR. WICK"),
+			Str8("Welcome back, Mr. Wick"),
 			.Position = v3f(TotalHeight + 75, sapp_heightf() - 55 - HeaderHeight + HeaderHeight/2.0 - 20.0, 0),
-			.Font = M->BebasNeue,
-			.Colour = WelcomeCol,
+			.Font = M->BodoniModa,
+			.Colour = v4f(1, 1, 1, 1),
 			.HeightInPixels = HeaderHeight
 		);
 		R_PopTransform(M->Render);
@@ -580,9 +590,23 @@ void OS_Update(void *Data)
 		f32 MaxDepth = 0.0f;
 
 		// This push is consumed by the pops at line ~534 or ~766 below
-		R_PushTransform(M->Render, Mul(Orthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0), FDGCarousel));
+		m44f Ortho = Orthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0);
+		R_PushTransform(M->Render, Mul(Ortho, FDGCarousel));
+		{
+			R_PushTransform(M->Render, Mul(M44FromZAngle(45.0), Ortho));
+			int Columns = sapp_width()/15;
+			R_PushScissor(M->Render, v4i(50, 50, sapp_width() - 100, 100));
+			for(int I = -Columns; I < Columns; I++)
+			{
+				if((I + Columns) % 3 == 0)
+				{
+					D_Quad(M->Draw, M->FrameArena, v2f(I*15.0, 0.0), 15.0, sapp_heightf()*10.0, WelcomeCol);
+				}
+			}
+			R_PopScissor(M->Render);
+			R_PopTransform(M->Render);
+		}
 
-		R_PushScissor(M->Render, v4i(TotalHeight + 50 + 5, 55, sapp_widthf() - TotalHeight - 10 - 50 - 10, sapp_heightf() - 100 - 10 - HeaderHeight));
 		if(OS_ValidPath(M->Folder))
 		{
 			// HACK(Oliver): This is annoying i have to do this twice
@@ -759,6 +783,7 @@ void OS_Update(void *Data)
 			if(TreeViewSignal.Clicked && TreeViewSignal.NewPath.Size > 0 && !M->TreeTransitioning)
 			{
 				int ClickedIndex = TreeViewSignal.NodeIndex;
+				int ClickedDepth = TreeViewSignal.ClickedDepth;
 				if(ClickedIndex >= 0 && ClickedIndex < M->TreeView.Info.NodeCount)
 				{
 					// Check if this node has children in the already-loaded tree
@@ -788,7 +813,7 @@ void OS_Update(void *Data)
 						M->TreeView.FocusNodeIndex = ClickedIndex;
 						v4f ClickedPos = M->TreeView.Info.NodePositions[ClickedIndex];
 						M->TreeCameraLookAtTarget = v3f(ClickedPos.X, ClickedPos.Y, ClickedPos.Z);
-						M->TreeCameraZoomTarget = 2.5f;
+						M->TreeCameraZoomTarget = 3.5f - ClickedDepth*2.0;
 						M->TreeTransitioning = True;
 					}
 				}
@@ -820,7 +845,6 @@ void OS_Update(void *Data)
 		{
 			R_PopTransform(M->Render);
 		}
-		R_PopScissor(M->Render);
 
 		R_PushTransform(M->Render, Mul(Orthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0), FDGCarousel));
 
@@ -861,12 +885,10 @@ void OS_Update(void *Data)
 
 			R_PopTransform(M->Render);
 
-			R_PushScissor(M->Render, v4i(TotalHeight + 50 + 5, 55, sapp_widthf() - TotalHeight - 10 - 50 - 10, sapp_heightf() - 100 - 10 - HeaderHeight));
 			R_PushTransform(M->Render, Mul(Orthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0), FDGCarousel));
 			ui_tree_view_signal HomescreenSignal = UI_TreeViewFolderLabels(
 				M->UI, M->Draw, M->Edit, M->Orbitron, M->BebasNeue, M->FrameArena, -1,
 				&M->HomescreenTree, PV, CamPos, Str8("/"), Null);
-			R_PopScissor(M->Render);
 
 			if(HomescreenSignal.Clicked && HomescreenSignal.NewPath.Size > 0)
 			{
@@ -897,22 +919,24 @@ void OS_Update(void *Data)
 		// Only draw while the home side is actually facing us (|angle| < π/2).
 		f32 CarouselCX = sapp_widthf() * 0.5f;
 		f32 CarouselCY = sapp_heightf() * 0.5f;
+
+		v4f HomeTextCol = v4f(
+				LerpF32(COLOUR_RED.X, COLOUR_BLACK.X, RotBlendT),
+				LerpF32(COLOUR_RED.Y, COLOUR_BLACK.Y, RotBlendT),
+				LerpF32(COLOUR_RED.Z, COLOUR_BLACK.Z, RotBlendT),
+				1.0f);
+		
 		if(fabsf(M->CameraAngle) < (f32)M_PI * 0.5f)
 		{
 			m44f HomeOrtho = Mul(Orthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0), HomeCarousel);
 			R_PushTransform(M->Render, HomeOrtho);
 
-			v4f HomeTextCol = v4f(
-				LerpF32(COLOUR_BACKGROUND.X, COLOUR_BLACK.X, RotBlendT),
-				LerpF32(COLOUR_BACKGROUND.Y, COLOUR_BLACK.Y, RotBlendT),
-				LerpF32(COLOUR_BACKGROUND.Z, COLOUR_BLACK.Z, RotBlendT),
-				1.0f);
 
 			// Centered MAYDAY! — 3D layered extrusion
 			//
 			// Front copy is solid black. Behind it, N copies staggered in 2D
 			// screen space; each back copy is drawn twice at the same position
-			// — first as solid red (COLOUR_BACKGROUND) to fill the glyph body,
+			// — first as solid red (COLOUR_RED) to fill the glyph body,
 			// then as a black outline-only pass on top. Back copies are drawn
 			// farthest-first so painter's order handles occlusion (depth test
 			// is disabled for every text path in the Metal backend, so paint
@@ -939,7 +963,7 @@ void OS_Update(void *Data)
 			// text extends from Y up to Y + MaydayCap.
 			f32 MaydayHeight = 760.0f;
 			str8 MaydayStr = Str8("MAYDAY!");
-			f32 MaydayW = (f32)UI_GetTextWidth(M->BebasNeue, M->Draw, MaydayStr, MaydayHeight);
+			f32 MaydayW = (f32)UI_GetTextWidth(M->ThunderBold, M->Draw, MaydayStr, MaydayHeight);
 			f32 MaydayX = CarouselCX - MaydayW * 0.5f;
 			f32 MaydayY = CarouselCY - MaydayHeight * 0.32f;
 
@@ -970,8 +994,8 @@ void OS_Update(void *Data)
 			// z < 0 after the rotation (the worst-case rotation shift
 			// is |dx|·sinθ ≈ 475·0.08 ≈ 38 px), so NDC_Z stays inside
 			// [0, 1] for every glyph vertex regardless of its side.
-			f32 MaydayScale = stbtt_ScaleForPixelHeight(&M->BebasNeue.Info, MaydayHeight);
-			f32 MaydayCap   = (f32)M->BebasNeue.Ascent * MaydayScale;
+			f32 MaydayScale = stbtt_ScaleForPixelHeight(&M->ThunderBold.Info, MaydayHeight);
+			f32 MaydayCap   = (f32)M->ThunderBold.Ascent * MaydayScale;
 
 			f32 PivotX = CarouselCX;
 			f32 PivotY = MaydayY + MaydayCap * 0.5f;
@@ -986,9 +1010,9 @@ void OS_Update(void *Data)
 
 			R_PushTransform(M->Render, MaydayTransform);
 
-			int NumLayers = 6;
-			f32 LayerDX = 14.0f;   // per-step X offset (right)
-			f32 LayerDY = 10.0f;   // per-step Y offset (down in Y-up = -)
+			int NumLayers = 5;
+			f32 LayerDX = 14.0 + sin(M->Render->Frame/128.0f);   // per-step X offset (right)
+			f32 LayerDY = 10.0 + sin(M->Render->Frame/128.0f);   // per-step Y offset (down in Y-up = -)
 			f32 OutlineThickness = 3.0f;
 
 			// Back copies, farthest first (painter's order).
@@ -999,15 +1023,15 @@ void OS_Update(void *Data)
 
 				// Red body fill.
 				D_Str8(M->Draw, M->FrameArena, MaydayStr,
-					.Font = M->BebasNeue,
+					.Font = M->ThunderBold,
 					.Position = v3f(MaydayX + OffX, MaydayY + OffY, BaseZ),
-					.Colour = COLOUR_BACKGROUND,
+					.Colour = COLOUR_RED,
 					.HeightInPixels = MaydayHeight);
 
 				// Black outline — this is what makes each layer read as
 				// a distinct 3D step when overlapping the next layer forward.
 				D_Str8(M->Draw, M->FrameArena, MaydayStr,
-					.Font = M->BebasNeue,
+					.Font = M->ThunderBold,
 					.Position = v3f(MaydayX + OffX, MaydayY + OffY, BaseZ),
 					.Colour = COLOUR_BLACK,
 					.HeightInPixels = MaydayHeight,
@@ -1016,34 +1040,41 @@ void OS_Update(void *Data)
 
 			// Front: solid black, no offset, drawn last.
 			D_Str8(M->Draw, M->FrameArena, MaydayStr,
-				.Font = M->BebasNeue,
+				.Font = M->ThunderBold,
 				.Position = v3f(MaydayX, MaydayY, BaseZ),
 				.Colour = COLOUR_BLACK,
 				.HeightInPixels = MaydayHeight);
 
 			R_PopTransform(M->Render);
 
+			
+			// D_Str8(M->Draw, M->FrameArena, Str8("See you, space cowboy"),
+			// 		.Font = M->BodoniModa,
+			// 		.Position = v3f(100, 100, 0.0f),
+			// 		.Colour = COLOUR_YELLOW,
+			// 		.HeightInPixels = 300);
+
 			// Build info below, centered horizontally
-			f32 InfoSize = 36.0f;
+			f32 InfoSize = 72.0f;
 			f32 InfoLineGap = InfoSize * 1.5f;
 			f32 InfoY = MaydayY - InfoSize * 2.5f;
 
 			str8 BuildRoman = IntToRomanNumerals(M->FrameArena, BUILD_NUMBER);
 			str8 BuildStr = Str8PushF(M->FrameArena, "BUILD: ?S", BuildRoman);
-			f32 BuildW = (f32)UI_GetTextWidth(M->CodeFont, M->Draw, BuildStr, InfoSize);
+			f32 BuildW = (f32)UI_GetTextWidth(M->BodoniModa, M->Draw, BuildStr, InfoSize);
 			D_Str8(M->Draw, M->FrameArena, BuildStr,
-				.Font = M->CodeFont,
+				.Font = M->BodoniModa,
 				.Position = v3f(CarouselCX - BuildW * 0.5f, InfoY, 0),
-				.Colour = HomeTextCol,
+				.Colour = COLOUR_YELLOW,
 				.HeightInPixels = InfoSize);
 
 			InfoY -= InfoLineGap;
 			str8 DateStr = Str8(__DATE__);
-			f32 DateW = (f32)UI_GetTextWidth(M->CodeFont, M->Draw, DateStr, InfoSize);
+			f32 DateW = (f32)UI_GetTextWidth(M->BodoniModa, M->Draw, DateStr, InfoSize);
 			D_Str8(M->Draw, M->FrameArena, DateStr,
-				.Font = M->CodeFont,
+				.Font = M->BodoniModa,
 				.Position = v3f(CarouselCX - DateW * 0.5f, InfoY, 0),
-				.Colour = HomeTextCol,
+				.Colour = COLOUR_YELLOW,
 				.HeightInPixels = InfoSize);
 
 			InfoY -= InfoLineGap;
@@ -1054,11 +1085,11 @@ void OS_Update(void *Data)
 #else
 			str8 PlatStr = Str8("UNKNOWN");
 #endif
-			f32 PlatW = (f32)UI_GetTextWidth(M->CodeFont, M->Draw, PlatStr, InfoSize);
+			f32 PlatW = (f32)UI_GetTextWidth(M->BodoniModa, M->Draw, PlatStr, InfoSize);
 			D_Str8(M->Draw, M->FrameArena, PlatStr,
-				.Font = M->CodeFont,
+				.Font = M->BodoniModa,
 				.Position = v3f(CarouselCX - PlatW * 0.5f, InfoY, 0),
-				.Colour = HomeTextCol,
+				.Colour = COLOUR_YELLOW,
 				.HeightInPixels = InfoSize);
 
 			R_PopTransform(M->Render);
@@ -1427,6 +1458,8 @@ int main()
 	M.Orbitron = D_LoadFontFromTTF(M.Draw, G_OrbitronRegular.Data);
 	M.Rajdhani = D_LoadFontFromTTF(M.Draw, G_RajdhaniMedium.Data);
 	M.BebasNeue = D_LoadFontFromTTF(M.Draw, G_BebasNeueRegular.Data);
+	M.BodoniModa = D_LoadFontFromTTF(M.Draw, G_BodoniModa.Data);
+	M.ThunderBold = D_LoadFontFromTTF(M.Draw, G_ThunderBold.Data);
 
 	M.UI->Font = M.CodeFont;
 	M.LookFrom.Z = 500;

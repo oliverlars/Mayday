@@ -298,6 +298,16 @@ V4
 
 */
 
+v4f ExpandV4F(v4f V, f32 Amount)
+{
+	v4f Result = V;
+	Result.X -= Amount/2.0;
+	Result.Y -= Amount/2.0;
+	Result.Z += Amount;
+	Result.W += Amount;
+	return Result;
+}
+
 v4f AddV4F(v4f A, v4f B)
 {
 	v4f Result = A;

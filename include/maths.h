@@ -103,6 +103,7 @@ V4
 
 typedef struct v4f { f32 X; f32 Y; f32 Z; f32 W; } v4f;
 #define v4f(...) (v4f){ __VA_ARGS__ }
+v4f ExpandV4F(v4f V, f32 Amount);
 v4f AddV4F(v4f A, v4f B);
 v4f SubV4F(v4f A, v4f B);
 v4f MulV4F(v4f A, v4f B);

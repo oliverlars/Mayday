@@ -908,12 +908,69 @@ void OS_Update(void *Data)
 				LerpF32(COLOUR_BACKGROUND.Z, COLOUR_BLACK.Z, RotBlendT),
 				1.0f);
 
-			// Centered MAYDAY! text
+			// Centered MAYDAY! — three stacked copies:
+			//   (1) outline  — highest on screen
+			//   (2) outline  — middle
+			//   (3) solid    — lowest on screen, drawn LAST so it z-sorts on top
+			// Each copy is MaydayHeight tall, baselines staggered by (H - H/3),
+			// so adjacent copies overlap vertically by H/3. That overlap H/3
+			// strip is at the BOTTOM of each upper copy (where it runs into the
+			// copy below); each outlined copy is scissored to hide that strip,
+			// leaving its top 2H/3 visible. The three visible regions then tile
+			// contiguously from MaydayY up to MaydayY + 7H/3.
+			//
+			// Y-up pixel coords (Ortho args are (Left, Right, Top=h, Bottom=0)):
+			//   D_Str8 Position.Y is the baseline; glyphs rise upward, so a copy
+			//   at baseline Y occupies screen Y ∈ [Y, Y + MaydayHeight].
+			//   Scissor v4i(X, Y, W, H) uses the same Y-up convention where
+			//   Y is the BOTTOM edge of the rect.
 			f32 MaydayHeight = 760.0f;
 			str8 MaydayStr = Str8("MAYDAY!");
 			f32 MaydayW = (f32)UI_GetTextWidth(M->BebasNeue, M->Draw, MaydayStr, MaydayHeight);
 			f32 MaydayX = CarouselCX - MaydayW * 0.5f;
 			f32 MaydayY = CarouselCY - MaydayHeight * 0.32f;
+
+			f32 MaydayScale = stbtt_ScaleForPixelHeight(&M->BebasNeue.Info, MaydayHeight);
+			// This should be like / 3.0f but it looks better as 3.5f so idk
+			f32 Stagger = MaydayHeight / 3.5f;
+			
+			// TOP
+			{
+				f32 Y = MaydayY + 2.0*Stagger;
+				D_Str8(M->Draw, M->FrameArena, MaydayStr,
+					.Font = M->BebasNeue,
+					.Position = v3f(MaydayX, Y, 0),
+					.Colour = HomeTextCol,
+					.HeightInPixels = MaydayHeight,
+					.OutlineThickness = 2.5);
+				v4f Quad = ExpandV4F((v4f){
+					MaydayX, Y,
+					MaydayW, MaydayHeight/3.0
+				}, 5.0f);
+				
+				D_Quad(M->Draw, M->FrameArena,
+					(v2f){Quad.X, Quad.Y}, Quad.Z, Quad.W, COLOUR_BACKGROUND);
+			}
+
+			// MIDDLE
+			{
+				f32 Y = MaydayY + Stagger;
+				D_Str8(M->Draw, M->FrameArena, MaydayStr,
+					.Font = M->BebasNeue,
+					.Position = v3f(MaydayX, Y, 0),
+					.Colour = HomeTextCol,
+					.HeightInPixels = MaydayHeight,
+					.OutlineThickness = 2.5);
+				v4f Quad = ExpandV4F((v4f){
+					MaydayX, Y,
+					MaydayW, MaydayHeight/3.0
+				}, 5.0f);
+				
+				D_Quad(M->Draw, M->FrameArena,
+					(v2f){Quad.X, Quad.Y}, Quad.Z, Quad.W, COLOUR_BACKGROUND);
+			}
+
+			// BOTTOM
 			D_Str8(M->Draw, M->FrameArena, MaydayStr,
 				.Font = M->BebasNeue,
 				.Position = v3f(MaydayX, MaydayY, 0),

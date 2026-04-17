@@ -607,6 +607,7 @@ void D_BaseStr8(
 		Command.Attributes = R_AttributesFromCommandType(Command.Type);
 		R_PushCommand(R, Arena, Command);
 	}
+	ScratchEnd(Scratch);
 }
 
 void D_SelectionRange(draw_context *D,
@@ -840,27 +841,36 @@ void D_BezierArray(draw_context *D,
 	m44f Ortho = M44FOrthographic(0, D->ViewportSize.X, 0.0, D->ViewportSize.Y, -1000.0, 1000.0);
 	R_PushTransform(D->Render, Ortho);
 
+	m44f TransformT = M44FTranspose(Transform);
+	int EmittedCount = 0;
 	for(int P = 0; P < PositionsCount; P += 3)
 	{
 		v3f A = Positions[P];
 		v3f B = Positions[P + 1];
 		v3f C = Positions[P + 2];
 
-		v4f A4D = Mul(M44FTranspose(Transform), v4f(A.X, A.Y, A.Z, 1.0));
+		v4f A4D = Mul(TransformT, v4f(A.X, A.Y, A.Z, 1.0));
+		v4f B4D = Mul(TransformT, v4f(B.X, B.Y, B.Z, 1.0));
+		v4f C4D = Mul(TransformT, v4f(C.X, C.Y, C.Z, 1.0));
+
+		// Drop any bezier triangle that straddles/approaches the camera
+		// plane. CPU-side perspective divide (below) blows up when
+		// clip_w is near zero — the resulting Inf/NaN screen positions
+		// propagate into tile binning and produce visible garbage tiles
+		// ("memory-corruption"-looking glitches during carousel rotation).
+		f32 MinW = 1e-3f;
+		if(A4D.W < MinW || B4D.W < MinW || C4D.W < MinW) continue;
+
 		A4D = Div(A4D, v4f(A4D.W, A4D.W, A4D.W, A4D.W));
-		A = v3f(A4D.X, A4D.Y, A4D.Z);
-
-		v4f B4D = Mul(M44FTranspose(Transform), v4f(B.X, B.Y, B.Z, 1.0));
 		B4D = Div(B4D, v4f(B4D.W, B4D.W, B4D.W, B4D.W));
-		B = v3f(B4D.X, B4D.Y, B4D.Z);
-
-		v4f C4D = Mul(M44FTranspose(Transform), v4f(C.X, C.Y, C.Z, 1.0));
 		C4D = Div(C4D, v4f(C4D.W, C4D.W, C4D.W, C4D.W));
+		A = v3f(A4D.X, A4D.Y, A4D.Z);
+		B = v3f(B4D.X, B4D.Y, B4D.Z);
 		C = v3f(C4D.X, C4D.Y, C4D.Z);
 
 		A.X = D->ViewportSize.X * (A.X*0.5 + 0.5);
-		B.X = D->ViewportSize.X * (B.X*0.5 + 0.5); 
-		C.X = D->ViewportSize.X * (C.X*0.5 + 0.5); 
+		B.X = D->ViewportSize.X * (B.X*0.5 + 0.5);
+		C.X = D->ViewportSize.X * (C.X*0.5 + 0.5);
 
 		// We flip the NDC Y coordinate so that when we do the
 		// SDF evaluation the [[position]]/fragCoord position aligns
@@ -883,11 +893,19 @@ void D_BezierArray(draw_context *D,
 			.Thickness = Thickness,
 		};
 		*R_Vertices++ = Vertex;
+		EmittedCount += 1;
 
 	}
-	Command.Type = R_COMMAND_BEZIER;
-	Command.Attributes = R_AttributesFromCommandType(Command.Type);
-	R_PushCommand(R, Arena, Command);
+	// Use the count of triangles we actually emitted — if any were
+	// dropped by the clip-w guard above, the tail of the allocated
+	// vertex array is zero-init garbage that must not be dispatched.
+	Command.VerticesCount = EmittedCount;
+	if(EmittedCount > 0)
+	{
+		Command.Type = R_COMMAND_BEZIER;
+		Command.Attributes = R_AttributesFromCommandType(Command.Type);
+		R_PushCommand(R, Arena, Command);
+	}
 
 	R_PopTransform(D->Render);
 }

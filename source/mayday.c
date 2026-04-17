@@ -908,79 +908,125 @@ void OS_Update(void *Data)
 				LerpF32(COLOUR_BACKGROUND.Z, COLOUR_BLACK.Z, RotBlendT),
 				1.0f);
 
-			// Centered MAYDAY! — three stacked copies:
-			//   (1) outline  — highest on screen
-			//   (2) outline  — middle
-			//   (3) solid    — lowest on screen, drawn LAST so it z-sorts on top
-			// Each copy is MaydayHeight tall, baselines staggered by (H - H/3),
-			// so adjacent copies overlap vertically by H/3. That overlap H/3
-			// strip is at the BOTTOM of each upper copy (where it runs into the
-			// copy below); each outlined copy is scissored to hide that strip,
-			// leaving its top 2H/3 visible. The three visible regions then tile
-			// contiguously from MaydayY up to MaydayY + 7H/3.
+			// Centered MAYDAY! — 3D layered extrusion
+			//
+			// Front copy is solid black. Behind it, N copies staggered in 2D
+			// screen space; each back copy is drawn twice at the same position
+			// — first as solid red (COLOUR_BACKGROUND) to fill the glyph body,
+			// then as a black outline-only pass on top. Back copies are drawn
+			// farthest-first so painter's order handles occlusion (depth test
+			// is disabled for every text path in the Metal backend, so paint
+			// order is *the* ordering).
+			//
+			// Why 2D offsets instead of per-layer Z:
+			// Giving each layer a pixel-space Z and rotating around a pivot
+			// inevitably gives each GLYPH VERTEX a Z value proportional to its
+			// distance from the pivot (Z_final ≈ -dx·sinθy + Z_layer). That Z
+			// spread is fine in isolation, but the carousel's HomeCarousel
+			// transform has E[0][3] = C·sinα which folds clip_x into clip_w,
+			// so any per-vertex Z variance interacts with the perspective
+			// divide unevenly as α swings — producing the "missing lines" and
+			// the glitching during carousel rotation. Keeping all glyph
+			// vertices on the Z=0 plane removes that interaction entirely;
+			// the stair shift comes purely from per-layer 2D offsets.
+			//
+			// A small uniform Y-rotation is still applied to the whole group
+			// for the slight glyph perspective tilt — all vertices are on the
+			// same rotated plane, so no per-layer Z fighting can occur.
 			//
 			// Y-up pixel coords (Ortho args are (Left, Right, Top=h, Bottom=0)):
-			//   D_Str8 Position.Y is the baseline; glyphs rise upward, so a copy
-			//   at baseline Y occupies screen Y ∈ [Y, Y + MaydayHeight].
-			//   Scissor v4i(X, Y, W, H) uses the same Y-up convention where
-			//   Y is the BOTTOM edge of the rect.
+			// D_Str8 Position.Y is the baseline; glyphs rise upward, so the
+			// text extends from Y up to Y + MaydayCap.
 			f32 MaydayHeight = 760.0f;
 			str8 MaydayStr = Str8("MAYDAY!");
 			f32 MaydayW = (f32)UI_GetTextWidth(M->BebasNeue, M->Draw, MaydayStr, MaydayHeight);
 			f32 MaydayX = CarouselCX - MaydayW * 0.5f;
 			f32 MaydayY = CarouselCY - MaydayHeight * 0.32f;
 
+			// TOKYO-style 3D layered extrusion.
+			//
+			// Stacking is done as 2D pixel offsets (not per-layer Z), and
+			// a small uniform Y-rotation tilts the whole group. Each back
+			// layer draws red-fill + black-outline; a solid-black front
+			// copy is drawn last so painter's order (depth test is off
+			// for every text path in the Metal backend) puts it on top.
+			//
+			// Why the base Z is negative:
+			// Metal's NDC_Z range is [0, 1] (unlike OpenGL's [-1, 1]).
+			// The app's Orthographic(Near=-1000, Far=1000) gives
+			// NDC_Z = -z/1000, so any vertex with input z > 0 maps to
+			// NDC_Z < 0 and is clipped by the near plane. The Y-rotation
+			// around the pivot at the text centre gives vertices LEFT of
+			// the pivot z = -dx·sinθ > 0 (and vertices RIGHT of it z < 0).
+			// If we left Position.Z at 0, the whole left half of MAYDAY!
+			// (the "MAY" letters) silently gets its glyph triangles
+			// clipped, while the right half ("DAY!") renders normally.
+			// The bezier pipeline is a compute shader in pixel space so
+			// it ignores NDC_Z entirely — which is why, when this bug
+			// was alive, MAY appeared as wireframe-only (outlines
+			// drawn, fills clipped) and DAY! rendered fully solid.
+			//
+			// Setting BaseZ = -200 pushes every vertex comfortably into
+			// z < 0 after the rotation (the worst-case rotation shift
+			// is |dx|·sinθ ≈ 475·0.08 ≈ 38 px), so NDC_Z stays inside
+			// [0, 1] for every glyph vertex regardless of its side.
 			f32 MaydayScale = stbtt_ScaleForPixelHeight(&M->BebasNeue.Info, MaydayHeight);
-			// This should be like / 3.0f but it looks better as 3.5f so idk
-			f32 Stagger = MaydayHeight / 3.5f;
-			
-			// TOP
+			f32 MaydayCap   = (f32)M->BebasNeue.Ascent * MaydayScale;
+
+			f32 PivotX = CarouselCX;
+			f32 PivotY = MaydayY + MaydayCap * 0.5f;
+			f32 MaydayAngleY = 0.08f;  // ~4.6° — subtle tilt
+			f32 BaseZ = -200.0f;       // see comment above — keeps NDC_Z valid after rotation
+
+			m44f T1 = M44FTranslate(v3f(-PivotX, -PivotY, 0.0f));
+			m44f Ry = M44FromYAngle(MaydayAngleY);
+			m44f T2 = M44FTranslate(v3f( PivotX,  PivotY, 0.0f));
+			m44f LocalRot = Mul(Mul(T1, Ry), T2);
+			m44f MaydayTransform = Mul(LocalRot, HomeOrtho);
+
+			R_PushTransform(M->Render, MaydayTransform);
+
+			int NumLayers = 6;
+			f32 LayerDX = 14.0f;   // per-step X offset (right)
+			f32 LayerDY = 10.0f;   // per-step Y offset (down in Y-up = -)
+			f32 OutlineThickness = 3.0f;
+
+			// Back copies, farthest first (painter's order).
+			for(int Layer = NumLayers; Layer >= 1; Layer--)
 			{
-				f32 Y = MaydayY + 2.0*Stagger;
+				f32 OffX = (f32)Layer * LayerDX;
+				f32 OffY = (f32)Layer * -LayerDY; // -Y because Y-up means "down on screen" is -Y
+
+				// Red body fill.
 				D_Str8(M->Draw, M->FrameArena, MaydayStr,
 					.Font = M->BebasNeue,
-					.Position = v3f(MaydayX, Y, 0),
-					.Colour = HomeTextCol,
-					.HeightInPixels = MaydayHeight,
-					.OutlineThickness = 2.5);
-				v4f Quad = ExpandV4F((v4f){
-					MaydayX, Y,
-					MaydayW, MaydayHeight/3.0
-				}, 5.0f);
-				
-				D_Quad(M->Draw, M->FrameArena,
-					(v2f){Quad.X, Quad.Y}, Quad.Z, Quad.W, COLOUR_BACKGROUND);
-			}
+					.Position = v3f(MaydayX + OffX, MaydayY + OffY, BaseZ),
+					.Colour = COLOUR_BACKGROUND,
+					.HeightInPixels = MaydayHeight);
 
-			// MIDDLE
-			{
-				f32 Y = MaydayY + Stagger;
+				// Black outline — this is what makes each layer read as
+				// a distinct 3D step when overlapping the next layer forward.
 				D_Str8(M->Draw, M->FrameArena, MaydayStr,
 					.Font = M->BebasNeue,
-					.Position = v3f(MaydayX, Y, 0),
-					.Colour = HomeTextCol,
+					.Position = v3f(MaydayX + OffX, MaydayY + OffY, BaseZ),
+					.Colour = COLOUR_BLACK,
 					.HeightInPixels = MaydayHeight,
-					.OutlineThickness = 2.5);
-				v4f Quad = ExpandV4F((v4f){
-					MaydayX, Y,
-					MaydayW, MaydayHeight/3.0
-				}, 5.0f);
-				
-				D_Quad(M->Draw, M->FrameArena,
-					(v2f){Quad.X, Quad.Y}, Quad.Z, Quad.W, COLOUR_BACKGROUND);
+					.OutlineThickness = OutlineThickness);
 			}
 
-			// BOTTOM
+			// Front: solid black, no offset, drawn last.
 			D_Str8(M->Draw, M->FrameArena, MaydayStr,
 				.Font = M->BebasNeue,
-				.Position = v3f(MaydayX, MaydayY, 0),
-				.Colour = HomeTextCol,
+				.Position = v3f(MaydayX, MaydayY, BaseZ),
+				.Colour = COLOUR_BLACK,
 				.HeightInPixels = MaydayHeight);
+
+			R_PopTransform(M->Render);
 
 			// Build info below, centered horizontally
 			f32 InfoSize = 36.0f;
 			f32 InfoLineGap = InfoSize * 1.5f;
-			f32 InfoY = MaydayY - InfoSize * 2.0f;
+			f32 InfoY = MaydayY - InfoSize * 2.5f;
 
 			str8 BuildRoman = IntToRomanNumerals(M->FrameArena, BUILD_NUMBER);
 			str8 BuildStr = Str8PushF(M->FrameArena, "BUILD: ?S", BuildRoman);

@@ -1011,7 +1011,7 @@ void R_Update(render_context *R, m_arena *FrameArena)
 	int LineCountSoFar = 0;
 
 	bezier *BeziersForThisDispatch = ArenaPushArray(Scratch.Arena, bezier, MAX_SHAPE_COUNT);
-	int TotalBezierCount = 0;
+	int TotalBezierByteOffset = 0;
 	int BezierCountSoFar = 0;
 
 	for(r_command *Command = R->CommandsFirst; Command != Null; Command = Command->Next)
@@ -1438,15 +1438,24 @@ void R_Update(render_context *R, m_arena *FrameArena)
 					simd_float2 Control = BeziersForThisDispatch[I].Control;
 					simd_float2 End = BeziersForThisDispatch[I].End;
 					float Thickness = BeziersForThisDispatch[I].Thickness;
+					// Pad by Thickness*0.5 (stroke half-width) + 1.0 (smoothstep AA
+					// extent in compute.metal). Without the AA pad, pixels within
+					// the 1px AA transition but just past the padded bbox land in
+					// a tile this bezier wasn't binned to — at sharp corners
+					// where two adjoining short beziers are each binned only to
+					// their own tile, the shared corner pixel can end up in a
+					// tile that has neither, leaving a sub-pixel hole that
+					// flickers during rotation.
+					f32 Pad = Thickness*0.5f + 1.0f;
 					v2f TileMin;
-					TileMin.X = Min(Start.x, Min(End.x, Control.x)) - Thickness*0.5;
-					TileMin.Y = Min(Start.y, Min(End.y, Control.y)) - Thickness*0.5;
+					TileMin.X = Min(Start.x, Min(End.x, Control.x)) - Pad;
+					TileMin.Y = Min(Start.y, Min(End.y, Control.y)) - Pad;
 					int TileMinX = (int)(floorf(TileMin.X / 32.0f));
 					int TileMinY = (int)(floorf(TileMin.Y / 32.0f));
 
 					v2f TileMax;
-					TileMax.X = Max(Start.x, Max(End.x, Control.x)) + Thickness*0.5;
-					TileMax.Y = Max(Start.y, Max(End.y, Control.y)) + Thickness*0.5;
+					TileMax.X = Max(Start.x, Max(End.x, Control.x)) + Pad;
+					TileMax.Y = Max(Start.y, Max(End.y, Control.y)) + Pad;
 					int TileMaxX = (int)(ceilf(TileMax.X / 32.0f));
 					int TileMaxY = (int)(ceilf(TileMax.Y / 32.0f));
 
@@ -1485,15 +1494,24 @@ void R_Update(render_context *R, m_arena *FrameArena)
 					simd_float2 Control = BeziersForThisDispatch[I].Control;
 					simd_float2 End = BeziersForThisDispatch[I].End;
 					float Thickness = BeziersForThisDispatch[I].Thickness;
+					// Pad by Thickness*0.5 (stroke half-width) + 1.0 (smoothstep AA
+					// extent in compute.metal). Without the AA pad, pixels within
+					// the 1px AA transition but just past the padded bbox land in
+					// a tile this bezier wasn't binned to — at sharp corners
+					// where two adjoining short beziers are each binned only to
+					// their own tile, the shared corner pixel can end up in a
+					// tile that has neither, leaving a sub-pixel hole that
+					// flickers during rotation.
+					f32 Pad = Thickness*0.5f + 1.0f;
 					v2f TileMin;
-					TileMin.X = Min(Start.x, Min(End.x, Control.x)) - Thickness*0.5;
-					TileMin.Y = Min(Start.y, Min(End.y, Control.y)) - Thickness*0.5;
+					TileMin.X = Min(Start.x, Min(End.x, Control.x)) - Pad;
+					TileMin.Y = Min(Start.y, Min(End.y, Control.y)) - Pad;
 					int TileMinX = (int)(floorf(TileMin.X / 32.0f));
 					int TileMinY = (int)(floorf(TileMin.Y / 32.0f));
 
 					v2f TileMax;
-					TileMax.X = Max(Start.x, Max(End.x, Control.x)) + Thickness*0.5;
-					TileMax.Y = Max(Start.y, Max(End.y, Control.y)) + Thickness*0.5;
+					TileMax.X = Max(Start.x, Max(End.x, Control.x)) + Pad;
+					TileMax.Y = Max(Start.y, Max(End.y, Control.y)) + Pad;
 					int TileMaxX = (int)(ceilf(TileMax.X / 32.0f));
 					int TileMaxY = (int)(ceilf(TileMax.Y / 32.0f));
 
@@ -1517,7 +1535,24 @@ void R_Update(render_context *R, m_arena *FrameArena)
 
 				int AlignedTileOffset = Align(PerTileOffset*TileCount*sizeof(per_tile_data), 256);
 				MemoryCopy(Metal->PerTileData[R->Frame % FRAMES_IN_FLIGHT].contents + AlignedTileOffset, PerTileData, TileCount*sizeof(per_tile_data));
-				int AlignedBezierOffset = Align(DATA_SLOT_SIZE * 2 + TotalBezierCount*sizeof(bezier), 256);
+				// Track bezier buffer as a running aligned byte-offset rather than
+				// Align(BASE + TotalCount * sizeof(bezier), 256). The old formula
+				// applied `Align` separately to each dispatch's virtual start,
+				// and `Align` (round-up) is NOT a non-contracting operation on
+				// intervals: when virtual_start[N] falls just past a 256-boundary
+				// (rounded way up) and virtual_end[N] lands near a 256-boundary
+				// (rounded only slightly up), dispatch N+1's aligned offset can
+				// start INSIDE the bytes dispatch N already wrote — the next
+				// MemoryCopy overwrites dispatch N's tail beziers with dispatch
+				// N+1's head beziers. Tiles that had been binned to those tail
+				// slots then read valid-but-wrong bezier data (different glyph /
+				// layer), and their covering bezier vanishes for that frame, so
+				// the pixel passes Source through and the red background fill
+				// shows through the outline. This is the "same part of the font
+				// flickers red/white during rotation" bug. Advancing by
+				// Align(CountSoFar*48, 256) keeps every dispatch's region
+				// strictly non-overlapping.
+				int AlignedBezierOffset = DATA_SLOT_SIZE * 2 + TotalBezierByteOffset;
 				MemoryCopy(Metal->Data[R->Frame % FRAMES_IN_FLIGHT].contents + AlignedBezierOffset, BeziersInEachTile, CountSoFar*sizeof(bezier));
 
 				struct uniforms2
@@ -1555,7 +1590,7 @@ void R_Update(render_context *R, m_arena *FrameArena)
 				[ComputeEncoder endEncoding];
 
 				PerTileOffset++;
-				TotalBezierCount += CountSoFar;
+				TotalBezierByteOffset += Align(CountSoFar*sizeof(bezier), 256);
 				BezierCountSoFar = 0;
 			}
 

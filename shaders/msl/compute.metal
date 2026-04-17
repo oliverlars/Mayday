@@ -131,8 +131,19 @@ bool AreColinear(float2 A, float2 B, float2 C) {
 	float2 AB = B - A;
 	float2 AC = C - A;
 	float Cross = AB.x * AC.y - AB.y * AC.x;
-	// Since they're in pixel space we can afford a larger tolerance.
-	return metal::fabs(Cross) < 1.0;
+	// |Cross| equals 2x the triangle area = |AC| * (perp distance from B to AC).
+	// Dividing by |AC| gives B's perpendicular offset from the chord in pixels.
+	// The old absolute-cross threshold of 1.0 was far too tight: a 30px-long
+	// quadratic with B only 1px off the chord has Cross ≈ 30 and would slip
+	// past, landing in DistanceToBezier's numerically unstable near-colinear
+	// zone where 1/dot(b,b) explodes. b = A - 2B + C collapses toward zero as
+	// B approaches the chord midpoint, so the IQ SDF returns a huge-but-finite
+	// garbage distance → smoothstep → AA=0 → outline holes on specific font
+	// curves (same curves across frames, matching the "corruption sticks to
+	// the same part of the font during rotation" symptom). Treat the curve as
+	// a line whenever B is within half a pixel of the chord.
+	float ACLenSq = metal::dot(AC, AC);
+	return (Cross * Cross) < 0.25 * ACLenSq;
 }
 
 kernel void ComputeMain(metal::texture2d<float, metal::access::read_write> Texture [[ texture(0) ]],
@@ -147,7 +158,11 @@ kernel void ComputeMain(metal::texture2d<float, metal::access::read_write> Textu
 						uint2 ThreadGroupSize [[threads_per_threadgroup]])
 {
 	int TileIndex = ThreadGroupPositionInGrid.x + ThreadGroupPositionInGrid.y * Uniforms.NumberOfTilesInX;
-	int Count = DataView[TileIndex].Count;
+	per_tile_data Tile = DataView[TileIndex];
+	int Count = Tile.Count;
+	int BaseIndex = Tile.At;
+	int Type = Tile.Type;
+	metal::float2 Position = float2(ThreadPositionInGrid.x, ThreadPositionInGrid.y);
 
 
 	metal::float4 Source = Texture.read(ThreadPositionInGrid);
@@ -167,13 +182,10 @@ kernel void ComputeMain(metal::texture2d<float, metal::access::read_write> Textu
 
 	for(int I = 0; I < Count; I++)
 	{
-		int DataIndex = DataView[TileIndex].At + I;
-		int Type = DataView[TileIndex].Type;
+		int DataIndex = BaseIndex + I;
 		if(0) {}
 		else if(Type == 0)
 		{
-
-			metal::float2 Position = float2(ThreadPositionInGrid.x, ThreadPositionInGrid.y);
 			float Distance = DistanceToCircle(Position, Circles[DataIndex].Position, Circles[DataIndex].Radius);
 			float AA = metal::smoothstep(-1, 1, -Distance) * Circles[DataIndex].Colour.a;
 	
@@ -184,7 +196,6 @@ kernel void ComputeMain(metal::texture2d<float, metal::access::read_write> Textu
 		}
 		else if(Type == 1)
 		{
-			metal::float2 Position = float2(ThreadPositionInGrid.x, ThreadPositionInGrid.y);
 			float Thickness = Lines[DataIndex].Thickness;
 			float Distance = DistanceToLine(Position, Lines[DataIndex].Start, Lines[DataIndex].End) - Thickness*0.5;
 			float AA = metal::smoothstep(-1, 1, -Distance) * Lines[DataIndex].Colour.a;
@@ -196,25 +207,32 @@ kernel void ComputeMain(metal::texture2d<float, metal::access::read_write> Textu
 		}
 		else if(Type == 2)
 		{
-			metal::float2 Position = float2(ThreadPositionInGrid.x, ThreadPositionInGrid.y);
 			float Thickness = Beziers[DataIndex].Thickness;
+			metal::float2 S = Beziers[DataIndex].Start;
+			metal::float2 Ctl = Beziers[DataIndex].Control;
+			metal::float2 E = Beziers[DataIndex].End;
 
+			// AreColinear: when B is within half a pixel of the A-C chord, the
+			// IQ bezier SDF's 1/dot(b,b) term (b = A - 2B + C) blows up and
+			// returns garbage distances. Fall back to a straight-line SDF in
+			// that near-degenerate zone.
 			float Distance;
-			if(AreColinear(Beziers[DataIndex].Start, Beziers[DataIndex].Control, Beziers[DataIndex].End))
+			if(AreColinear(S, Ctl, E))
 			{
-				Distance = DistanceToLine(Position, Beziers[DataIndex].Start, Beziers[DataIndex].End) - Thickness*0.5;
+				Distance = DistanceToLine(Position, S, E) - Thickness*0.5;
 			}
 			else
 			{
-				Distance = DistanceToBezier(Position, Beziers[DataIndex].Start, Beziers[DataIndex].Control, Beziers[DataIndex].End) - Thickness*0.5;
+				Distance = DistanceToBezier(Position, S, Ctl, E) - Thickness*0.5;
 			}
 
-			float AA = metal::smoothstep(-1, 1, -Distance) * Beziers[DataIndex].Colour.a;
-			
-			ColourSoFar += (1.0 - AlphaSoFar) * Beziers[DataIndex].Colour.rgb*AA;
+			float4 BCol = Beziers[DataIndex].Colour;
+			float AA = metal::smoothstep(-1, 1, -Distance) * BCol.a;
+
+			ColourSoFar += (1.0 - AlphaSoFar) * BCol.rgb * AA;
 			AlphaSoFar += AA*(1.0 - AlphaSoFar);
 		}
-		AlphaSoFar = metal::clamp(AlphaSoFar, 0.0, 1.0);
 	}
-	Texture.write(float4(ColourSoFar + Source.rgb * (1.0 - AlphaSoFar), 1.0), ThreadPositionInGrid);
+	float4 Out = float4(ColourSoFar, AlphaSoFar) + Source*(1.0 - AlphaSoFar);
+	Texture.write(Out, ThreadPositionInGrid);
 }

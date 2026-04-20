@@ -22,6 +22,7 @@ typedef struct cursor_list
 {
 	cursor *First;
 	cursor *Last;
+	int Count;
 } cursor_list;
 
 typedef enum undo_type

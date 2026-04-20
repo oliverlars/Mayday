@@ -745,7 +745,21 @@ void OS_Update(void *Data)
 						);
 						if(Signal.Clicked)
 						{
-							M->Buffer.String = OS_LoadEntireFileIntoMemory(M->PermanentArena, Iter.Current->PathAndName);
+							// E_InsertTo swaps Buffer->String.Bytes with Edit->Temp on
+							// every edit, so both buffers MUST share capacity. Loading
+							// directly returns a buffer sized exactly to the file, which
+							// breaks the swap invariant and causes heap overflows into
+							// neighbouring arena allocations (cursor structs, etc).
+							// Allocate a slack-sized buffer and reallocate Temp to match.
+							str8 FileBytes = OS_LoadEntireFileIntoMemory(M->FrameArena, Iter.Current->PathAndName);
+							u64 Capacity = Max((u64)FileBytes.Size * 2 + MegaBytes(1), (u64)MegaBytes(1));
+							M->Buffer.String.Bytes = ArenaPushZero(M->PermanentArena, Capacity);
+							M->Buffer.String.Size = FileBytes.Size;
+							if(FileBytes.Size > 0)
+							{
+								MemoryCopy(M->Buffer.String.Bytes, FileBytes.Bytes, FileBytes.Size);
+							}
+							M->Edit->Temp = ArenaPushZero(M->PermanentArena, Capacity);
 							M->UI->View = UI_VIEW_EDIT;
 						}
 					}
@@ -1447,6 +1461,7 @@ int main()
 	cursor Cursor = {0};
 	M.Edit->Cursors.First = &Cursor;
 	M.Edit->Cursors.Last = &Cursor;
+	M.Edit->Cursors.Count = 1;
 
 	M.Window = OS_MakeWindow(Str8("Mayday!"), 3024, 1964);
 

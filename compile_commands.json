@@ -1,112 +1,112 @@
 [
     {
         "directory": "/Users/olivercruickshank/Mayday",
-        "command": "clang  -DBUILD_NUMBER=620   -c source/log.c -g -O0 -obuild/source/log.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "command": "clang  -DBUILD_NUMBER=621   -c source/log.c -g -O0 -obuild/source/log.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/log.c"
     },
     {
         "directory": "/Users/olivercruickshank/Mayday",
-        "command": "clang  -DBUILD_NUMBER=620   -c source/maths.c -g -O0 -obuild/source/maths.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "command": "clang  -DBUILD_NUMBER=621   -c source/maths.c -g -O0 -obuild/source/maths.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/maths.c"
     },
     {
         "directory": "/Users/olivercruickshank/Mayday",
-        "command": "clang  -DBUILD_NUMBER=620   -c source/strings.c -g -O0 -obuild/source/strings.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "command": "clang  -DBUILD_NUMBER=621   -c source/strings.c -g -O0 -obuild/source/strings.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/strings.c"
     },
     {
         "directory": "/Users/olivercruickshank/Mayday",
-        "command": "clang  -DBUILD_NUMBER=620   -c source/render_common.c -g -O0 -obuild/source/render_common.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "command": "clang  -DBUILD_NUMBER=621   -c source/render_common.c -g -O0 -obuild/source/render_common.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/render_common.c"
     },
     {
         "directory": "/Users/olivercruickshank/Mayday",
-        "command": "clang  -DBUILD_NUMBER=620   -c source/draw.c -g -O0 -obuild/source/draw.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "command": "clang  -DBUILD_NUMBER=621   -c source/draw.c -g -O0 -obuild/source/draw.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/draw.c"
     },
     {
         "directory": "/Users/olivercruickshank/Mayday",
-        "command": "clang  -DBUILD_NUMBER=620   -c source/search.c -g -O0 -obuild/source/search.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "command": "clang  -DBUILD_NUMBER=621   -c source/search.c -g -O0 -obuild/source/search.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/search.c"
     },
     {
         "directory": "/Users/olivercruickshank/Mayday",
-        "command": "clang  -DBUILD_NUMBER=620   -c source/edit.c -g -O0 -obuild/source/edit.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "command": "clang  -DBUILD_NUMBER=621   -c source/edit.c -g -O0 -obuild/source/edit.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/edit.c"
     },
     {
         "directory": "/Users/olivercruickshank/Mayday",
-        "command": "clang  -DBUILD_NUMBER=620   -c source/mayday.c -g -O0 -obuild/source/mayday.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "command": "clang  -DBUILD_NUMBER=621   -c source/mayday.c -g -O0 -obuild/source/mayday.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/mayday.c"
     },
     {
         "directory": "/Users/olivercruickshank/Mayday",
-        "command": "clang  -DBUILD_NUMBER=620   -c source/fdg.c -g -O0 -obuild/source/fdg.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "command": "clang  -DBUILD_NUMBER=621   -c source/fdg.c -g -O0 -obuild/source/fdg.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/fdg.c"
     },
     {
         "directory": "/Users/olivercruickshank/Mayday",
-        "command": "clang  -DBUILD_NUMBER=620   -c source/ui/ui_core.c -g -O0 -obuild/source/ui/ui_core.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "command": "clang  -DBUILD_NUMBER=621   -c source/ui/ui_core.c -g -O0 -obuild/source/ui/ui_core.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/ui/ui_core.c"
     },
     {
         "directory": "/Users/olivercruickshank/Mayday",
-        "command": "clang  -DBUILD_NUMBER=620   -c source/ui/ui_tree.c -g -O0 -obuild/source/ui/ui_tree.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "command": "clang  -DBUILD_NUMBER=621   -c source/ui/ui_tree.c -g -O0 -obuild/source/ui/ui_tree.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/ui/ui_tree.c"
     },
     {
         "directory": "/Users/olivercruickshank/Mayday",
-        "command": "clang  -DBUILD_NUMBER=620   -c source/ui/ui_orbit.c -g -O0 -obuild/source/ui/ui_orbit.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "command": "clang  -DBUILD_NUMBER=621   -c source/ui/ui_orbit.c -g -O0 -obuild/source/ui/ui_orbit.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/ui/ui_orbit.c"
     },
     {
         "directory": "/Users/olivercruickshank/Mayday",
-        "command": "clang  -DBUILD_NUMBER=620   -c source/ui/ui_buffer.c -g -O0 -obuild/source/ui/ui_buffer.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "command": "clang  -DBUILD_NUMBER=621   -c source/ui/ui_buffer.c -g -O0 -obuild/source/ui/ui_buffer.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/ui/ui_buffer.c"
     },
     {
         "directory": "/Users/olivercruickshank/Mayday",
-        "command": "clang  -DBUILD_NUMBER=620   -c embed//fonts.c -g -O0 -obuild/embed//fonts.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "command": "clang  -DBUILD_NUMBER=621   -c embed//fonts.c -g -O0 -obuild/embed//fonts.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "embed//fonts.c"
     },
     {
         "directory": "/Users/olivercruickshank/Mayday",
-        "command": "clang  -DBUILD_NUMBER=620   -c embed//shaders.c -g -O0 -obuild/embed//shaders.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "command": "clang  -DBUILD_NUMBER=621   -c embed//shaders.c -g -O0 -obuild/embed//shaders.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "embed//shaders.c"
     },
     {
         "directory": "/Users/olivercruickshank/Mayday",
-        "command": "clang  -DBUILD_NUMBER=620  -ObjC -fobjc-arc -c source/darwin/menu_bar.m -g -O0 -obuild/source/darwin/menu_bar.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "command": "clang  -DBUILD_NUMBER=621  -ObjC -fobjc-arc -c source/darwin/menu_bar.m -g -O0 -obuild/source/darwin/menu_bar.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/darwin/menu_bar.m"
     },
     {
         "directory": "/Users/olivercruickshank/Mayday",
-        "command": "clang  -DBUILD_NUMBER=620   -c source/darwin/memory.c -g -O0 -obuild/source/darwin/memory.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "command": "clang  -DBUILD_NUMBER=621   -c source/darwin/memory.c -g -O0 -obuild/source/darwin/memory.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/darwin/memory.c"
     },
     {
         "directory": "/Users/olivercruickshank/Mayday",
-        "command": "clang  -DBUILD_NUMBER=620   -c source/darwin/wave.c -g -O0 -obuild/source/darwin/wave.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "command": "clang  -DBUILD_NUMBER=621   -c source/darwin/wave.c -g -O0 -obuild/source/darwin/wave.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/darwin/wave.c"
     },
     {
         "directory": "/Users/olivercruickshank/Mayday",
-        "command": "clang  -DBUILD_NUMBER=620  -ObjC -fobjc-arc -c source/darwin/render.m -g -O0 -obuild/source/darwin/render.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "command": "clang  -DBUILD_NUMBER=621  -ObjC -fobjc-arc -c source/darwin/render.m -g -O0 -obuild/source/darwin/render.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/darwin/render.m"
     },
     {
         "directory": "/Users/olivercruickshank/Mayday",
-        "command": "clang  -DBUILD_NUMBER=620   -c source/darwin/os.c -g -O0 -obuild/source/darwin/os.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "command": "clang  -DBUILD_NUMBER=621   -c source/darwin/os.c -g -O0 -obuild/source/darwin/os.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "source/darwin/os.c"
     },
     {
         "directory": "/Users/olivercruickshank/Mayday",
-        "command": "clang  -DBUILD_NUMBER=620   -c external/stb_truetype.c -g -O0 -obuild/external/stb_truetype.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "command": "clang  -DBUILD_NUMBER=621   -c external/stb_truetype.c -g -O0 -obuild/external/stb_truetype.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "external/stb_truetype.c"
     },
     {
         "directory": "/Users/olivercruickshank/Mayday",
-        "command": "clang  -DBUILD_NUMBER=620  -ObjC -fobjc-arc -c external/darwin/sokol_app.m -g -O0 -obuild/external/darwin/sokol_app.o -Iinclude/ -Iexternal/ -Iembed/  ",
+        "command": "clang  -DBUILD_NUMBER=621  -ObjC -fobjc-arc -c external/darwin/sokol_app.m -g -O0 -obuild/external/darwin/sokol_app.o -Iinclude/ -Iexternal/ -Iembed/  ",
         "file": "external/darwin/sokol_app.m"
     }
 ]

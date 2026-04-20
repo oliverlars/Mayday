@@ -238,6 +238,7 @@ void UI_BufferUpdate(
 		Cursor->Previous = Null;
 		Edit->Cursors.First = Cursor;
 		Edit->Cursors.Last = Cursor;
+		Edit->Cursors.Count = 1;
 		Cursor->Selection.X = 0;
 		Cursor->Selection.Y = Buffer->String.Size;
 	}
@@ -617,6 +618,10 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 		v2i Selection = E_GetSortedSelection(Cursor->Selection);
 		if(Selection.X == Selection.Y) continue;
 
+		// Cull cursors whose selection is entirely outside the visible byte
+		// range — skips the O(buffer) line-number lookups for off-screen ones.
+		if(Selection.Y < StartIndex || Selection.X > EndIndex) continue;
+
 		// Draw black quads only behind selected text (not full line width)
 		int FirstSelLine = E_LineFromBufferIndex(Edit, Selection.X, Buffer);
 		int LastSelLine = E_LineFromBufferIndex(Edit, Selection.Y, Buffer);
@@ -765,8 +770,8 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 			{
 				Cursor->Position = LerpV2F(Cursor->Position, Cursor->TargetPosition, 0.3);
 			}
-			int CursorLine = E_LineFromBufferIndex(Edit, Cursor->Selection.Y, Buffer);
-			if(FirstVisibleLine < CursorLine && CursorLine < LastVisibleLine)
+			// Byte-range visibility check — avoids O(buffer) line lookup per cursor.
+			if(Cursor->Selection.Y >= Range.X && Cursor->Selection.Y <= Range.Y)
 			{
 				D_Quad(Draw, Arena, Cursor->Position, Min(LineHeight/10.0, 2), LineHeight, v4f(0.3, 0.7, 0, 1));
 			}
@@ -824,12 +829,9 @@ void UI_StatusBar(ui_context *UI, draw_context *Draw, edit_context *Edit,
 	}
 	else
 	{
-		int Count = 0;
-		for(;Cursor;Cursor = Cursor->Next)
-		{
-			Count += 1;
-		}
-		D_Str8(Draw, Arena, Str8PushF(Arena, "?u32 SELECTIONS", Count), 
+		// O(1) — use the maintained list Count instead of walking.
+		int Count = Edit->Cursors.Count;
+		D_Str8(Draw, Arena, Str8PushF(Arena, "?u32 SELECTIONS", Count),
 					.Font = Font, .Position = v3f((f32)Size.X - 1000, TextPosY),
 				   .Colour = v4f(0.753, 0.036, 0.0, 1.0), .HeightInPixels = TextHeight);
 	}

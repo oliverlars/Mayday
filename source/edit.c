@@ -662,26 +662,33 @@ int E_CursorCount(cursor_list *Cursors)
 void E_AppendCursor(m_arena *Arena, cursor_list *List, cursor NextCursor)
 {
 	assert(List && List->First && List->Last);
+	// Invariant: Last must be the terminal node.
+	assert(List->Last->Next == Null);
 
 	cursor *New = ArenaPushArrayZero(Arena, cursor, 1);
+	assert(New != List->Last); // Fresh allocation must not alias Last.
 	NextCursor.Previous = List->Last;
 	NextCursor.Next = Null;
 	New[0] = NextCursor;
 	List->Last->Next = New;
 	List->Last = New;
+	List->Count += 1;
 }
 
 void E_CollapseToFirst(cursor_list *List)
 {
 	assert(List && List->First);
 	List->First->Next = Null;
+	List->First->Previous = Null;
 	List->Last = List->First;
+	List->Count = 1;
 }
 
 cursor *E_AppendCursorsBulk(m_arena *Arena, cursor_list *List, int Count)
 {
 	if(Count <= 0) return Null;
 	assert(List && List->First && List->Last);
+	assert(List->Last->Next == Null);
 
 	cursor *Block = ArenaPushArrayZero(Arena, cursor, Count);
 
@@ -694,6 +701,7 @@ cursor *E_AppendCursorsBulk(m_arena *Arena, cursor_list *List, int Count)
 	// Splice onto tail.
 	List->Last->Next = &Block[0];
 	List->Last = &Block[Count-1];
+	List->Count += Count;
 	return Block;
 }
 

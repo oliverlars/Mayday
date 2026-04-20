@@ -123,14 +123,14 @@ void UI_BufferUpdate(
 		int Index = E_IndexFromPosition(Edit, Draw, Font,
 									Buffer, Range, BufferPosition,
 									UI->MousePosition);
-		cursor *LastCursor = E_LastCursor(Edit->Cursors);
+		cursor *LastCursor = Edit->Cursors.Last;
 		cursor *Cursor = LastCursor;
 
 		v2i InitialSelection = Cursor->Selection;
-		E_MoveCursors(Edit, Draw, Font, Cursor, Buffer, E_MOVE_WORD_RIGHT, E_MOVE_SELECTING);
+		E_MoveCursor(Edit, Draw, Font, Cursor, Buffer, E_MOVE_WORD_RIGHT, E_MOVE_SELECTING);
 		v2i Selection = Cursor->Selection;
 		Cursor->Selection = InitialSelection;
-		E_MoveCursors(Edit, Draw, Font, Cursor, Buffer, E_MOVE_WORD_LEFT, E_MOVE_NOT_SELECTING);
+		E_MoveCursor(Edit, Draw, Font, Cursor, Buffer, E_MOVE_WORD_LEFT, E_MOVE_NOT_SELECTING);
 		Cursor->Selection = v2i(Cursor->Selection.X, Selection.Y);
 
 		if(LastCursor != Cursor)
@@ -145,9 +145,9 @@ void UI_BufferUpdate(
 										Buffer, Range, BufferPosition,
 										UI->MousePosition);
 
-		cursor *LastCursor = E_LastCursor(Edit->Cursors);
+		E_CollapseToFirst(&Edit->Cursors);
+		cursor *LastCursor = Edit->Cursors.Last;
 		cursor *Cursor = LastCursor;
-		Edit->Cursors[0].Next = Null;
 
 		int LineStart = E_LineStartFromIndex(Edit, Cursor->Selection.Y, Buffer);
 		int LineEnd = E_LineEndFromIndex(Edit, Cursor->Selection.Y, Buffer);
@@ -161,13 +161,13 @@ void UI_BufferUpdate(
 	}
 	else if(UI_QuadClicked(UI))
 	{
-		Edit->Cursors[0].Selection = v2i(0, Buffer->String.Size);
+		Edit->Cursors.First[0].Selection = v2i(0, Buffer->String.Size);
 
 		int Index = E_IndexFromPosition(Edit, Draw, Font,
 										Buffer, Range, BufferPosition,
 										UI->MousePosition);
 
-		cursor *LastCursor = E_LastCursor(Edit->Cursors);
+		cursor *LastCursor = Edit->Cursors.Last;
 		cursor *Cursor = LastCursor;
 
 		if(LastCursor != Cursor)
@@ -176,35 +176,42 @@ void UI_BufferUpdate(
 			LastCursor->Next = Null;
 		}
 	}
+	else if(UI_LeftMouseWentDownWithModifiers(UI, SAPP_MODIFIER_ALT))
+	{
+		int Index = E_IndexFromPosition(Edit, Draw, Font,
+									Buffer, Range, BufferPosition,
+									UI->MousePosition);
+		cursor *LastCursor = Edit->Cursors.Last;
+		cursor *Cursor = LastCursor;
+		cursor NextCursor = Cursor[0];
+		NextCursor.Selection = v2i(Index, Index);
+		E_AppendCursor(Edit->Arena, &Edit->Cursors, NextCursor);
+	}
 	else if(UI_LeftMouseWentDown(UI))
 	{
 		int Index = E_IndexFromPosition(Edit, Draw, Font,
 									Buffer, Range, BufferPosition,
 									UI->MousePosition);
-		cursor *LastCursor = E_LastCursor(Edit->Cursors);
-		cursor *Cursor = LastCursor;
-		Edit->Cursors->Next = Null;
-		Cursor = Edit->Cursors;
+		E_CollapseToFirst(&Edit->Cursors);
+		cursor *Cursor = Edit->Cursors.First;
 		Cursor->Selection = v2i(Index, Index);
 
 	}
-	
+
 	if(UI_KeyDown(UI, SAPP_KEYCODE_ESCAPE, 0))
 	{
-		cursor *LastCursor = E_LastCursor(Edit->Cursors);
-		cursor *Cursor = LastCursor;
-		Edit->Cursors->Next = Null;
-		Cursor = Edit->Cursors;
+		E_CollapseToFirst(&Edit->Cursors);
+		cursor *Cursor = Edit->Cursors.First;
 		Cursor->Selection.X = Cursor->Selection.Y;
 	}
 
 
 	if(UI_KeyDown(UI, SAPP_KEYCODE_ENTER, 0))
 	{
-		E_InsertTo(Edit, Edit->Cursors, Buffer, Str8("\n"));
+		E_InsertTo(Edit, &Edit->Cursors, Buffer, Str8("\n"));
 
 		int TotalWhiteSpaceInserted = 0;
-		for(cursor *Cursor = Edit->Cursors; Cursor; Cursor = Cursor->Next)
+		for(cursor *Cursor = Edit->Cursors.First; Cursor; Cursor = Cursor->Next)
 		{
 			int LineStart = E_LineStartFromIndex(Edit, Cursor->Selection.Y, Buffer);
 
@@ -225,29 +232,30 @@ void UI_BufferUpdate(
 
 	if(UI_KeyDown(UI, SAPP_KEYCODE_A, SAPP_MODIFIER_SUPER))
 	{
-		cursor *LastCursor = E_LastCursor(Edit->Cursors);
-		cursor *Cursor = LastCursor;
-		Edit->Cursors->Next = Null;
-		Edit->Cursors = Cursor;
+		// Collapse all cursors down to a single cursor spanning the whole buffer.
+		cursor *Cursor = Edit->Cursors.Last;
+		Cursor->Next = Null;
+		Cursor->Previous = Null;
+		Edit->Cursors.First = Cursor;
+		Edit->Cursors.Last = Cursor;
 		Cursor->Selection.X = 0;
-		Cursor->Selection.Y =Buffer->String.Size;
-
+		Cursor->Selection.Y = Buffer->String.Size;
 	}
 
 	if(UI_KeyDown(UI, SAPP_KEYCODE_D, SAPP_MODIFIER_SUPER))
 	{
 		str8 StringToFind = {};
-		cursor *Cursor = E_LastCursor(Edit->Cursors);
+		cursor *Cursor = Edit->Cursors.Last;
 		if(Cursor->Selection.X == Cursor->Selection.Y)
 		{
 			int Index = E_IndexFromPosition(Edit, Draw, Font,
 										Buffer, Range, BufferPosition,
 										UI->MousePosition);
 			v2i InitialSelection = Cursor->Selection;
-			E_MoveCursors(Edit, Draw, Font, Cursor, Buffer, E_MOVE_WORD_RIGHT, E_MOVE_SELECTING);
+			E_MoveCursor(Edit, Draw, Font, Cursor, Buffer, E_MOVE_WORD_RIGHT, E_MOVE_SELECTING);
 			v2i Selection = Cursor->Selection;
 			Cursor->Selection = InitialSelection;
-			E_MoveCursors(Edit, Draw, Font, Cursor, Buffer, E_MOVE_WORD_LEFT, E_MOVE_NOT_SELECTING);
+			E_MoveCursor(Edit, Draw, Font, Cursor, Buffer, E_MOVE_WORD_LEFT, E_MOVE_NOT_SELECTING);
 			Cursor->Selection = v2i(Cursor->Selection.X, Selection.Y);
 		}
 		else
@@ -269,7 +277,7 @@ void UI_BufferUpdate(
 					cursor NextCursor = Cursor[0];
 					NextCursor.Selection.X = Byte-Start;
 					NextCursor.Selection.Y = NextCursor.Selection.X + StringToFind.Size;
-					E_AppendCursor(Edit, Edit->Arena, Edit->Cursors, NextCursor);
+					E_AppendCursor(Edit->Arena, &Edit->Cursors, NextCursor);
 					break;
 				}
 			}
@@ -291,7 +299,110 @@ void UI_BufferUpdate(
 
 	if(UI_KeyDown(UI, SAPP_KEYCODE_TAB, 0))
 	{
-		E_InsertTo(Edit, Edit->Cursors, Buffer, Str8("\t"));
+		E_InsertTo(Edit, &Edit->Cursors, Buffer, Str8("\t"));
+	}
+
+	// Split selection(s) into one cursor per line at line-end, then collapse.
+	// Matches VS Code "Add Cursors to Line Ends" (Shift+Alt+I).
+	if(UI_KeyDown(UI, SAPP_KEYCODE_I, SAPP_MODIFIER_SHIFT | SAPP_MODIFIER_ALT))
+	{
+		cursor *LastOriginal = Edit->Cursors.Last;
+		cursor *C = Edit->Cursors.First;
+		b32 Done = False;
+		while(!Done)
+		{
+			Done = (C == LastOriginal);
+			cursor *NextOriginal = C->Next;
+
+			v2i Selection = E_GetSortedSelection(C->Selection);
+			u8 *Bytes = Buffer->String.Bytes;
+			int Size = Buffer->String.Size;
+
+			// Find end of the first line in the selection by scanning forward.
+			int FirstLineEnd = Selection.X;
+			while(FirstLineEnd < Size && Bytes[FirstLineEnd] != '\n')
+			{
+				FirstLineEnd++;
+			}
+
+			if(FirstLineEnd >= Selection.Y)
+			{
+				// Single-line (or empty) selection: just collapse.
+				C->Selection = v2i(Selection.Y, Selection.Y);
+			}
+			else
+			{
+				// Collapse this cursor to the end of its first line.
+				C->Selection = v2i(FirstLineEnd, FirstLineEnd);
+
+				// First pass: count additional cursors needed. Direct newline
+				// scan — no reliance on E_LineEndFromIndex, which can return
+				// a value less than its input on empty lines (infinite loop).
+				int ExtraCount = 0;
+				{
+					int Idx = FirstLineEnd + 1;
+					while(Idx <= Selection.Y && Idx < Size)
+					{
+						int LineEnd = Idx;
+						while(LineEnd < Size && Bytes[LineEnd] != '\n')
+						{
+							LineEnd++;
+						}
+						ExtraCount++;
+						if(LineEnd >= Selection.Y) break;
+						Idx = LineEnd + 1;
+					}
+					// Trailing-no-newline case: selection ends at EOF past last '\n'.
+					if(Idx >= Size && Selection.Y == Size && Idx <= Selection.Y)
+					{
+						ExtraCount++;
+					}
+				}
+
+				if(ExtraCount > 0)
+				{
+					// Batch allocate + link. One arena push instead of N.
+					cursor *Block = E_AppendCursorsBulk(Edit->Arena, &Edit->Cursors, ExtraCount);
+
+					int I = 0;
+					int Idx = FirstLineEnd + 1;
+					while(Idx <= Selection.Y && Idx < Size && I < ExtraCount)
+					{
+						int LineEnd = Idx;
+						while(LineEnd < Size && Bytes[LineEnd] != '\n')
+						{
+							LineEnd++;
+						}
+						int EffectiveEnd = Min(LineEnd, Selection.Y);
+
+						// Copy cosmetic fields from the originating cursor but
+						// preserve the pre-linked Next/Previous pointers.
+						cursor *Prev = Block[I].Previous;
+						cursor *Nxt  = Block[I].Next;
+						Block[I] = *C;
+						Block[I].Previous = Prev;
+						Block[I].Next = Nxt;
+						Block[I].Selection = v2i(EffectiveEnd, EffectiveEnd);
+
+						I++;
+						if(LineEnd >= Selection.Y) break;
+						Idx = LineEnd + 1;
+					}
+					// Trailing-no-newline case.
+					if(I < ExtraCount)
+					{
+						cursor *Prev = Block[I].Previous;
+						cursor *Nxt  = Block[I].Next;
+						Block[I] = *C;
+						Block[I].Previous = Prev;
+						Block[I].Next = Nxt;
+						Block[I].Selection = v2i(Selection.Y, Selection.Y);
+					}
+				}
+			}
+
+			C = NextOriginal;
+		}
 	}
 
 	if(UI_KeyDown(UI, SAPP_KEYCODE_P, SAPP_MODIFIER_SUPER))
@@ -351,7 +462,7 @@ void UI_BufferUpdate(
 						Movement = E_MOVE_LINE_START;
 					}
 
-					E_MoveCursors(Edit, Draw, Font, Edit->Cursors, Buffer, Movement, MoveType);
+					E_MoveCursors(Edit, Draw, Font, &Edit->Cursors, Buffer, Movement, MoveType);
 					ShouldRemove = True;
 				} break;
 				case SAPP_KEYCODE_RIGHT:
@@ -366,21 +477,21 @@ void UI_BufferUpdate(
 						Movement = E_MOVE_LINE_END;
 					}
 
-					E_MoveCursors(Edit, Draw, Font, Edit->Cursors, Buffer, Movement, MoveType);
+					E_MoveCursors(Edit, Draw, Font, &Edit->Cursors, Buffer, Movement, MoveType);
 					ShouldRemove = True;
 				} break;
 				case SAPP_KEYCODE_UP:
 				{
 					if(Event.modifiers & SAPP_MODIFIER_SUPER && Event.modifiers & SAPP_MODIFIER_ALT)
 					{
-						cursor *LastCursor = E_LastCursor(Edit->Cursors);
+						cursor *LastCursor = Edit->Cursors.Last;
 						cursor NextCursor = LastCursor[0];
-						E_AppendCursor(Edit, Edit->Arena, Edit->Cursors, NextCursor);
-						E_MoveCursors(Edit, Draw, Font, E_LastCursor(Edit->Cursors), Buffer, E_MOVE_UP, MoveType);
+						E_AppendCursor(Edit->Arena, &Edit->Cursors, NextCursor);
+						E_MoveCursor(Edit, Draw, Font, Edit->Cursors.Last, Buffer, E_MOVE_UP, MoveType);
 					}
 					else
 					{
-						E_MoveCursors(Edit, Draw, Font, Edit->Cursors, Buffer, E_MOVE_UP, MoveType);
+						E_MoveCursors(Edit, Draw, Font, &Edit->Cursors, Buffer, E_MOVE_UP, MoveType);
 					}
 					ShouldRemove = True;
 				} break;
@@ -388,14 +499,14 @@ void UI_BufferUpdate(
 				{
 					if(Event.modifiers & SAPP_MODIFIER_SUPER && Event.modifiers & SAPP_MODIFIER_ALT)
 					{
-						cursor *LastCursor = E_LastCursor(Edit->Cursors);
+						cursor *LastCursor = Edit->Cursors.Last;
 						cursor NextCursor = LastCursor[0];
-						E_AppendCursor(Edit, Edit->Arena, Edit->Cursors, NextCursor);
-						E_MoveCursors(Edit, Draw, Font, E_LastCursor(Edit->Cursors), Buffer, E_MOVE_DOWN, MoveType);
+						E_AppendCursor(Edit->Arena, &Edit->Cursors, NextCursor);
+						E_MoveCursor(Edit, Draw, Font, Edit->Cursors.Last, Buffer, E_MOVE_DOWN, MoveType);
 					}
 					else
 					{
-						E_MoveCursors(Edit, Draw, Font, Edit->Cursors, Buffer, E_MOVE_DOWN, MoveType);
+						E_MoveCursors(Edit, Draw, Font, &Edit->Cursors, Buffer, E_MOVE_DOWN, MoveType);
 					}
 					ShouldRemove = True;
 				} break;
@@ -403,10 +514,10 @@ void UI_BufferUpdate(
 				{
 					if(Event.modifiers & SAPP_MODIFIER_SUPER)
 					{
-						cursor *Cursor = E_LastCursor(Edit->Cursors);
-						E_MoveCursors(Edit, Draw, Font, Cursor, Buffer, E_MOVE_WORD_LEFT, E_MOVE_SELECTING);
+						cursor *Cursor = Edit->Cursors.Last;
+						E_MoveCursor(Edit, Draw, Font, Cursor, Buffer, E_MOVE_WORD_LEFT, E_MOVE_SELECTING);
 					}
-					E_DeleteTo(Edit, Edit->Cursors, Buffer);
+					E_DeleteTo(Edit, &Edit->Cursors, Buffer);
 					
 				}
 				break;
@@ -419,22 +530,7 @@ void UI_BufferUpdate(
 	str8 TextToInsert = UI_Text(UI, Arena);
 	if(TextToInsert.Size > 0)
 	{
-		E_InsertTo(Edit, Edit->Cursors, Buffer, TextToInsert);
-	}
-
-	if(UI_LeftMouseWentDownWithModifiers(UI, SAPP_MODIFIER_ALT))
-	{
-		int Index = E_IndexFromPosition(Edit, Draw, Font,
-									Buffer, Range, BufferPosition,
-									UI->MousePosition);
-		cursor *LastCursor = E_LastCursor(Edit->Cursors);
-		cursor *Cursor = LastCursor;
-		{
-			cursor NextCursor = Cursor[0];
-			NextCursor.Selection = v2i(Index, Index);
-			E_AppendCursor(Edit, Edit->Arena, Cursor, NextCursor);
-			Cursor = Cursor->Next;
-		}
+		E_InsertTo(Edit, &Edit->Cursors, Buffer, TextToInsert);
 	}
 }
 
@@ -486,7 +582,7 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 
 	f32 CodeScale = stbtt_ScaleForPixelHeight(&Font.Info, Buffer->HeightInPixels);
 	f32 GutterWidth = NumberOffsetX - 5.0f;
-	int MainCursorLine = E_LineFromBufferIndex(Edit, Edit->Cursors[0].Selection.Y, Buffer);
+	int MainCursorLine = E_LineFromBufferIndex(Edit, Edit->Cursors.First[0].Selection.Y, Buffer);
 	for(int I = FirstVisibleLine; I <= LastVisibleLine; I++)
 	{
 		str8 NumStr = Str8PushF(Arena, "?u32", I + 1);
@@ -516,7 +612,7 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 
 	// Build highlight array marking selected characters across all cursors
 	b8 *SelHighlight = ArenaPushArrayZero(Arena, b8, SubString.Size + 1);
-	for(cursor *Cursor = Edit->Cursors; Cursor; Cursor = Cursor->Next)
+	for(cursor *Cursor = Edit->Cursors.First; Cursor; Cursor = Cursor->Next)
 	{
 		v2i Selection = E_GetSortedSelection(Cursor->Selection);
 		if(Selection.X == Selection.Y) continue;
@@ -635,21 +731,21 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 		int Index = E_IndexFromPosition(Edit, Draw, Font,
 										Buffer, Range,
 										BufferPosition, UI->MousePosition);
-		Edit->Cursors[0].Selection.Y = Index;
+		Edit->Cursors.First[0].Selection.Y = Index;
 
-		Edit->Cursors[0].TargetPosition = E_GetVisualPositionFromEditableBuffer(Edit,
+		Edit->Cursors.First[0].TargetPosition = E_GetVisualPositionFromEditableBuffer(Edit,
 																	Draw,
-																	Edit->Cursors[0].Selection.Y,
+																	Edit->Cursors.First[0].Selection.Y,
 																	Buffer[0],
 																	Font,
 																	Range,
 																	BufferPosition);
-		Edit->Cursors[0].Position = Edit->Cursors[0].TargetPosition;
-		D_Quad(Draw, Arena, Edit->Cursors[0].Position, Min(LineHeight/10.0, 2), LineHeight, v4f(0.3, 0.7, 0, 1));
+		Edit->Cursors.First[0].Position = Edit->Cursors.First[0].TargetPosition;
+		D_Quad(Draw, Arena, Edit->Cursors.First[0].Position, Min(LineHeight/10.0, 2), LineHeight, v4f(0.3, 0.7, 0, 1));
 	}
 	else
 	{
-		for(cursor *Cursor = Edit->Cursors; Cursor; Cursor = Cursor->Next)
+		for(cursor *Cursor = Edit->Cursors.First; Cursor; Cursor = Cursor->Next)
 		{
 			if(Cursor->Selection.Y >= Range.X && Cursor->Selection.Y <= Range.Y)
 			{

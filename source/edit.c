@@ -45,14 +45,14 @@ v2i E_GetSortedSelection(v2i Selection)
 	return Result;
 }
 
-void E_DeleteTo(edit_context *Edit, cursor *Cursor, editable_buffer *Buffer)
+void E_DeleteTo(edit_context *Edit, cursor_list *Cursors, editable_buffer *Buffer)
 {
 	assert(Edit->Temp);
 
 	int ReadPos = 0;
 	int WritePos = 0;
 
-	for(cursor *C = Cursor; C; C = C->Next)
+	for(cursor *C = Cursors->First; C; C = C->Next)
 	{
 		v2i Selection = E_GetSortedSelection(C->Selection);
 
@@ -99,7 +99,7 @@ void E_DeleteTo(edit_context *Edit, cursor *Cursor, editable_buffer *Buffer)
 	Buffer->String.Size = WritePos;
 }
 
-void E_InsertTo(edit_context *Edit, cursor *Cursor, editable_buffer *Buffer, str8 TextToInsert)
+void E_InsertTo(edit_context *Edit, cursor_list *Cursors, editable_buffer *Buffer, str8 TextToInsert)
 {
 	assert(Edit->Temp);
 
@@ -111,7 +111,7 @@ void E_InsertTo(edit_context *Edit, cursor *Cursor, editable_buffer *Buffer, str
 	int TotalBytesInserted = 0;
 	int CursorCount = 0;
 
-	for(cursor *C = Cursor; C; C = C->Next)
+	for(cursor *C = Cursors->First; C; C = C->Next)
 	{
 		v2i Selection = E_GetSortedSelection(C->Selection);
 
@@ -168,9 +168,11 @@ void E_RemoveTextFromSelection(edit_context *Edit, editable_buffer *Buffer, v2i 
 	Buffer->String.Size -= Selection.Y - Selection.X;
 }
 
-void E_MoveCursors(edit_context *Edit, draw_context *Draw,
-				   d_font Font, cursor *Cursor, editable_buffer *Buffer,
-				   edit_movement Movement, edit_move_type MoveType)
+// Core impl: moves every cursor reachable from `Cursor` forward via Next.
+// Used by both E_MoveCursors (list) and E_MoveCursor (single).
+static void E_MoveCursorChain(edit_context *Edit, draw_context *Draw,
+							  d_font Font, cursor *Cursor, editable_buffer *Buffer,
+							  edit_movement Movement, edit_move_type MoveType)
 {
 	if(Movement == E_MOVE_NONE) return;
 	for(;Cursor; Cursor = Cursor->Next)
@@ -313,6 +315,25 @@ void E_MoveCursors(edit_context *Edit, draw_context *Draw,
 	}
 }
 
+void E_MoveCursors(edit_context *Edit, draw_context *Draw,
+				   d_font Font, cursor_list *Cursors, editable_buffer *Buffer,
+				   edit_movement Movement, edit_move_type MoveType)
+{
+	E_MoveCursorChain(Edit, Draw, Font, Cursors->First, Buffer, Movement, MoveType);
+}
+
+void E_MoveCursor(edit_context *Edit, draw_context *Draw,
+				  d_font Font, cursor *Cursor, editable_buffer *Buffer,
+				  edit_movement Movement, edit_move_type MoveType)
+{
+	if(Movement == E_MOVE_NONE || !Cursor) return;
+	// Single cursor: save/restore Next so we don't walk past it.
+	cursor *SavedNext = Cursor->Next;
+	Cursor->Next = Null;
+	E_MoveCursorChain(Edit, Draw, Font, Cursor, Buffer, Movement, MoveType);
+	Cursor->Next = SavedNext;
+}
+
 void E_InsertTextAtIndex(edit_context *E, int Index, editable_buffer *Buffer, str8 TextToInsert)
 {
 	int At = Index;
@@ -451,6 +472,12 @@ int E_DistanceFromPreviousNewLine(edit_context *E, int Index, editable_buffer *B
 
 int E_LineEndFromIndex(edit_context *Edit, int Index, editable_buffer *Buffer)
 {
+	if(Buffer->String.Size == 0) return 0;
+
+	// Clamp to a valid index; Index == Size means "one past end" — line ends there.
+	if(Index >= Buffer->String.Size) return Buffer->String.Size;
+	if(Index < 0) Index = 0;
+
 	if(Buffer->String.Bytes[Index] == '\n')
 	{
 		// NOTE(Oliver): We might be already on a newline, but that could be
@@ -472,6 +499,13 @@ int E_LineEndFromIndex(edit_context *Edit, int Index, editable_buffer *Buffer)
 
 int E_LineStartFromIndex(edit_context *Edit, int Index, editable_buffer *Buffer)
 {
+	if(Buffer->String.Size == 0) return 0;
+
+	// Clamp to a valid index; Index == Size means "one past end" — walk back
+	// from the final byte to find the start of its line.
+	if(Index >= Buffer->String.Size) Index = Buffer->String.Size - 1;
+	if(Index < 0) return 0;
+
 	if(Buffer->String.Bytes[Index] == '\n')
 	{
 		// NOTE(Oliver): We might be already on a newline, but that could be
@@ -615,30 +649,52 @@ int E_VisualXFromIndex(edit_context *Edit, draw_context *Draw,
 	return E_GetMaxTextWidthFromRange(Edit, Draw, Font,  Buffer, LineStart, Index);
 }
 
-cursor *E_LastCursor(cursor *Cursor)
-{
-	for(;Cursor->Next; Cursor = Cursor->Next);
-	return Cursor;
-}
-
-int E_CursorCount(cursor *Cursor)
+int E_CursorCount(cursor_list *Cursors)
 {
 	int Result = 0;
-	for(;Cursor->Next; Cursor = Cursor->Next)
+	for(cursor *C = Cursors->First; C; C = C->Next)
 	{
 		Result++;
 	}
 	return Result;
 }
 
-void E_AppendCursor(edit_context *Edit, m_arena *Arena, cursor *Cursor, cursor NextCursor)
+void E_AppendCursor(m_arena *Arena, cursor_list *List, cursor NextCursor)
 {
-	assert(Cursor);
-	Cursor = E_LastCursor(Cursor);
+	assert(List && List->First && List->Last);
 
-	Cursor->Next = ArenaPushArrayZero(Arena, cursor, 1);
-	NextCursor.Previous = Cursor;
-	Cursor->Next[0] = NextCursor;
+	cursor *New = ArenaPushArrayZero(Arena, cursor, 1);
+	NextCursor.Previous = List->Last;
+	NextCursor.Next = Null;
+	New[0] = NextCursor;
+	List->Last->Next = New;
+	List->Last = New;
+}
+
+void E_CollapseToFirst(cursor_list *List)
+{
+	assert(List && List->First);
+	List->First->Next = Null;
+	List->Last = List->First;
+}
+
+cursor *E_AppendCursorsBulk(m_arena *Arena, cursor_list *List, int Count)
+{
+	if(Count <= 0) return Null;
+	assert(List && List->First && List->Last);
+
+	cursor *Block = ArenaPushArrayZero(Arena, cursor, Count);
+
+	// Pre-link block internally.
+	for(int I = 0; I < Count; I++)
+	{
+		Block[I].Previous = (I == 0) ? List->Last : &Block[I-1];
+		Block[I].Next     = (I + 1 < Count) ? &Block[I+1] : Null;
+	}
+	// Splice onto tail.
+	List->Last->Next = &Block[0];
+	List->Last = &Block[Count-1];
+	return Block;
 }
 
 void PushUndoAction(edit_context *E, m_arena *Arena, cursor *Cursor, undo_type Type, str8 InsertedOrRemovedText)

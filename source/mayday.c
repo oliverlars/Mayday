@@ -409,7 +409,7 @@ void OS_Update(void *Data)
 			   v2i(WindowWidth, WindowHeight));
 
 		UI_StatusBar(M->UI, M->Draw, M->Edit, M->FrameArena, M->Rajdhani,
-					 M->Edit->Cursors, &M->Buffer,
+					 M->Edit->Cursors.First, &M->Buffer,
 					 v2i(WindowWidth, WindowHeight));
 
 		u64 End = OS_TimeStampNow();
@@ -1445,7 +1445,8 @@ int main()
 	M.Edit->Temp = ArenaPushZero(Arena, MegaBytes(1));
 
 	cursor Cursor = {0};
-	M.Edit->Cursors = &Cursor;
+	M.Edit->Cursors.First = &Cursor;
+	M.Edit->Cursors.Last = &Cursor;
 
 	M.Window = OS_MakeWindow(Str8("Mayday!"), 3024, 1964);
 

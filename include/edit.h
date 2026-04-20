@@ -18,6 +18,12 @@ typedef struct cursor
 	struct cursor *Previous;
 } cursor;
 
+typedef struct cursor_list
+{
+	cursor *First;
+	cursor *Last;
+} cursor_list;
+
 typedef enum undo_type
 {
 	UNDO_NONE,
@@ -63,7 +69,7 @@ typedef struct edit_context
 	undo_stack *NewestAction;
 	undo_stack *OldestAction;
 
-	cursor *Cursors;
+	cursor_list Cursors;
 
 	// HACK(Oliver): This is dumb, just add a pool allocator
 	u8* Temp;
@@ -100,20 +106,25 @@ b32 IsIdentifierCharacter(u32 CodePoint);
 
 v2i E_GetSortedSelection(v2i Selection);
 
-void E_DeleteTo(edit_context *Edit, cursor *Cursor, editable_buffer *Buffer);
+void E_DeleteTo(edit_context *Edit, cursor_list *Cursors, editable_buffer *Buffer);
 
-void E_InsertTo(edit_context *Edit, cursor *Cursor, editable_buffer *Buffer, str8 TextToInsert);
+void E_InsertTo(edit_context *Edit, cursor_list *Cursors, editable_buffer *Buffer, str8 TextToInsert);
 
 void E_RemoveTextFromSelection(edit_context *Edit, editable_buffer *Buffer, v2i Selection);
 void E_InsertTextAtIndex(edit_context *E, int Index, editable_buffer *Buffer, str8 TextToInsert);
 
 void E_MoveCursors(edit_context *Edit, draw_context *Draw,
-				   d_font Font, cursor *Cursor, editable_buffer *Buffer,
+				   d_font Font, cursor_list *Cursors, editable_buffer *Buffer,
 				   edit_movement Movement, edit_move_type MoveType);
+
+// Singular variant for moving a single cursor (e.g. just-appended tail).
+void E_MoveCursor(edit_context *Edit, draw_context *Draw,
+				  d_font Font, cursor *Cursor, editable_buffer *Buffer,
+				  edit_movement Movement, edit_move_type MoveType);
 
 void E_DeleteAtLeastOneCharacterInRange(edit_context *Edit,
 										edit_movement Movement,
-										cursor *Cursors);
+										cursor_list *Cursors);
 
 void E_InsertTextAtCursor(edit_context *E, cursor *Cursor, editable_buffer *Buffer, str8 TextToInsert);
 
@@ -141,7 +152,7 @@ int E_IndexFromPosition(edit_context *Edit, draw_context *Draw, d_font Font,
 						v2f BufferPosition, v2i Position);
 
 
-void E_RemoveSelectedTextAtCursors(edit_context *E_Context, cursor *Cursor, editable_buffer *Buffer);
+void E_RemoveSelectedTextAtCursors(edit_context *E_Context, cursor_list *Cursors, editable_buffer *Buffer);
 
 int E_LineFromBufferIndex(edit_context *E_Context, int Index, editable_buffer *Buffer);
 
@@ -155,9 +166,15 @@ int E_GetMaxTextWidthFromRange(edit_context *E, draw_context *D,
 int E_IndexFromVisualXAndLineStart(edit_context *E, draw_context *D, d_font Font,
 								   editable_buffer *Buffer, int VisualX, int LineStart);
 
-int E_CursorCount(cursor *Cursor);
-cursor *E_LastCursor(cursor *Cursor);
-void E_AppendCursor(edit_context *Edit, m_arena *Arena, cursor *Cursor, cursor NextCursor);
+int E_CursorCount(cursor_list *Cursors);
+// O(1) append — uses cached Last pointer. List is updated in place.
+void E_AppendCursor(m_arena *Arena, cursor_list *List, cursor NextCursor);
+// Bulk append: allocates `Count` cursors contiguously, links them into List,
+// and returns a pointer to the first. Caller fills fields per-cursor.
+// Next/Previous are pre-linked; do not overwrite them unless re-splicing.
+cursor *E_AppendCursorsBulk(m_arena *Arena, cursor_list *List, int Count);
+// Reset the list to contain exactly one cursor (the current First, truncating the rest).
+void E_CollapseToFirst(cursor_list *List);
 
 void PushUndoAction(edit_context *E,
 					m_arena *Arena,

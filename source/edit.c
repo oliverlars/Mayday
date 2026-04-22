@@ -339,7 +339,7 @@ void E_InsertTextAtIndex(edit_context *E, int Index, editable_buffer *Buffer, st
 	int At = Index;
 
 	//TODO(Oliver): Not implemented yet
-	assert(Buffer->String.Size + TextToInsert.Size < MegaBytes(1));
+	assert(Buffer->String.Size + TextToInsert.Size < BUFFER_CHUNK_SIZE);
 	assert(E->Temp);
 
 	MemoryCopy(E->Temp, Buffer->String.Bytes, At);
@@ -348,7 +348,7 @@ void E_InsertTextAtIndex(edit_context *E, int Index, editable_buffer *Buffer, st
 
 	MemoryCopy(Buffer->String.Bytes, E->Temp, Buffer->String.Size + TextToInsert.Size);
 
-	Buffer->String.Size = ClampS32(Buffer->String.Size + TextToInsert.Size, 0, MegaBytes(1));
+	Buffer->String.Size = ClampS32(Buffer->String.Size + TextToInsert.Size, 0, BUFFER_CHUNK_SIZE);
 }
 
 v2f E_GetPositionFromEditableBuffer(edit_context *E,

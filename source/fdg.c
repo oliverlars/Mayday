@@ -12,9 +12,9 @@
 #include "wave.h"
 #include <stdio.h>
 
-void DrawBounds(draw_context *Draw, m_arena *Arena, bounds Bounds)
+void DrawBounds(draw_context *Draw, bounds Bounds)
 {
-	v3f *Lines = ArenaPushArrayZero(Arena, v3f, 12*2);
+	v3f *Lines = ArenaPushArrayZero(TemporaryArena(), v3f, 12*2);
 
 	v3f Min = Bounds.Min;
 	v3f Max = Bounds.Max;
@@ -55,18 +55,18 @@ void DrawBounds(draw_context *Draw, m_arena *Arena, bounds Bounds)
 	Lines[22] = v3f(Min.X, Min.Y, Max.Z);
 	Lines[23] = v3f(Max.X, Min.Y, Max.Z);
 
-	D_LinesArray(Draw, Arena, Lines, 24, 1.0, v4f(0, 0.1, 0, 1));
+	D_LinesArray(Draw, Lines, 24, 1.0, v4f(0, 0.1, 0, 1));
 }
 
-void DrawQuadTree(draw_context *Draw, m_arena *Arena, quadtree_header *QuadTree, int QuadTreeIndex)
+void DrawQuadTree(draw_context *Draw, quadtree_header *QuadTree, int QuadTreeIndex)
 {
-	DrawBounds(Draw, Arena, QuadTree->Bounds[QuadTreeIndex]);
+	DrawBounds(Draw, QuadTree->Bounds[QuadTreeIndex]);
 
 	for(int I = 0; I < 8; I++)
 	{
 		if(QuadTree->Quadrants[QuadTreeIndex].Children[I])
 		{
-			DrawQuadTree(Draw, Arena, QuadTree, QuadTree->Quadrants[QuadTreeIndex].Children[I]);
+			DrawQuadTree(Draw, QuadTree, QuadTree->Quadrants[QuadTreeIndex].Children[I]);
 		}
 	}
 }

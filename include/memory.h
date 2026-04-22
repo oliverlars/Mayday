@@ -26,12 +26,20 @@ typedef struct per_thread_context
 	// will only take a single arena as argument.
 	m_arena *ScratchArenas[2];
 
+	// Frame-lifetime arena. The main update loop swaps this each frame
+	// (double-buffered) so draw/render code can allocate without taking
+	// the arena as a parameter. Fetch via TemporaryArena().
+	m_arena *TemporaryArena;
+
 } per_thread_context;
 
 per_thread_context *GetThreadLocalContext();
 
 m_scratch_arena ScratchBegin(m_arena **Arenas, int ConflictCount);
 void ScratchEnd(m_scratch_arena Scratch);
+
+m_arena *TemporaryArena(void);
+void SetTemporaryArena(m_arena *Arena);
 
 u64 AlignUp(u64 Pointer, u64 Alignment);
 

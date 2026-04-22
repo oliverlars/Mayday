@@ -55,6 +55,16 @@ per_thread_context *GetThreadLocalContext()
 	return &__ThreadLocalContext;
 }
 
+m_arena *TemporaryArena(void)
+{
+	return GetThreadLocalContext()->TemporaryArena;
+}
+
+void SetTemporaryArena(m_arena *Arena)
+{
+	GetThreadLocalContext()->TemporaryArena = Arena;
+}
+
 
 u8 *MemoryReserve(s64 NumberOfBytes)
 {

@@ -122,7 +122,7 @@ r_vertex_attributes R_AttributesFromCommandType(r_command_type CommandType);
 
 void R_TextureFromBytes(render_context *R, u8 *Bytes, s32 Width, s32 Height);
 
-void R_PushCommand(render_context *R, m_arena *Arena, r_command Command);
+void R_PushCommand(render_context *R, r_command Command);
 
 void R_PushTransform(render_context *Render, m44f Transform);
 void R_PopTransform(render_context *Render);

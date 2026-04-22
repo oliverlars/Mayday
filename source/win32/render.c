@@ -582,7 +582,7 @@ void R_Init(render_context *R, m_arena *Arena, v2i Size)
 
 }
 
-void R_Update(render_context *R, m_arena *FrameArena)
+void R_Update(render_context *R)
 {
 	d3d11_context *D3D11 = R->Backend;
 	IDXGISwapChain *SwapChain = (IDXGISwapChain*)sapp_d3d11_get_swap_chain();

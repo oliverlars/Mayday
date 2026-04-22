@@ -13,6 +13,7 @@
 #include <signal.h>
 
 
+
 // HACK(Oliver): Remove the ifdef...
 #ifdef __APPLE
 #include <arm_neon.h>
@@ -579,7 +580,7 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 	// 		   v4f(1.0, 1.0, 1, 1), LineHeight, Str8PushF(Arena, "StartIndex: ?u32 EndIndex: ?u32", StartIndex, EndIndex));
 
 	// Number column: black background
-	D_Quad(Draw, Arena, v2f(0, 0), NumberOffsetX - 5.0f, (f32)WindowHeight + LineHeight, v4f(0.0, 0.0, 0.0, 1.0));
+	D_Quad(Draw, v2f(0, 0), NumberOffsetX - 5.0f, (f32)WindowHeight + LineHeight, v4f(0.0, 0.0, 0.0, 1.0));
 
 	f32 CodeScale = stbtt_ScaleForPixelHeight(&Font.Info, Buffer->HeightInPixels);
 	f32 GutterWidth = NumberOffsetX - 5.0f;
@@ -594,15 +595,15 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 		{
 			// Active line: red background, black text — centered in gutter
 			f32 QuadY = NumbersPosition.Y + Font.Descent * CodeScale;
-			D_Quad(Draw, Arena, v2f(0, QuadY), GutterWidth, LineHeight, v4f(0.753, 0.036, 0.0, 1.0));
-			D_Str8(Draw, Arena, NumStr, .Font = NumbersFont,
+			D_Quad(Draw, v2f(0, QuadY), GutterWidth, LineHeight, v4f(0.753, 0.036, 0.0, 1.0));
+			D_Str8(Draw, NumStr, .Font = NumbersFont,
 			.Position = V3FromV2(v2f(CenteredX, NumbersPosition.Y)),
 				.Colour = v4f(0.0, 0.0, 0.0, 1), .HeightInPixels = LineHeight);
 		}
 		else
 		{
 			// Non-active line: red text on black — centered in gutter
-			D_Str8(Draw, Arena, NumStr, .Font = NumbersFont,
+			D_Str8(Draw, NumStr, .Font = NumbersFont,
 			.Position = V3FromV2(v2f(CenteredX, NumbersPosition.Y)),
 				.Colour = v4f(0.753, 0.036, 0.0, 1.0), .HeightInPixels = LineHeight);
 		}
@@ -660,7 +661,7 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 				QuadWidth = sapp_widthf() - QuadX;
 
 			if(QuadWidth > 0)
-				D_Quad(Draw, Arena, v2f(QuadX, LineY),
+				D_Quad(Draw, v2f(QuadX, LineY),
 					   QuadWidth, LineHeight, v4f(0.0, 0.0, 0.0, 1.0));
 		}
 
@@ -675,7 +676,7 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 	}
 
 	// Draw text once — black for normal, red for selected chars
-	D_Str8(Draw, Arena, SubString, .Font = Font,
+	D_Str8(Draw, SubString, .Font = Font,
 		   .Position = V3FromV2(BufferPosition),
 		   .Colour = v4f(0.0, 0.0, 0.0, 1),
 		   .HighlightColour = v4f(0.753, 0.036, 0.0, 1.0),
@@ -694,27 +695,27 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 		f32 InsertRatio = BufSize > 0 ? (f32)Edit->DebugBytesInserted / (f32)BufSize * 100.0f : 0;
 		f32 AvgPerCursor = Edit->DebugCursorCount > 0 ? (f32)(Edit->DebugBytesCopied + Edit->DebugBytesInserted) / (f32)Edit->DebugCursorCount : 0;
 
-		D_Str8(Draw, Arena,
+		D_Str8(Draw,
 			Str8PushF(Arena, "Bytes copied: ?s32 (?f32%%)", Edit->DebugBytesCopied, CopyRatio),
 			.Font = Font, .Position = v3f(DebugX, DebugY, 0),
 			.Colour = v4f(0.0, 0.0, 0.0, 1), .HeightInPixels = DebugH);
-		D_Str8(Draw, Arena,
+		D_Str8(Draw,
 			Str8PushF(Arena, "Bytes inserted: ?s32 (?f32%%)", Edit->DebugBytesInserted, InsertRatio),
 			.Font = Font, .Position = v3f(DebugX, DebugY - DebugSpacing, 0),
 			.Colour = v4f(0.0, 0.0, 0.0, 1), .HeightInPixels = DebugH);
-		D_Str8(Draw, Arena,
+		D_Str8(Draw,
 			Str8PushF(Arena, "Cursors: ?s32", Edit->DebugCursorCount),
 			.Font = Font, .Position = v3f(DebugX, DebugY - DebugSpacing*2, 0),
 			.Colour = v4f(0.0, 0.0, 0.0, 1), .HeightInPixels = DebugH);
-		D_Str8(Draw, Arena,
+		D_Str8(Draw,
 			Str8PushF(Arena, "Avg bytes/cursor: ?f32", AvgPerCursor),
 			.Font = Font, .Position = v3f(DebugX, DebugY - DebugSpacing*3, 0),
 			.Colour = v4f(0.0, 0.0, 0.0, 1), .HeightInPixels = DebugH);
-		D_Str8(Draw, Arena,
+		D_Str8(Draw,
 			Str8PushF(Arena, "Buffer size: ?s32", BufSize),
 			.Font = Font, .Position = v3f(DebugX, DebugY - DebugSpacing*4, 0),
 			.Colour = v4f(0.0, 0.0, 0.0, 1), .HeightInPixels = DebugH);
-		D_Str8(Draw, Arena,
+		D_Str8(Draw,
 			Str8PushF(Arena, "Time: ?f32 ms", Edit->DebugTimeMs),
 			.Font = Font, .Position = v3f(DebugX, DebugY - DebugSpacing*5, 0),
 			.Colour = v4f(0.0, 0.0, 0.0, 1), .HeightInPixels = DebugH);
@@ -746,7 +747,7 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 																	Range,
 																	BufferPosition);
 		Edit->Cursors.First[0].Position = Edit->Cursors.First[0].TargetPosition;
-		D_Quad(Draw, Arena, Edit->Cursors.First[0].Position, Min(LineHeight/10.0, 2), LineHeight, v4f(0.3, 0.7, 0, 1));
+		D_Quad(Draw, Edit->Cursors.First[0].Position, Min(LineHeight/10.0, 2), LineHeight, v4f(0.3, 0.7, 0, 1));
 	}
 	else
 	{
@@ -773,7 +774,7 @@ void UI_Buffer(ui_context *UI, draw_context *Draw, edit_context *Edit,
 			// Byte-range visibility check — avoids O(buffer) line lookup per cursor.
 			if(Cursor->Selection.Y >= Range.X && Cursor->Selection.Y <= Range.Y)
 			{
-				D_Quad(Draw, Arena, Cursor->Position, Min(LineHeight/10.0, 2), LineHeight, v4f(0.3, 0.7, 0, 1));
+				D_Quad(Draw, Cursor->Position, Min(LineHeight/10.0, 2), LineHeight, v4f(0.3, 0.7, 0, 1));
 			}
 
 		}
@@ -811,9 +812,9 @@ void UI_StatusBar(ui_context *UI, draw_context *Draw, edit_context *Edit,
 
 	f32 TextPosY  = (StatusBarHeight * 0.5f) - CentreOffset;
 
-	D_Quad(Draw, Arena, v2f(0, 0), (f32)Size.X, StatusBarHeight, v4f(0.0, 0.0, 0.0, 1));
+	D_Quad(Draw, v2f(0, 0), (f32)Size.X, StatusBarHeight, v4f(0.0, 0.0, 0.0, 1));
 
-	D_Str8(Draw, Arena, Str8("LF"), .Font = Font, .Position = v3f((f32)Size.X - 200, TextPosY), .Colour = v4f(0.753, 0.036, 0.0, 1.0), .HeightInPixels = TextHeight);
+	D_Str8(Draw, Str8("LF"), .Font = Font, .Position = v3f((f32)Size.X - 200, TextPosY), .Colour = v4f(0.753, 0.036, 0.0, 1.0), .HeightInPixels = TextHeight);
 
 	cursor *Cursor = Cursors;
 	if(!Cursor->Next)
@@ -822,7 +823,7 @@ void UI_StatusBar(ui_context *UI, draw_context *Draw, edit_context *Edit,
 		int LineStart = E_LineStartFromIndex(Edit, Cursor->Selection.Y, Buffer);
 		int Index = IndexFromLine(Buffer->String, Line);
 		int Column = Cursor->Selection.Y - LineStart;
-		D_Str8(Draw, Arena, Str8PushF(Arena, "?u32:?u32 | Index: ?u32:?u32 | ?v2i", Line, Column, Cursor->Selection.Y, Index, v2i(Cursor->Position.X, Cursor->Position.Y)),
+		D_Str8(Draw, Str8PushF(Arena, "?u32:?u32 | Index: ?u32:?u32 | ?v2i", Line, Column, Cursor->Selection.Y, Index, v2i(Cursor->Position.X, Cursor->Position.Y)),
 				   .Font = Font, .Position = v3f((f32)Size.X - 1500, TextPosY),
 				   .Colour = v4f(0.753, 0.036, 0.0, 1.0),
 				   .HeightInPixels = TextHeight);
@@ -831,7 +832,7 @@ void UI_StatusBar(ui_context *UI, draw_context *Draw, edit_context *Edit,
 	{
 		// O(1) — use the maintained list Count instead of walking.
 		int Count = Edit->Cursors.Count;
-		D_Str8(Draw, Arena, Str8PushF(Arena, "?u32 SELECTIONS", Count),
+		D_Str8(Draw, Str8PushF(Arena, "?u32 SELECTIONS", Count),
 					.Font = Font, .Position = v3f((f32)Size.X - 1000, TextPosY),
 				   .Colour = v4f(0.753, 0.036, 0.0, 1.0), .HeightInPixels = TextHeight);
 	}
@@ -841,13 +842,12 @@ void UI_StatusBar(ui_context *UI, draw_context *Draw, edit_context *Edit,
 	v3f Position = v3f(Size.X - 200, TextPosY, 0.0);
 	if(!Buffer->EditedSinceLastSave)
 	{
-		//D_PointsArray(Draw, Arena, &Position, 1, 20, v4f(0.0, 0.6, 0, 1));
-		D_Str8(Draw, Arena, Str8("UNSAVED"), .Font = Font, .Position = Position, 
+		D_Str8(Draw, Str8("UNSAVED"), .Font = Font, .Position = Position,
 		.HeightInPixels = TextHeight, .Colour = v4f(0.753, 0.036, 0.0, 1.0));
 	}
 	else
 	{
-		D_PointsArray(Draw, Arena, &Position, 1, 20, v4f(0.753, 0.036, 0.0, 1));
+		D_PointsArray(Draw, &Position, 1, 20, v4f(0.753, 0.036, 0.0, 1));
 	}
 
 }

@@ -85,8 +85,8 @@ typedef struct d_str8_options
 }
 d_str8_options;
 
-#define D_Str8(Draw, Arena, String, ...) \
-	D_BaseStr8(Draw, Arena, String, (d_str8_options) { __VA_ARGS__ } )
+#define D_Str8(Draw, String, ...) \
+	D_BaseStr8(Draw, String, (d_str8_options) { __VA_ARGS__ } )
 
 f32 D_Str8HeightFromWidth(d_font Font, str8 String, f32 WidthInPixels);
 f32 D_Str8WidthFromHeight(d_font Font, str8 String, f32 HeightInPixels);
@@ -98,7 +98,6 @@ v4f D_Str8BBoxFromHeight(d_font Font, v2f Position, str8 String, f32 HeightInPix
 void D_BaseStr8
 (
 	draw_context *D_Context,
-	m_arena *Arena,
 	str8 String,
 	d_str8_options Options
 );
@@ -106,7 +105,6 @@ void D_BaseStr8
 void D_SelectionRange
 (
 	draw_context *D,
-	m_arena *Arena,
 	d_font Font,
 	v2f Position,
 	v4f Colour,
@@ -118,19 +116,18 @@ void D_SelectionRange
 );
 
 void D_Quad(draw_context *D_Context,
-				m_arena *Arena, v2f Position,
+				v2f Position,
 				f32 Width, f32 Height,
 				v4f Colour);
 
 void D_CubePoints(draw_context *D,
-					  m_arena *Arena, v3f Position,
+					  v3f Position,
 					  v3f Size,
 					  v4f Colour);
 
 void D_PointsArray
 (
 	draw_context *D,
-	m_arena *Arena,
 	v3f *Positions,
 	int PositionsCount,
 	f32 PointSize,
@@ -140,46 +137,41 @@ void D_PointsArray
 void D_PointsArrayWithColours
 (
 	draw_context *D,
-	m_arena *Arena,
 	v3f *Positions,
 	int PositionsCount,
 	f32 PointSize,
 	v4f *Colours
 );
 
-void D_Blur(draw_context *D, m_arena *Arena, v4i Rect, f32 Sigma);
+void D_Blur(draw_context *D, v4i Rect, f32 Sigma);
 
 void D_LinesArray(draw_context *D,
-					  m_arena *Arena,
 					  v3f *Positions,
 					  int PositionsCount,
 					  f32 Thickness,
 					  v4f Colour);
 
 void D_Line(draw_context *D,
-				m_arena *Arena,
 				v3f Start,
 				v3f End,
 				f32 Thickness,
 				v4f Colour);
 
 void D_BezierArray(draw_context *D,
-					  m_arena *Arena,
 					  v3f *Positions,
 					  int PositionsCount,
 					  f32 Thickness,
 					  v4f Colour);
 
 void D_Bezier(draw_context *D,
-				  m_arena *Arena,
 				  v3f Start,
 				  v3f Control,
 				  v3f End,
 				  v4f Colour);
 
-void D_Grid(draw_context *Draw, m_arena *Arena, f32 Size, s32 Count);
+void D_Grid(draw_context *Draw, f32 Size, s32 Count);
 
-void D_Grid2D(draw_context *Draw, m_arena *Arena, f32 Size, s32 Count);
-void D_DiscoGrid2D(draw_context *Draw, m_arena *Arena, v2f Dim, v2i Count);
+void D_Grid2D(draw_context *Draw, f32 Size, s32 Count);
+void D_DiscoGrid2D(draw_context *Draw, v2f Dim, v2i Count);
 
 f32 D_LineHeightFromFont(d_font Font, f32 HeightInPixels);

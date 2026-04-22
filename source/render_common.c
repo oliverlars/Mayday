@@ -71,8 +71,9 @@ r_vertex_attributes R_AttributesFromCommandType(r_command_type CommandType)
 	return Result;
 }
 
-void R_PushCommand(render_context *R, m_arena *Arena, r_command Command)
+void R_PushCommand(render_context *R, r_command Command)
 {
+	m_arena *Arena = TemporaryArena();
 	r_command *NextCommand = (r_command*)ArenaPushZero(Arena, sizeof(r_command));
 	NextCommand[0] = Command;
 	if(!R->CommandsLast)

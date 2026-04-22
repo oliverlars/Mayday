@@ -7,4 +7,4 @@
 
 
 void R_Init(render_context *R, m_arena *Arena, v2i Size);
-void R_Update(render_context *R, m_arena *FrameArena);
+void R_Update(render_context *R);

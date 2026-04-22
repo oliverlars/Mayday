@@ -62,6 +62,6 @@ bounds GetBoundsV3F(v3f *Positions, int Count);
 void QuadTreeBuild(m_arena *Arena, quadtree_header *QuadTree, QuadTree_index QuadrantIndex, v4f NodePosition, int Depth);
 v4f QuadTreeCalculateAttributes(quadtree_header *QuadTree, int QuadrantIndex);
 
-void DrawBounds(draw_context *Draw, m_arena *Arena, bounds Bounds);
+void DrawBounds(draw_context *Draw, bounds Bounds);
 
-void DrawQuadTree(draw_context *Draw, m_arena *Arena, quadtree_header *QuadTree, int QuadTreeIndex);
+void DrawQuadTree(draw_context *Draw, quadtree_header *QuadTree, int QuadTreeIndex);

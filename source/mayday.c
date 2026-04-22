@@ -250,9 +250,9 @@ void OS_Update_(void *Data)
 	f32 W = 800;
 	f32 H = D_Str8HeightFromWidth(M->Rajdhani, Str8("MAYDAY!"), W);
 	v4f BBox = D_Str8BBoxFromHeight(M->Rajdhani, v2f(50, 50), Str8("MAYDAY!"), H);
-	D_Quad(M->Draw, M->FrameArena, v2f(50, 50), BBox.Z - BBox.X, BBox.W - BBox.Y, v4f(1, 0, 1, 1));
+	D_Quad(M->Draw, v2f(50, 50), BBox.Z - BBox.X, BBox.W - BBox.Y, v4f(1, 0, 1, 1));
 	D_Str8(
-		M->Draw, M->FrameArena, 
+		M->Draw,
 		Str8("MAYDAY!"), .Font = M->Rajdhani,
 		.Position = v3f(50, 50, 0),
 		.Colour = v4f(0, 1, 0, 1),
@@ -264,9 +264,9 @@ void OS_Update_(void *Data)
 	//D_OutlineStr8(M->Draw, M->FrameArena, M->Rajdhani, v2f(500, 600), v4f(0.2, 0.1, 0.0, 1.0), 200, 10.0, Str8("RUNGALO BUNGALO!"));
 
 	//D_Str8(M->Draw, M->FrameArena,  Str8("ABC DEF"), .Font = M->CodeFont, .Position = v3f(300, 200, 0), .Colour = v4f(0, 1, 0, 1), .HeightInPixels = 100);
-	D_LinesArray(M->Draw, M->FrameArena, Line, 2, 5.0, v4f(1, 1, 1, 1));
-	D_PointsArray(M->Draw, M->FrameArena, Line, 1, 50, v4f(1, 1, 1, 0.2));
-	D_LinesArray(M->Draw, M->FrameArena, Line + 2, 2, 10.0, v4f(1, 1, 1, 1));
+	D_LinesArray(M->Draw, Line, 2, 5.0, v4f(1, 1, 1, 1));
+	D_PointsArray(M->Draw, Line, 1, 50, v4f(1, 1, 1, 0.2));
+	D_LinesArray(M->Draw, Line + 2, 2, 10.0, v4f(1, 1, 1, 1));
 	v3f Points[] =
 	{
 		v3f(100, 100, 0),
@@ -279,11 +279,12 @@ void OS_Update_(void *Data)
 	R_PopTransform(M->Render);
 	R_PopScissor(M->Render);
 
-	R_Update(M->Render, M->FrameArena);
+	R_Update(M->Render);
 	ArenaReset(M->FrameArena);
 	m_arena *TempArena = M->FrameArena;
 	M->FrameArena = M->PreviousFrameArena;
 	M->PreviousFrameArena = TempArena;
+	SetTemporaryArena(M->FrameArena);
 
 	M->UI->EventLast = Null;
 	M->UI->EventFirst = Null;
@@ -380,7 +381,7 @@ void OS_Update(void *Data)
 
 	R_PushTransform(M->Render, Transform);
 	
-	D_Quad(M->Draw, M->FrameArena, v2f(0, 0), 100, 200, v4f(0, 1, 0, 1));
+	D_Quad(M->Draw, v2f(0, 0), 100, 200, v4f(0, 1, 0, 1));
 
 
 	if(UI_KeyDown(M->UI, SAPP_KEYCODE_EQUAL, SAPP_MODIFIER_SUPER))
@@ -399,7 +400,7 @@ void OS_Update(void *Data)
 	{
 		u64 Start = OS_TimeStampNow();
 		R_PushTransform(M->Render, Orthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
-		D_Quad(M->Draw, M->FrameArena, v2f(0, 0),  WindowWidth, WindowHeight, COLOUR_RED);
+		D_Quad(M->Draw, v2f(0, 0),  WindowWidth, WindowHeight, COLOUR_RED);
 		//D_DiscoGrid2D(M->Draw, M->FrameArena, v2f(sapp_widthf(), sapp_heightf()), v2i(1, sapp_height()/M->Buffer.HeightInPixels));
 	
 		UI_Buffer(M->UI, M->Draw, M->Edit,
@@ -532,7 +533,7 @@ void OS_Update(void *Data)
 
 		// Clear the whole screen with a color that lerps between the two sides.
 		R_PushTransform(M->Render, Orthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0));
-		D_Quad(M->Draw, M->FrameArena, v2f(0, 0), WindowWidth, WindowHeight, ClearCol);
+		D_Quad(M->Draw, v2f(0, 0), WindowWidth, WindowHeight, ClearCol);
 		R_PopTransform(M->Render);
 
 		// Sidebar removed — FDG gets the full window. Keep a TotalHeight=0 shim
@@ -576,7 +577,7 @@ void OS_Update(void *Data)
 			1.0f);
 		R_PushTransform(M->Render, Mul(Orthographic(0.0, sapp_widthf(), sapp_heightf(), 0.0, -1000.0, 1000.0), FDGCarousel));
 		D_Str8(
-			M->Draw, M->FrameArena,
+			M->Draw,
 			Str8("Welcome back, Mr. Wick"),
 			.Position = v3f(TotalHeight + 75, sapp_heightf() - 55 - HeaderHeight + HeaderHeight/2.0 - 20.0, 0),
 			.Font = M->BodoniModa,
@@ -600,7 +601,7 @@ void OS_Update(void *Data)
 			{
 				if((I + Columns) % 3 == 0)
 				{
-					D_Quad(M->Draw, M->FrameArena, v2f(I*15.0, 0.0), 15.0, sapp_heightf()*10.0, WelcomeCol);
+					D_Quad(M->Draw, v2f(I*15.0, 0.0), 15.0, sapp_heightf()*10.0, WelcomeCol);
 				}
 			}
 			R_PopScissor(M->Render);
@@ -683,7 +684,7 @@ void OS_Update(void *Data)
 			v4i PanelRect = v4i(TotalHeight + 50 + 5, 55 + 1, sapp_widthf() - TotalHeight - 10 - 50 - 10, sapp_heightf() - 100 - 10 - HeaderHeight);
 			if(M->ShowFileList)
 			{
-				D_Blur(M->Draw, M->FrameArena, PanelRect, 10.0);
+				D_Blur(M->Draw, PanelRect, 10.0);
 				if(UI_MouseInV4I(M->UI, PanelRect))
 				{
 					M->UI->NextHot = M_FNVHashString(M_FNV_HASH_START, Str8("Background Panel"));
@@ -704,7 +705,7 @@ void OS_Update(void *Data)
 						M->TreeView.Info.NodeInfos[M->OrbitItem].Name, '/');
 					if(HeaderName.Size == 0)
 						HeaderName = M->TreeView.Info.NodeInfos[M->OrbitItem].Name;
-					D_Str8(M->Draw, M->FrameArena, HeaderName,
+					D_Str8(M->Draw, HeaderName,
 						.Font = M->BebasNeue,
 						.Position = v3f(M->FileListPosition.X, M->FileListPosition.Y, 0),
 						.Colour = v4f(0.0, 0.0, 0.0, 1.0),
@@ -752,7 +753,7 @@ void OS_Update(void *Data)
 							// neighbouring arena allocations (cursor structs, etc).
 							// Allocate a slack-sized buffer and reallocate Temp to match.
 							str8 FileBytes = OS_LoadEntireFileIntoMemory(M->FrameArena, Iter.Current->PathAndName);
-							u64 Capacity = Max((u64)FileBytes.Size * 2 + MegaBytes(1), (u64)MegaBytes(1));
+							u64 Capacity = Max((u64)FileBytes.Size * 2 + BUFFER_CHUNK_SIZE, (u64)BUFFER_CHUNK_SIZE);
 							M->Buffer.String.Bytes = ArenaPushZero(M->PermanentArena, Capacity);
 							M->Buffer.String.Size = FileBytes.Size;
 							if(FileBytes.Size > 0)
@@ -1036,7 +1037,7 @@ void OS_Update(void *Data)
 				f32 OffY = (f32)Layer * -LayerDY; // -Y because Y-up means "down on screen" is -Y
 
 				// Red body fill.
-				D_Str8(M->Draw, M->FrameArena, MaydayStr,
+				D_Str8(M->Draw, MaydayStr,
 					.Font = M->ThunderBold,
 					.Position = v3f(MaydayX + OffX, MaydayY + OffY, BaseZ),
 					.Colour = COLOUR_RED,
@@ -1044,7 +1045,7 @@ void OS_Update(void *Data)
 
 				// Black outline — this is what makes each layer read as
 				// a distinct 3D step when overlapping the next layer forward.
-				D_Str8(M->Draw, M->FrameArena, MaydayStr,
+				D_Str8(M->Draw, MaydayStr,
 					.Font = M->ThunderBold,
 					.Position = v3f(MaydayX + OffX, MaydayY + OffY, BaseZ),
 					.Colour = COLOUR_BLACK,
@@ -1053,7 +1054,7 @@ void OS_Update(void *Data)
 			}
 
 			// Front: solid black, no offset, drawn last.
-			D_Str8(M->Draw, M->FrameArena, MaydayStr,
+			D_Str8(M->Draw, MaydayStr,
 				.Font = M->ThunderBold,
 				.Position = v3f(MaydayX, MaydayY, BaseZ),
 				.Colour = COLOUR_BLACK,
@@ -1076,7 +1077,7 @@ void OS_Update(void *Data)
 			str8 BuildRoman = IntToRomanNumerals(M->FrameArena, BUILD_NUMBER);
 			str8 BuildStr = Str8PushF(M->FrameArena, "BUILD: ?S", BuildRoman);
 			f32 BuildW = (f32)UI_GetTextWidth(M->BodoniModa, M->Draw, BuildStr, InfoSize);
-			D_Str8(M->Draw, M->FrameArena, BuildStr,
+			D_Str8(M->Draw, BuildStr,
 				.Font = M->BodoniModa,
 				.Position = v3f(CarouselCX - BuildW * 0.5f, InfoY, 0),
 				.Colour = COLOUR_YELLOW,
@@ -1085,7 +1086,7 @@ void OS_Update(void *Data)
 			InfoY -= InfoLineGap;
 			str8 DateStr = Str8(__DATE__);
 			f32 DateW = (f32)UI_GetTextWidth(M->BodoniModa, M->Draw, DateStr, InfoSize);
-			D_Str8(M->Draw, M->FrameArena, DateStr,
+			D_Str8(M->Draw, DateStr,
 				.Font = M->BodoniModa,
 				.Position = v3f(CarouselCX - DateW * 0.5f, InfoY, 0),
 				.Colour = COLOUR_YELLOW,
@@ -1100,7 +1101,7 @@ void OS_Update(void *Data)
 			str8 PlatStr = Str8("UNKNOWN");
 #endif
 			f32 PlatW = (f32)UI_GetTextWidth(M->BodoniModa, M->Draw, PlatStr, InfoSize);
-			D_Str8(M->Draw, M->FrameArena, PlatStr,
+			D_Str8(M->Draw, PlatStr,
 				.Font = M->BodoniModa,
 				.Position = v3f(CarouselCX - PlatW * 0.5f, InfoY, 0),
 				.Colour = COLOUR_YELLOW,
@@ -1158,12 +1159,12 @@ void OS_Update(void *Data)
 		f32 PanelY = sapp_heightf() - DebugPadding;
 		f32 DebugY = PanelY - DebugPadding - DebugH * 0.25f;
 
-		D_Quad(M->Draw, M->FrameArena, v2f(DebugPadding, PanelY - PanelHeight), PanelWidth, PanelHeight, v4f(0, 0, 0, 0.85));
+		D_Quad(M->Draw, v2f(DebugPadding, PanelY - PanelHeight), PanelWidth, PanelHeight, v4f(0, 0, 0, 0.85));
 
 		int Row = 0;
 
 		#define DEBUG_ROW(colour, fmt, ...) \
-			D_Str8(M->Draw, M->FrameArena, \
+			D_Str8(M->Draw, \
 				Str8PushF(M->FrameArena, fmt, ##__VA_ARGS__), \
 				.Font = Font, .Position = v3f(DebugX, DebugY - DebugSpacing*(f32)(Row), 0), \
 				.Colour = colour, .HeightInPixels = DebugH); \
@@ -1230,7 +1231,7 @@ void OS_Update(void *Data)
 	if(M->Debug.CPUMs > M->Debug.CPUMsMax) M->Debug.CPUMsMax = M->Debug.CPUMs;
 
 	u64 RenderStart = OS_TimeStampNow();
-	R_Update(M->Render, M->FrameArena);
+	R_Update(M->Render);
 	M->Debug.RenderMs = OS_MilliSecondsFromTimeStamp(OS_TimeStampNow() - RenderStart);
 	if(M->Debug.RenderMs > M->Debug.RenderMsMax) M->Debug.RenderMsMax = M->Debug.RenderMs;
 
@@ -1238,6 +1239,7 @@ void OS_Update(void *Data)
 	m_arena *TempArena = M->FrameArena;
 	M->FrameArena = M->PreviousFrameArena;
 	M->PreviousFrameArena = TempArena;
+	SetTemporaryArena(M->FrameArena);
 
 	M->UI->EventLast = Null;
 	M->UI->EventFirst = Null;
@@ -1344,7 +1346,7 @@ void OS_Initialise(void *Data)
 	R_Init(M->Render, M->PermanentArena, v2i(sapp_width() , sapp_height()));
 	M->Render->BloomEnabled = False;
 
-	M->Buffer.String.Bytes = ArenaPushZero(M->PermanentArena, MegaBytes(1));
+	M->Buffer.String.Bytes = ArenaPushZero(M->PermanentArena, BUFFER_CHUNK_SIZE);
 	M->Buffer.String.Size = sizeof(G_TriangleShader);
 	MemoryCopy(M->Buffer.String.Bytes, G_TriangleShader.Data, G_TriangleShader.Length);
 
@@ -1446,6 +1448,7 @@ int main()
 	M.PermanentArena = Arena;
 	M.FrameArena = FrameArena;
 	M.PreviousFrameArena = PreviousFrameArena;
+	SetTemporaryArena(M.FrameArena);
 
 	M.Draw = ArenaPushArrayZero(Arena, draw_context, 1);
 	M.Render = ArenaPushArrayZero(Arena, render_context, 1);
@@ -1456,7 +1459,7 @@ int main()
 	M.Draw->Arena = Arena;
 	M.Render->Arena = Arena;
 	M.Edit->Arena = Arena;
-	M.Edit->Temp = ArenaPushZero(Arena, MegaBytes(1));
+	M.Edit->Temp = ArenaPushZero(Arena, BUFFER_CHUNK_SIZE);
 
 	cursor Cursor = {0};
 	M.Edit->Cursors.First = &Cursor;

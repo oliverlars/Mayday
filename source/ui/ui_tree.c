@@ -357,11 +357,11 @@ void UI_TreeView(ui_context *UI, draw_context *Draw, shared_wave_info *Shared,
 	for(int I = 0; I < VisibleLineCount; I++)
 	{
 		f32 Thickness = 1.0f + LineOpacities[I];
-		D_LinesArray(Draw, Arena, &Lines[I * 2], 2, Thickness, v4f(FDG_FG_R, FDG_FG_G, FDG_FG_B, 0.4));
+		D_LinesArray(Draw, &Lines[I * 2], 2, Thickness, v4f(FDG_FG_R, FDG_FG_G, FDG_FG_B, 0.4));
 	}
 
-	D_PointsArray(Draw, Arena, VisiblePositions, VisiblePointCount, 6.0, v4f(FDG_FG_R, FDG_FG_G, FDG_FG_B, 1.0));
-	D_PointsArray(Draw, Arena, VisiblePositions, VisiblePointCount, 12.0, v4f(FDG_FG_R, FDG_FG_G, FDG_FG_B, 1.0));
+	D_PointsArray(Draw, VisiblePositions, VisiblePointCount, 6.0, v4f(FDG_FG_R, FDG_FG_G, FDG_FG_B, 1.0));
+	D_PointsArray(Draw, VisiblePositions, VisiblePointCount, 12.0, v4f(FDG_FG_R, FDG_FG_G, FDG_FG_B, 1.0));
 }
 
 
@@ -522,11 +522,11 @@ void UI_TreeViewFromPaths(ui_context *UI, draw_context *Draw, shared_wave_info *
 	for(int I = 0; I < VisibleLineCount; I++)
 	{
 		f32 Thickness = 1.0f + LineOps[I];
-		D_LinesArray(Draw, Arena, &VisLines[I * 2], 2, Thickness, v4f(FDG_FG_R, FDG_FG_G, FDG_FG_B, 0.4));
+		D_LinesArray(Draw, &VisLines[I * 2], 2, Thickness, v4f(FDG_FG_R, FDG_FG_G, FDG_FG_B, 0.4));
 	}
 
-	D_PointsArray(Draw, Arena, VisiblePositions, VisiblePointCount, 6.0, v4f(FDG_FG_R, FDG_FG_G, FDG_FG_B, 1.0));
-	D_PointsArray(Draw, Arena, VisiblePositions, VisiblePointCount, 12.0, v4f(FDG_FG_R, FDG_FG_G, FDG_FG_B, 1.0));
+	D_PointsArray(Draw, VisiblePositions, VisiblePointCount, 6.0, v4f(FDG_FG_R, FDG_FG_G, FDG_FG_B, 1.0));
+	D_PointsArray(Draw, VisiblePositions, VisiblePointCount, 12.0, v4f(FDG_FG_R, FDG_FG_G, FDG_FG_B, 1.0));
 }
 
 
@@ -594,7 +594,7 @@ ui_tree_view_signal UI_TreeViewFolderLabels(
 				f32 SepW = (f32)UI_GetTextWidth(BackdropFont, Draw, Sep, BcFontSize);
 				f32 Pad = (SepTotal - SepW) / 2.0f;
 				BcX += Pad;
-				D_Str8(Draw, Arena, Sep,
+				D_Str8(Draw, Sep,
 					.Font = BackdropFont, .Position = V3FromV2(v2f(BcX, BcY)),
 					.Colour = v4f(FDG_FG_R, FDG_FG_G, FDG_FG_B, 1.0),
 					.HeightInPixels = BcFontSize);
@@ -631,7 +631,7 @@ ui_tree_view_signal UI_TreeViewFolderLabels(
 		f32 SearchBoxWidth = 600;
 		f32 SearchBoxX = PanelScissor.X + (PanelScissor.Z - SearchBoxWidth) * 0.5f;
 		f32 SearchBoxY = PanelScissor.Y + 45;
-		D_Quad(Draw, Arena, v2f(SearchBoxX - 15, SearchBoxY - 30), SearchBoxWidth + 30, 40 + 30, v4f(0, 0, 0, 1));
+		D_Quad(Draw, v2f(SearchBoxX - 15, SearchBoxY - 30), SearchBoxWidth + 30, 40 + 30, v4f(0, 0, 0, 1));
 		SearchSignal = UI_TextBox(Arena, Font, v2f(SearchBoxX, SearchBoxY), SearchBoxWidth,
 													UI, Draw, Edit, 40, Str8("TreeViewTextBox"), SearchBuffer);
 		
@@ -861,7 +861,7 @@ ui_tree_view_signal UI_TreeViewFolderLabels(
 				SizeLine = Str8PushF(Arena, "?s32 KB", (int)(TreeView->BackdropStats.TotalSizeBytes / 1024));
 			else
 				SizeLine = Str8PushF(Arena, "?s32 bytes", (int)TreeView->BackdropStats.TotalSizeBytes);
-			D_Str8(Draw, Arena, SizeLine,
+			D_Str8(Draw, SizeLine,
 				.Font = BackdropFont, .Position = V3FromV2(v2f(InfoX, StatY)),
 				.Colour = v4f(FDG_FG_R, FDG_FG_G, FDG_FG_B, InfoAlpha),
 				.HeightInPixels = StatFontSize);
@@ -869,7 +869,7 @@ ui_tree_view_signal UI_TreeViewFolderLabels(
 
 			// Folders
 			str8 FolderLine = Str8PushF(Arena, "?s32 folders", TreeView->BackdropStats.FolderCount);
-			D_Str8(Draw, Arena, FolderLine,
+			D_Str8(Draw, FolderLine,
 				.Font = BackdropFont, .Position = V3FromV2(v2f(InfoX, StatY)),
 				.Colour = v4f(FDG_FG_R, FDG_FG_G, FDG_FG_B, InfoAlpha),
 				.HeightInPixels = StatFontSize);
@@ -877,7 +877,7 @@ ui_tree_view_signal UI_TreeViewFolderLabels(
 
 			// Files
 			str8 FileLine = Str8PushF(Arena, "?s32 files", TreeView->BackdropStats.FileCount);
-			D_Str8(Draw, Arena, FileLine,
+			D_Str8(Draw, FileLine,
 				.Font = BackdropFont, .Position = V3FromV2(v2f(InfoX, StatY)),
 				.Colour = v4f(FDG_FG_R, FDG_FG_G, FDG_FG_B, InfoAlpha),
 				.HeightInPixels = StatFontSize);
@@ -885,7 +885,7 @@ ui_tree_view_signal UI_TreeViewFolderLabels(
 
 			// Large folder name above stats
 			f32 InfoFontSize = 180.0f;
-			D_Str8(Draw, Arena, TreeView->BackdropName,
+			D_Str8(Draw, TreeView->BackdropName,
 				.Font = BackdropFont, .Position = V3FromV2(v2f(InfoX, StatY)),
 				.Colour = v4f(FDG_FG_R, FDG_FG_G, FDG_FG_B, InfoAlpha),
 				.HeightInPixels = InfoFontSize);

@@ -234,10 +234,11 @@ d_atlas_glyph *D_GlyphFromCodePoint2(draw_context *D, u64 FontHash, d_font Font,
 }
 
 void D_Quad(draw_context *D,
-				m_arena *Arena, v2f Position,
+				v2f Position,
 				f32 Width, f32 Height,
 				v4f Colour)
 {
+	m_arena *Arena = TemporaryArena();
 	render_context *R = D->Render;
 	r_command Command = {0};
 	Command.Vertices = ArenaPushArrayZero(Arena, r_vertex, 6);
@@ -267,7 +268,7 @@ void D_Quad(draw_context *D,
 	}
 	Command.Type = R_COMMAND_TRIANGLE;
 	Command.Attributes = R_AttributesFromCommandType(Command.Type);
-	R_PushCommand(R, Arena, Command);
+	R_PushCommand(R, Command);
 }
 
 f32 D_Str8HeightFromWidth(d_font Font, str8 String, f32 WidthInPixels)
@@ -396,23 +397,23 @@ v4f D_Str8BBoxFromHeight(d_font Font, v2f Position, str8 String, f32 HeightInPix
 	return Result;
 }
 
-void D_Blur(draw_context *D, m_arena *Arena, v4i Rect, f32 Sigma)
+void D_Blur(draw_context *D, v4i Rect, f32 Sigma)
 {
 	render_context *R = D->Render;
 	r_command Command = {0};
 	Command.Type = R_COMMAND_BLUR;
 	Command.Rect = Rect;
 	Command.BlurSigma = Sigma;
-	R_PushCommand(R, Arena, Command);
+	R_PushCommand(R, Command);
 }
 
 void D_BaseStr8(
 	draw_context *D,
-	m_arena *Arena,
 	str8 String,
 	d_str8_options Options
 )
 {
+	m_arena *Arena = TemporaryArena();
 	render_context *R = D->Render;
 	int TotalTriangleCount = String.Size*6;
 	r_command Command = {0};
@@ -599,19 +600,18 @@ void D_BaseStr8(
 	
 	if(Options.OutlineThickness > 0.0)
 	{
-		D_BezierArray(D, Arena, OutlineData, OutlineOffset, Options.OutlineThickness, Options.Colour);
+		D_BezierArray(D, OutlineData, OutlineOffset, Options.OutlineThickness, Options.Colour);
 	}
 	else
 	{
 		Command.Type = R_COMMAND_GLYPH;
 		Command.Attributes = R_AttributesFromCommandType(Command.Type);
-		R_PushCommand(R, Arena, Command);
+		R_PushCommand(R, Command);
 	}
 	ScratchEnd(Scratch);
 }
 
 void D_SelectionRange(draw_context *D,
-						  m_arena *Arena,
 						  d_font Font,
 						  v2f Position,
 						  v4f Colour,
@@ -659,7 +659,7 @@ void D_SelectionRange(draw_context *D,
 				d_atlas_glyph *Space  = D_GlyphFromCodePoint2(D, Hash, Font, ' ');
 				Position.X += Space->AdvanceX * Scale * TabMultiplier;
 			}
-			D_Quad(D, Arena, v2f(SelectionStartX, Position.Y + Font.Descent*Scale), Position.X - SelectionStartX, (Font.Ascent - Font.Descent + Font.LineGap)*Scale, Colour);
+			D_Quad(D, v2f(SelectionStartX, Position.Y + Font.Descent*Scale), Position.X - SelectionStartX, (Font.Ascent - Font.Descent + Font.LineGap)*Scale, Colour);
 		}
 
 		if(CodePoint == '\n')
@@ -685,10 +685,11 @@ f32 D_LineHeightFromFont(d_font Font, f32 HeightInPixels)
 }
 
 void D_CubePoints(draw_context *D,
-					  m_arena *Arena, v3f Position,
+					  v3f Position,
 					  v3f Size,
 					  v4f Colour)
 {
+	m_arena *Arena = TemporaryArena();
 	render_context *R = D->Render;
 	r_command Command = {0};
 	Command.Vertices = ArenaPushArrayZero(Arena, r_vertex, 8);
@@ -728,7 +729,7 @@ void D_CubePoints(draw_context *D,
 	}
 	Command.Type = R_COMMAND_POINTS;
 	Command.Attributes = R_AttributesFromCommandType(Command.Type);
-	R_PushCommand(R, Arena, Command);
+	R_PushCommand(R, Command);
 }
 
 int SortPointsByZ(const void *S, const void *T)
@@ -745,7 +746,6 @@ int SortPointsByZ(const void *S, const void *T)
 void D_PointsArray
 (
 	draw_context *D,
-	m_arena *Arena,
 	v3f *Positions,
 	int PositionsCount,
 	f32 PointSize,
@@ -758,20 +758,20 @@ void D_PointsArray
 	{
 		Colours[I] = Colour;
 	}
-	D_PointsArrayWithColours(D, Arena, Positions, PositionsCount, PointSize, Colours);
+	D_PointsArrayWithColours(D, Positions, PositionsCount, PointSize, Colours);
 	ScratchEnd(Scratch);
 }
 
 void D_PointsArrayWithColours
 (
 	draw_context *D,
-	m_arena *Arena,
 	v3f *Positions,
 	int PositionsCount,
 	f32 PointSize,
 	v4f *Colours
 )
 {
+	m_arena *Arena = TemporaryArena();
 	render_context *R = D->Render;
 	r_command Command = {0};
 	Command.Vertices = (r_vertex*)ArenaPushArrayZero(Arena, r_vertex, PositionsCount);
@@ -818,18 +818,18 @@ void D_PointsArrayWithColours
 	}
 	Command.Type = R_COMMAND_POINTS;
 	Command.Attributes = R_AttributesFromCommandType(Command.Type);
-	R_PushCommand(R, Arena, Command);
+	R_PushCommand(R, Command);
 
 	R_PopTransform(D->Render);
 }
 
 void D_BezierArray(draw_context *D,
-					  m_arena *Arena,
 					  v3f *Positions,
 					  int PositionsCount,
 					  f32 Thickness,
 					  v4f Colour)
 {
+	m_arena *Arena = TemporaryArena();
 	render_context *R = D->Render;
 	r_command Command = {0};
 	Command.Vertices = (r_vertex*)ArenaPushArrayZero(Arena, r_vertex, PositionsCount/3);
@@ -904,19 +904,19 @@ void D_BezierArray(draw_context *D,
 	{
 		Command.Type = R_COMMAND_BEZIER;
 		Command.Attributes = R_AttributesFromCommandType(Command.Type);
-		R_PushCommand(R, Arena, Command);
+		R_PushCommand(R, Command);
 	}
 
 	R_PopTransform(D->Render);
 }
 
 void D_LinesArray(draw_context *D,
-					  m_arena *Arena,
 					  v3f *Positions,
 					  int PositionsCount,
 					  f32 Thickness,
 					  v4f Colour)
 {
+	m_arena *Arena = TemporaryArena();
 	render_context *R = D->Render;
 	r_command Command = {0};
 	assert(PositionsCount % 2 == 0);
@@ -960,12 +960,13 @@ void D_LinesArray(draw_context *D,
 	}
 	Command.Type = R_COMMAND_LINES;
 	Command.Attributes = R_AttributesFromCommandType(Command.Type);
-	R_PushCommand(R, Arena, Command);
+	R_PushCommand(R, Command);
 }
 
 
-void D_Grid(draw_context *Draw, m_arena *Arena, f32 Size, s32 Count)
+void D_Grid(draw_context *Draw, f32 Size, s32 Count)
 {
+	m_arena *Arena = TemporaryArena();
 	s32 LineCount = (Count + 1) * 2;
 	v3f *Lines = (v3f*)ArenaPushArrayZero(Arena, v3f, LineCount * 2); // Each line has 2 vertices
 
@@ -987,11 +988,12 @@ void D_Grid(draw_context *Draw, m_arena *Arena, f32 Size, s32 Count)
 		Lines[Index++] = v3f(X, -2, HalfSize);
 	}
 
-	D_LinesArray(Draw, Arena, Lines, LineCount * 2, 1.0, v4f(1.0, .05, 0, 1));
+	D_LinesArray(Draw, Lines, LineCount * 2, 1.0, v4f(1.0, .05, 0, 1));
 }
 
-void D_Grid2D(draw_context *Draw, m_arena *Arena, f32 Size, s32 Count)
+void D_Grid2D(draw_context *Draw, f32 Size, s32 Count)
 {
+	m_arena *Arena = TemporaryArena();
 	s32 LineCount = (Count + 1) * 2;
 	v3f *Lines = (v3f*)ArenaPushArrayZero(Arena, v3f, LineCount * 2); // Each line has 2 vertices
 
@@ -1013,10 +1015,10 @@ void D_Grid2D(draw_context *Draw, m_arena *Arena, f32 Size, s32 Count)
 		Lines[Index++] = v3f(X, HalfSize, 0);
 	}
 
-	D_LinesArray(Draw, Arena, Lines, LineCount * 2, 2.0, v4f(0.008, 0.00, 0, 1.0));
+	D_LinesArray(Draw, Lines, LineCount * 2, 2.0, v4f(0.008, 0.00, 0, 1.0));
 }
 
-void D_DiscoGrid2D(draw_context *Draw, m_arena *Arena, v2f Dim, v2i Count)
+void D_DiscoGrid2D(draw_context *Draw, v2f Dim, v2i Count)
 {
 	random32_state RandomState = {0};
 	RandomState.State = (u32)M_FNV_HASH_START;
@@ -1033,8 +1035,8 @@ void D_DiscoGrid2D(draw_context *Draw, m_arena *Arena, v2f Dim, v2i Count)
 				0.0,
 				1.0f
 			);
-			D_Quad(Draw, Arena, v2f(X*Width, Y*Height), Width, Height, Add(Background, RandomShift));
+			D_Quad(Draw, v2f(X*Width, Y*Height), Width, Height, Add(Background, RandomShift));
 		}
 	}
-	D_Blur(Draw, Arena, v4i(0, 0, Dim.X, Dim.Y), 10);
+	D_Blur(Draw, v4i(0, 0, Dim.X, Dim.Y), 10);
 }

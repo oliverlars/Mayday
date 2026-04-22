@@ -5,6 +5,8 @@
 #include "maths.h"
 #include "draw.h"
 
+#define BUFFER_CHUNK_SIZE (MegaBytes(32))
+
 typedef struct cursor
 {
 	v2f Position;

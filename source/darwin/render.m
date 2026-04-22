@@ -938,7 +938,7 @@ void RenderCompute
 
 }
 
-void R_Update(render_context *R, m_arena *FrameArena)
+void R_Update(render_context *R)
 {
 	metal_context *Metal = R->Backend;
 	Metal->Drawable = (__bridge id<CAMetalDrawable>)sapp_metal_get_current_drawable();

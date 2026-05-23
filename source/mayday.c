@@ -708,7 +708,7 @@ void OS_Update(void *Data)
 					D_Str8(M->Draw, HeaderName,
 						.Font = M->BebasNeue,
 						.Position = v3f(M->FileListPosition.X, M->FileListPosition.Y, 0),
-						.Colour = v4f(0.0, 0.0, 0.0, 1.0),
+						.Colour = v4f(1.0, 1.0, 1.0, 1.0),
 						.HeightInPixels = M->TreeView.ActiveLabelFontSize);
 				}
 
@@ -742,7 +742,7 @@ void OS_Update(void *Data)
 						ui_signal Signal = UI_TextButton(
 							M->UI, M->Draw, M->FrameArena,
 							Str8PushF(M->FrameArena, "?S###?u32", FileName, Index), Height*Scale, Position,
-							v4f(0.0, 0.0, 0.0, 1)
+							v4f(1.0, 1.0, 1.0, 1)
 						);
 						if(Signal.Clicked)
 						{
